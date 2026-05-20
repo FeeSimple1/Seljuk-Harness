@@ -1,0 +1,405 @@
+# SELJUK - UNITS AND STRONGHOLDS REFERENCE (YAML)
+# ============================================================
+# Source: Player Aid Card (Forces / Strongholds), cross-checked
+# against Seljuk_Rules.pdf, Seljuk_Background_Book_web.pdf, and
+# Seljuk_Errata_and_Clarifications.txt.
+#
+# Omitted from source: "Piece" column (visual only), die color
+# (visual mnemonic only; all rolls use standard d6).
+# Errata corrections applied inline; original printed text noted
+# where it differs.
+# ============================================================
+
+metadata:
+  game: Seljuk
+  document_type: units_and_strongholds_reference
+  source_card: Forces / Strongholds player aid
+  dice: All rolls use standard d6
+  conventions:
+    strike_value: "Number of dice rolled per unit (e.g., 1 = x1, 0.5 = x1/2). Sum within a step, round up."
+    protection_range: "Roll within range cancels the Hit; outside the range, the unit Routs."
+    any_1_round: "Strike usable in exactly one Round of a Battle, player's choice."
+    mark: "Once-per-Battle effect; track with a marker."
+    asterisks: "On the player aid card, asterisks link strike/protection values to capability-modifier notes."
+
+# ============================================================
+# FORCES
+# ============================================================
+
+forces:
+
+  # ---------- HORSE ----------
+
+  tagmata:
+    category: horse
+    allegiance: Roman
+    strikes:
+      missile: 0.5
+      melee:
+        value: 1
+        capability_modifier: BARDOUKIA
+    protection:
+      armored:
+        range: [1, 3]
+        capability_modifier: KLIBANOPHOROI
+    capabilities:
+      BARDOUKIA:
+        scope: melee
+        effect: "-1 to target Armor during Melee"
+        clarification_R21: "Roll Protection against Bardoukia Hits separately from other Hits in the same Melee step."
+      KLIBANOPHOROI:
+        scope: armor
+        effect: "Armor range becomes 1-4"
+
+  norman_knights:
+    category: horse
+    allegiance: Roman
+    strikes:
+      melee: 2
+      storm: 1
+    protection:
+      armored:
+        range: [1, 4]
+        capability_modifier: NORMAN_HEAVY_CAVALRY
+    capabilities:
+      NORMAN_HEAVY_CAVALRY:
+        scope: armor
+        effect: "Re-roll 1 unit Armor each Missiles and Melee"
+
+  scholai_hetaireia:
+    category: horse
+    allegiance: Roman
+    strikes:
+      missile: 1
+      melee: 1
+    protection:
+      armored:
+        range: [1, 4]
+    capabilities: {}
+
+  ghulam_cavalry:
+    category: horse
+    allegiance: Seljuk
+    strikes:
+      missile: 0.5
+      melee: 1
+    protection:
+      armored:
+        range: [1, 4]
+    capabilities: {}
+
+  turkic_horse:
+    category: horse
+    allegiance: Seljuk
+    strikes:
+      missile:
+        value: 1
+        capability_modifier: PARTHIAN_SHOT
+      melee:
+        value: 0.5
+        capability_modifier: SHOCK_TACTICS
+    protection:
+      unarmored:
+        range: [1, 1]
+        applies_to: "Missile Hits, and any Hits in Storm"
+      evade:
+        range: [1, 3]
+        applies_to: "Melee Hits in Battle only (not Missiles, not Storm)"
+      armored:
+        range: [1, 3]
+        capability_modifier: LAMELLAR_ARMOR
+        note: "Armored protection requires LAMELLAR_ARMOR capability; not available by default"
+    capabilities:
+      PARTHIAN_SHOT:
+        scope: missile
+        effect: "Select Missile targets (like Garrison Archers)"
+      SHOCK_TACTICS:
+        scope: melee
+        printed_text: "x1/2 Melee in Battle/Storm (round up)"
+        errata_clarification_playbook_p14: |
+          Half (rounded up) of the Lord's Turkic Horse do x1/2 Melee
+          Hits each. Example: 3 Turkic Horse → 2 units (3 x 0.5
+          rounded up) do x1/2 Hit each = 1 Hit total.
+      LAMELLAR_ARMOR:
+        scope: armor
+        printed_text: "Armor 1-3 until 3 Rout"
+        available_to: [Emir of Arran, Alp Arslan, Artuk Beg]
+        S1_S2_clarification: |
+          Capability stops applying for the remainder of the Battle
+          immediately upon 3 Turkic Horse units Routing from this
+          Lord. If Lord has fewer than 3 Turkic Horse, capability
+          always applies.
+        errata_clarification_p17: |
+          On a Melee Hit, the player may choose EITHER Lamellar Armor
+          (1-3) OR Evade (1-3) for the Protection roll, per Hit.
+          The two do not stack.
+    special_rules_if_all_turkic_horse:
+      first_march_command_cost_modifier: -1
+      pursuit_exception: "If single Seljuk Lord (with only Turkic Horse) Concedes to single Roman Lord, BOTH sides have Hits halved in Pursuit."
+
+  # ---------- FOOT ----------
+
+  varangian_guard:
+    category: foot
+    allegiance: Roman
+    strikes:
+      melee:
+        value: 3
+        restriction: "May Strike in first Round only, no halving for Pursuit (mark)"
+        errata_correction: "Printed card reads 'May attack in Melee in first Round only'; Errata corrects 'attack in Melee' to 'Strike'."
+      storm: 1
+    protection:
+      armored:
+        range: [1, 4]
+    capabilities: {}
+
+  infantry:
+    category: foot
+    allegiance: both
+    strikes:
+      missile:
+        value: 1
+        availability: any_1_round
+        requires_capability: JAVELINS
+        depicted_with_javelins_icon: true
+      melee: 1
+    protection:
+      armored:
+        range: [1, 3]
+        capability_modifier: STEELED_RESOLVE
+    storm_garrison_property:
+      missile_rate_when_garrison: 0.5
+      target_armor_modifier: -1
+      select_target: true
+      rule_reference: 4.9.1
+      note: "Infantry in a Stronghold Garrison during Storm gains x1/2 Missile strikes even without Javelins capability."
+    capabilities:
+      JAVELINS:
+        scope: missile
+        effect: "Any 1 Round: x1 Missiles in Battle"
+      ALAKATIA:
+        scope: missile
+        effect: "2 Infantry in Battle add 1 extra Missile Hit with -1 to target Armor"
+        clarification_R23: |
+          Requires at least 2 Unrouted Infantry under this Lord to
+          trigger. Effect does not scale with more than 2 Infantry
+          (e.g., 4 Infantry does not generate 2 extra Hits). If
+          subsequent Rounds bring the Lord below 2 Unrouted
+          Infantry, the extra Hit is not generated. Defender should
+          roll Protection against the Alakatia Hit separately, since
+          it has the same anti-armor effect as Garrison Missiles.
+      STEELED_RESOLVE:
+        scope: armor
+        effect: "Armor 1-4 vs Horse 1 Round (mark)"
+
+  militia:
+    category: foot
+    allegiance: both
+    strikes:
+      missile:
+        value: 0.5
+        capability_modifier: PSILOI
+      melee: 0.5
+    protection:
+      unarmored:
+        range: [1, 1]
+        capability_modifier: SYNDOSIS
+    capabilities:
+      PSILOI:
+        scope: missile
+        effect: "Missiles x1/2"
+        scope_R25: |
+          Applies to all non-garrison Roman Militia in play. Roman
+          Garrison Militia already have Missile x1/2 with -1 to
+          target Armor by default (4.9.1).
+        placement: "Board edge (Lord ALL); not attached to any Lord."
+      SYNDOSIS:
+        scope: armor
+        effect: "Armor 1-2"
+
+# ============================================================
+# STRONGHOLDS
+# ============================================================
+
+strongholds:
+
+  city:
+    value: 3
+    size_symbol: 3
+    capacity_lords_to_add_siege: 3
+    walls_range: [1, 4]
+    surrender_dice: 3
+    has_gardens: true
+    icon_description: "Tree + large multi-building walls"
+    garrison_roman:
+      spawned_units: {infantry: 1, militia: 1}
+      garrison_archers: &garrison_archers
+        missile: 0.5
+        target_armor_modifier: -1
+        select_target: true
+      themata_optional:
+        max_depicted_on_aid: 3
+        source: "Local Thema box on map"
+        chosen_by: Roman player at start of Siege
+    garrison_seljuk:
+      spawned_units: {infantry: 1, militia: 3}
+      garrison_archers: *garrison_archers
+      themata_optional: null
+    if_conquered:
+      conquered_markers_placed: 3
+      vp_per_marker_roman: 1
+      vp_per_marker_seljuk: 0
+    if_sacked_or_ruined_spoils:
+      coin: 2
+      loot: 2
+      provender: 4
+
+  town:
+    value: 2
+    size_symbol: 2
+    capacity_lords_to_add_siege: 2
+    walls_range: [1, 4]
+    surrender_dice: 2
+    has_gardens: true
+    icon_description: "Tree + medium town walls"
+    garrison_roman:
+      spawned_units: {militia: 1}
+      garrison_archers: *garrison_archers
+      themata_optional:
+        max_depicted_on_aid: 2
+        source: "Local Thema box on map"
+        chosen_by: Roman player at start of Siege
+    garrison_seljuk:
+      spawned_units: {infantry: 1, militia: 2}
+      garrison_archers: *garrison_archers
+      themata_optional: null
+    if_conquered:
+      conquered_markers_placed: 2
+      vp_per_marker_roman: 1
+      vp_per_marker_seljuk: 0
+    if_sacked_or_ruined_spoils:
+      coin: 1
+      loot: 0
+      provender: 2
+      verification: "Playbook p.15 example confirms 1 Coin + 2 Provender"
+
+  fort:
+    value: 1
+    size_symbol: 1
+    capacity_lords_to_add_siege: 1
+    walls_range: [1, 3]
+    surrender_dice: 1
+    has_gardens: false
+    icon_description: "Small fort walls"
+    garrison_roman:
+      spawned_units: {militia: 1}
+      garrison_archers: *garrison_archers
+      themata_optional:
+        max_depicted_on_aid: 1
+        source: "Local Thema box on map"
+        chosen_by: Roman player at start of Siege
+    garrison_seljuk:
+      spawned_units: {infantry: 1, militia: 1}
+      garrison_archers: *garrison_archers
+      themata_optional: null
+    if_conquered:
+      conquered_markers_placed: 1
+      vp_per_marker_roman: 1
+      vp_per_marker_seljuk: 0
+    if_sacked_or_ruined_spoils:
+      coin: 1
+      loot: 0
+      provender: 1
+
+  aleppo:
+    inherits_from: city
+    location: Fatimid Caliphate
+    overrides:
+      surrender_dice: 4
+      garrison_column_used: seljuk  # regardless of current allegiance (1.3.1)
+    special_rules:
+      - "Roman may not Withdraw inside Aleppo"
+      - "Roman does not auto-succeed at Forage at Aleppo"
+      - "Aleppo Independence event changes diplomatic status"
+      - "If Aleppo Independence has been played AND Seljuks hold Aleppo through next Winter, Seljuk automatic victory (4.7.6, 5.2)"
+
+# ============================================================
+# CROSS-CUTTING RULES
+# ============================================================
+
+storm_garrison_rules:
+  reference: 4.9.1
+  rules:
+    - "Garrison Foot units have BOTH Melee and Missiles."
+    - "Garrison Infantry and Militia are x1/2 Missile units with -1 to target Armor; Select Targets per 4.8.2."
+    - "Garrison Strikes add to Defending Lord's Strikes (round up); Garrisons are otherwise separate from the Lord and ignore cards affecting the Lord individually."
+    - "Defender must assign Hits to Garrison units first; the Lord's Forces absorb Hits only after Garrison is Routed."
+    - "Garrison units return to the unit pool when Routed or at the end of the Storm."
+    - "The full Garrison complement defends in every Enemy Storm action, regardless of past Storms at that Locale."
+    - "Strongholds in the Fatimid Caliphate (Hama, Aleppo, Syria) always use the Seljuk Garrison column."
+  R16_armenian_garrisons_capability:
+    text: "Receive Garrison units from both sides of the Garrisons chart simultaneously."
+    fort_verification: "Roman Fort (1 Militia) + Seljuk Fort (1 Infantry + 1 Militia) = 2 Militia + 1 Infantry combined."
+
+themata_service_markers:
+  side: Roman only
+  rulebook_reference: 1.5.1
+  storm_reference: 4.9.1
+  source_location: "Thema box on the map for the Stronghold's Thema region"
+  not_spawned_from_pool: true
+  selection: "Roman player chooses at the start of a Siege which available Themata in that Thema will go inside the Stronghold to defend."
+  outcome_on_storm_win: "Defending Themata REMAIN in the Stronghold."
+  outcome_on_storm_loss: "Defending Themata are permanently removed from the game (4.9.1 Sack, also 4.5.1 if Surrendered)."
+  player_aid_depiction:
+    city: 3
+    town: 2
+    fort: 1
+    note: "Aid card depicts a count of Themata tiles tied to Stronghold Size; actual count of available Themata depends on what is in the Thema box."
+
+surrender_action:
+  reference: 4.5.1
+  dice_by_stronghold:
+    fort: 1
+    town: 2
+    city: 3
+    aleppo: 4
+
+# ============================================================
+# ERRATA AND CLARIFICATIONS APPLIED IN THIS FILE
+# ============================================================
+
+errata_applied:
+  varangian_guard_note:
+    original_printed: "May attack in Melee in first Round only, no halving for Pursuit (mark)."
+    errata_corrected: "May Strike in first Round only, no halving for Pursuit (mark)."
+    source: Seljuk_Errata_and_Clarifications.txt, Player Aid Card section
+  shock_tactics_interpretation:
+    note: "Errata Playbook p.14 corrects the example to show half-of-units interpretation, disambiguating the player aid wording."
+  lamellar_armor_vs_evade:
+    note: "Errata Playbook p.17 clarifies that on a Melee Hit, the player may choose Lamellar Armor or Evade for Protection."
+
+# ============================================================
+# QUICK LOOKUP INDEX (for LLM disambiguation)
+# ============================================================
+
+index:
+  capabilities_by_unit:
+    tagmata: [BARDOUKIA, KLIBANOPHOROI]
+    norman_knights: [NORMAN_HEAVY_CAVALRY]
+    turkic_horse: [PARTHIAN_SHOT, SHOCK_TACTICS, LAMELLAR_ARMOR]
+    infantry: [JAVELINS, ALAKATIA, STEELED_RESOLVE]
+    militia: [PSILOI, SYNDOSIS]
+  units_by_allegiance:
+    roman: [tagmata, norman_knights, scholai_hetaireia, varangian_guard]
+    seljuk: [ghulam_cavalry, turkic_horse]
+    both: [infantry, militia]
+  units_by_category:
+    horse: [tagmata, norman_knights, scholai_hetaireia, ghulam_cavalry, turkic_horse]
+    foot: [varangian_guard, infantry, militia]
+  units_with_storm_strike:
+    - norman_knights
+    - varangian_guard
+  units_with_select_target_capability:
+    - turkic_horse (with PARTHIAN_SHOT)
+    - "Garrison Archers (all Strongholds, during Storm)"
+    - "Infantry/Militia as Garrison units (during Storm)"

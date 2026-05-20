@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "seljuk-harness"
+version = "0.0.0"
+description = "Rules harness for GMT's Seljuk (Levy & Campaign Series, Vol. V)"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["pydantic>=2"]
+
+[project.optional-dependencies]
+dev = ["pytest>=7"]
+parallel = ["pytest-xdist>=3"]
+
+[project.scripts]
+seljuk = "seljuk.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+seljuk = ["data/static/*.json", "data/scenarios/*.json", "data/schema/*.json"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
