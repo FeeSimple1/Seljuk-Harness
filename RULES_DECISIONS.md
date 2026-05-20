@@ -14,5 +14,15 @@ Format per entry:
 
 ---
 
-(No decisions yet. The first will be recorded when the user adjudicates an open
-question from `RULES_QUESTIONS.md`.)
+## D-001 (from Q-001) — Way type of the Khliat <-> Anzitene connection
+
+- **Question.** Is the Khliat <-> Anzitene Way a Road or a Pass? The text
+  sources do not determine it (the adjacency graph exists only on the printed
+  board); the Map Reference listed it as a Pass but flagged that as a guess.
+- **Decision.** "Khliat to Anzitene is a pass." (Eric, 2026-05-20, confirming
+  from the physical game board.)
+- **Citation.** Game board map topology (Rules of Play 1.3.1, Ways). The Map
+  Reference's tentative classification is hereby confirmed correct.
+- **Encoded in.** To be encoded in `src/seljuk/data/static/map.json` during
+  Phase 1, with this decision cited; map-integrity test will assert 15 Pass
+  Ways including Khliat <-> Anzitene.
