@@ -1,0 +1,73 @@
+Seljuk Errata and Clarifications - Jan 31, 2026
+ 
+[Note: The source document uses red text to denote corrections and green text to denote clarifications. Strikethrough text indicates content to be removed. This plain-text version marks those with explicit annotations: [STRIKETHROUGH: ...] for removed text. Corrected/added text in the original red is preserved inline within the quoted passages.]
+ 
+================================================================
+ERRATA
+================================================================
+ 
+----------------------------------------------------------------
+PLAYER AID CARD
+----------------------------------------------------------------
+ 
+Forces (Varangian Guard Notes) - correction in red.
+ 
+    "*May Strike in first Round only, no halving for Pursuit (mark)."
+ 
+ 
+Sequence of Play (Call-to-Arms) - corrections in red. The Roman Commander must be in Constantinople to use either of the Strategic Objective options (taking or placing a marker).
+ 
+    "Romans may execute Call to Arms Capabilities OR if Commander in Constantinople take a Strategic Objective marker from supply, OR if Commander in Constantinople, place Strategic Objective marker on any Seljuk Lord Mat or Seljuk-controlled Stronghold in the Sultanate."
+ 
+ 
+----------------------------------------------------------------
+RULEBOOK
+----------------------------------------------------------------
+ 
+Page 6 (1.4.2 Example #3) - correction in red. A lord re-entering the game due to Treachery should arrive in the following season's Levy before the Pay phase.
+ 
+    "Before the next Pay phase (Autumn 1070), the Roman player places Robert's cylinder at his Seat in Edessa."
+ 
+ 
+Page 18 (4.7.6 Winter, Bounty segment) - corrections in red. Enemy Lords block the Bounty path trace.
+ 
+    "Bounty. A Seljuk Lord who can trace a path of Locales that are either Ruins, Wilderness, Unfortified Settlements, Friendly Strongholds free of enemy Lords, or Bypassed or Besieged Enemy Strongholds back to his Seat may score 1 VP per Loot on his Lord mat up to the number of Carts he and co-located Lords currently possess."
+ 
+ 
+Page 34 (1071 A.D. scenario Roman setup, second bullet) - corrections in red. PSILOI is an ALL Capability and should start under the board edge, not attached to Andronikos Doukas.
+ 
+    "Andronikos Doukas at CONSTANTINOPLE (with 2 Carts in Assets on Lord Mat and [STRIKETHROUGH: PSILOI and] SYNDOSIS Capability Levied)"
+ 
+    [Resulting corrected text: "Andronikos Doukas at CONSTANTINOPLE (with 2 Carts in Assets on Lord Mat and SYNDOSIS Capability Levied)"]
+ 
+ 
+----------------------------------------------------------------
+PLAYBOOK
+----------------------------------------------------------------
+ 
+Page 14 (Example of Play, 2nd and 3rd paragraph) - corrections in red. SHOCK TACTICS ability should make half Alp Arslan's horse units (3 x 0.5 rounded = 2) do 1/2 Hit, for a total of 1 Hit.
+ 
+    "The Seljuk player then counts up his hits: half (rounded up) of Alp Arslan's Turkic Horse have x1/2 Hits due to Shock Tactics, which is x1 in total (after rounding), along with x1 for the remaining Ghulam.
+ 
+    The Roman player rolls Walls and gets a 1, 4 to cancel both hits before they get to his lone defending Tagmata unit."
+ 
+ 
+Page 17 (Example of Play: Battle - Retreat/Withdraw/Ruin) - corrections in red. As the attacker, the Roman player cannot Withdraw into Theodosiopolis (the site of Battle) because they are neither the defender nor Sallying. They must retreat back to Keltzene.
+ 
+    "The Romans must retreat back to Keltzene from where the attack was launched [STRIKETHROUGH: or they could choose to Withdraw inside Theodosiopolis, since it is Roman Friendly]."
+ 
+    [Resulting corrected text: "The Romans must retreat back to Keltzene from where the attack was launched."]
+ 
+ 
+================================================================
+CLARIFICATIONS
+================================================================
+ 
+Page 17 (Example of Play, 3rd paragraph) - clarification in green. The Seljuk player can use either LAMELLAR ARMOR or Evade for his Protection value since this is a melee strike.
+ 
+    "The next roll is a 2, which nullifies the Hit (thanks to LAMELLAR ARMOR or, since this is a melee strike, Evade)."
+ 
+ 
+What happens to Themata on the Roman Commander's Lord Mat if he disbands?
+ 
+    They are returned to their Thema box.

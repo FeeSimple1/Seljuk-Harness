@@ -1,0 +1,348 @@
+================================================================
+SELJUK - THEMATA SCENARIO REFERENCE
+================================================================
+ 
+Combines the master Themata Service Marker roster (from the
+user's physical-counter inventory, cross-checked against the
+rulebook) with the per-scenario "Remove from Play" lists and
+face-up map placements for all five published scenarios.
+ 
+SOURCES
+  - Master roster: user-provided marker inventory (May 2026).
+  - Removal lists, Calendar data, face-up placements: rulebook
+    scenario pages 26-35 and the printed scenario-setup map
+    illustrations.
+  - Cross-checks: rulebook "Remove from Play" text, playbook
+    examples, project Map Reference.
+ 
+PRECEDENCE
+  Where this file and the Rules of Play or the Errata &
+  Clarifications differ, the Rules and the Errata govern.
+ 
+ 
+----------------------------------------------------------------
+MARKER NOTATION
+----------------------------------------------------------------
+ 
+Each line in a Thema's roster is ONE Themata Service Marker.
+ 
+  "1 Infantry"     single-symbol Infantry marker
+  "2 Infantry"     one marker depicting 2 Infantry symbols
+                   ("double infantry" in scenario text). Rolls
+                   one Protection die for Ravage and is Lost on
+                   a failed roll; deploys 2 Infantry units as
+                   Garrison in Storm. (Rules 1.5.1)
+  "1 Tagmata"      single-symbol Tagmata marker
+  "1 Militia"      single-symbol Militia marker
+  "1 Turkic Horse" single-symbol Turkic Horse marker
+ 
+Themata are Roman-side only. They are placed in their Thema box
+on the map at setup, and both players may inspect a Thema box's
+contents at any time -- there is no face-down / hidden state for
+markers sitting in their home box (Rules 1.5.1). The counter
+back simply shows the Thema name as a placement reminder.
+ 
+"Face-up on the map" in the scenario sections below refers to a
+marker the scenario-setup illustration shows displayed at a
+specific Stronghold Locale rather than tucked in the Thema box.
+This is a setup/visual convention; rules-wise the marker still
+belongs to its Thema.
+ 
+Paphlagonia is omitted from all rosters: its only Locale is the
+Constantinople Holding Box, and no scenario references a
+Paphlagonia Themata marker.
+ 
+ 
+----------------------------------------------------------------
+VERIFICATION STATUS KEY
+----------------------------------------------------------------
+ 
+  [rulebook]   The marker is named explicitly in rulebook
+               scenario "Remove from Play" text, so its
+               existence and type are confirmed.
+  [inventory]  The marker comes from the user's physical-counter
+               reading. No scenario thins this marker, so the
+               rulebook offers no cross-check. Treated as accurate.
+ 
+  The full roster below is treated as accurate. Themata Garrison
+  markers are drawn only from Infantry, double Infantry, Tagmata,
+  Militia, and Turkic Horse types; Scholai/Hetaireia and Norman
+  Knights are Lord Forces and Vassal units, never Themata, so
+  they would not appear in a Thema box. Turkic Horse is the only
+  mounted Themata type (confirmed at Iberia), which settles the
+  Melitene mounted marker as a Turkic Horse.
+ 
+ 
+================================================================
+MASTER ROSTER -- 1068 BASELINE
+================================================================
+This is the full set of Themata Service Markers before any
+scenario removals. "The Emperor and the Lion" (1068) uses this
+roster minus only its own removal (see that scenario below).
+Listed in Map Reference order.
+ 
+Boukellarion
+  Locales: Ankyra (town w/ garden -- Roussel de Bailleul's Seat)
+    1 Infantry        [inventory]
+    1 Tagmata         [inventory]
+ 
+Anatolikon
+  Locales: Western Anatolia (wilderness), Ikonion (town w/ garden)
+    1 Tagmata         [rulebook]
+    1 Infantry        [inventory]
+    1 Militia         [rulebook]
+ 
+Armeniakon
+  Locales: Amaseia (town w/ garden), Neokaisareia (town w/ garden)
+    1 Tagmata         [rulebook]
+    1 Infantry        [rulebook]
+    1 Infantry        [inventory]
+ 
+Charsianon
+  Locales: Charsianon (unfortified settlement),
+           Kaisareia (town w/ garden)
+    1 Militia         [rulebook]
+    1 Tagmata         [rulebook]
+ 
+Kappadokia
+  Locales: Herakleia Kybistra (fort)
+    1 Infantry        [rulebook]
+ 
+Kilikia
+  Locales: Tarsos (town w/ garden), Mopsuestia (fort)
+    1 Infantry        [inventory]
+    1 Infantry        [inventory]
+    1 Tagmata         [inventory]
+ 
+Lykandos
+  Locales: Lykandos (wilderness), Larisa (unfortified settlement)
+    1 Militia         [inventory]
+  Note: Thema contains no Strongholds; marker is available for
+        Recruit / Levy Themata only.
+ 
+Sebasteia
+  Locales: Sebasteia (town w/ garden), Tephrike (fort)
+    1 Infantry        [rulebook]
+    2 Infantry        [inventory]
+    1 Tagmata         [inventory]
+ 
+Melitene
+  Locales: Melitene (town w/ garden)
+    1 Tagmata         [rulebook]
+    2 Infantry        [rulebook]
+    1 Militia         [inventory]
+    1 Turkic Horse    [inventory]
+ 
+Antiocheia
+  Locales: Antioch (city), Aleppo region per scenario
+    1 Infantry        [inventory]
+    1 Infantry        [inventory]
+    1 Tagmata         [inventory]
+ 
+Koloneia
+  Locales: Koloneia / Neokaisareia region
+    1 Infantry        [inventory]
+    1 Tagmata         [rulebook]
+ 
+Chaldia
+  Locales: Chaldia (fort), Theodosiopolis region
+    1 Infantry        [inventory]
+ 
+Iberia
+  Locales: Theodosiopolis (town w/ garden), Iberia region
+    1 Tagmata         [rulebook]
+    1 Turkic Horse    [rulebook]
+ 
+Mesopotamia
+  Locales: Amida region
+    1 Infantry        [inventory]
+ 
+CONTENT NOTES
+  - Iberia Turkic Horse: confirmed. Four scenarios name
+    "1x Turkic Horse" when thinning Iberia (Specter of Norman
+    Betrayal, Year of Treacherous Ambition, Showdown in
+    Anatolia, Manzikert).
+  - Melitene Militia and Turkic Horse: the scenarios that thin
+    Melitene name only Tagmata and double-Infantry removals, so
+    these two markers come from the physical-counter reading.
+    Treated as accurate -- Turkic Horse is the only mounted
+    Themata type, and no non-Themata unit could sit in a Thema
+    box.
+  - Sebasteia 2-Infantry and Tagmata, and Armeniakon's 3rd
+    marker (the 2nd 1-Infantry): from the physical-counter
+    reading. The playbook Reset example (p. 10) confirms
+    Sebasteia holds at least a Tagmata + Infantry, consistent
+    with this roster.
+  - Boukellarion: spelled with a k (not "Boubellarion"). No
+    scenario thins it, so both markers are [inventory].
+ 
+ 
+================================================================
+SCENARIO 1 -- THE EMPEROR AND THE LION
+1068 A.D. Campaign Scenario
+================================================================
+Spring 1068 through Autumn 1071 (up to 12 turns).
+ 
+REMOVED FROM PLAY
+  Charsianon: 1 Tagmata
+ 
+THEMA BOXES AT START (baseline minus the removal above)
+  Charsianon  -> 1 Militia        (Tagmata removed)
+  All other Themata: full 1068 baseline roster, in their boxes.
+ 
+FACE-UP ON MAP
+  None called out in the scenario text. If the scenario-setup
+  illustration shows Charsianon's lone Militia displayed at a
+  Stronghold rather than in the Thema box, note it here.
+ 
+ 
+================================================================
+SCENARIO 2 -- SPECTER OF NORMAN BETRAYAL
+1069 A.D.
+================================================================
+Spring 1069 through Winter 1069 (3 turns).
+ 
+REMOVED FROM PLAY
+  Charsianon: 1 Tagmata
+  Iberia:     1 Turkic Horse, 1 Tagmata
+  Melitene:   1 Tagmata
+ 
+THEMA BOXES AT START (differences from the 1068 baseline)
+  Charsianon  -> 1 Militia        (Tagmata removed -- same as 1068)
+  Iberia      -> empty            (both markers removed)
+  Melitene    -> 2 Infantry (double), 1 Militia, 1 Turkic Horse
+                 (Tagmata removed)
+  All other Themata: identical to the 1068 baseline.
+ 
+FACE-UP ON MAP
+  Melitene: the 2 Infantry (double) marker is displayed face-up
+            on the map. The Militia and Turkic Horse remain in
+            the Thema box.
+ 
+ 
+================================================================
+SCENARIO 3 -- YEAR OF TREACHEROUS AMBITION
+1070 A.D. Learning Scenario
+================================================================
+Spring 1070 through Winter 1070 (3 turns).
+ 
+REMOVED FROM PLAY
+  Iberia:     1 Turkic Horse, 1 Tagmata
+  Charsianon: 1 Tagmata
+  Melitene:   1 Tagmata, 1 double Infantry
+  Anatolikon: 1 Militia, 1 Tagmata
+  Koloneia:   1 Tagmata
+  Sebasteia:  1 Infantry
+ 
+THEMA BOXES AT START (differences from the 1068 baseline)
+  Anatolikon  -> 1 Infantry       (Tagmata and Militia removed)
+  Charsianon  -> 1 Militia        (Tagmata removed -- same as 1068)
+  Iberia      -> empty            (both markers removed)
+  Koloneia    -> 1 Infantry       (Tagmata removed)
+  Melitene    -> 1 Militia, 1 Turkic Horse
+                 (Tagmata and double Infantry removed)
+  Sebasteia   -> 2 Infantry (double), 1 Tagmata
+                 (1 Infantry removed)
+  All other Themata: identical to the 1068 baseline.
+ 
+FACE-UP ON MAP
+  Anatolikon: 1 Infantry  (sole remaining marker)
+  Koloneia:   1 Infantry  (sole remaining marker)
+  Melitene:   1 Turkic Horse; the Militia remains in the box
+  Sebasteia:  1 Tagmata;  the 2 Infantry (double) remains in box
+ 
+ 
+================================================================
+SCENARIO 4 -- SHOWDOWN IN ANATOLIA
+1070 A.D. 6-Turn Half-Campaign
+================================================================
+Spring 1070 through the end of Autumn 1071 (6 turns).
+ 
+REMOVED FROM PLAY  (identical list to Year of Treacherous Ambition)
+  Iberia:     1 Turkic Horse, 1 Tagmata
+  Charsianon: 1 Tagmata
+  Melitene:   1 Tagmata, 1 double Infantry
+  Anatolikon: 1 Militia, 1 Tagmata
+  Koloneia:   1 Tagmata
+  Sebasteia:  1 Infantry
+ 
+THEMA BOXES AT START (differences from the 1068 baseline)
+  Anatolikon  -> 1 Infantry       (Tagmata and Militia removed)
+  Charsianon  -> 1 Militia        (Tagmata removed -- same as 1068)
+  Iberia      -> empty            (both markers removed)
+  Koloneia    -> 1 Infantry       (Tagmata removed)
+  Melitene    -> 1 Militia, 1 Turkic Horse
+                 (Tagmata and double Infantry removed)
+  Sebasteia   -> 2 Infantry (double), 1 Tagmata
+                 (1 Infantry removed)
+  All other Themata: identical to the 1068 baseline.
+ 
+FACE-UP ON MAP
+  Anatolikon: 1 Infantry  (sole remaining marker)
+  Koloneia:   1 Infantry  (sole remaining marker)
+  Melitene:   1 Turkic Horse; the Militia remains in the box
+  Sebasteia:  1 Tagmata;  the 2 Infantry (double) remains in box
+ 
+ 
+================================================================
+SCENARIO 5 -- MANZIKERT: THE FALL OF THE ROMAN EAST
+1071 A.D.
+================================================================
+Spring 1071 through Autumn 1071 (3 turns).
+ 
+REMOVED FROM PLAY
+  Charsianon: 1 Tagmata, 1 Militia
+  Melitene:   1 double Infantry, 1 Tagmata
+  Anatolikon: 1 Tagmata, 1 Infantry, 1 Militia
+  Koloneia:   1 Tagmata, 1 Infantry
+  Sebasteia:  1 Infantry
+  Kappadokia: 1 Infantry
+  Armeniakon: 1 Tagmata, 1 Infantry
+  Iberia:     1 Tagmata, 1 Turkic Horse
+ 
+THEMA BOXES AT START (differences from the 1068 baseline)
+  Anatolikon  -> empty            (all 3 markers removed)
+  Armeniakon  -> 1 Infantry       (Tagmata and 1 Infantry removed)
+  Charsianon  -> empty            (both markers removed)
+  Iberia      -> empty            (both markers removed)
+  Kappadokia  -> empty            (sole marker removed)
+  Koloneia    -> empty            (both markers removed)
+  Melitene    -> 1 Militia, 1 Turkic Horse
+                 (Tagmata and double Infantry removed)
+  Sebasteia   -> 2 Infantry (double), 1 Tagmata
+                 (1 Infantry removed)
+  Untouched, full 1068 baseline rosters:
+    Boukellarion, Kilikia, Lykandos, Antiocheia, Chaldia,
+    Mesopotamia.
+ 
+FACE-UP ON MAP
+  Armeniakon: 1 Infantry  (sole remaining marker)
+  Melitene:   1 Turkic Horse; the Militia remains in the box
+  Sebasteia:  1 Tagmata;  the 2 Infantry (double) remains in box
+ 
+ 
+================================================================
+CONSISTENCY NOTES ACROSS SCENARIOS
+================================================================
+ 
+  - Charsianon's Tagmata is removed in every scenario. Its
+    Militia survives in Emperor and the Lion, Specter, Year of
+    Treacherous Ambition, and Showdown, but is also removed in
+    Manzikert (leaving Charsianon empty there).
+ 
+  - Iberia is emptied (both markers removed) in every scenario
+    except Emperor and the Lion, where Iberia keeps its full
+    baseline pair.
+ 
+  - Melitene's Militia and Turkic Horse are present in Specter,
+    Year of Treacherous Ambition, Showdown, and Manzikert --
+    those scenarios only remove Melitene's Tagmata and/or double
+    Infantry, leaving Militia + Turkic Horse as the box contents.
+ 
+  - The face-up convention (Melitene Turkic Horse, Sebasteia
+    Tagmata, and the sole-remaining markers of single-marker
+    Themata) is taken from the scenario-setup map illustrations
+    and from the user's reading of those illustrations. The
+    rulebook scenario TEXT does not specify face-up placement;
+    only the printed map shows it.
+ 

@@ -1,0 +1,672 @@
+SELJUK ARTS OF WAR REFERENCE
+Source: Seljuk Playbook (Background Book), pp. 24-35, paired with card text.
+Each card has a top half (Event, no Lord indicator) and a bottom half (Capability, with Lord indicator).
+Clarifications from the playbook are integrated and trump the printed card text where they conflict.
+An asterisk (*) on a card name denotes a once-per-game / specially-tracked card.
+ 
+================================================================
+ROMAN CARDS
+================================================================
+ 
+----------------------------------------------------------------
+R1. FLOODED RIVER CROSSING* / IMPERIAL FORTRESS CONSTRUCTION
+----------------------------------------------------------------
+EVENT - Flooded River Crossing*
+Alp Arslan immediately undergoes Wastage 3 times (mark).
+If already marked, 1 Seljuk Lord -1 Lordship this Muster (Seljuk choice) instead.
+ 
+Clarification. The Seljuk player decides on the Wastage. If after executing a Wastage on Alp Arslan he does not qualify for further Wastage (because he only has 1 of each Asset or Capability), the Event effect ends; he is never forced to remove an Asset if he only has a single Asset of each type or Capability card. When using the "if already marked" effect, the selected Lord must be one able to Muster this turn, if possible.
+ 
+CAPABILITY - Imperial Fortress Construction (Any)
+Put 2 Fort markers on this card. As a Command action, this Lord may place a Fort marker on an unfortified Locale (including Ruined) in the Roman Empire (1.3.1).
+ 
+Clarification. The Fort markers are placed when the Capability is Levied. The Lord does not have to be at the Locale in which he uses this card to place a Fort. A Seljuk Ruins marker is removed from the Locale when a Fort marker is placed (adjust VP). If both Fort markers are on the map, this Capability has no effect.
+ 
+----------------------------------------------------------------
+R2. MOUNTAIN AMBUSH / OGHUZ MERCENARIES
+----------------------------------------------------------------
+EVENT - Mountain Ambush
+HOLD: May play in Battle if that Locale is adjacent to Pass. Round 1, Roman Walls 1-3 against Missiles.
+ 
+Clarification. A Locale is adjacent to a Pass if one of its connected Ways is a Pass. The map's two holding boxes do not qualify as Pass even though March from them takes the entire card.
+ 
+CAPABILITY - Oghuz Mercenaries (Any)
+Add the Oghuz Mercenaries special Vassal to this Lord's mat.
+ 
+Clarification. After spending the Lordship to Muster this Capability and place the special Vassal marker in the Assets section of his Lord mat, it takes an additional Lordship to Muster the Vassal to the Lord's Forces and receive the unit. If this card is discarded, remove the Vassal Force(s).
+ 
+----------------------------------------------------------------
+R3. SUMMER HEAT / STEELED RESOLVE
+----------------------------------------------------------------
+EVENT - Summer Heat
+HOLD: Play in Summer after Seljuks reveal Command card. That Lord is Command 1.
+ 
+Clarification. This effect takes place before any Command actions are performed after revealing the Command card. This card does not prevent Commands that cost an entire card like Tax, March from a holding box, etc.
+ 
+CAPABILITY - Steeled Resolve (Any)
+This Lord's Infantry have Armor 1-3 vs. Horse in any 1 Round of Battle (mark).
+ 
+Clarification. The Armor 1-3 effect applies to both Missile and Melee. Account for Hits from the Javelins Capability separately from Horse Missiles during Battle when using this Capability. Use the Capability's marker to indicate this card's effect.
+ 
+----------------------------------------------------------------
+R4. SULTAN'S HORSE IS KILLED / PRESSED LEVY SERVICE
+----------------------------------------------------------------
+EVENT - Sultan's Horse Is Killed
+HOLD: Play where Alp Arslan Besieging Stronghold with >1 Siege marker: remove 1 Siege from Locale. OR play during Storm to reduce number of Rounds by 1.
+ 
+Clarification. If used for the first effect, this card is played during Campaign when it is the Roman player's turn. If using for the second effect, it is played during the Play Events step of Storm. For either choice, the card can only be played on a Locale that has more than 1 Siege marker where Alp Arslan is located.
+ 
+CAPABILITY - Pressed Levy Service (ALL)
+Romans may keep 1 Unpaid Thema's Levied Themata with Lord at end of each Campaign.
+ 
+Clarification. The Lord may keep all Levied Themata Service Markers from the chosen Thema at no cost. This Capability is not attached to any Lord and is placed at the board edge. Use the Capability marker to indicate this card's effect.
+ 
+----------------------------------------------------------------
+R5. FATIMID CONFLICT / NORMAN HEAVY CAVALRY
+----------------------------------------------------------------
+EVENT - Fatimid Conflict
+Shift any 1 Seljuk cylinder or Service of Unbesieged Lord 1 Calendar box.
+ 
+Clarification. This shift can be in any direction, Roman player's choice.
+ 
+CAPABILITY - Norman Heavy Cavalry (Robert Crépin and Roussel de Bailleul)
+This Lord may reroll 1 Norman Knights' Armor each Missiles AND Melee step.
+ 
+Clarification. The reroll may be used on a different unit in Missiles and Melee. It is two rerolls: one during Missiles, and one during either Horse or Infantry Melee (not both).
+ 
+----------------------------------------------------------------
+R6. MICHAEL ATTALEIATES / CENTRALIZED ADMINISTRATION
+----------------------------------------------------------------
+EVENT - Michael Attaleiates
+HOLD: Play on Romanos during Muster for Lordship +1.
+ 
+Clarification. This card is played at any time during the Roman Muster phase.
+ 
+CAPABILITY - Centralized Administration (Any, except Chatatourios, Robert Crépin, and Roussel de Bailleul)
+This Lord beginning his activation inside the Roman Empire with a Supply Route gets +1 Command.
+ 
+Clarification. "Inside the Roman Empire" means beginning his activation at a Locale to the west of the border with the Sultanate, regardless of who controls that Locale. This +1 Command applies even if that Lord leaves the Roman Empire during his activation. Supply Routes are defined in 4.4.1.
+ 
+----------------------------------------------------------------
+R7. BASIL ALOUSIANOS TRICKS THE SULTAN* / EMPEROR'S RETINUE
+----------------------------------------------------------------
+EVENT - Basil Alousianos Tricks the Sultan*
+HOLD: Play as Roman Stronghold Surrenders on roll of 3 or less. Do not place Conquered; replace all Siege with Bypass (mark).
+If marked, discard and draw new event.
+ 
+Clarification. "Surrender on 3 or less" means the die roll needed to cause a Surrender (i.e., the Locale has some combination of 3 or more Siege and Ravaged markers). This Event cannot be played if there is a combination of four Siege + Ravaged markers at the Locale.
+ 
+CAPABILITY - Emperor's Retinue (Romanos Diogenes)
+Add the Emperor's Retinue special Vassal to this Lord's mat.
+Vassal contents: 1x Varangian Guard, 1x Hetaireia, Service 1.
+ 
+Clarification. After spending the Lordship to Muster this Capability and place the special Vassal marker in the Assets section of his Lord mat, it takes an additional Lordship to Muster the Vassal to the Lord's Forces and receive the units. If this card is discarded, remove the Vassal Force(s).
+ 
+----------------------------------------------------------------
+R8. ROMAN PERSUASION / MARTIAL SOCIETY
+----------------------------------------------------------------
+EVENT - Roman Persuasion
+Add your Treachery card to this Season's Command Deck during Plan phase (4.1). Seljuk must add 1 No Command.
+ 
+Clarification. The Treachery card is in addition to the normal Command cards called for by the Season. If both players add their Treachery card in the same turn, both players also still add a No Command to the deck (meaning there will be two extra cards: the Treachery and a No Command) in each.
+ 
+CAPABILITY - Martial Society (Robert Crépin and Roussel de Bailleul)
+This Lord is Command +1.
+ 
+Clarification. This effect only lasts while the card is Mustered as a Capability.
+ 
+----------------------------------------------------------------
+R9. WINTER CAMPAIGN / PROVINCIAL BUREAUCRACY
+----------------------------------------------------------------
+EVENT - Winter Campaign
+HOLD: Play in Winter before Bounty to activate a Roman Lord.
+ 
+Clarification. The Roman Lord may be Besieged. If both players play Winter Campaign / Winter March at the same time, the Seljuk player goes first, followed by the Roman player.
+ 
+CAPABILITY - Provincial Bureaucracy (Any Commander: Romanos Diogenes or Manuel Komnenos)
+This Lord's first Tax Command outside Constantinople each Campaign does not place Ravaged.
+ 
+Clarification. The Lord may Tax the same Locale a second time on a future Command card this Season, but if it is not his Seat, it will place a Ravaged marker.
+ 
+----------------------------------------------------------------
+R10. AFŞIN MURDERS SELJUK OFFICER* / RECONQUISTA & SICILIAN COMMANDERS
+----------------------------------------------------------------
+EVENT - Afşin Murders Seljuk Officer*
+Afşin Beg's Fealty is 2 (mark).
+If already marked, 1 Seljuk Lord -1 Lordship this Muster (Seljuk choice) instead.
+ 
+Clarification. His Fealty will be considered 2 for all game effects. When using the "if already marked" effect, the selected Lord must be one able to Muster this turn, if possible.
+ 
+CAPABILITY - Reconquista & Sicilian Commanders (Robert Crépin and Roussel de Bailleul)
+This Lord's Lordship +1.
+ 
+Clarification. This effect only lasts while the card is Mustered as a Capability.
+ 
+----------------------------------------------------------------
+R11. CHRYSOSKOULOS COUNSELS THE COURT / KLIBANOPHOROI
+----------------------------------------------------------------
+EVENT - Chrysoskoulos Counsels the Court
+If Arisighi Roman ally, Seljuks discard 1 random Held card.
+ 
+Clarification. If the Seljuk player has no Hold cards, there is no effect.
+ 
+CAPABILITY - Klibanophoroi (Any)
+This Lord's Tagmata have Armor 1-4.
+ 
+Clarification. This effect only lasts while the card is Mustered as a Capability. Armor 1-4 is against both Missiles and Melee. This increased Protection is not used for Losses after Battle.
+ 
+----------------------------------------------------------------
+R12. AFŞIN RECALLED / EMPRESS EUDOKIA MAKREMBOLITISSA
+----------------------------------------------------------------
+EVENT - Afşin Recalled
+Shift Afşin Beg's cylinder or Service 1 Calendar box.
+ 
+Clarification. This shift can be in either direction, Roman player's choice.
+ 
+CAPABILITY - Empress Eudokia Makrembolitissa (ALL)
+Make the Empress token available for use each Call to Arms (3.5.1.2).
+ 
+Clarification. The Empress token begins play on this card when Mustered. This Capability is not attached to any Lord and is placed at the board edge.
+ 
+----------------------------------------------------------------
+R13. THRAKION REINFORCEMENTS / SYNDOSIS
+----------------------------------------------------------------
+EVENT - Thrakion Reinforcements
+Return a Themata Service Marker previously removed from play to its home Thema.
+ 
+Clarification. This returning Themata Service Marker must be placed in its Thema box, not on a Lord mat or inside a Besieged Stronghold. Players are advised to create a pile beside the board for Themata for game effects that remove or return them to play.
+ 
+CAPABILITY - Syndosis (Andronikos Doukas and Chatatourios)
+This Lord's Militia have Armor 1-2.
+ 
+Clarification. This effect only lasts while the card is Mustered as a Capability. Armor 1-2 is against both Missiles and Melee. This increased Protection is not used for Losses after Battle.
+ 
+----------------------------------------------------------------
+R14. ALEPPO INDEPENDENCE / IMPERIAL COFFERS
+----------------------------------------------------------------
+EVENT - Aleppo Independence
+Unless Aleppo Conquered (by either side), it is Friendly to both sides (mark), but neither may Withdraw inside. Aleppo can now yield Seljuk auto victory (5.2).
+ 
+Clarification. If Aleppo is already Conquered when this Event is revealed, the Event has no effect. In this instance, this Event does not trigger the ability for the Seljuk player to win the game during Winter for holding Aleppo.
+ 
+CAPABILITY - Imperial Coffers (ALL)
+Discard during Arts of War if Roman adjacent to Seljuk-allied Robert or Roussel: make 1 Loyalty Check against that Lord.
+May not be Levied if neither is Seljuk-allied.
+ 
+Clarification. Any Roman Lord may be the one adjacent in order to discard this Capability for its effect. Discard this card after both players have drawn their Events in the Arts of War phase. Discard this card for its effect only after both players have resolved their Events. This Capability is not attached to any Lord and is placed at the board edge.
+ 
+----------------------------------------------------------------
+R15. EMIR OF ALEPPO SPURNS ALP ARSLAN* / FEALTY TO THE BASILEUS
+----------------------------------------------------------------
+EVENT - Emir of Aleppo Spurns Alp Arslan*
+If Aleppo Seljuk Conquered and no Siege marker, place Independent Aleppo. If already present, place Roman Conquered instead. Adjust VP (mark).
+If already marked (or no event effect), discard and draw new Event instead.
+ 
+Clarification. The Event has no effect (discard and draw a new one) if any of the following is true: an Enemy Seljuk Lord is present in Aleppo when this Event is revealed; Aleppo is Roman Conquered. "If already present" means the Independent Aleppo marker is already on the map. Once this Event occurs, either by placing the Independent Aleppo marker or causing Aleppo to become Roman Conquered, its once-per-game effect is considered triggered (mark the Calendar) and it cannot occur again.
+ 
+CAPABILITY - Fealty to the Basileus (Any)
+This Lord may choose not to return to Seat in Winter.
+ 
+Clarification. The Lord may stay in his current Locale, even if Besieging a Stronghold. If he chooses to return, he may not return to another Lord's Seat, another Locale, etc.
+ 
+----------------------------------------------------------------
+R16. ANGLO-SAXON EXILES / ARMENIAN GARRISONS
+----------------------------------------------------------------
+EVENT - Anglo-Saxon Exiles
+If available, add 1 Varangian Guard unit to any Roman Lord mat (not Robert or Roussel) if he has no Varangian Guard.
+ 
+Clarification. If neither of the two Varangian Guard are available (because both units are already with a Lord), or there are no Roman Lords who are not Robert or Roussel in play, this Event has no effect.
+ 
+CAPABILITY - Armenian Garrisons (ALL)
+All Roman-conquered Strongholds outside Roman Empire (1.3.1) use both Seljuk and Roman Garrison units.
+ 
+Clarification. Read this literally: when generating Garrison units, receive the units from both sides of the Garrisons chart (e.g., if a Fort, receive 2 Militia and 1 Infantry). This Capability is not attached to any Lord and is placed at the board edge.
+ 
+----------------------------------------------------------------
+R17. UNPREDICTABLE WEATHER / SCHOLAI
+----------------------------------------------------------------
+EVENT - Unpredictable Weather
+This Campaign, if Spring or Autumn, Passes cannot be used for Supply, March, Avoid Battle, or Retreat. If Summer, Plan stack (4.1) is 9 cards. Seljuk player must use 1 No Command.
+ 
+Clarification. The enemy player adding a No Command happens only if this event occurs in Summer.
+ 
+CAPABILITY - Scholai (Romanos Diogenes and Andronikos Doukas)
+Add the Scholai Service Marker to this Lord's mat.
+Vassal contents: 1x Hetaireia, Service 1.
+ 
+Clarification. After spending the Lordship to Muster this Capability and place the special Vassal marker in the Assets section of his Lord mat, it takes an additional Lordship to Muster the Vassal to the Lord's Forces and receive the unit. If this card is discarded, remove the Vassal Force(s).
+ 
+----------------------------------------------------------------
+R18. LOCAL SCOUTS / ICON OF THE VIRGIN MARY
+----------------------------------------------------------------
+EVENT - Local Scouts
+HOLD: Play as Enemy Avoids Battle. Enemy chooses 1 Avoiding Lord to Battle or Withdraw instead.
+ 
+Clarification. The other Enemy Lords not selected must follow through with the original Avoid Battle decision. Choosing Withdraw may only occur at a Friendly Stronghold (except a Friendly Aleppo). Resolve the Avoid Battle before Battle begins.
+ 
+CAPABILITY - Icon of the Virgin Mary (Any)
+Discard this card when calculating Losses after Battle: this Lord's routed units recover per armor, regardless of situation.
+ 
+Clarification. "Regardless of situation" means ignoring any penalties to Losses after Battle, the effects of other cards, or whether or not the Lord discarding the Capability Conceded the Field. Use of this card always guarantees the Lord may roll against Routed units' Protection.
+ 
+----------------------------------------------------------------
+R19. RESILIENT AGRICULTURE / NOMISMA DEBASED*
+----------------------------------------------------------------
+EVENT - Resilient Agriculture
+Remove 2 Ravaged Markers from the Roman Empire (1.3.1).
+ 
+Clarification. Only Seljuk Ravaged markers may be removed. The Roman player may not choose Ravaged markers in the Fatimid Caliphate. Remove as many as possible, and removal is mandatory.
+ 
+CAPABILITY - Nomisma Debased* (ALL)
+Discard during Pay step of Levy to shift all Roman Service 1 Calendar box. Non-Commander Roman Lords may not Tax for rest of game (mark).
+ 
+Clarification. This Capability can only be triggered once per game. The Roman player may pay none, some, or all of their Lords with Coin or Loot before discarding this card for its effect. Commander Lords (Romanos Diogenes and Manuel Komnenos) are exempt from the Tax prohibition and may continue to Tax. This Capability is not attached to any Lord and is placed at the board edge.
+ 
+----------------------------------------------------------------
+R20. ARMENIAN RESISTANCE / SIEGE WEAPONRY
+----------------------------------------------------------------
+EVENT - Armenian Resistance
+If Khliat, Manzikert, or Arkesh is Seljuk friendly, choose one and place Roman Conquered Marker. Adjust VP.
+ 
+Clarification. If the chosen listed Locale has a Seljuk Lord present, the Seljuk player immediately places a Siege or Bypass marker there (Seljuk choice). If there is a Strategic Objective marker at this Locale, return it to available (do not place it in Constantinople as VP).
+ 
+CAPABILITY - Siege Weaponry (Any, except Robert Crépin and Roussel de Bailleul)
+This Lord unrouted at Storm reduces Enemy Walls -1.
+ 
+Clarification. This effect only persists while the Lord is Unrouted; if he becomes Routed during the Storm, enemy Walls return to their normal value. This Capability is also in effect if the Lord is in Reserve.
+ 
+----------------------------------------------------------------
+R21. NOMADIC TRIBES GO ROGUE / BARDOUKIA
+----------------------------------------------------------------
+EVENT - Nomadic Tribes Go Rogue
+HOLD: Play before Battle or Storm to remove up to 2 Turkic Horse units at the Active Lord's Locale from play.
+ 
+Clarification. The removed units are eliminated immediately, with no roll to recover as after Battle. This event can affect a Besieged Lord, or a Lord not taking part in the Battle. This can occur to a Lord who only has two Turkic Horse units, thereby causing a Disband.
+ 
+CAPABILITY - Bardoukia (Any)
+This Lord's Tagmata inflict -1 to target armor during each Melee Strike step of Battle.
+ 
+Clarification. The recipient of Bardoukia attacks is advised to roll Protection against these hits separately from other hits during the same Melee step.
+ 
+----------------------------------------------------------------
+R22. ASSASSINATION PLOT IN TYRE / CAVALRY SUPPLY LINE RAIDERS
+----------------------------------------------------------------
+EVENT - Assassination Plot in Tyre
+Unless Ibn Khan within 2 Locales of Aleppo, permanently Disband him. Otherwise, shift his Service 1 Calendar box.
+ 
+Clarification. Being 2 Locales away from Aleppo is considered "within" (for example, Manbij, Artah, Laodikeia, and Jazira). This shift can be in any direction, Roman player's choice, and may cause Disband. Having only Turkic Horse does not help to be considered closer.
+ 
+CAPABILITY - Cavalry Supply Line Raiders (Any)
+During Wastage, 1 Enemy Lord adjacent to This Lord undergoes Wastage twice.
+ 
+Clarification. The second occurrence of Wastage caused by this card does not happen if after the first Wastage procedure, the enemy Lord does not qualify for triggering Wastage (i.e., they only have a single Asset of all types on their Lord mat). In the case of multiple adjacent Lords, the Roman player chooses which Lord suffers the Wastage.
+ 
+----------------------------------------------------------------
+R23. KLEISOURAI / ALAKATIA
+----------------------------------------------------------------
+EVENT - Kleisourai
+HOLD: Play when Seljuk Lord Marches, Avoids Battle, or Retreats across Pass. Each moving Seljuk Lord takes 1 Hit (as if in Battle, no Losses roll).
+ 
+Clarification. The Seljuk player still gets to roll Protection for the unit assigned the Hit, but if the Protection roll fails, the unit is eliminated with no roll to recover as after a Battle.
+ 
+CAPABILITY - Alakatia (Any)
+This Lord with 2 Infantry in Battle adds 1 extra Missile Hit with -1 to target armor.
+ 
+Clarification. The defender should roll the extra Hit from Alakatia separately in most cases since it has the same special anti-armor effect as Garrison Missiles. If during a subsequent round of the same Battle the Lord has less than 2 Unrouted Infantry, he does not strike with the extra Hit (i.e., the Capability does not take effect). A Lord with more than 2 Infantry does not generate extra Hits (e.g., 4 Infantry does not cause 2 Hits).
+ 
+----------------------------------------------------------------
+R24. CAVALRY CHARGE / MULES
+----------------------------------------------------------------
+EVENT - Cavalry Charge
+HOLD: Play on 1 Roman Lord in Battle. Round 1, that Lord's Horse Melee precedes all Missiles.
+ 
+Clarification. The Horse units that Melee Strike before Missiles skip their usual Melee Strike phase (after Missiles) that round. If this card is played at the same time as Command Confusion, Cavalry Charge takes precedence.
+ 
+CAPABILITY - Mules (Any)
+This Lord's first March across Pass spends only 1 Command even if Laden.
+ 
+Clarification. This effect applies once each Command card. This effect does not occur for this Lord if stacked under a Lieutenant or being moved by a Commander as part of a Group March.
+ 
+----------------------------------------------------------------
+R25. HONORS OF WAR / PSILOI
+----------------------------------------------------------------
+EVENT - Honors of War
+HOLD: Play during Siege on Fort; instead of rolling, Fort automatically Surrenders. Take no Spoils.
+ 
+Clarification. The active Lord must still take a Siege action in order for this card to be played.
+ 
+CAPABILITY - Psiloi (ALL)
+Roman Militia have Missiles x½.
+ 
+Clarification. The effect of this card applies to all non-garrison Roman Militia in play (Roman Garrison militia already have Missile x½ with -1 to Armor as default). This Capability is not attached to any Lord and is placed at the board edge.
+ 
+ 
+================================================================
+SELJUK CARDS
+================================================================
+ 
+----------------------------------------------------------------
+S1. SURPRISE / LAMELLAR ARMOR (1 of 2 copies)
+----------------------------------------------------------------
+EVENT - Surprise
+HOLD: Play upon Besieging an enemy Fort or Town where no other Lord. Place 2 Siege there (not 1), then Storm.
+ 
+Clarification. The Roman player still gets to place his Themata (if any) as normal before the Siege markers are placed.
+ 
+CAPABILITY - Lamellar Armor (Emir of Arran, Alp Arslan, and Artuk Beg)
+This Lord's Turkic Horse have Armor 1-3 until 3 Rout.
+ 
+Clarification. Immediately upon 3 Turkic Horse units Routing from this Lord, the effect of the Capability no longer applies for the remainder of that Battle. If this Lord has less than 3 Turkic Horse units on their mat, this Capability will always be in effect. (S1 and S2 each carry a copy of this Capability.)
+ 
+----------------------------------------------------------------
+S2. MOUNTAIN AMBUSH / LAMELLAR ARMOR (2 of 2 copies)
+----------------------------------------------------------------
+EVENT - Mountain Ambush
+HOLD: May play in Battle if that Locale is adjacent to Pass. Round 1, Seljuk Walls 1-3 against Missiles.
+ 
+Clarification. A Locale is adjacent to a Pass if one of its connected Ways is a Pass. The map's two holding boxes do not qualify as Pass even though March from them takes the entire card.
+ 
+CAPABILITY - Lamellar Armor (Emir of Arran, Alp Arslan, and Artuk Beg)
+Identical to S1 Bottom. See S1 above.
+ 
+----------------------------------------------------------------
+S3. THE BETRAYAL OF ANDRONIKOS DOUKAS* / STEPPE RAIDERS
+----------------------------------------------------------------
+EVENT - The Betrayal of Andronikos Doukas*
+HOLD: Play after Reposition step in Battle. If more than one enemy Lord, move a non-Commander Roman Lord to Reserve.
+ 
+Clarification. The Roman Lord selected must be a Lord in the left, right, or center position of array, and he may rejoin the Battle in a subsequent round during Reposition. This Event can only occur once per game. Place the appropriate marker on the Calendar in the turn it is played. If the card is drawn as an Event in future turns, treat it as No Event and return it to the Arts of War deck.
+ 
+CAPABILITY - Steppe Raiders (Sanduq al-Turki, Arisighi, and Ibn Khan)
+This Lord may Ravage adjacent Locales where no enemy Lord if he has Turkic Horse.
+ 
+Clarification. Adjacent includes across a Pass. These adjacent Ravages may be defended per the normal rules, depending on how many Command actions were spent.
+ 
+----------------------------------------------------------------
+S4. SUMMER HEAT / SHOCK TACTICS (1 of 2 copies)
+----------------------------------------------------------------
+EVENT - Summer Heat
+HOLD: Play in Summer after Romans reveal Command card. That Lord is Command 1.
+ 
+Clarification. This effect takes place before any Command actions are performed after revealing the Command card. This card does not prevent Commands that cost an entire card like Tax, March from a holding box, etc.
+ 
+CAPABILITY - Shock Tactics (Any)
+Half of this Lord's Turkic Horse have Melee x½ (round up).
+ 
+Clarification. Because you round up when determining number of units, a single Turkic Horse unit will still strike at x½ and do 1 Hit with this Capability. (S4 and S6 each carry a copy of this Capability.)
+ 
+Errata (Playbook p.14). Half (rounded up) of Alp Arslan's 3 Turkic Horse means 2 units doing x½ Hits each, for a total of 1 Hit (after rounding).
+ 
+----------------------------------------------------------------
+S5. SIEGE OF BARI* / FORCED CONSCRIPTION
+----------------------------------------------------------------
+EVENT - Siege of Bari*
+Remove from play 2 Unlevied Themata (mark).
+If already marked, 1 Seljuk Lord +1 Lordship this Muster (Seljuk choice) instead.
+ 
+Clarification. Unlevied Themata are Unbesieged Themata Service Markers not currently located on the Roman Commander's mat or already removed from play.
+ 
+CAPABILITY - Forced Conscription (Sav-Tekin)
+Each Muster phase, this Lord at Unbesieged Friendly Locale may restore 1 of his Lost units.
+ 
+Clarification. This is in addition to his normal Muster actions using his Lordship. The recovered unit must be either one of his Levied Vassals or his original Forces.
+ 
+----------------------------------------------------------------
+S6. COMMAND CONFUSION / SHOCK TACTICS (2 of 2 copies)
+----------------------------------------------------------------
+EVENT - Command Confusion
+HOLD: Play on Roman Lord in Battle. His Missiles and Melee each Strike second.
+ 
+Clarification. In each phase of Battle (missile and then melee), the affected Lord does his Hits after the Seljuk player's Lord(s) regardless of who is defending or attacking. If this card is played at the same time as Cavalry Charge, Cavalry Charge takes precedence.
+ 
+CAPABILITY - Shock Tactics (Any)
+Identical to S4 Bottom. See S4 above.
+ 
+----------------------------------------------------------------
+S7. DESERTERS / TRUSTED COMMANDER
+----------------------------------------------------------------
+EVENT - Deserters
+Remove from play 1 Themata from a Thema adjacent to the Sultanate.
+ 
+Clarification. Remove a Themata Service Marker from a border Thema (Iberia, Mesopotamia, Melitene, Antiocheia), not a levied Themata Service Marker on the Roman Commander's mat.
+ 
+CAPABILITY - Trusted Commander (Emir of Arran, Artuk Beg, and Sav-Tekin)
+This Lord may March as Commander with 1 (only) other Seljuk Lord.
+ 
+Clarification. This Capability does not confer the "Commander" icon or status as found on Alp Arslan's mat; it is for March only.
+ 
+----------------------------------------------------------------
+S8. CALIPHATE MERCHANT FINANCING / MARWANID ALLIANCE
+----------------------------------------------------------------
+EVENT - Caliphate Merchant Financing
+1 Seljuk Lord may exchange any of his Carts for Coin or vice versa.
+ 
+Clarification. This effect takes place immediately after the Event is revealed, and the chosen Lord may exchange none, some, or all of his Carts for an equal number of Coins. The chosen Seljuk Lord may only use this effect for his own Carts on his mat.
+ 
+CAPABILITY - Marwanid Alliance (ALL)
+May now spend Coin to create special Seljuk Seats during Call to Arms (3.5.1.1).
+ 
+Clarification. Use the Seljuk Seat markers on the map as a reminder of this process (3.5.1.1). This Capability is not attached to any Lord and is placed at the board edge.
+ 
+----------------------------------------------------------------
+S9. ALP ARSLAN'S MOUSTACHE / IMPERIAL RIVALRY
+----------------------------------------------------------------
+EVENT - Alp Arslan's Moustache
+This Campaign, Alp Arslan Forage rolls -2.
+ 
+Clarification. This effect only applies to Alp Arslan, and not Lords co-located at his Locale.
+ 
+CAPABILITY - Imperial Rivalry (ALL)
+Each Levy, Romans must attempt once to Muster Andronikos Doukas if Ready.
+ 
+Clarification. This attempt can come from any Lord's Lordship action as chosen by the Roman player in whatever order they choose. This Capability is not attached to any Lord and is placed at the board edge.
+ 
+----------------------------------------------------------------
+S10. EASTERN REBELLIONS DEFEATED / ARTUKID LEGACY
+----------------------------------------------------------------
+EVENT - Eastern Rebellions Defeated
+HOLD: Play on Alp Arslan during Muster for Lordship +1.
+ 
+Clarification. This card is played at any time during the Seljuk Muster phase.
+ 
+CAPABILITY - Artukid Legacy (Artuk Beg)
+This Lord may always use Mayyafariqin and Amid as Supply Source and for returning Loot during Bounty (4.7.6).
+ 
+Clarification. With this Capability, Artuk Beg may treat these two cities as Seats for Supply Route and returning Loot during Winter Bounty purposes for himself only, regardless of whether Marwanid Alliance is in effect. Loot from Bounty is placed in the Mosul and Baghdad Holding Box as normal.
+ 
+----------------------------------------------------------------
+S11. NORMAN SCHEMING / JAVELINS
+----------------------------------------------------------------
+EVENT - Norman Scheming
+If Roussel or Robert Seljuk Ally, Romans discard 1 random Held card.
+ 
+Clarification. If the Roman player has no Held cards, there is no effect.
+ 
+CAPABILITY - Javelins (Sav-Tekin and Emir of Arran)
+This Lord's Infantry have Missiles x1 in any 1 Battle Round.
+ 
+Clarification. The player chooses which round of battle to use the Capability (use the Javelins marker to indicate when it's been spent). Javelins can be used in every Battle (but not Storm). Account for Hits from the Javelins Capability separately from Horse Missiles during Battle when Steeled Resolve Capability is present.
+ 
+----------------------------------------------------------------
+S12. DOUKAI COURT INTRIGUES / THE SICKLE OF ANATOLIA
+----------------------------------------------------------------
+EVENT - Doukai Court Intrigues
+Shift any 1 Roman cylinder or Service 1 Calendar box.
+ 
+Clarification. This shift can be in any direction, Seljuk player's choice.
+ 
+CAPABILITY - The Sickle of Anatolia (Afşin Beg)
+This Lord is Command +1.
+ 
+Clarification. This effect lasts only while the card is levied. This card allows only one more Command action, not a Command Action that requires All plus an additional Command.
+ 
+----------------------------------------------------------------
+S13. PEACE OFFERING / GIFTS EXCHANGED
+----------------------------------------------------------------
+EVENT - Peace Offering
+This Season, no Approach, Storm, or Siege unless that Lord pays 1 Coin that Command card. Add Gifts Exchanged (this card) to Seljuk Levied Capabilities.
+ 
+Clarification. The Coin is paid immediately before undertaking one of the listed prohibited Command actions, but those Command actions may be taken at any point during the acting Lord's Command card. Lords Besieging a Locale may remain Besieging that Locale but cannot take the Siege Command unless a Coin is paid under normal payment rules (e.g., the Coin can be from the Besieging Lord or from Alp Arslan if he is Unbesieged and on the map).
+ 
+CAPABILITY - Gifts Exchanged (ALL)
+Muster only if Friendly and Enemy Lords adjacent. Put 4 Coin on this card. Seljuks during their Command may place 1 Coin here on an Unbesieged Lord. Then Roman player does the same.
+Discard at end of season.
+ 
+Clarification. If the Seljuks choose to take a Coin, they must allow the Roman player to do the same; in this way each player can get at most 2 Coins from this card. Once it is empty of Coins, it stays in play until the end of the Season. Any Unbesieged Lord can receive the Coin. This Capability is not attached to any Lord and is placed at the board edge.
+ 
+----------------------------------------------------------------
+S14. MANUEL KOMNENOS FALLS ILL / SUPPORT FROM ALEPPO
+----------------------------------------------------------------
+EVENT - Manuel Komnenos Falls Ill
+Shift Manuel Komnenos's Service or cylinder 1 Calendar box.
+ 
+Clarification. This shift can be in either direction, Seljuk player's choice.
+ 
+CAPABILITY - Support from Aleppo (Ibn Khan)
+This Lord Command +1 on die roll of 1-3 each of his Command cards.
+Discard if this Lord Ravages Aleppo.
+ 
+Clarification. Roll the die before taking any Command actions each time his Command card is revealed.
+ 
+----------------------------------------------------------------
+S15. THEMATIC TROOPS DESERT / NIZAM AL-MULK ADMINISTRATES THE SULTANATE
+----------------------------------------------------------------
+EVENT - Thematic Troops Desert
+Alp Arslan in a Thema removes 1 Levied or Unlevied Themata Service marker there.
+ 
+Clarification. The Seljuk player chooses from among the Themata Service Markers, either Levied to the Roman Commander's mat or Unlevied (even Besieged), to remove from play.
+ 
+CAPABILITY - Nizam al-Mulk Administrates the Sultanate (Any)
+This Lord may choose not to return to Seat in Winter.
+ 
+Clarification. The Lord may stay in his current Locale, even if Besieging a Stronghold. If he chooses to return, he may not return to another Lord's Seat, another Locale, etc.
+ 
+----------------------------------------------------------------
+S16. NORMAN EXTORTION / PARTHIAN SHOT
+----------------------------------------------------------------
+EVENT - Norman Extortion
+Add your Treachery card to this Season's Command Deck during Plan phase (4.1). Roman must add 1 No Command.
+ 
+Clarification. The Treachery card is in addition to the normal Command cards called for by the Season. If both players add their Treachery card in the same turn, both players also still add a No Command to the deck (meaning there will be two extra cards: the Treachery and a No Command) in each. Only one Treachery Event can occur per Arts of War phase. If both are drawn, the second is considered No Event and does not occur.
+ 
+CAPABILITY - Parthian Shot (Any)
+This Lord's Turkic Horse select targets during Missile phase in Battle.
+ 
+Clarification. This Capability does not apply in Storm.
+ 
+----------------------------------------------------------------
+S17. UNPREDICTABLE WEATHER / DEEP RAIDS
+----------------------------------------------------------------
+EVENT - Unpredictable Weather
+This Campaign, if Spring or Autumn, Passes cannot be used for Supply, March, Avoid Battle, or Retreat. If Summer, Plan stack (4.1) is 9 cards. Roman player must use 1 No Command.
+ 
+Clarification. The enemy player adding a No Command happens only if this event occurs in Summer.
+ 
+CAPABILITY - Deep Raids (Any)
+In Call to Arms, Disband this Lord in Ikonion for 2 VP or Western Anatolia for 3 VP (place Loot in Mosul and Baghdad Holding Box).
+ 
+Clarification. The Loot placed in the Mosul and Baghdad box reflects the VP earned from this card.
+ 
+----------------------------------------------------------------
+S18. WINTER MARCH / UNSTOPPABLE TURKMEN
+----------------------------------------------------------------
+EVENT - Winter March
+HOLD: Play in Winter before Bounty to activate a Seljuk Lord.
+ 
+Clarification. The Seljuk Lord may be Besieged. If both players play Winter Campaign / Winter March at the same time, the Seljuk player goes first, followed by the Roman player.
+ 
+CAPABILITY - Unstoppable Turkmen (Any, except Robert Crépin and Roussel de Bailleul)
+Once per Command, this Lord may Bypass without stopping.
+ 
+Clarification. Laden March still costs the extra Command action. Battle still ends the Command card.
+ 
+----------------------------------------------------------------
+S19. NORMAN PAY REVOLT / BAGHDAD REINFORCEMENTS
+----------------------------------------------------------------
+EVENT - Norman Pay Revolt
+Add your Treachery card to this Season's Command Deck during Plan phase (4.1). Roman must add 1 No Command.
+ 
+Clarification. The Treachery card is in addition to the normal Command cards called for by the Season. If both players add their Treachery card in the same turn, both players also still add a No Command to the deck (meaning there will be two extra cards: the Treachery and a No Command) in each. Only one Treachery Event can occur per Arts of War phase. If both are drawn, the second is considered No Event and does not occur.
+ 
+CAPABILITY - Baghdad Reinforcements (Any, except Robert Crépin and Roussel de Bailleul)
+Each Muster phase, this Lord at Unbesieged Friendly Locale may restore 1 of his Lost units.
+ 
+Clarification. This restoration of a unit is free and does not cost a Lordship. The recovered unit must be either one of his Levied Vassals or his original Forces.
+ 
+----------------------------------------------------------------
+S20. ALP ARSLAN CONSOLIDATES POWER / ELITE GHULAM CAVALRY
+----------------------------------------------------------------
+EVENT - Alp Arslan Consolidates Power
+Lower this year's Seljuk Unity threshold by a number equal to permanently disbanded Seljuk Lords (mark).
+ 
+Clarification. If there are no permanently disbanded Seljuk Lords, this Event has no effect.
+ 
+CAPABILITY - Elite Ghulam Cavalry (Any, except Robert Crépin and Roussel de Bailleul)
+Add Ghulam special Vassal to this Lord's mat.
+ 
+Clarification. After spending the Lordship to Muster this Capability and placing the special Vassal marker in the Assets section of his Lord mat, it takes an additional Lordship to Muster the Vassal to the Lord's Forces and receive the unit.
+ 
+----------------------------------------------------------------
+S21. COMMON CULTURAL CAUSE / BRUTAL REPUTATION
+----------------------------------------------------------------
+EVENT - Common Cultural Cause
+HOLD: Play in Battle or Storm to remove up to 2 Turkic Horse Themata Service Markers and/or Turkic Horse units at the Active Lord's Locale from play.
+ 
+Clarification. The Active Lord may be Besieged. This can occur to a Lord who only has two Turkic Horse units, thereby causing a Disband.
+ 
+CAPABILITY - Brutal Reputation (Any)
+This Lord's Siege action may reroll 1 Surrender die.
+ 
+Clarification. Only one single die may be rerolled. The new roll must be kept.
+ 
+----------------------------------------------------------------
+S22. MASSACRE OF ORTHODOX CLERGY / TURKMEN SKIRMISHERS
+----------------------------------------------------------------
+EVENT - Massacre of Orthodox Clergy
+A Seljuk Lord at Enemy Locale adds 1 Loot.
+ 
+Clarification. The Loot may be obtained regardless of the Locale being Besieged.
+ 
+CAPABILITY - Turkmen Skirmishers (Sanduq al-Turki, Arisighi, and Ibn Khan)
+During Wastage, 1 Enemy Lord adjacent to This Lord undergoes Wastage twice.
+ 
+Clarification. The second occurrence of Wastage does not happen if after the first Wastage procedure, the enemy Lord does not qualify for triggering Wastage (i.e., they only have a single Asset of all types on their Lord mat). In the case of multiple adjacent Lords, the Seljuk player chooses which Roman Lord suffers the Wastage.
+ 
+----------------------------------------------------------------
+S23. REINFORCEMENTS DENIED / FORTIFIED GARRISONS
+----------------------------------------------------------------
+EVENT - Reinforcements Denied
+Shift 1 Roman Lord's Service 1 Calendar box.
+ 
+Clarification. This shift can be in either direction, Seljuk player's choice.
+ 
+CAPABILITY - Fortified Garrisons (ALL)
+Each Roman Storm, replace 1 Garrison Militia with Infantry.
+ 
+Clarification. This effect applies during the Array Lords / Play Events step of Storm and only occurs once per Storm (not once per round). This Capability is not attached to any Lord and is placed at the board edge.
+ 
+----------------------------------------------------------------
+S24. BAD OMENS / PRISONERS
+----------------------------------------------------------------
+EVENT - Bad Omens
+HOLD: Play on Seljuk Command card to inspect top 2 Roman Plan cards and replace them in either order.
+ 
+Clarification. This card must be played immediately after revealing a Seljuk Command card, before taking any Command actions.
+ 
+CAPABILITY - Prisoners (Any)
+This Lord in Winter Bounty may return 1 Loot beyond Carts.
+ 
+Clarification. A maximum of 1 excess Loot may be returned this way per Winter Bounty.
+ 
+----------------------------------------------------------------
+S25. MERCENARY DISCIPLINE FALTERS / MULES
+----------------------------------------------------------------
+EVENT - Mercenary Discipline Falters
+Each Roman Lord at Ravaged Locale suffers Wastage now.
+ 
+Clarification. This includes all Roman Lords at a Ravaged Locale, both friendly and enemy Ravaged markers.
+ 
+CAPABILITY - Mules (Any)
+This Lord's first March across Pass spends only 1 Command even if Laden.
+ 
+Clarification. This effect applies once each Command card. This effect does not occur for this Lord if stacked under a Lieutenant or being moved by a Commander as part of a Group March.

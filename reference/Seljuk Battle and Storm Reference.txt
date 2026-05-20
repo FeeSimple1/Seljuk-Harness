@@ -1,0 +1,655 @@
+================================================================
+SELJUK — BATTLE AND STORM PROCEDURE REFERENCE
+================================================================
+Source: Rules of Play sections 4.8-4.9, cross-checked against
+Seljuk_Errata_and_Clarifications.txt and the Playbook examples.
+Errata corrections applied inline.
+ 
+PRECEDENCE
+  Where this file and the Rules of Play or the Errata &
+  Clarifications differ, the Rules and the Errata govern.
+ 
+CONVENTIONS
+  "Attacker" = the Marching side that triggered the Battle.
+  "Defender" = the side already at the Locale.
+  Unit stats (Strike values, Protection ranges) are in the
+  Units and Strongholds reference file; this document covers
+  only the procedural flow.
+  All dice are standard d6.
+ 
+ 
+================================================================
+1. BATTLE (4.8)
+================================================================
+TRIGGER: When a Lord Approaches (4.3.4) an Unbesieged,
+Unbypassed Enemy Lord who does not Avoid Battle or Withdraw,
+a Battle ensues. All Unbesieged and Unbypassed Lords in the
+Locale must participate; others may not.
+NOTE: Storm (4.9) follows similar but distinct rules from
+field Battle.
+ 
+MARKER: Place the Battle/Storm marker at the Locale.
+ 
+ 
+----------------------------------------------------------------
+1.1  BATTLE ARRAY (4.8.1)
+----------------------------------------------------------------
+Players Array their Lords — cylinders on the Battle mat or
+mats on the table, as preferred.
+ 
+POSITIONING ORDER:
+  1. Attackers position their Lords.
+  2. Defenders position their Lords.
+ 
+FRONT ROW (up to 3 positions: Left, Center, Right):
+  - The Active Lord (whose Command card was revealed) MUST
+    start at Front Center.
+  - Attackers then fill Front Left and/or Right with one other
+    Lord in each, if any.
+  - Remaining Attacking Lords go in Reserve.
+  - The Defender MUST put one Lord directly opposite each
+    Front Attacking Lord, filling Center first, then Left and/or
+    Right, as able.
+  - Remaining Defending Lords go in Reserve.
+ 
+EVENTS:
+  Attacking then Defending sides may play Held Events that
+  specify "in Battle" or "in Storm", as applicable (3.1.3).
+  NOTE: If CAVALRY CHARGE and COMMAND CONFUSION are
+  both played in the same Battle, CAVALRY CHARGE takes
+  precedence.
+ 
+RELIEF SALLY (4.8.1):
+  When a side Approaches a Locale where it is also Besieged,
+  any Besieged Lords may join the Attack for no additional
+  Command actions.
+  - Array Sallying Attackers in a row behind the Defenders.
+  - Any Defending Lords in Reserve instead position opposite
+    Sallying Attackers as a Rearguard row.
+  - If no Rearguard, Sallying Lords fight Front Defenders as
+    if Flanking them all equally closely (4.8.2).
+  - Siegeworks (4.9.1) protect against Strikes by Sallying
+    Attackers only (round separately).
+  - If Attackers lose, Withdraw Sallying Lords back into the
+    Stronghold (4.8.3) and reduce Siege markers there to one
+    (4.9.2).
+ 
+ 
+----------------------------------------------------------------
+1.2  ROUNDS (4.8.2)
+----------------------------------------------------------------
+A Battle continues Round after Round until a side Concedes or
+all its Lords Rout. Each Round proceeds:
+  Step 1: Concede the Field?
+  Step 2: Reposition
+  Step 3: Strike (Missile, then Melee)
+NOTE: Some Battle Event effects vary by Round.
+ 
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+1.2.1  CONCEDE THE FIELD? (4.8.2)
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+At the start of each Round, Attacker then Defender may declare
+the Battle will end after this Round with that side as the loser
+but with diminished losses (4.8.3-4).
+NOTE: Battles last at least one Round (no Conceding in the
+first Round).
+ 
+PURSUIT MARKER: Place the Pursuit marker between the two
+sides, pointing toward the Conceding side. The Conceding side
+halves its Hits in this final Round (see Strike below).
+ 
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+1.2.2  REPOSITION (4.8.2)
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+In each Round AFTER the first, both sides reposition Lords in
+this order:
+ 
+  A. ROUT: Remove Routed Lords from the Battle Array. They
+     no longer occupy any position nor participate further until
+     Ending the Battle (4.8.3).
+ 
+  B. ADJUST ROWS (Relief Sally only): If all of any row
+     Routed:
+       - If no Sallying Lords remain, Rearguard becomes
+         Reserve.
+       - If no Rearguard, Sallying Lords Flank Defenders.
+       - If no Front Defenders, Rearguard faces about as
+         Reserve.
+ 
+  C. ADVANCE LORDS: Attacker then Defender may slide any
+     Unrouted Lords in Reserve into any empty Front positions
+     (one each).
+ 
+  D. CENTER: If a center position remains empty, first the
+     Attacker then the Defender must select and slide one of
+     that side's Lords from Left or Right Front to fill the
+     empty Front Center.
+ 
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+1.2.3  STRIKE (4.8.2)
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+Forces of each Lord Strike those of the Lord directly opposite,
+or if Flanking, the closest enemy Lord in that row.
+ 
+INITIATIVE — Strike steps proceed in this fixed order. Each
+lettered step is resolved fully (Hits, Protection, Rout) before
+the next step:
+ 
+  1. MISSILE STEPS
+     a. Defending Missiles
+     b. Attacking Missiles
+ 
+  2. MELEE STEPS
+     a. Defending Horse
+     b. Attacking Horse
+     c. Defending Foot
+     d. Attacking Foot
+ 
+Within each step, the Striking side chooses the order of
+Strike Lord by Lord (or Lord with Flanking Lord[s]). Then any
+Flanking Lords choose whether to absorb Strikes before
+opposed Lords. Resolve all Hits, Protection, and Rout before
+proceeding to the next step.
+ 
+FLANKING:
+  A Lord facing an enemy row with no enemy Lord directly
+  opposite Flanks and Strikes the closest enemy Lord in that
+  row. A Lord in Center Flanks Left and Right and chooses one
+  to Strike.
+  Total all Hits from Flanking Lords plus the directly opposed
+  Lord, then round up.
+  A Flanking Lord may absorb Hits from a Lord he Flanks if no
+  enemies Flank the target Lord.
+ 
+TOTAL HITS:
+  Each unit causes 1/2, 1, 2, or 3 Hits depending on Forces type
+  and Strike type — see the Forces table. Total all Hits for that
+  step, including Flanking plus directly opposing Lords, round
+  up. NOTE: Hits are automatic based on Forces; you do not
+  roll to generate Hits.
+ 
+  MIXED MISSILES: When Garrison Missiles or Missiles that
+  choose targets (PARTHIAN SHOT Capability) combine with
+  normal Missiles, round Hits in favor of the Garrison or
+  Capability Missiles.
+ 
+  PURSUIT: The Conceding side halves its total Hits against
+  the Pursuing side. Round all fractions up within each step.
+  EXCEPTION: A single Conceding Lord with ONLY Turkic
+  Horse units in his Forces at the start of the battle, facing
+  only a single opposing Lord, causes BOTH sides to be halved.
+ 
+APPLY HITS TO LORDS:
+  Hits apply to the Forces of the opposed, Flanked, or Flanking
+  Enemy Lord. A player with a Flanking Lord where no enemies
+  are Flanking the target chooses either the Flanking or
+  directly opposed Lord to take Hits.
+  Whenever a Lord Routs to create a new Flanking situation,
+  apply remaining Hits accordingly.
+ 
+ROLL WALLS (Storm/Sally only):
+  A Lord benefiting from any Walls or any Siege markers first
+  rolls dice equal to the total Hits just received in that step
+  BEFORE assigning any Hits to units.
+  Each roll within the Walls range specified (typically 1-4) or
+  less than or equal to the total Siege markers cancels one Hit.
+  Roll Hits that differ from others (such as -2 Armor) separately.
+ 
+ASSIGN HITS TO UNITS:
+  After rolling for any Walls, the owner chooses which unit
+  absorbs each Hit, Hit by Hit.
+  EXCEPTIONS:
+    - Select Target: Garrison Missiles and PARTHIAN SHOT
+      allow the Striking side to select which enemy unit takes
+      each such Hit. The player receiving Hits first chooses a
+      Lord to be affected (when Flanking), then the Striking
+      side Selects Target units for those Hits; the owner
+      chooses units for any other Hits.
+    - Storm Attack: Hits against a side Attacking in Storm
+      must be applied to Armored before Unarmored units,
+      regardless of who is choosing (4.9.1).
+  IMPORTANT: A unit may absorb several Hits in succession,
+  shielding fellow units, as long as it succeeds on each
+  Protection roll.
+ 
+ROLL PROTECTION BY HIT:
+  Units roll Protection as follows:
+ 
+  ARMOR: A unit with any Armor Protection rolls a die. A roll
+  within the Armor range specified (Forces table or card) means
+  the Hit has no effect (no Rout).
+ 
+  EVADE: Units with Evade Protection roll and absorb Hits
+  just as if Armored, EXCEPT Evade is NOT used against:
+    - Missile Hits, OR
+    - Hits in Storm.
+ 
+  GARRISON MISSILES: Missile Hits from Stronghold Garrisons
+  roll against Armor reduced by -1, to a minimum Armor of "1".
+ 
+  UNARMORED: Militia avoid Routing on a Hit only on a roll
+  of 1.
+ 
+ROUT:
+  A unit is Routed as soon as it fails to negate a Hit with a
+  successful Protection roll. Slide it to the "Routed" section
+  of the Lord's mat. Routed units no longer Strike nor absorb
+  Hits in that Battle.
+ 
+  A Lord Routs when his last Unrouted unit Routs. Remove him
+  from the Array. A new Flanking situation may immediately
+  result. When an entire row Routs, ignore remaining Hits
+  against that row.
+ 
+  Track Themata status by keeping their units on their marker.
+  NOTE: When a Themata marker with more than one unit has
+  only one unit Rout, track which units belong to the Themata
+  until Battle ends.
+ 
+NEW ROUND:
+  If neither side Conceded AND at least one Lord on each side
+  has yet to Rout, begin a new Round at "Concede the Field?"
+  Otherwise, end per 1.3 below.
+ 
+ 
+----------------------------------------------------------------
+1.3  ENDING THE BATTLE (4.8.3)
+----------------------------------------------------------------
+A side that Conceded at the start of the Round OR that has no
+Unrouted Lords (when the other side did not Concede) loses the
+Battle at the end of that Round.
+ 
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+1.3.1  RETREAT, WITHDRAWAL, OR REMOVAL (4.8.3)
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+All losing Lords must either:
+  A. RETREAT to a single adjacent Locale with no Enemy Lords
+     or Strongholds that are not already Besieged or Bypassed
+     (4.3.5), OR
+  B. WITHDRAW into a Friendly Stronghold at the Battle Locale
+     (if Sallied or is Defending at one), OR
+  C. Be REMOVED per 4.8.5 below.
+ 
+The owning player chooses each Lord's fate, within these
+requirements:
+  - Defenders may NOT Retreat along any part of the Way that
+    Attackers used to Approach the Locale.
+  - Marching Attackers MUST Retreat to the Locale whence
+    they Approached (4.3.4).
+    [ERRATA APPLIED — Playbook p.17: Attackers may NOT
+    Withdraw into the Stronghold at the site of Battle because
+    they are neither the Defender nor Sallying.]
+  - Sallying Attackers MUST Withdraw back into their
+    Stronghold.
+  - Retreating Lords may join Friendly Lords already Bypassing
+    an Enemy Stronghold (4.8.3 rules, Seljuk summary of
+    changes).
+ 
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+1.3.2  LOSSES (4.8.4)
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+After losing Lords Retreat, Withdraw, or are removed, BOTH
+sides determine the fate of their Routed units:
+ 
+  Roll a die for each Routed unit:
+ 
+  HARSH LOSSES (Protection = 1 only):
+    - All Routed units of Lords who Retreated WITHOUT having
+      Conceded the Field (4.8.2), OR
+    - Who were Attacking in Storm (4.9.1)
+    ...fail unless they roll a "1".
+ 
+  NORMAL LOSSES:
+    - For Routed units of all other Lords (even if the Lord
+      Routed after Conceding the Field), compare each unit's
+      roll to its inherent Protection as shown on the Forces
+      table, UNMODIFIED by Events or Capabilities.
+ 
+  RESULTS:
+    - Units that roll within Protection range: no longer
+      Routed — push above the line on the mat. (Service
+      Markers stay put.)
+    - Units that fail: Lost — remove to pool.
+    - Once a Themata Service Marker has all its units Lost in
+      Battle, the Service Marker is removed from the game.
+    - For a Lord who loses ALL his Forces in Battle or Storm,
+      remove him per 4.8.5 below.
+ 
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+1.3.3  SPOILS (4.8.3)
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+Lords on the losing side may have to immediately transfer
+Assets to Lords on the winning side. The winning player
+distributes these Assets among mats of Lords at the Locale:
+ 
+  - Lords who WITHDREW: keep all their Assets.
+  - Lords who CONCEDED and RETREATED: transfer all Loot
+    and any Provender beyond that which they could move
+    without being Laden (4.3.2). Lose no other Assets.
+  - Losing Lords who were REMOVED (unable to Retreat or
+    Withdraw, or by Losses), or who RETREATED WITHOUT
+    HAVING CONCEDED the Field: transfer ALL their Assets.
+ 
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+1.3.4  SERVICE (4.8.3)
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+The losing side rolls one die for EACH of its Retreated Lords
+and shifts that Lord's Service Marker (and, if using Vassal
+Service optional rule 6.2, each of his Vassals' markers) left:
+  - Roll 1, 2, or 3: shift left 1 box.
+  - Roll 4, 5, or 6: shift left 2 boxes.
+ 
+  - Losing Lords who WITHDREW into a Stronghold do NOT
+    shift their Service.
+ 
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+1.3.5  LORD REMOVAL BY COMBAT (4.8.5)
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+Lords removed in Battle (4.8.3-4) or Storm (4.9.1) — by failure
+to Retreat or Withdraw, Loss of all Forces, or Sack — suffer
+removal as if Disbanding Beyond Service (3.3.1).
+NOTE: Later Disband due to Service Limit (3.3) does not count
+as removal by combat, even if Battle caused a shortening of
+Service.
+ 
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+1.3.6  AFTERMATH (4.8.6)
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+After resolving Spoils and Losses:
+ 
+  A. MOVED/FOUGHT: Mark all Attacking and Defending Lords
+     Moved/Fought (if not already marked).
+  B. EVENTS: Discard all Hold Events (3.1.3) used in this
+     Battle or Storm.
+  C. SIEGE: If the combat created or ended a Siege, adjust
+     Siege, Conquered, Ruins, and/or Victory markers (1.3.1,
+     4.3.5, 4.9.1, 5.1).
+  D. RECOVERY: Skip any Command actions remaining on this
+     card. Go to Feed/Pay/Disband (4.6).
+ 
+  IMPORTANT: A Battle or Storm blocks any further Command
+  actions on the current Command card.
+ 
+ 
+================================================================
+2. STORM (4.9.1)
+================================================================
+Any Lord outside a Besieged Stronghold may use a Command
+action to launch an Attack. Proceed per Battle rules (4.8)
+EXCEPT as modified below. Refer to the Battle and Storm chart.
+NOTE: Some Events and Capabilities apply to Battle but not
+Storm, or vice versa.
+ 
+----------------------------------------------------------------
+2.1  STORM ARRAY
+----------------------------------------------------------------
+Follow Battle rules (4.8.1-4.8.2) EXCEPT:
+  - Each side's Front row begins with AT MOST ONE Lord (for
+    the Attacker, the Active Lord).
+  - All other Lords start in Reserve.
+  - More Lords may later Reposition to the Front, up to the
+    Stronghold's Size (1, 2, or 3).
+ 
+----------------------------------------------------------------
+2.2  STORM CONCEDE
+----------------------------------------------------------------
+At the start of each Round AFTER the first, the Attacker (only)
+may end the Storm. The Attacker loses. Go to Ending the Storm.
+The Defender may NOT Concede in a Storm.
+NOTE: Neither side may Concede in the first Round.
+ 
+----------------------------------------------------------------
+2.3  STORM REPOSITION
+----------------------------------------------------------------
+In each Storm Round after the first, Attacker then Defender may
+add one Lord from Reserve to the Front, up to Stronghold Size
+(1, 2, or 3).
+A Reserve Lord (if any present) MUST move to Front if all of
+their Front Lords Routed, or MUST move to Front to match an
+enemy Front Lord.
+ 
+----------------------------------------------------------------
+2.4  STRONGHOLD EFFECTS
+----------------------------------------------------------------
+GARRISON FORCES:
+  - The Besieged side receives the Garrison units (and for
+    Romans, any present Themata Service Markers chosen to
+    defend the Stronghold at the start of the Siege) shown for
+    that type of Stronghold on the Strongholds table.
+  - Current Allegiance of the Stronghold determines which
+    column (Roman or Seljuk) is used on the Strongholds
+    player aid card.
+  - Strongholds in the Fatimid Caliphate (1.3.1) always use
+    the Seljuk Garrison column.
+  - In the rare case the pool has too few pieces, do not place
+    those units.
+ 
+GARRISON FORCES DURING STORM:
+  - Garrison Foot units have both Melee and Missiles.
+  - Garrison Infantry and Militia are x1/2 Missile units that
+    SELECT Enemy targets (4.8.2) with -1 to Enemy Armor.
+  - Garrisons add their Strikes to those of the Defending Lord
+    (rounding up), if any, but do not otherwise affect the Lord's
+    Strikes. Garrisons are separate from any Defending Lord
+    and ignore cards affecting that Lord individually.
+  - The Defender MUST assign all Hits suffered to Garrison
+    units until they are Routed, after which the Front Defending
+    Lord's units (if any) absorb Hits.
+  - Whenever Routed and at the end of the Storm, return
+    Garrison units to the pool.
+  - The full complement of Garrison units Defends in EACH
+    enemy Storm action, regardless of what happened in
+    previous Storm actions.
+ 
+WALLS:
+  The Besieged side uses that Stronghold's Walls per 4.8.2
+  and the Strongholds table.
+ 
+SIEGEWORKS:
+  The Besieging side places all Siege markers at the Locale
+  in front of its Attacking Lord(s). Those Lords during the
+  Storm have Walls with Value equal to the number of Siege
+  markers against both Missile and Melee Strikes.
+  EXAMPLE: Lords Storming with 3 Siege markers benefit
+  from Walls 1-3.
+ 
+MELEE ORDER IN STORM:
+  All Defending units Melee Strike BEFORE any Attacking
+  units do, unlike Battle where Horse Melee precedes Foot
+  (4.8.2). The Storm Strike sequence is:
+ 
+  1. MISSILE STEPS
+     a. Defending Missiles (including Garrison Missiles)
+     b. Attacking Missiles
+ 
+  2. MELEE STEPS
+     a. Defending Horse Melee
+     b. Defending Foot Melee
+     c. Attacking Horse Melee
+     d. Attacking Foot Melee
+ 
+STORM ATTACK RESTRICTION:
+  Hits against a side Attacking in Storm MUST be applied to
+  Armored units before Unarmored units, regardless of who is
+  choosing.
+ 
+MELEE CAP:
+  Each Lord of each side in Storm adds no more than 6 Hits in
+  Melee. (Missiles are unlimited.)
+ 
+EVADE RESTRICTION:
+  Evade Protection is NOT used against Hits in Storm (see
+  1.2.3 Protection rules above).
+ 
+----------------------------------------------------------------
+2.5  ENDING THE STORM
+----------------------------------------------------------------
+A Storm ends once the number of Rounds COMPLETED equals
+the number of Siege markers there, or earlier if:
+  - A side loses because all its Lords Rout, OR
+  - The Attacker Concedes.
+ 
+ATTACKER LOSES (Defenders NOT all Routed):
+  - Losing Attackers neither Retreat nor give up Spoils.
+  - The Locale remains Besieged — return Siege markers to
+    the map and go to Aftermath (4.8.6).
+ 
+DEFENDER LOSES:
+  - Sack the Stronghold (see 2.6 below).
+  - If Defenders win, any Themata Service Markers garrisoning
+    the Stronghold remain.
+ 
+LOSSES:
+  Both sides' Forces take Losses per Battle (4.8.4), EXCEPT:
+    - Routed Defending units always roll against their inherent
+      Protection.
+    - Routed Attacking units that fail to roll a "1" are removed.
+ 
+MOVED/FOUGHT:
+  Mark ALL Lords at the Storm Locale as Moved/Fought, even
+  Lords who remained in Reserve.
+  NOTE: Lords at a Storm Locale may not simply sit it out.
+  Used or not, they showed up for action.
+ 
+----------------------------------------------------------------
+2.6  SACK (4.9.1)
+----------------------------------------------------------------
+When Besieged Defenders lose a Storm:
+ 
+  A. CONQUER: The Besiegers Conquer the Stronghold. Remove
+     Siege markers. Place or remove Conquered markers (1.3.1).
+     EXCEPTION: In the Fatimid Caliphate, the Roman player
+     only removes Seljuk Conquered markers and does not place
+     their own.
+     If the Stronghold now has a Ravaged marker that is the
+     same color as its Allegiance printed on the map, flip it to
+     the opposite color.
+     If the Stronghold has a Roman Strategic Objective marker,
+     the Roman player claims it in the Constantinople Holding
+     Box.
+     Adjust VP marker on the Calendar (2.2.5, 5.1).
+ 
+  B. RUIN (Seljuk only, Roman Empire Strongholds only):
+     Instead of Conquering, the Seljuk player may choose to
+     Ruin it. Remove all Siege markers (1.3.1, 4.5.1). Place
+     one Ruins marker. Adjust VPs (2.2.5, 5.1).
+ 
+  C. AWARD SPOILS: Besieging Lords receive and distribute
+     as desired among their mats a number of Loot, Provender,
+     and Coin each according to the Stronghold's Value (1, 2,
+     or 3; see Strongholds table) plus all Assets from
+     Disbanding Lords.
+     EXAMPLE: Sacking a Town yields 2 Provender and 1 Coin.
+ 
+  D. REMOVE LORDS: Remove each losing Lord per 4.8.5 —
+     Disband him as if Beyond Service (3.3.1).
+ 
+  E. REMOVE THEMATA: Remove each losing Themata Service
+     Marker (1.5.1), eliminating them from the game.
+ 
+AFTERMATH: Proceed with Aftermath (4.8.6).
+ 
+ 
+================================================================
+3. SALLY (4.9.2)
+================================================================
+A Besieged Lord may use a Command action to Attack Besiegers
+in a Battle. Follow Battle rules (4.8), including skipping any
+remaining Command actions (4.8.6), EXCEPT:
+ 
+ARRAY AND REPOSITION:
+  Each side begins with one Lord in Front (for the Attacker,
+  the Active Lord); other Lords start in Reserve. In each Round
+  after the first, Attacker then Defender may add one Lord
+  from Reserve to the Front, up to Stronghold Size (1, 2, or 3).
+  If all Front Lords Routed, a Reserve Lord (if any present)
+  must move to Front.
+  NOTE: Sally positioning mimics Storm (4.9.1).
+ 
+SIEGEWORKS:
+  Defenders (the Besiegers being Sallied against) receive
+  Siegeworks as if Storming (4.9.1).
+  NOTE: Sallying Attackers do NOT receive any Walls or
+  Garrison.
+ 
+END:
+  Losing Defenders (Besiegers) Retreat normally, ending the
+  Siege.
+  Losing Attackers (the Besieged Sallying force) must Withdraw
+  back into their Stronghold (4.8.3, not Retreat).
+ 
+RAID:
+  If Sallying Attackers lose, remove all but one Siege marker
+  at the Locale (reflecting damage to Siegeworks by the
+  sortie). The Siege goes on.
+ 
+ 
+================================================================
+QUICK REFERENCE: BATTLE FLOW SUMMARY
+================================================================
+  1. Approach triggers Battle (4.3.4)
+  2. Array Lords (4.8.1)
+     - Attacker positions, then Defender
+     - Play Held "in Battle" Events
+  3. ROUND (repeat until Battle ends):
+     a. Concede the Field? (Attacker, then Defender; not Round 1)
+     b. Reposition (Rounds 2+: remove Routed, adjust rows,
+        advance Reserve Lords, fill Center)
+     c. Strike:
+        i.   Defending Missiles → Hits → Protection → Rout
+        ii.  Attacking Missiles → Hits → Protection → Rout
+        iii. Defending Horse Melee → Hits → Protection → Rout
+        iv.  Attacking Horse Melee → Hits → Protection → Rout
+        v.   Defending Foot Melee → Hits → Protection → Rout
+        vi.  Attacking Foot Melee → Hits → Protection → Rout
+     d. New Round? (if neither Conceded and both sides have
+        Unrouted Lords, go to 3a; else end)
+  4. Ending the Battle (4.8.3)
+     a. Retreat / Withdrawal / Removal
+     b. Losses (both sides roll for Routed units)
+     c. Spoils (losing side transfers Assets)
+     d. Service (losing Retreated Lords shift left)
+  5. Aftermath (4.8.6)
+     a. Mark Moved/Fought
+     b. Discard used Hold Events
+     c. Adjust Siege/Conquered/Ruins/VP markers
+     d. Skip remaining actions → Feed/Pay/Disband (4.6)
+ 
+ 
+================================================================
+QUICK REFERENCE: STORM FLOW SUMMARY
+================================================================
+  1. Lord uses Command action to Storm (4.5.2, 4.9.1)
+  2. Array Lords (one per side in Front; rest in Reserve)
+     - Place Siege markers as Siegeworks for Attacker
+     - Place Walls markers for Defender
+     - Defender receives Garrison units and any Themata
+     - Play Held "in Storm" Events
+  3. ROUND (repeat up to # of Siege markers):
+     a. Concede? (Attacker only; not Round 1)
+     b. Reposition (add 1 Lord per side to Front, up to
+        Stronghold Size)
+     c. Strike:
+        i.   Defending Missiles (incl. Garrison) → Walls →
+             Assign → Protection → Rout
+        ii.  Attacking Missiles → Siegeworks → Assign
+             (Armored first) → Protection (no Evade) → Rout
+        iii. Defending Horse Melee → same
+        iv.  Defending Foot Melee → same
+        v.   Attacking Horse Melee (max 6 Hits/Lord) → same
+        vi.  Attacking Foot Melee (max 6 Hits/Lord) → same
+     d. New Round? (if Rounds completed < Siege markers and
+        neither side fully Routed and Attacker did not Concede,
+        go to 3a; else end)
+  4. Ending the Storm (4.9.1)
+     - If Defenders lose → Sack (Conquer or Ruin, Award
+       Spoils, Remove Lords, Remove Themata)
+     - If Attackers lose → no Retreat, no Spoils given; Siege
+       continues; return Siege markers to map
+     - Losses (Routed Attackers need "1"; Routed Defenders
+       roll normal Protection)
+  5. Aftermath (4.8.6)
+     - All Lords at Locale marked Moved/Fought
+     - Discard used Hold Events
+     - Adjust markers
+     - Skip remaining actions → Feed/Pay/Disband (4.6)

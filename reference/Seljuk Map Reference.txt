@@ -1,0 +1,517 @@
+SELJUK MAP DATA
+================================================================
+Source: user-provided map data, cross-checked against the project
+files (Seljuk_Rules.pdf, Seljuk_Background_Book_web.pdf,
+Seljuk_Errata_and_Clarifications.txt). Lord Seat data added from
+the Seljuk Lords Reference. Where the user's spelling differed
+from the rulebook, the rulebook spelling was used; see NOTES at
+the end for the list of corrections.
+ 
+ 
+================================================================
+THEMATA AND LOCALES
+================================================================
+ 
+Roman Empire
+------------
+ 
+  Paphlagonia
+    To Constantinople (Roman holding box)
+      Seats: Romanos Diogenes, Manuel Komnenos, Andronikos Doukas,
+             Joseph Tarchaneiotes, Nikephoros Bryennios
+      Conditional Seat: Arisighi (when Roman-aligned)
+ 
+  Boukellarion
+    Ankyra (town with garden)
+      Seat: Roussel de Bailleul (Roman alignment; falls back to
+            To Mosul and Baghdad if Seat is enemy-occupied)
+ 
+  Anatolikon
+    Western Anatolia (wilderness)
+    Ikonion (town with garden)
+ 
+  Armeniakon
+    Amaseia (town with garden)
+    Neokaisareia (town with garden)
+ 
+  Charsianon
+    Charsianon (unfortified settlement)
+    Kaisareia (town with garden)
+ 
+  Kappadokia
+    Herakleia Kybistra (fort)
+ 
+  Kilikia
+    Tarsos (town with garden)
+    Mopsuestia (fort)
+ 
+  Lykandos
+    Lykandos (wilderness)
+    Larisa (unfortified settlement)
+ 
+  Sebasteia
+    Sebasteia (town with garden)
+    Tephrike (fort)
+ 
+  Melitene
+    Germanikeia (town with garden)
+    Edessa (town with garden)
+      Seat: Robert Crepin (Roman alignment; falls back to
+            To Mosul and Baghdad if Seat is enemy-occupied)
+    Melitene (town with garden)
+ 
+  Antiocheia
+    Antioch (city with garden)
+      Seat: Chatatourios
+    Artah (unfortified settlement)
+    Laodikeia (fort)
+ 
+  Koloneia
+    Koloneia (fort)
+    Keltzene (town with garden)
+ 
+  Chaldia
+    Chaldia (wilderness)
+ 
+  Iberia
+    Theodosiopolis (town with garden)
+ 
+  Mesopotamia
+    Romanoupolis (town with garden)
+ 
+ 
+Fatimid Caliphate
+-----------------
+ 
+  Hama (fort)
+    Seat: Ibn Khan
+  Aleppo (city with garden)
+  Syria (wilderness)
+ 
+ 
+Seljuk Sultanate
+----------------
+ 
+  Manbij (fort)
+  Azaz (fort)
+  Jazira (wilderness)
+  Nusaybin (town with garden)
+  Amid (town with garden, allied seat)
+    Conditional Seats (via Marwanid Alliance Capability):
+      Alp Arslan, Afsin Beg, Arisighi, Artuk Beg,
+      Sav-Tekin, Emir of Arran, Ibn Khan, Sanduq al-Turki
+  Mayyafariqin (fort, allied seat)
+    Conditional Seats (via Marwanid Alliance Capability):
+      Alp Arslan, Afsin Beg, Arisighi, Artuk Beg,
+      Sav-Tekin, Emir of Arran, Ibn Khan, Sanduq al-Turki
+  Vaspurakan (wilderness)
+  Anzitene (wilderness)
+  Khliat (fort)
+  Manzikert (fort)
+  Mempet (fort)
+  Arkesh (fort)
+  Ararat (wilderness)
+  Ani (city with garden)
+    Seats: Alp Arslan, Afsin Beg, Sav-Tekin,
+           Emir of Arran, Sanduq al-Turki
+  To Mosul and Baghdad (Seljuk holding box)
+    Seats: Alp Arslan, Afsin Beg, Arisighi, Artuk Beg
+    Conditional Seats: Robert Crepin and Roussel de Bailleul
+      (when Seljuk-aligned and their Roman Seat is enemy-occupied)
+ 
+ 
+================================================================
+PASS WAYS  (15 total)
+================================================================
+ 
+  Mopsuestia        <-> Germanikeia
+  Melitene          <-> Edessa
+  Melitene          <-> Amid
+  Melitene          <-> Romanoupolis
+  Romanoupolis      <-> Keltzene
+  Keltzene          <-> Chaldia
+  Chaldia           <-> Koloneia
+  Chaldia           <-> Theodosiopolis
+  Nusaybin          <-> Mayyafariqin
+  Mayyafariqin      <-> Khliat
+  Khliat            <-> Anzitene
+  Ani               <-> Ararat
+  Ararat            <-> Arkesh
+  Ararat            <-> Vaspurakan
+  Vaspurakan        <-> To Mosul and Baghdad    [WHOLE COMMAND CARD]
+ 
+ 
+================================================================
+ROAD WAYS  (47 total)
+================================================================
+ 
+  Nusaybin          <-> To Mosul and Baghdad    [WHOLE COMMAND CARD]
+  Nusaybin          <-> Jazira
+  Jazira            <-> Syria
+  Syria             <-> Aleppo
+  Aleppo            <-> Hama
+  Hama              <-> Laodikeia
+  Laodikeia         <-> Antioch
+  Antioch           <-> Artah
+  Antioch           <-> Mopsuestia
+  Artah             <-> Azaz
+  Azaz              <-> Aleppo
+  Azaz              <-> Manbij
+  Artah             <-> Manbij
+  Manbij            <-> Edessa
+  Edessa            <-> Amid
+  Amid              <-> Nusaybin
+  Amid              <-> Mayyafariqin
+  Khliat            <-> Manzikert
+  Manzikert         <-> Arkesh
+  Ani               <-> Mempet
+  Manzikert         <-> Theodosiopolis
+  Mempet            <-> Theodosiopolis
+  Theodosiopolis    <-> Keltzene
+  Germanikeia       <-> Melitene
+  Melitene          <-> Lykandos
+  Lykandos          <-> Germanikeia
+  Melitene          <-> Larisa
+  Lykandos          <-> Kaisareia
+  Mopsuestia        <-> Tarsos
+  Tarsos            <-> Herakleia Kybistra
+  Herakleia Kybistra <-> Ikonion
+  Herakleia Kybistra <-> Kaisareia
+  Ikonion           <-> Western Anatolia
+  Western Anatolia  <-> To Constantinople       [WHOLE COMMAND CARD]
+  Ankyra            <-> To Constantinople       [WHOLE COMMAND CARD]
+  Ankyra            <-> Charsianon
+  Ankyra            <-> Amaseia
+  Amaseia           <-> Neokaisareia
+  Neokaisareia      <-> Sebasteia
+  Charsianon        <-> Sebasteia
+  Sebasteia         <-> Larisa
+  Sebasteia         <-> Tephrike
+  Tephrike          <-> Keltzene
+  Koloneia          <-> Tephrike
+  Keltzene          <-> Koloneia
+  Koloneia          <-> Neokaisareia
+  Anzitene          <-> Romanoupolis
+ 
+ 
+================================================================
+CONNECTIONS BY LOCALE
+================================================================
+(R = Road, P = Pass, WC = Whole Command Card to March)
+ 
+To Constantinople
+  R-WC Western Anatolia
+  R-WC Ankyra
+ 
+Ankyra
+  R-WC To Constantinople
+  R    Charsianon
+  R    Amaseia
+ 
+Western Anatolia
+  R-WC To Constantinople
+  R    Ikonion
+ 
+Ikonion
+  R    Western Anatolia
+  R    Herakleia Kybistra
+ 
+Amaseia
+  R    Ankyra
+  R    Neokaisareia
+ 
+Neokaisareia
+  R    Amaseia
+  R    Sebasteia
+  R    Koloneia
+ 
+Charsianon
+  R    Ankyra
+  R    Sebasteia
+ 
+Kaisareia
+  R    Lykandos
+  R    Herakleia Kybistra
+ 
+Herakleia Kybistra
+  R    Tarsos
+  R    Ikonion
+  R    Kaisareia
+ 
+Tarsos
+  R    Mopsuestia
+  R    Herakleia Kybistra
+ 
+Mopsuestia
+  R    Antioch
+  R    Tarsos
+  P    Germanikeia
+ 
+Lykandos
+  R    Melitene
+  R    Germanikeia
+  R    Kaisareia
+ 
+Larisa
+  R    Melitene
+  R    Sebasteia
+ 
+Sebasteia
+  R    Neokaisareia
+  R    Charsianon
+  R    Larisa
+  R    Tephrike
+ 
+Tephrike
+  R    Sebasteia
+  R    Keltzene
+  R    Koloneia
+ 
+Melitene
+  R    Germanikeia
+  R    Lykandos
+  R    Larisa
+  P    Edessa
+  P    Amid
+  P    Romanoupolis
+ 
+Germanikeia
+  R    Melitene
+  R    Lykandos
+  P    Mopsuestia
+ 
+Edessa
+  R    Manbij
+  R    Amid
+  P    Melitene
+ 
+Antioch
+  R    Laodikeia
+  R    Artah
+  R    Mopsuestia
+ 
+Artah
+  R    Antioch
+  R    Azaz
+  R    Manbij
+ 
+Laodikeia
+  R    Hama
+  R    Antioch
+ 
+Koloneia
+  R    Tephrike
+  R    Keltzene
+  R    Neokaisareia
+  P    Chaldia
+ 
+Keltzene
+  R    Theodosiopolis
+  R    Tephrike
+  R    Koloneia
+  P    Romanoupolis
+  P    Chaldia
+ 
+Chaldia
+  P    Keltzene
+  P    Koloneia
+  P    Theodosiopolis
+ 
+Theodosiopolis
+  R    Manzikert
+  R    Mempet
+  R    Keltzene
+  P    Chaldia
+ 
+Romanoupolis
+  R    Anzitene
+  P    Melitene
+  P    Keltzene
+ 
+Hama
+  R    Aleppo
+  R    Laodikeia
+ 
+Aleppo
+  R    Syria
+  R    Hama
+  R    Azaz
+ 
+Syria
+  R    Jazira
+  R    Aleppo
+ 
+Manbij
+  R    Azaz
+  R    Artah
+  R    Edessa
+ 
+Azaz
+  R    Artah
+  R    Aleppo
+  R    Manbij
+ 
+Jazira
+  R    Nusaybin
+  R    Syria
+ 
+Nusaybin
+  R-WC To Mosul and Baghdad
+  R    Jazira
+  R    Amid
+  P    Mayyafariqin
+ 
+Amid
+  R    Edessa
+  R    Nusaybin
+  R    Mayyafariqin
+  P    Melitene
+ 
+Mayyafariqin
+  R    Amid
+  P    Nusaybin
+  P    Khliat
+ 
+Khliat
+  R    Manzikert
+  P    Mayyafariqin
+  P    Anzitene
+ 
+Anzitene
+  R    Romanoupolis
+  P    Khliat
+ 
+Manzikert
+  R    Khliat
+  R    Arkesh
+  R    Theodosiopolis
+ 
+Arkesh
+  R    Manzikert
+  P    Ararat
+ 
+Vaspurakan
+  P    Ararat
+  P-WC To Mosul and Baghdad
+ 
+Mempet
+  R    Ani
+  R    Theodosiopolis
+ 
+Ararat
+  P    Ani
+  P    Arkesh
+  P    Vaspurakan
+ 
+Ani
+  R    Mempet
+  P    Ararat
+ 
+To Mosul and Baghdad
+  R-WC Nusaybin
+  P-WC Vaspurakan
+ 
+ 
+================================================================
+NOTES
+================================================================
+ 
+Whole-card routes (4)
+  These four Ways consume an entire Command card to March across.
+  Three are roads and one is a pass:
+    Western Anatolia  <-> To Constantinople        (road)
+    Ankyra            <-> To Constantinople        (road)
+    Nusaybin          <-> To Mosul and Baghdad     (road)
+    Vaspurakan        <-> To Mosul and Baghdad     (pass)
+ 
+Lord seats by locale
+  Regular Seats (per each Lord's mat):
+    To Constantinople  : Romanos Diogenes, Manuel Komnenos,
+                         Andronikos Doukas, Joseph Tarchaneiotes,
+                         Nikephoros Bryennios
+    Ankyra             : Roussel de Bailleul    (Roman alignment)
+    Antioch            : Chatatourios
+    Edessa             : Robert Crepin          (Roman alignment)
+    Hama               : Ibn Khan
+    Ani                : Alp Arslan, Afsin Beg, Sav-Tekin,
+                         Emir of Arran, Sanduq al-Turki
+    To Mosul and Baghdad : Alp Arslan, Afsin Beg, Arisighi,
+                           Artuk Beg
+ 
+  Conditional Seats:
+    To Constantinople (when Roman-aligned) : Arisighi
+    Amid          (via Marwanid Alliance, Seljuk Capability S8) :
+                   all 8 Seljuk Lords
+    Mayyafariqin  (via Marwanid Alliance, Seljuk Capability S8) :
+                   all 8 Seljuk Lords
+    To Mosul and Baghdad (when Seljuk-aligned and Roman Seat is
+                          enemy-occupied) :
+                   Robert Crepin, Roussel de Bailleul
+ 
+  Notes:
+    - Marwanid Alliance: marked on the map with the Kurdish star
+      on Amid and Mayyafariqin. The Seljuk player spends a Coin
+      (from Alp Arslan or from the Capability card itself) to
+      activate one of the two Locales as a Seat until the end of
+      the next Winter Phase (rule 3.5.1.1). Lords may not Tax
+      these Locales while activated, and only one may serve as
+      Supply Source per Command card.
+    - Robert Crepin and Roussel de Bailleul are dual-allegiance
+      Lords with Roman primary Seats. If their Seat is occupied
+      by an enemy Lord when they would Muster, they use their
+      current side's Holding Box instead (rule 1.4.2).
+    - Arisighi is a dual-allegiance Lord with Seljuk primary
+      Seats. When he defects to the Roman side, his Seat is
+      always the Constantinople Holding Box, not a map Locale.
+    - Artuk Beg has a unique Capability (S10 Artukid Legacy)
+      that lets him treat Mosul and Baghdad as a Seat for
+      Supply Routes and Bounty even without Marwanid Alliance
+      in effect. This affects him only.
+ 
+Locale types (per Rules 1.3.1)
+  City      : 3-value stronghold
+  Town      : 2-value stronghold
+  Fort      : 1-value stronghold
+  Unfortified settlement : not a stronghold; provides Provender
+                           on Ravage; does not block Loot return
+                           paths during Bounty
+  Wilderness             : same Ravage/Bounty behavior as
+                           Unfortified
+  Holding box            : special movement and Muster rules;
+                           Seat Locale for some Lords (no Enemy
+                           Lord may enter)
+ 
+Gardens
+  Strongholds noted "with garden" aid Forage (Rule 4.5.4).
+  Towns with garden: Amaseia, Neokaisareia, Ankyra, Ikonion,
+    Kaisareia, Tarsos, Sebasteia, Melitene, Edessa, Germanikeia,
+    Keltzene, Theodosiopolis, Romanoupolis, Nusaybin, Amid
+  Cities with garden: Antioch, Aleppo, Ani
+ 
+Allegiance (Rule 1.3.1)
+  Roman (purple)  : all 15 themata's Locales plus To Constantinople
+  Seljuk (blue)   : all Sultanate Locales plus To Mosul and Baghdad
+  Fatimid (green) : Hama, Aleppo, Syria — Friendly to Roman with
+                    several exceptions per the Fatimid Caliphate
+                    rules; use Seljuk Garrison column on Storm
+ 
+Counts
+  Roman themata        : 15
+  Sub-divisions        : Roman Empire, Fatimid Caliphate, Seljuk Sultanate
+  Total locales        : 42 strongholds and settlements + 2 holding boxes
+  Pass Ways            : 15
+  Road Ways            : 47
+ 
+Spelling corrections applied (rules trump input)
+  Charisianon         -> Charsianon          (thema name)
+  Melitane            -> Melitene
+  Lydandos / Lydanos  -> Lykandos
+  Heraklia Kybistra   -> Herakleia Kybistra
+  Kasareia            -> Kaisareia
+  Laodikea            -> Laodikeia
+ 
+Open item
+  The Khliat <-> Anzitene connection was added as a Pass based on
+  context (mentioned just before the "Roads" heading, immediately
+  after the previous turn's Pass list). If the rulebook map shows
+  it as a Road, move it to the Road Ways section.

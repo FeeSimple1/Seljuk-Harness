@@ -1,0 +1,485 @@
+================================================================
+SELJUK — SEQUENCE OF PLAY REFERENCE
+================================================================
+Source: Rules of Play sections 2.0-4.7 and Player Aid Card,
+cross-checked against Seljuk_Errata_and_Clarifications.txt.
+Errata corrections applied inline.
+ 
+PRECEDENCE
+  Where this file and the Rules of Play or the Errata &
+  Clarifications differ, the Rules and the Errata govern.
+ 
+CONVENTIONS
+  Player order is Seljuk first, then Roman, unless stated
+  otherwise (2.2.4).
+  "Turn" = one Seasonal Turn (90 days / one Calendar box).
+  Each Turn consists of one Levy sequence followed by one
+  Campaign sequence.
+  Winter is a non-campaign interphase conducted after Reset
+  in the first three Autumn turns only (Calendar boxes 3, 6, 9).
+ 
+ 
+================================================================
+A. LEVY (3.0)
+================================================================
+Conduct at the outset of each Seasonal Turn.
+ 
+----------------------------------------------------------------
+A.1  ARTS OF WAR (3.1)
+----------------------------------------------------------------
+A.1.1  Shuffle (3.1.1)
+  Collect and shuffle all unused Arts of War cards into each
+  side's Event draw deck. Held Events (3.1.3) and Capabilities
+  already in play (3.4.4) are NOT included in the draw deck.
+ 
+A.1.2  First Levy of scenario — Draw Capabilities (3.1.2)
+  Seljuk then Roman each draw 2 Arts of War cards and deploy
+  them as Capabilities (lower half of card, 1.9.1) at that
+  side's map edge or Lord mats (1.5.2).
+  Return to deck any "This Lord" card that cannot be assigned
+  to a Mustered Lord (3.4.4).
+ 
+A.1.3  Second or later Levy — Draw Events (3.1.3)
+  Seljuk then Roman each draw 2 Arts of War cards and
+  implement their Events (upper half) in the order drawn.
+  Reveal Events immediately unless card text says otherwise.
+  Event subtypes:
+    - Normal Events: resolve immediately, return card to deck.
+    - "Hold" Events: keep hidden for later use (e.g., in Battle).
+    - "This Campaign" Events: remain in effect until end of
+      current Campaign (do not return until Reset, 4.7.5).
+      NOTE: The Capability on a "This Campaign" Event card
+      is not available for selection this Levy.
+    - Asterisk (*) Events: once per game. Mark the current
+      Season on the Calendar with the reminder marker.
+  NOTE: A side's Events can affect the opposing side. The
+  side playing the Event makes any decisions unless otherwise
+  specified.
+ 
+A.1.4  Greed (3.1.4)
+  Players may not voluntarily discard cards unless permitted
+  by a rule. Hold Events return to deck only when used or
+  discarded at Campaign's end (4.7.5).
+ 
+----------------------------------------------------------------
+A.2  PAY (3.2)
+----------------------------------------------------------------
+Seljuk then Roman may expend Coin and Loot to shift Service
+Markers right (later) on the Calendar. Coin and Loot may only
+be removed in this step to shift Service Markers (1.7.2).
+ 
+A.2.1  Pay with Coin (3.2.1)
+  Any Lord with Coin on his mat may remove some or all Coin
+  to shift Service Markers right by one Calendar box per Coin:
+    - The paying Lord's own Service Marker, OR
+    - That of another Lord at the same Locale.
+  EXCEPTION: Unbesieged Commanders in play may pay Coin
+  regardless of location for any Unbesieged friendly Lord.
+ 
+A.2.2  Pay with Loot (3.2.2)
+  Any Lord at a Friendly Locale free of Siege (may be
+  Bypassed) may pay with Loot from his mat (or Share from
+  a Lord at the same Locale) as if Coin, one for one.
+  IMPORTANT: Must be at a Friendly Locale free of Siege.
+  May do so at an Unbesieged Stronghold with that side's
+  Conquered markers, but NOT at a Besieged Locale.
+ 
+----------------------------------------------------------------
+A.3  DISBAND (3.3)
+----------------------------------------------------------------
+Seljuk then Roman check for Lord Disbanding.
+ 
+A.3.1  Beyond Service Limit (3.3.1)
+  For each Lord whose Service Marker is to the LEFT of the
+  current Levy/Campaign marker (in a lower-numbered Turn
+  box), remove him from the map.
+  REMOVAL: Permanently remove cylinder(s) from play. Set
+  aside mat, Service Marker, Vassal Service Markers, Forces,
+  and Assets. Return "This Lord" Capability cards (3.4.4) to
+  the Arts of War deck.
+  If the Lord was Seljuk and had a Roman Strategic Objective
+  marker, the Roman player claims it in the Constantinople
+  Holding Box.
+ 
+A.3.2  At Service Limit (3.3.2)
+  Lords with Service Markers in the SAME Turn box as the
+  Levy/Campaign marker Disband but may Muster again later.
+  - Place cylinder on the Calendar, a number of Seasonal Turn
+    boxes to the RIGHT equal to the Lord's Service Rating
+    (1.5.3). If beyond box 12, place off the board (2.2.3).
+  - Return Forces and Assets to pools. Return Capability cards
+    under the mat to the Arts of War deck. Set aside mat(s),
+    Service Marker, and remaining Vassal Service Markers.
+  CLARIFICATION (Errata): If the Roman Commander Disbands
+  while Themata Service Markers are on his Lord mat, those
+  Themata are returned to their Thema box.
+  NOTE: Rarely, a Lord may Disband because his last unit is
+  removed outside of combat (1.6).
+ 
+----------------------------------------------------------------
+A.4  MUSTER (3.4)
+----------------------------------------------------------------
+After Disband, Seljuk then Roman Lords already on the map
+may take Levy actions up to their Lordship Rating (1.5.3) to
+Muster other Lords, Vassals, Transport, or Capabilities.
+Each Levy action spends one point of Lordship. Complete each
+Lord's actions before the next Lord, in any order desired.
+ 
+REQUIREMENTS: A Lord must have begun this Muster segment
+at an Unbesieged Friendly Locale (1.3.1) including a Holding
+Box. Lords may NOT conduct Muster from Enemy Locales or
+at a Siege. Lords brought onto the map during this Muster
+segment (3.4.1) may not take Levy actions themselves until
+that Levy's Call to Arms at the earliest (3.5).
+ 
+A.4.1  Levy Other Lords (3.4.1)
+  Cost: 1 Lordship per attempt.
+  Designate a Lord to roll Fealty for another Lord. The rolling
+  Lord must be Ready (cylinder in a Turn box at or left of the
+  Levy marker, 2.2) and must have a Seat free of enemy Lords
+  or Conquered markers (may be Bypassed or Ravaged, 4.5.5).
+  Roll one die; if within the target Lord's Fealty Rating (1.5.3),
+  Muster him. If not, do nothing (may retry with more Lordship).
+  NOTE: Lords can Levy a Ready Commander like any other Lord.
+ 
+  MUSTERING procedure:
+    - Place Lord's cylinder at one of his free Seats (or for
+      Arisighi, Robert, or Roussel only, his associated Holding
+      Box per 1.4.2 if Seat is enemy-occupied/Conquered).
+    - Take Lord's mat; place starting Forces from pool (1.6).
+    - Place Assets and Vassal Service Markers (Heraldry up,
+      Ready to Muster, 3.4.2) onto Lord's mat. Keep aside any
+      Special Vassal Service Markers not yet available (1.5.1,
+      1.9.1, 3.4.2).
+      NOTE: Do NOT place Vassal Forces on the mat when the
+      Lord Musters; they are available for the Lord to Levy at
+      a later time.
+    - Place Lord's Service Marker on the Calendar, a number
+      of boxes to the RIGHT of the current Levy box equal to
+      his Service Rating (1.5.3). If beyond 12, place off-board
+      (2.2.3).
+ 
+A.4.2  Levy Vassals (3.4.2)
+  Cost: 1 Lordship.
+  Vassal must have a face-up Service Marker in the Lord's
+  Assets & Vassals section. Slide it to Forces section. Place
+  the units shown on the marker from the pool (1.6).
+  NOTE: Ignore Vassal Service Ratings unless using optional
+  rule 6.2.
+  SPECIAL VASSALS (Scholai, Emperor's Retinue, Elite Ghulam
+  Cavalry, Oghuz Mercenaries): start set aside until the
+  associated Capability enables Levy. Discard of the card
+  Disbands the Vassal.
+ 
+A.4.3  Levy Transport (3.4.3)
+  Cost: 1 Lordship.
+  Lord at a Friendly Locale adds one Cart to his mat.
+ 
+A.4.4  Levy Capabilities (3.4.4)
+  Cost: 1 Lordship per card selected.
+  Lord at a Friendly Locale obtains Capabilities (bottom half
+  of Arts of War cards). Select from any of the side's currently
+  unused cards, within restrictions:
+    - Heraldry shows which Lords can Levy the card and whom
+      it affects ("This Lord", "any", "ALL", "NOT").
+    - "This Lord" cards: place at bottom edge of that Lord's
+      mat. Max two "This Lord" Capabilities per Lord mat, no
+      duplicates. Drawing a third forces immediate discard of
+      one.
+    - "ALL" / non-"This Lord" cards: tuck upper half under
+      the player's closest game board edge (2.1.1). A Lord may
+      Levy any number of such Capabilities (see also 4.0).
+  NOTE: Levying a Capability blocks its Event from occurring.
+ 
+A.4.5  Levy Themata (3.4.5)
+  Cost: 1 Lordship (spent by Roman Commander only).
+  During Muster, the Roman Commander may Levy Themata
+  Service Markers as if performing a Recruit action (4.5.7) in
+  his current Thema. Place the marker on the Lord's mat and
+  stack the depicted unit(s) on it.
+  NOTE: This differs from Vassal handling in this game and
+  previous Levy & Campaign volumes.
+ 
+----------------------------------------------------------------
+A.5  CALL TO ARMS (3.5)
+----------------------------------------------------------------
+Each side has different strategic options depending on Levied
+Capabilities. Each Call to Arms phase, Seljuks may complete
+any one option, then Romans do so.
+NOTE: Events can trigger at most one Call to Arms per Levy.
+ 
+A.5.1  Capability-driven options (3.5.1)
+  MARWANID ALLIANCE: Seljuk player may transfer 1 Coin
+  from Alp Arslan's Assets to this card OR spend any number
+  of Coin from the Marwanid Alliance card; for each Coin
+  spent, make either Amid or Mayyafariqin a Seat for Seljuk
+  Lords until the next Winter Phase. Lords may not Tax in
+  these Locales and only one may serve as a Supply Source per
+  Command card. Place Lord Seat marker(s) as reminder.
+ 
+  EMPRESS EUDOKIA MAKREMBOLITISSA (3.5.1.2): Roman
+  player may either place the Empress token on this card OR
+  move it from this card to Constantinople to choose one of:
+    - Shift a Roman Lord cylinder 1 Calendar box.
+    - Decrease service of a Lord with a Seat at Constantinople
+      1 Calendar box to increase service of Romanos Diogenes
+      by 1 Calendar box.
+ 
+  DEEP RAIDS: A Lord meeting criteria on the card may
+  execute the Call to Arms action for the turn.
+ 
+A.5.2  Loot (3.5.2)
+  If desired, Seljuk player may remove a Loot marker from the
+  Mosul and Baghdad box (adjusting VPs) to shift a Seljuk Lord
+  cylinder 1 Calendar box.
+ 
+A.5.3  Strategic Objective (3.5.3)
+  [ERRATA APPLIED — PAC correction]
+  If desired, and if a Roman Commander is in Constantinople,
+  the Roman player may:
+    - Take a Strategic Objective marker from the supply and
+      make it available in front of them, OR
+    - If they already have one or more available Strategic
+      Objective markers in front of them from a previous Call
+      to Arms, place one on a Mustered enemy Lord mat or an
+      Enemy Stronghold in the Sultanate (1.3.1).
+  May NOT take from supply AND place in the same Call to
+  Arms. Three markers exist; Roman player may hold all three.
+  Once claimed for VPs (3.3.1, 4.5.1, 4.9.1), the marker goes
+  permanently to the Constantinople Holding Box.
+ 
+ 
+================================================================
+B. CAMPAIGN (4.0)
+================================================================
+After Levy, conduct the Turn's Seasonal Campaign.
+ 
+CAPABILITY DISCARD: Players (Seljuk first) must select and
+discard any Capability cards they have exceeding their number
+of Mustered Lords — not counting "This Lord" Capabilities
+(3.4.4). Compare the number of non-"This Lord" cards under
+a side's map edge to its number of Lord mats in use; discard
+any excess.
+ 
+----------------------------------------------------------------
+B.1  PLAN (4.1)
+----------------------------------------------------------------
+Each side builds a Campaign Plan: an ordered stack of Command
+cards (1.9.2). May designate Lieutenants (4.1.3).
+ 
+B.1.1  Selecting Cards (4.1.1)
+  Use any cards available in that side's Command deck. Action
+  cards (with a numeral) and No Command cards always
+  available.
+  Plan stack size by Season:
+    - Spring: 7 cards
+    - Summer: 8 cards
+    - Autumn: 7 cards
+  NOTE: Some Events may add more cards.
+ 
+B.1.2  Arranging Stacks (4.1.2)
+  Stack the required number of cards face down in any order.
+  Top face-down card = first Active Lord. May not rearrange
+  once built. Players may always inspect their own Plan and
+  the other side's played (but not unused) Command cards.
+ 
+B.1.3  Lieutenants (4.1.3)
+  During Planning only, players may stack a Lord cylinder atop
+  another at the same Locale. Upper = Lieutenant, Lower =
+  Lower Lord. Lieutenant oversees Lower Lord for entire
+  Campaign unless one is removed. Max one Lower Lord per
+  Lieutenant. Lower Lord may not be a Lieutenant. Commanders
+  may not be Lieutenants or Lower Lords. A side may have
+  several Lieutenants.
+  Lieutenant and Lower Lord always move together (March,
+  Avoid, Retreat, etc.).
+  If either Disbands, the remaining Lord becomes a normal Lord.
+  Revealing a Lower Lord's Command card results in a Pass.
+  A Lieutenant and Lower Lord may not Withdraw into a Fort
+  (Size 1).
+ 
+----------------------------------------------------------------
+B.2  COMMAND (4.2)
+----------------------------------------------------------------
+After building Plan stacks, Seljuk then Roman alternate
+flipping (revealing) the top Command card — one Seljuk, then
+one Roman, and so on.
+ 
+B.2.1  Actions (4.2.1)
+  Lord on a revealed Command card may execute a series of
+  Commands up to his Command Rating (1.5.3), in any order.
+  EXCEPTIONS: Besieged Lords (4.3.5) may only Sally (4.5.3),
+  Pass (4.5.8), or perhaps Forage (4.5.4). Siege and Tax use
+  an entire card (4.5.1, 4.5.6). Starting a Siege and any Battle
+  or Storm end that card's actions (4.3.5, 4.8, 4.9).
+  NOTE: Lords may use multiple actions on a single Command
+  type (e.g., Forage three times).
+ 
+B.2.2  Command Menu (4.2.2)
+  Available Commands: March, Siege, Storm, Sally, Supply,
+  Forage, Ravage, Tax, or Pass. Romans can Recruit (4.5.7).
+ 
+B.2.3  No Command Card (4.2.3)
+  Revealed No Command card, a Lower Lord's card (4.1.3), or
+  the card of a Lord not on the map: that side does nothing.
+  Play passes to the other side, or ends the Campaign if
+  neither side has cards left in its Plan (4.7).
+ 
+  NOTE: After each Command card, Lords who moved and/or
+  fought will Feed their Forces, and Lords may Pay or might
+  Disband (4.6).
+ 
+  [COMMANDS 4.3-4.5 — March, Supply, Siege, Storm, Sally,
+  Forage, Ravage, Tax, Recruit, Pass — are detailed in the
+  Rules of Play sections 4.3 through 4.5.8. See also the
+  Commands side of the Player Aid Card.]
+ 
+----------------------------------------------------------------
+B.3  FEED — PAY — DISBAND (4.6)
+----------------------------------------------------------------
+At the end of EACH Command card, both sides execute:
+ 
+B.3.1  Feed (4.6.1)
+  Each Lord who Moved or Fought (Seljuk then Roman) must
+  remove Provender or Loot per the number of units on his mat:
+    - 1-8 units: 1 Provender or Loot
+    - 9-12 units: 2
+    - 13-16 units: 3
+    - 17+ units: 4
+  GREED: Feed may not remove Assets beyond this requirement
+  (1.7.2). NOTE: Loot Pays Lords only at Friendly Locales
+  (3.2.2) but Feeds them anywhere.
+  SHARING: All Lords at a Locale must first Feed their own
+  Forces from their own mats. Then Lords must expend
+  Provender and Loot to Feed co-located Friendly Lords who
+  did not fully Feed. A side may not withhold.
+ 
+  UNFED: Shift Service Marker left one Seasonal box for each
+  Lord that received less Provender or Loot than required.
+  (If using Vassal Service optional rule 6.2, also shift Vassals.)
+  A Lord requiring 2 or 3 but with access to fewer consumes
+  them and still suffers the shift.
+ 
+B.3.2  Pay and Disband (4.6.2)
+  Any Seljuk then Roman Lords may receive Pay as per Levy
+  (3.2). Then all Lords on both sides Disband as required by
+  their Service limit (3.3.1-.2).
+ 
+B.3.3  Remove Markers (4.6.3)
+  Remove Moved/Fought markers from all Lords. Proceed with
+  the other side's next Command card, if any.
+ 
+----------------------------------------------------------------
+B.4  END CAMPAIGN (4.7)
+----------------------------------------------------------------
+After revealing all Command cards in both sides' Plan stacks,
+end this Seasonal Turn.
+ 
+B.4.1  Game End (4.7.1)
+  If this was the scenario's final Seasonal Turn, the game ends.
+  Side with the most VPs wins (5.3). If tied, draw.
+ 
+B.4.2  Grow (4.7.2)
+  At the end of each SPRING Turn (Calendar boxes 1, 4, 7, 10):
+  Seljuk then Roman each must select and reduce the Enemy's
+  Ravaged markers on the map to half their total number,
+  rounded up (adjust VPs, 5.1).
+ 
+B.4.3  Repair (4.7.3)
+  At the end of each Campaign: remove one Siege marker from
+  each Stronghold that has three or four Siege markers.
+ 
+B.4.4  Wastage (4.7.4)
+  Seljuks then Romans must select and discard any one Asset
+  or "This Lord" Capability card from each Lord who has more
+  than one of any type of Asset or more than one such card.
+ 
+B.4.5  Reset (4.7.5)
+  Prepare for the next Turn:
+    - Roman Commander may retain Themata Service Markers
+      and their units from a Thema on his mat by paying 1 Coin
+      per Thema with units present. If not, return each unpaid
+      Themata marker to its home Thema and remove the
+      provided Forces (1.6).
+    - Unstack any Lieutenants and Lower Lords (4.1.3).
+    - Discard all "This Campaign" Events (3.1.3).
+    - Seljuk then Roman player may discard any Arts of War
+      cards back into their decks (1.9.1).
+    - Advance Campaign marker to the next Seasonal Turn box
+      and flip the marker to Levy (2.2.2).
+ 
+----------------------------------------------------------------
+B.5  WINTER (4.7.6)
+----------------------------------------------------------------
+Conduct this phase after Reset in the first three AUTUMN turns
+only (Calendar boxes 3, 6, and 9).
+ 
+B.5.1  Aleppo Independence Victory Check
+  If the ALEPPO INDEPENDENCE event has been played for its
+  effect AND Aleppo is Seljuk Conquered, the Seljuk player
+  wins an automatic victory (5.2).
+ 
+B.5.2  Bounty
+  [ERRATA APPLIED — page 18, 4.7.6]
+  A Seljuk Lord who can trace a path of Locales that are
+  Ruins, Wilderness, Unfortified Settlements, Friendly
+  Strongholds free of enemy Lords, or Bypassed or Besieged
+  Enemy Strongholds back to his Seat may score 1 VP per Loot
+  on his Lord mat up to the number of Carts he and co-located
+  Lords currently possess.
+  Carts do not need to be assigned to a Way; their number just
+  limits the amount of Loot that can be scored.
+  Scored Loot tokens go into the Mosul & Baghdad Holding Box
+  to track those VPs.
+ 
+B.5.3  Seljuk Unity
+  Count total Locales with Seljuk-colored Ruins, Conquered,
+  or Ravaged markers (not VP value) on the map. Compare to
+  the yearly Seljuk Unity value on the Calendar (Autumn box).
+  If the number of Locales with those markers is LESS than the
+  Calendar value, the Seljuk player loses VPs equal to the
+  difference, removing Loot in Mosul & Baghdad first (if any),
+  then placing Roman Conquered 1 VP markers in the
+  Constantinople Holding Box. These Roman Conquered 1 VP
+  markers are removed first when the Seljuk player scores
+  positive VPs during a future Bounty phase.
+ 
+B.5.4  Winter Quarters
+  Unless allowed by a Capability to ignore this phase, return
+  all Lords to their Seats Unladen by discarding any excess
+  Assets (1.7.2). If a Lord's Seat is Enemy Conquered, place
+  Lord in their Allied Holding Box. Each Lord then reduces
+  his Carts to half their number, rounded up.
+  Remove any MARWANID ALLIANCE Seat markers from map.
+ 
+B.5.5  Aleppo Diplomacy
+  If the Independent Aleppo marker is currently on the map,
+  roll a die. On 1-2, remove the marker. On 3-6, it remains.
+ 
+ 
+================================================================
+C. VICTORY (5.0)
+================================================================
+C.1  Earning Victory Points (5.1)
+  Track VPs on the Calendar (2.2.5).
+    - Each side earns 1/2 VP per Ruins marker of its color.
+    - Each side earns 1/2 VP per Ravaged marker of its color.
+    - Roman player earns 1 VP per Roman Conquered marker
+      on the map.
+  Add to each side's total:
+    - Roman: 1 VP each for Strategic Objective markers and
+      Conquered markers in the Constantinople Holding Box.
+    - Seljuk: 1 VP each for Loot markers in the Mosul &
+      Baghdad Holding Box.
+ 
+C.2  Campaign Victory (5.2)
+  If at any moment during Campaign a side has NO Mustered
+  Lords on the map, the game ends immediately — the other
+  side wins regardless of VPs.
+  The Seljuk player wins in the first phase of Winter if they
+  have Conquered Aleppo and the ALEPPO INDEPENDENCE Event
+  has been played for its effect.
+ 
+C.3  End of Scenario Victory (5.3)
+  If neither side wins by the Game End step (4.7.1) of the last
+  Campaign, the side with more VPs wins. If tied, draw.

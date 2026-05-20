@@ -1,0 +1,449 @@
+================================================================
+SELJUK — LORDS REFERENCE
+================================================================
+Compiled from physical mats (verified by user) and cross-checked
+against the Rulebook, Playbook, and Errata & Clarifications.
+ 
+Notation:
+  "?"   on a Seat indicates a conditional Seat activated only
+        when a Capability is in play (Marwanid Alliance for
+        Amid/Mayyafariqin; Roman alignment for Arisighi's
+        Constantinople Holding Box).
+  Service Rating (vassals) is used only with optional rule 6.2;
+        ignored in standard play.
+ 
+ 
+================================================================
+ROMAN SIDE
+================================================================
+ 
+----------------------------------------------------------------
+ROMANOS DIOGENES — "Emperor of the Romans"
+----------------------------------------------------------------
+Commander (tall cylinder; always Roman Commander when on map)
+Fealty: 6   Service: 4   Lordship: 3   Command: 4
+Seat: Constantinople
+ 
+Starting Forces:    2x Tagmata, 1x Infantry, 2x Turkic Horse
+Starting Assets:    2 Carts, 2 Provender, 2 Coin
+ 
+Vassals:
+  - 2x Tagmata, 2x Infantry, Service 3
+  - Special: Emperor's Retinue (red cross background)
+             1x Varangian Guard, 1x Hetaireia, Service 1
+             (Requires R7 Capability; Romanos only)
+  - Special: Scholai (red cross background)
+             1x Hetaireia, Service 1
+             (Requires R17 Capability; shared with Andronikos)
+ 
+Notes:
+  - As Commander, may pay Coin from his mat for any Unbesieged
+    Roman Lord regardless of distance (rule 1.5.2 SHARING).
+  - Can lead Group March (4.3.1) and Recruit Themata (4.5.7).
+  - Can Tax Friendly Strongholds in the Roman Empire that are
+    not his Seat (4.5.6).
+  - Eligible for R9 Provincial Bureaucracy (Commander-only).
+ 
+----------------------------------------------------------------
+MANUEL KOMNENOS — "Kouropolates and Protostrator"
+----------------------------------------------------------------
+Conditional Commander (tall cylinder with golden eagle sticker;
+acts as Roman Commander only while Romanos is off the map)
+Fealty: 3   Service: 2   Lordship: 3   Command: 2
+Seat: Constantinople
+ 
+Starting Forces:    2x Tagmata, 2x Infantry, 1x Turkic Horse
+Starting Assets:    1 Cart, 1 Provender, 1 Coin
+ 
+Vassals:
+  - 2x Infantry, Service 2
+ 
+Notes:
+  - Subject of S14 Manuel Komnenos Falls Ill (Seljuk Event;
+    shifts his Service/cylinder one Calendar box, Seljuk choice
+    of direction).
+  - Eligible for R9 Provincial Bureaucracy (Commander-only)
+    while he is the active Commander.
+  - 1070 "Showdown in Anatolia" scenario starts him as active
+    Commander at Constantinople.
+  - Removed from play entirely in the 1071 Manzikert scenario.
+ 
+----------------------------------------------------------------
+ANDRONIKOS DOUKAS — "Reserve Commander"
+----------------------------------------------------------------
+Fealty: 2   Service: 2   Lordship: 2   Command: 2
+Seat: Constantinople
+ 
+Starting Forces:    3x Militia, 1x Tagmata, 1x Infantry
+Starting Assets:    1 Cart, 1 Provender, 1 Coin
+ 
+Vassals:
+  - 2x Infantry, Service 1
+  - Special: Scholai (red cross background)
+             1x Hetaireia, Service 1
+             (Requires R17 Capability; shared with Romanos)
+ 
+Notes:
+  - Subject of S3 The Betrayal of Andronikos Doukas (once-per-
+    game Seljuk Event; removes him from a Battle array).
+  - Per 1071 scenario errata: he starts with SYNDOSIS Levied
+    only (PSILOI is an ALL Capability and goes to board edge).
+ 
+----------------------------------------------------------------
+JOSEPH TARCHANEIOTES — "Second in Command"
+----------------------------------------------------------------
+Fealty: 3   Service: 3   Lordship: 2   Command: 3
+Seat: Constantinople
+ 
+Starting Forces:    2x Tagmata, 2x Turkic Horse
+Starting Assets:    1 Cart, 1 Provender
+ 
+Vassals:
+  - 2x Infantry, Service 2
+ 
+----------------------------------------------------------------
+NIKEPHOROS BRYENNIOS — "Flank Commander"
+----------------------------------------------------------------
+Fealty: 4   Service: 3   Lordship: 2   Command: 3
+Seat: Constantinople
+ 
+Starting Forces:    1x Tagmata, 1x Turkic Horse
+Starting Assets:    2 Carts, 1 Provender
+ 
+Vassals:
+  - 2x Tagmata, Service 2
+  - 2x Infantry, Service 1
+ 
+Notes:
+  - Light starting Forces (only 2 units) but two Vassals add 4
+    units when fully Mustered; 2 Carts make him a mobile supply
+    hub.
+  - Eligible for R15 Fealty to the Basileus (skip Winter Quarters
+    and stay in field).
+ 
+----------------------------------------------------------------
+CHATATOURIOS — "Doux of Antioch"
+----------------------------------------------------------------
+Fealty: 4   Service: 2   Lordship: 2   Command: 2
+Seat: Antioch
+ 
+Starting Forces:    1x Tagmata, 1x Militia, 2x Infantry
+Starting Assets:    1 Cart, 1 Provender
+ 
+Vassals:
+  - 1x Tagmata, Service 1
+  - 1x Tagmata, Service 1
+  - 1x Infantry, Service 1
+  - 1x Infantry, Service 1
+ 
+Notes:
+  - Most Vassals of any lord (four).
+  - Excluded from R6 Centralized Administration (heraldry
+    crossed out on card) — Antioch is on the border, outside
+    the Capability's effect zone.
+ 
+----------------------------------------------------------------
+ROBERT CREPIN "Phrangopoulos" — "Norman Mercenary"
+----------------------------------------------------------------
+Dual-allegiance lord (purple AND blue cylinders, both mats)
+Fealty: 4   Service: 2   Lordship: 1   Command: 2
+Seat: Edessa (if Seat enemy-occupied, goes to current side's
+              Holding Box per 1.4.2)
+ 
+Starting Forces:    1x Infantry, 2x Norman Knights
+Starting Assets:    1 Cart, 1 Provender
+ 
+Vassals: None
+ 
+Notes:
+  - All-Horse-heavy composition: first March costs one less
+    Command (Norman Knights count).
+  - Eligible: R8 Martial Society, R10 Reconquista & Sicilian
+    Commanders (Robert and Roussel only).
+  - Subject to S19 Norman Pay Revolt (Treachery Event).
+  - Excluded: S18 Unstoppable Turkmen, S19 Baghdad Reinforce-
+    ments, S20 Elite Ghulam Cavalry, R6 Centralized Admin
+    (heraldry crossed out on each).
+ 
+----------------------------------------------------------------
+ROUSSEL DE BAILLEUL "Orselios" — "Norman Mercenary"
+----------------------------------------------------------------
+Dual-allegiance lord (purple AND blue cylinders, both mats)
+Fealty: 4   Service: 2   Lordship: 1   Command: 2
+Seat: Ankyra (if Seat enemy-occupied, goes to current side's
+              Holding Box per 1.4.2)
+ 
+Starting Forces:    3x Norman Knights
+Starting Assets:    1 Cart, 1 Provender
+ 
+Vassals: None
+ 
+Notes:
+  - All-Horse composition: first March costs one less Command.
+  - Eligible: R5 Norman Heavy Cavalry, R8 Martial Society,
+    R10 Reconquista & Sicilian Commanders (Robert and Roussel
+    only on the last two).
+  - Excluded: S18 Unstoppable Turkmen, S19 Baghdad Reinforce-
+    ments, S20 Elite Ghulam Cavalry, R6 Centralized Admin.
+ 
+ 
+================================================================
+SELJUK SIDE
+================================================================
+ 
+----------------------------------------------------------------
+ALP ARSLAN — "Heroic Lion, Sultan of Great Seljuk"
+----------------------------------------------------------------
+Commander (tall cylinder; eligible for Group March)
+Fealty: 6   Service: 4   Lordship: 3   Command: 4
+Seats: Ani, Mosul, Amid?, Mayyafariqin?
+       (last two conditional via Marwanid Alliance)
+ 
+Starting Forces:    4x Turkic Horse, 2x Ghulam
+Starting Assets:    2 Carts, 1 Provender, 2 Coin
+ 
+Vassals:
+  - 2x Turkic Horse, Service 3
+  - 2x Infantry, Service 2
+  - Special: Elite Ghulam Cavalry
+             1x Ghulam, Service 1
+             (Requires S20 Capability; printed slot is on Alp
+             Arslan's mat but Capability is available to any
+             Seljuk lord except Robert/Roussel)
+ 
+Notes:
+  - As Commander, may pay Coin from his mat for any Unbesieged
+    Seljuk Lord regardless of distance.
+  - Fealty 6 means he auto-Musters on any d6 roll.
+  - Marwanid Alliance Coin source: 1 Coin from his mat can
+    transfer to the Capability card to activate Amid or
+    Mayyafariqin as Seats (rule 3.5.1.1).
+ 
+----------------------------------------------------------------
+AFSIN BEG — "Seljuk Chieftain"
+----------------------------------------------------------------
+Fealty: 5   Service: 3   Lordship: 2   Command: 3
+Seats: Ani, Mosul, Amid?, Mayyafariqin?
+ 
+Starting Forces:    6x Turkic Horse
+Starting Assets:    1 Cart, 1 Provender
+ 
+Vassals:
+  - 2x Turkic Horse, Service 3
+ 
+Notes:
+  - Sole eligible lord for S12 The Sickle of Anatolia (his
+    signature Capability — extra Command action while Levied).
+  - Eligible for S7 Trusted Commander (with Emir of Arran,
+    Artuk Beg, Sav-Tekin) — March only, no Commander status.
+  - All-Turkic-Horse force: first March costs one less.
+  - Fealty 5 is among the highest in the game.
+ 
+----------------------------------------------------------------
+ARISIGHI "Chrysoskoulos" — "Brother-in-law to the Sultan"
+----------------------------------------------------------------
+Dual-allegiance lord (purple AND blue cylinders, both mats)
+Fealty: 4   Service: 3   Lordship: 1   Command: 3
+Seats: Mosul, Amid?, Mayyafariqin?
+       Constantinople Holding Box? (when Roman-aligned)
+ 
+Starting Forces:    5x Turkic Horse
+Starting Assets:    1 Cart, 1 Provender
+ 
+Vassals:
+  - 2x Turkic Horse, Service 3
+ 
+Notes:
+  - When Roman-aligned, his Seat is the Constantinople Holding
+    Box, not Constantinople proper (4.7.6 Winter Quarters).
+  - Eligible: S3 Steppe Raiders, S22 Turkmen Skirmishers (with
+    Sanduq al-Turki and Ibn Khan only).
+  - All-Turkic-Horse force: first March costs one less.
+ 
+----------------------------------------------------------------
+ARTUK BEG — "Son of Eksuk, Seljuk Chieftain"
+----------------------------------------------------------------
+Fealty: 4   Service: 3   Lordship: 2   Command: 3
+Seats: Mosul, Amid?, Mayyafariqin?
+ 
+Starting Forces:    4x Turkic Horse, 1x Infantry
+Starting Assets:    1 Cart, 1 Provender, 1 Coin
+ 
+Vassals:
+  - 2x Turkic Horse, Service 3
+ 
+Notes:
+  - Sole eligible lord for S10 Artukid Legacy — treats Mosul
+    and Baghdad as Seats for Supply Route and Winter Bounty
+    (himself only), independent of Marwanid Alliance.
+  - Eligible for S7 Trusted Commander.
+ 
+----------------------------------------------------------------
+SAV-TEKIN "Sarhang" — "Elite Ghilman Commander"
+----------------------------------------------------------------
+Fealty: 3   Service: 2   Lordship: 2   Command: 2
+Seats: Ani, Amid?, Mayyafariqin?
+ 
+Starting Forces:    2x Infantry, 2x Ghulam
+Starting Assets:    1 Cart, 1 Provender
+ 
+Vassals:
+  - 1x Ghulam, Service 3
+  - 2x Infantry, Service 3
+ 
+Notes:
+  - Sole eligible lord for S5 Forced Conscription (free Muster
+    of one Vassal or original Force unit, beyond normal Muster
+    actions).
+  - Eligible for S11 Javelins (with Emir of Arran only) —
+    one use per Battle, not in Storm.
+  - Eligible for S7 Trusted Commander.
+ 
+----------------------------------------------------------------
+EMIR OF ARRAN — "Shaddadid Ruler"
+----------------------------------------------------------------
+Fealty: 3   Service: 2   Lordship: 2   Command: 2
+Seats: Ani, Amid?, Mayyafariqin?
+ 
+Starting Forces:    2x Turkic Horse, 2x Infantry
+Starting Assets:    1 Cart, 1 Provender, 1 Coin
+ 
+Vassals:
+  - 2x Infantry, Service 1
+ 
+Notes:
+  - Eligible for S11 Javelins (with Sav-Tekin only).
+  - Eligible for S7 Trusted Commander.
+  - Historical: head of the Shaddadid Dynasty of Arran, based
+    in Ganja (Azerbaijan).
+ 
+----------------------------------------------------------------
+IBN KHAN — "Nawakiyya Prince, Seljuk Chieftain"
+----------------------------------------------------------------
+Fealty: 3   Service: 2   Lordship: 2   Command: 2
+Seats: Hama, Amid?, Mayyafariqin?
+ 
+Starting Forces:    4x Turkic Horse, 1x Infantry
+Starting Assets:    1 Cart, 1 Provender
+ 
+Vassals: None
+ 
+Notes:
+  - Sole eligible lord for S14 Support From Aleppo (Command-
+    card reroll while Levied).
+  - Eligible: S3 Steppe Raiders, S22 Turkmen Skirmishers.
+  - Mostly-Turkic-Horse force: first March costs one less.
+  - Removed from play entirely in the 1071 Manzikert scenario
+    (killed by his own men in 1070 historically).
+ 
+----------------------------------------------------------------
+SANDUQ AL-TURKI — "Seljuk Chieftain"
+----------------------------------------------------------------
+Fealty: 4   Service: 3   Lordship: 1   Command: 2
+Seats: Ani, Amid?, Mayyafariqin?
+ 
+Starting Forces:    5x Turkic Horse
+Starting Assets:    1 Cart, 1 Provender
+ 
+Vassals: None
+ 
+Notes:
+  - Eligible: S3 Steppe Raiders, S22 Turkmen Skirmishers (with
+    Arisighi and Ibn Khan).
+  - All-Turkic-Horse force: first March costs one less.
+ 
+ 
+================================================================
+SPECIAL VASSALS
+================================================================
+ 
+The game has exactly four Special Vassals, identified by
+distinctive borders and background symbols on their markers
+(rule 1.5.1). All four start the game SET ASIDE and only enter
+play when their associated Capability has been Levied (rule
+3.4.2). Discard of the Capability card Disbands the Special
+Vassal.
+ 
+Mustering a Special Vassal is a two-step process:
+  1. Spend Lordship to Levy the Capability card and place the
+     Special Vassal marker in the Lord's Assets section.
+  2. Spend an additional Lordship on a later Levy (or same Levy
+     if Lordship permits) to actually Muster the Vassal,
+     adding its units to the Lord's Forces.
+ 
+----------------------------------------------------------------
+ROMAN SPECIAL VASSALS
+----------------------------------------------------------------
+ 
+OGHUZ MERCENARIES (R2)
+  Eligible Lord(s):  Any Roman
+  Forces:            2x Turkic Horse
+  Service Rating:    2
+  Notes:             Marker has no printed home; goes to
+                     whichever Roman lord Levies R2.
+ 
+EMPEROR'S RETINUE (R7)
+  Eligible Lord(s):  Romanos Diogenes only
+  Forces:            1x Varangian Guard, 1x Hetaireia
+  Service Rating:    1
+  Background:        Red cross
+  Notes:             Printed slot on Romanos's mat.
+ 
+SCHOLAI (R17)
+  Eligible Lord(s):  Romanos Diogenes, Andronikos Doukas
+  Forces:            1x Hetaireia
+  Service Rating:    1
+  Background:        Red cross
+  Notes:             One marker shared between two lords;
+                     printed slot on both Romanos's and
+                     Andronikos's mats.
+ 
+----------------------------------------------------------------
+SELJUK SPECIAL VASSALS
+----------------------------------------------------------------
+ 
+ELITE GHULAM CAVALRY (S20)
+  Eligible Lord(s):  Any Seljuk except Robert Crepin
+                     and Roussel de Bailleul
+  Forces:            1x Ghulam
+  Service Rating:    1
+  Notes:             Printed slot on Alp Arslan's mat (the
+                     thematic primary user), but eligibility
+                     extends to all other Seljuk lords.
+ 
+ 
+================================================================
+QUICK REFERENCE TABLES
+================================================================
+ 
+COMMANDERS:
+  Roman:  Romanos Diogenes (always when on map)
+          Manuel Komnenos (when Romanos off-map)
+  Seljuk: Alp Arslan (always when on map)
+ 
+DUAL-ALLEGIANCE LORDS:
+  Robert Crepin   (Roman primary; can serve Seljuk)
+  Roussel de Bailleul (Roman primary; can serve Seljuk)
+  Arisighi        (Seljuk primary; can serve Roman)
+ 
+FEALTY RANKINGS (high to low):
+  6: Alp Arslan, Romanos Diogenes
+  5: Afsin Beg
+  4: Arisighi, Artuk Beg, Chatatourios, Nikephoros Bryennios,
+     Robert Crepin, Roussel de Bailleul, Sanduq al-Turki
+  3: Emir of Arran, Ibn Khan, Joseph Tarchaneiotes,
+     Manuel Komnenos, Sav-Tekin
+  2: Andronikos Doukas
+ 
+LORDSHIP RANKINGS (high to low):
+  3: Alp Arslan, Manuel Komnenos, Romanos Diogenes
+  2: Afsin Beg, Andronikos Doukas, Artuk Beg, Chatatourios,
+     Emir of Arran, Ibn Khan, Joseph Tarchaneiotes,
+     Nikephoros Bryennios, Sav-Tekin
+  1: Arisighi, Robert Crepin, Roussel de Bailleul,
+     Sanduq al-Turki
+ 
+================================================================
+END OF REFERENCE
+================================================================
+ 
