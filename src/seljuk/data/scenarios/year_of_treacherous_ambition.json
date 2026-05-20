@@ -1,0 +1,169 @@
+{
+ "name": "Year of Treacherous Ambition",
+ "start_box": 7,
+ "final_box": 9,
+ "skip_first_levy": true,
+ "seljuk_unity_targets": {
+  "9": 15
+ },
+ "starting_vp": {
+  "roman": 3.0,
+  "seljuk": 3.0
+ },
+ "first_turn_plan_size": 6,
+ "mustered": [
+  {
+   "lord": "manuel_komnenos",
+   "locale": "to_constantinople",
+   "assets_override": {
+    "carts": 2
+   },
+   "capabilities": [
+    "R6"
+   ]
+  },
+  {
+   "lord": "chatatourios",
+   "locale": "antioch"
+  },
+  {
+   "lord": "roussel_de_bailleul",
+   "locale": "ankyra",
+   "side": "roman"
+  },
+  {
+   "lord": "alp_arslan",
+   "locale": "ani",
+   "assets_override": {
+    "carts": 3
+   },
+   "capabilities": [
+    "S1"
+   ]
+  },
+  {
+   "lord": "arisighi",
+   "locale": "theodosiopolis",
+   "side": "seljuk",
+   "capabilities": [
+    "S3"
+   ]
+  },
+  {
+   "lord": "emir_of_arran",
+   "locale": "manbij",
+   "capabilities": [
+    "S15"
+   ]
+  }
+ ],
+ "service": {
+  "roussel_de_bailleul": 8,
+  "emir_of_arran": 9,
+  "arisighi": 9,
+  "manuel_komnenos": 9,
+  "chatatourios": 9,
+  "alp_arslan": 11
+ },
+ "on_calendar": [
+  {
+   "lord": "joseph_tarchaneiotes",
+   "box": 7
+  },
+  {
+   "lord": "afsin_beg",
+   "box": 7
+  }
+ ],
+ "removed_lords": [
+  "romanos_diogenes",
+  "andronikos_doukas",
+  "nikephoros_bryennios",
+  "robert_crepin",
+  "artuk_beg",
+  "sav_tekin",
+  "ibn_khan",
+  "sanduq_al_turki"
+ ],
+ "board_edge_capabilities": {
+  "roman": [
+   "R16"
+  ],
+  "seljuk": [
+   "S8"
+  ]
+ },
+ "capability_coins": {
+  "S8": 2
+ },
+ "markers": {
+  "ruins": [
+   {
+    "locale": "kaisareia",
+    "color": "seljuk"
+   }
+  ],
+  "conquered": [
+   {
+    "locale": "arkesh",
+    "side": "roman"
+   },
+   {
+    "locale": "manzikert",
+    "side": "roman"
+   },
+   {
+    "locale": "manbij",
+    "side": "roman"
+   }
+  ],
+  "ravaged": [
+   {
+    "locale": "romanoupolis",
+    "side": "seljuk"
+   },
+   {
+    "locale": "keltzene",
+    "side": "seljuk"
+   },
+   {
+    "locale": "edessa",
+    "side": "seljuk"
+   },
+   {
+    "locale": "melitene",
+    "side": "seljuk"
+   },
+   {
+    "locale": "theodosiopolis",
+    "side": "seljuk"
+   }
+  ],
+  "siege": [
+   {
+    "locale": "manbij",
+    "count": 1
+   }
+  ],
+  "bypass": [
+   "theodosiopolis"
+  ],
+  "fort": [],
+  "strategic_objective_locale": []
+ },
+ "holding_boxes": {
+  "mosul_baghdad_loot": 0,
+  "constantinople_strategic_objectives_available": 0,
+  "constantinople_roman_vp_markers": 0
+ },
+ "themata_key": "year_of_treacherous_ambition",
+ "special_vp_rules": [
+  "Seljuks +1 VP each for reaching Ikonion and/or Western Anatolia with a Lord",
+  "Romans +1 VP if Arisighi switches sides",
+  "End of Winter 1070: both sides +1 VP each for control of Manbij, Edessa, Khliat, and Manzikert"
+ ],
+ "calendar_reminders": [
+  "Nomisma Debased marker pre-placed at Autumn 1069 (box 6): R19 considered already used"
+ ],
+ "nomisma_debased_used": true
+}

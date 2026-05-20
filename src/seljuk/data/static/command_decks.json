@@ -1,0 +1,44 @@
+{
+ "_source": "Rules of Play 1.2 (component counts 42 Roman / 46 Seljuk) and 1.9.2. Dual-allegiance Lords (Robert, Roussel, Arisighi) have card sets in both decks; a Lord's cards are usable in the Plan only while he is Mustered on that side (4.1.1). Action cards bear a numeral (Command Rating); No Command and Treachery are special.",
+ "roman": {
+  "action_cards_per_lord": 4,
+  "lords_with_cards": [
+   "romanos_diogenes",
+   "manuel_komnenos",
+   "andronikos_doukas",
+   "joseph_tarchaneiotes",
+   "nikephoros_bryennios",
+   "chatatourios",
+   "robert_crepin",
+   "roussel_de_bailleul",
+   "arisighi"
+  ],
+  "no_command_cards": 5,
+  "treachery_cards": 1,
+  "total": 42
+ },
+ "seljuk": {
+  "action_cards_per_lord": 4,
+  "lords_with_cards": [
+   "alp_arslan",
+   "afsin_beg",
+   "artuk_beg",
+   "sav_tekin",
+   "emir_of_arran",
+   "ibn_khan",
+   "sanduq_al_turki",
+   "arisighi",
+   "robert_crepin",
+   "roussel_de_bailleul"
+  ],
+  "no_command_cards": 5,
+  "treachery_cards": 1,
+  "total": 46
+ },
+ "plan_stack_by_season": {
+  "spring": 7,
+  "summer": 8,
+  "autumn": 7
+ },
+ "_plan_note": "Season sets the required Plan stack size (4.1); some Events add cards (Treachery + No Command; Unpredictable Weather Summer -> 9)."
+}

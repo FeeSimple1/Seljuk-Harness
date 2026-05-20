@@ -1,0 +1,127 @@
+{
+ "name": "The Emperor and the Lion",
+ "start_box": 1,
+ "final_box": 12,
+ "skip_first_levy": false,
+ "seljuk_unity_targets": {
+  "3": 10,
+  "6": 13,
+  "9": 15
+ },
+ "starting_vp": {
+  "roman": 0.0,
+  "seljuk": 0.5
+ },
+ "mustered": [
+  {
+   "lord": "romanos_diogenes",
+   "locale": "to_constantinople"
+  },
+  {
+   "lord": "nikephoros_bryennios",
+   "locale": "to_constantinople"
+  },
+  {
+   "lord": "chatatourios",
+   "locale": "antioch"
+  },
+  {
+   "lord": "alp_arslan",
+   "locale": "ani"
+  },
+  {
+   "lord": "arisighi",
+   "locale": "to_mosul_and_baghdad",
+   "side": "seljuk"
+  },
+  {
+   "lord": "ibn_khan",
+   "locale": "hama"
+  }
+ ],
+ "service": {
+  "chatatourios": 3,
+  "ibn_khan": 3,
+  "nikephoros_bryennios": 4,
+  "arisighi": 4,
+  "alp_arslan": 5,
+  "romanos_diogenes": 5
+ },
+ "on_calendar": [
+  {
+   "lord": "robert_crepin",
+   "box": 1,
+   "side": "roman"
+  },
+  {
+   "lord": "joseph_tarchaneiotes",
+   "box": 2
+  },
+  {
+   "lord": "afsin_beg",
+   "box": 2
+  },
+  {
+   "lord": "andronikos_doukas",
+   "box": 3
+  },
+  {
+   "lord": "sav_tekin",
+   "box": 3
+  },
+  {
+   "lord": "manuel_komnenos",
+   "box": 4
+  },
+  {
+   "lord": "emir_of_arran",
+   "box": 4
+  },
+  {
+   "lord": "sanduq_al_turki",
+   "box": 4
+  },
+  {
+   "lord": "artuk_beg",
+   "box": 6
+  },
+  {
+   "lord": "roussel_de_bailleul",
+   "box": 7,
+   "side": "roman"
+  }
+ ],
+ "removed_lords": [],
+ "board_edge_capabilities": {
+  "roman": [],
+  "seljuk": []
+ },
+ "capability_coins": {},
+ "markers": {
+  "ruins": [
+   {
+    "locale": "kaisareia",
+    "color": "seljuk"
+   }
+  ],
+  "conquered": [
+   {
+    "locale": "hama",
+    "side": "seljuk"
+   }
+  ],
+  "ravaged": [],
+  "siege": [],
+  "bypass": [],
+  "fort": [],
+  "strategic_objective_locale": []
+ },
+ "holding_boxes": {
+  "mosul_baghdad_loot": 0,
+  "constantinople_strategic_objectives_available": 0,
+  "constantinople_roman_vp_markers": 0
+ },
+ "themata_key": "emperor_and_the_lion",
+ "special_vp_rules": [],
+ "calendar_reminders": []
+}
