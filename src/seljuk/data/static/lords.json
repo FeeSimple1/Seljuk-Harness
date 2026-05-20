@@ -1,0 +1,676 @@
+{
+ "_source": "Seljuk Lords Reference.txt (verified mats), cross-checked vs Rulebook. Hetaireia unit = scholai_hetaireia in forces.json. Service Ratings on Vassals used only with optional rule 6.2.",
+ "special_vassals_roster": {
+  "oghuz_mercenaries": {
+   "capability": "R2",
+   "eligible": "any_roman",
+   "forces": {
+    "turkic_horse": 2
+   },
+   "service": 2,
+   "printed_slot_lord": null
+  },
+  "emperors_retinue": {
+   "capability": "R7",
+   "eligible": [
+    "romanos_diogenes"
+   ],
+   "forces": {
+    "varangian_guard": 1,
+    "scholai_hetaireia": 1
+   },
+   "service": 1
+  },
+  "scholai": {
+   "capability": "R17",
+   "eligible": [
+    "romanos_diogenes",
+    "andronikos_doukas"
+   ],
+   "forces": {
+    "scholai_hetaireia": 1
+   },
+   "service": 1,
+   "shared_single_marker": true
+  },
+  "elite_ghulam_cavalry": {
+   "capability": "S20",
+   "eligible": "any_seljuk_except_robert_roussel",
+   "forces": {
+    "ghulam_cavalry": 1
+   },
+   "service": 1,
+   "printed_slot_lord": "alp_arslan"
+  }
+ },
+ "lords": {
+  "romanos_diogenes": {
+   "name": "Romanos Diogenes",
+   "epithet": "Emperor of the Romans",
+   "side": "roman",
+   "commander": "always",
+   "dual_allegiance": false,
+   "ratings": {
+    "fealty": 6,
+    "service": 4,
+    "lordship": 3,
+    "command": 4
+   },
+   "seats": [
+    "to_constantinople"
+   ],
+   "starting_forces": {
+    "tagmata": 2,
+    "infantry": 1,
+    "turkic_horse": 2
+   },
+   "starting_assets": {
+    "carts": 2,
+    "provender": 2,
+    "coin": 2
+   },
+   "vassals": [
+    {
+     "forces": {
+      "tagmata": 2,
+      "infantry": 2
+     },
+     "service": 3
+    }
+   ],
+   "special_vassals": [
+    {
+     "name": "Emperor's Retinue",
+     "forces": {
+      "varangian_guard": 1,
+      "scholai_hetaireia": 1
+     },
+     "service": 1,
+     "requires_capability": "R7"
+    },
+    {
+     "name": "Scholai",
+     "forces": {
+      "scholai_hetaireia": 1
+     },
+     "service": 1,
+     "requires_capability": "R17",
+     "shared_with": [
+      "andronikos_doukas"
+     ]
+    }
+   ]
+  },
+  "manuel_komnenos": {
+   "name": "Manuel Komnenos",
+   "epithet": "Kouropolates and Protostrator",
+   "side": "roman",
+   "commander": "conditional",
+   "commander_condition": "when Romanos Diogenes is off the map",
+   "dual_allegiance": false,
+   "ratings": {
+    "fealty": 3,
+    "service": 2,
+    "lordship": 3,
+    "command": 2
+   },
+   "seats": [
+    "to_constantinople"
+   ],
+   "starting_forces": {
+    "tagmata": 2,
+    "infantry": 2,
+    "turkic_horse": 1
+   },
+   "starting_assets": {
+    "carts": 1,
+    "provender": 1,
+    "coin": 1
+   },
+   "vassals": [
+    {
+     "forces": {
+      "infantry": 2
+     },
+     "service": 2
+    }
+   ],
+   "special_vassals": []
+  },
+  "andronikos_doukas": {
+   "name": "Andronikos Doukas",
+   "epithet": "Reserve Commander",
+   "side": "roman",
+   "commander": null,
+   "dual_allegiance": false,
+   "ratings": {
+    "fealty": 2,
+    "service": 2,
+    "lordship": 2,
+    "command": 2
+   },
+   "seats": [
+    "to_constantinople"
+   ],
+   "starting_forces": {
+    "militia": 3,
+    "tagmata": 1,
+    "infantry": 1
+   },
+   "starting_assets": {
+    "carts": 1,
+    "provender": 1,
+    "coin": 1
+   },
+   "vassals": [
+    {
+     "forces": {
+      "infantry": 2
+     },
+     "service": 1
+    }
+   ],
+   "special_vassals": [
+    {
+     "name": "Scholai",
+     "forces": {
+      "scholai_hetaireia": 1
+     },
+     "service": 1,
+     "requires_capability": "R17",
+     "shared_with": [
+      "romanos_diogenes"
+     ]
+    }
+   ]
+  },
+  "joseph_tarchaneiotes": {
+   "name": "Joseph Tarchaneiotes",
+   "epithet": "Second in Command",
+   "side": "roman",
+   "commander": null,
+   "dual_allegiance": false,
+   "ratings": {
+    "fealty": 3,
+    "service": 3,
+    "lordship": 2,
+    "command": 3
+   },
+   "seats": [
+    "to_constantinople"
+   ],
+   "starting_forces": {
+    "tagmata": 2,
+    "turkic_horse": 2
+   },
+   "starting_assets": {
+    "carts": 1,
+    "provender": 1
+   },
+   "vassals": [
+    {
+     "forces": {
+      "infantry": 2
+     },
+     "service": 2
+    }
+   ],
+   "special_vassals": []
+  },
+  "nikephoros_bryennios": {
+   "name": "Nikephoros Bryennios",
+   "epithet": "Flank Commander",
+   "side": "roman",
+   "commander": null,
+   "dual_allegiance": false,
+   "ratings": {
+    "fealty": 4,
+    "service": 3,
+    "lordship": 2,
+    "command": 3
+   },
+   "seats": [
+    "to_constantinople"
+   ],
+   "starting_forces": {
+    "tagmata": 1,
+    "turkic_horse": 1
+   },
+   "starting_assets": {
+    "carts": 2,
+    "provender": 1
+   },
+   "vassals": [
+    {
+     "forces": {
+      "tagmata": 2
+     },
+     "service": 2
+    },
+    {
+     "forces": {
+      "infantry": 2
+     },
+     "service": 1
+    }
+   ],
+   "special_vassals": []
+  },
+  "chatatourios": {
+   "name": "Chatatourios",
+   "epithet": "Doux of Antioch",
+   "side": "roman",
+   "commander": null,
+   "dual_allegiance": false,
+   "ratings": {
+    "fealty": 4,
+    "service": 2,
+    "lordship": 2,
+    "command": 2
+   },
+   "seats": [
+    "antioch"
+   ],
+   "starting_forces": {
+    "tagmata": 1,
+    "militia": 1,
+    "infantry": 2
+   },
+   "starting_assets": {
+    "carts": 1,
+    "provender": 1
+   },
+   "vassals": [
+    {
+     "forces": {
+      "tagmata": 1
+     },
+     "service": 1
+    },
+    {
+     "forces": {
+      "tagmata": 1
+     },
+     "service": 1
+    },
+    {
+     "forces": {
+      "infantry": 1
+     },
+     "service": 1
+    },
+    {
+     "forces": {
+      "infantry": 1
+     },
+     "service": 1
+    }
+   ],
+   "special_vassals": []
+  },
+  "robert_crepin": {
+   "name": "Robert Crepin",
+   "epithet": "Norman Mercenary",
+   "side": "roman",
+   "commander": null,
+   "dual_allegiance": true,
+   "primary_side": "roman",
+   "ratings": {
+    "fealty": 4,
+    "service": 2,
+    "lordship": 1,
+    "command": 2
+   },
+   "seats": [
+    "edessa"
+   ],
+   "seat_fallback_holding_box": "current_side",
+   "starting_forces": {
+    "infantry": 1,
+    "norman_knights": 2
+   },
+   "starting_assets": {
+    "carts": 1,
+    "provender": 1
+   },
+   "vassals": [],
+   "special_vassals": []
+  },
+  "roussel_de_bailleul": {
+   "name": "Roussel de Bailleul",
+   "epithet": "Norman Mercenary",
+   "side": "roman",
+   "commander": null,
+   "dual_allegiance": true,
+   "primary_side": "roman",
+   "ratings": {
+    "fealty": 4,
+    "service": 2,
+    "lordship": 1,
+    "command": 2
+   },
+   "seats": [
+    "ankyra"
+   ],
+   "seat_fallback_holding_box": "current_side",
+   "starting_forces": {
+    "norman_knights": 3
+   },
+   "starting_assets": {
+    "carts": 1,
+    "provender": 1
+   },
+   "vassals": [],
+   "special_vassals": []
+  },
+  "alp_arslan": {
+   "name": "Alp Arslan",
+   "epithet": "Heroic Lion, Sultan of Great Seljuk",
+   "side": "seljuk",
+   "commander": "always",
+   "dual_allegiance": false,
+   "ratings": {
+    "fealty": 6,
+    "service": 4,
+    "lordship": 3,
+    "command": 4
+   },
+   "seats": [
+    "ani",
+    "to_mosul_and_baghdad"
+   ],
+   "conditional_seats": [
+    "amid",
+    "mayyafariqin"
+   ],
+   "starting_forces": {
+    "turkic_horse": 4,
+    "ghulam_cavalry": 2
+   },
+   "starting_assets": {
+    "carts": 2,
+    "provender": 1,
+    "coin": 2
+   },
+   "vassals": [
+    {
+     "forces": {
+      "turkic_horse": 2
+     },
+     "service": 3
+    },
+    {
+     "forces": {
+      "infantry": 2
+     },
+     "service": 2
+    }
+   ],
+   "special_vassals": [
+    {
+     "name": "Elite Ghulam Cavalry",
+     "forces": {
+      "ghulam_cavalry": 1
+     },
+     "service": 1,
+     "requires_capability": "S20",
+     "printed_slot_lord": "alp_arslan",
+     "eligible": "any_seljuk_except_robert_roussel"
+    }
+   ]
+  },
+  "afsin_beg": {
+   "name": "Afsin Beg",
+   "epithet": "Seljuk Chieftain",
+   "side": "seljuk",
+   "commander": null,
+   "dual_allegiance": false,
+   "ratings": {
+    "fealty": 5,
+    "service": 3,
+    "lordship": 2,
+    "command": 3
+   },
+   "seats": [
+    "ani",
+    "to_mosul_and_baghdad"
+   ],
+   "conditional_seats": [
+    "amid",
+    "mayyafariqin"
+   ],
+   "starting_forces": {
+    "turkic_horse": 6
+   },
+   "starting_assets": {
+    "carts": 1,
+    "provender": 1
+   },
+   "vassals": [
+    {
+     "forces": {
+      "turkic_horse": 2
+     },
+     "service": 3
+    }
+   ],
+   "special_vassals": []
+  },
+  "arisighi": {
+   "name": "Arisighi",
+   "epithet": "Brother-in-law to the Sultan",
+   "side": "seljuk",
+   "commander": null,
+   "dual_allegiance": true,
+   "primary_side": "seljuk",
+   "ratings": {
+    "fealty": 4,
+    "service": 3,
+    "lordship": 1,
+    "command": 3
+   },
+   "seats": [
+    "to_mosul_and_baghdad"
+   ],
+   "conditional_seats": [
+    "amid",
+    "mayyafariqin"
+   ],
+   "seat_when_roman_aligned": "to_constantinople",
+   "starting_forces": {
+    "turkic_horse": 5
+   },
+   "starting_assets": {
+    "carts": 1,
+    "provender": 1
+   },
+   "vassals": [
+    {
+     "forces": {
+      "turkic_horse": 2
+     },
+     "service": 3
+    }
+   ],
+   "special_vassals": []
+  },
+  "artuk_beg": {
+   "name": "Artuk Beg",
+   "epithet": "Son of Eksuk, Seljuk Chieftain",
+   "side": "seljuk",
+   "commander": null,
+   "dual_allegiance": false,
+   "ratings": {
+    "fealty": 4,
+    "service": 3,
+    "lordship": 2,
+    "command": 3
+   },
+   "seats": [
+    "to_mosul_and_baghdad"
+   ],
+   "conditional_seats": [
+    "amid",
+    "mayyafariqin"
+   ],
+   "starting_forces": {
+    "turkic_horse": 4,
+    "infantry": 1
+   },
+   "starting_assets": {
+    "carts": 1,
+    "provender": 1,
+    "coin": 1
+   },
+   "vassals": [
+    {
+     "forces": {
+      "turkic_horse": 2
+     },
+     "service": 3
+    }
+   ],
+   "special_vassals": []
+  },
+  "sav_tekin": {
+   "name": "Sav-Tekin",
+   "epithet": "Elite Ghilman Commander",
+   "side": "seljuk",
+   "commander": null,
+   "dual_allegiance": false,
+   "ratings": {
+    "fealty": 3,
+    "service": 2,
+    "lordship": 2,
+    "command": 2
+   },
+   "seats": [
+    "ani"
+   ],
+   "conditional_seats": [
+    "amid",
+    "mayyafariqin"
+   ],
+   "starting_forces": {
+    "infantry": 2,
+    "ghulam_cavalry": 2
+   },
+   "starting_assets": {
+    "carts": 1,
+    "provender": 1
+   },
+   "vassals": [
+    {
+     "forces": {
+      "ghulam_cavalry": 1
+     },
+     "service": 3
+    },
+    {
+     "forces": {
+      "infantry": 2
+     },
+     "service": 3
+    }
+   ],
+   "special_vassals": []
+  },
+  "emir_of_arran": {
+   "name": "Emir of Arran",
+   "epithet": "Shaddadid Ruler",
+   "side": "seljuk",
+   "commander": null,
+   "dual_allegiance": false,
+   "ratings": {
+    "fealty": 3,
+    "service": 2,
+    "lordship": 2,
+    "command": 2
+   },
+   "seats": [
+    "ani"
+   ],
+   "conditional_seats": [
+    "amid",
+    "mayyafariqin"
+   ],
+   "starting_forces": {
+    "turkic_horse": 2,
+    "infantry": 2
+   },
+   "starting_assets": {
+    "carts": 1,
+    "provender": 1,
+    "coin": 1
+   },
+   "vassals": [
+    {
+     "forces": {
+      "infantry": 2
+     },
+     "service": 1
+    }
+   ],
+   "special_vassals": []
+  },
+  "ibn_khan": {
+   "name": "Ibn Khan",
+   "epithet": "Nawakiyya Prince, Seljuk Chieftain",
+   "side": "seljuk",
+   "commander": null,
+   "dual_allegiance": false,
+   "ratings": {
+    "fealty": 3,
+    "service": 2,
+    "lordship": 2,
+    "command": 2
+   },
+   "seats": [
+    "hama"
+   ],
+   "conditional_seats": [
+    "amid",
+    "mayyafariqin"
+   ],
+   "starting_forces": {
+    "turkic_horse": 4,
+    "infantry": 1
+   },
+   "starting_assets": {
+    "carts": 1,
+    "provender": 1
+   },
+   "vassals": [],
+   "special_vassals": []
+  },
+  "sanduq_al_turki": {
+   "name": "Sanduq al-Turki",
+   "epithet": "Seljuk Chieftain",
+   "side": "seljuk",
+   "commander": null,
+   "dual_allegiance": false,
+   "ratings": {
+    "fealty": 4,
+    "service": 3,
+    "lordship": 1,
+    "command": 2
+   },
+   "seats": [
+    "ani"
+   ],
+   "conditional_seats": [
+    "amid",
+    "mayyafariqin"
+   ],
+   "starting_forces": {
+    "turkic_horse": 5
+   },
+   "starting_assets": {
+    "carts": 1,
+    "provender": 1
+   },
+   "vassals": [],
+   "special_vassals": []
+  }
+ }
+}

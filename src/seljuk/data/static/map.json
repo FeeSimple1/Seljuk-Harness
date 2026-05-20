@@ -1,0 +1,933 @@
+{
+ "_source": "Seljuk Map Reference.txt (rulebook spellings) + D-001 (Khliat<->Anzitene = Pass). 44 Locales (42 strongholds/settlements + 2 Holding Boxes), 15 Pass Ways, 47 Road Ways, 4 whole-Command-card routes.",
+ "allegiance_note": "Fatimid (Hama, Aleppo, Syria) are Friendly to Roman / Enemy to Seljuk with exceptions (1.3.1); always use Seljuk Garrison column in Storm.",
+ "locales": {
+  "to_constantinople": {
+   "name": "To Constantinople",
+   "type": "holding_box",
+   "allegiance": "roman",
+   "thema": null,
+   "gardens": false,
+   "is_stronghold": false,
+   "seats": [
+    "romanos_diogenes",
+    "manuel_komnenos",
+    "andronikos_doukas",
+    "joseph_tarchaneiotes",
+    "nikephoros_bryennios"
+   ],
+   "conditional_seats": [
+    {
+     "lord": "arisighi",
+     "when": "roman_aligned"
+    }
+   ]
+  },
+  "ankyra": {
+   "name": "Ankyra",
+   "type": "town",
+   "allegiance": "roman",
+   "thema": "Boukellarion",
+   "gardens": true,
+   "is_stronghold": true,
+   "seats": [
+    "roussel_de_bailleul"
+   ],
+   "conditional_seats": []
+  },
+  "western_anatolia": {
+   "name": "Western Anatolia",
+   "type": "wilderness",
+   "allegiance": "roman",
+   "thema": "Anatolikon",
+   "gardens": false,
+   "is_stronghold": false,
+   "seats": [],
+   "conditional_seats": []
+  },
+  "ikonion": {
+   "name": "Ikonion",
+   "type": "town",
+   "allegiance": "roman",
+   "thema": "Anatolikon",
+   "gardens": true,
+   "is_stronghold": true,
+   "seats": [],
+   "conditional_seats": []
+  },
+  "amaseia": {
+   "name": "Amaseia",
+   "type": "town",
+   "allegiance": "roman",
+   "thema": "Armeniakon",
+   "gardens": true,
+   "is_stronghold": true,
+   "seats": [],
+   "conditional_seats": []
+  },
+  "neokaisareia": {
+   "name": "Neokaisareia",
+   "type": "town",
+   "allegiance": "roman",
+   "thema": "Armeniakon",
+   "gardens": true,
+   "is_stronghold": true,
+   "seats": [],
+   "conditional_seats": []
+  },
+  "charsianon": {
+   "name": "Charsianon",
+   "type": "unfortified_settlement",
+   "allegiance": "roman",
+   "thema": "Charsianon",
+   "gardens": false,
+   "is_stronghold": false,
+   "seats": [],
+   "conditional_seats": []
+  },
+  "kaisareia": {
+   "name": "Kaisareia",
+   "type": "town",
+   "allegiance": "roman",
+   "thema": "Charsianon",
+   "gardens": true,
+   "is_stronghold": true,
+   "seats": [],
+   "conditional_seats": []
+  },
+  "herakleia_kybistra": {
+   "name": "Herakleia Kybistra",
+   "type": "fort",
+   "allegiance": "roman",
+   "thema": "Kappadokia",
+   "gardens": false,
+   "is_stronghold": true,
+   "seats": [],
+   "conditional_seats": []
+  },
+  "tarsos": {
+   "name": "Tarsos",
+   "type": "town",
+   "allegiance": "roman",
+   "thema": "Kilikia",
+   "gardens": true,
+   "is_stronghold": true,
+   "seats": [],
+   "conditional_seats": []
+  },
+  "mopsuestia": {
+   "name": "Mopsuestia",
+   "type": "fort",
+   "allegiance": "roman",
+   "thema": "Kilikia",
+   "gardens": false,
+   "is_stronghold": true,
+   "seats": [],
+   "conditional_seats": []
+  },
+  "lykandos": {
+   "name": "Lykandos",
+   "type": "wilderness",
+   "allegiance": "roman",
+   "thema": "Lykandos",
+   "gardens": false,
+   "is_stronghold": false,
+   "seats": [],
+   "conditional_seats": []
+  },
+  "larisa": {
+   "name": "Larisa",
+   "type": "unfortified_settlement",
+   "allegiance": "roman",
+   "thema": "Lykandos",
+   "gardens": false,
+   "is_stronghold": false,
+   "seats": [],
+   "conditional_seats": []
+  },
+  "sebasteia": {
+   "name": "Sebasteia",
+   "type": "town",
+   "allegiance": "roman",
+   "thema": "Sebasteia",
+   "gardens": true,
+   "is_stronghold": true,
+   "seats": [],
+   "conditional_seats": []
+  },
+  "tephrike": {
+   "name": "Tephrike",
+   "type": "fort",
+   "allegiance": "roman",
+   "thema": "Sebasteia",
+   "gardens": false,
+   "is_stronghold": true,
+   "seats": [],
+   "conditional_seats": []
+  },
+  "germanikeia": {
+   "name": "Germanikeia",
+   "type": "town",
+   "allegiance": "roman",
+   "thema": "Melitene",
+   "gardens": true,
+   "is_stronghold": true,
+   "seats": [],
+   "conditional_seats": []
+  },
+  "edessa": {
+   "name": "Edessa",
+   "type": "town",
+   "allegiance": "roman",
+   "thema": "Melitene",
+   "gardens": true,
+   "is_stronghold": true,
+   "seats": [
+    "robert_crepin"
+   ],
+   "conditional_seats": []
+  },
+  "melitene": {
+   "name": "Melitene",
+   "type": "town",
+   "allegiance": "roman",
+   "thema": "Melitene",
+   "gardens": true,
+   "is_stronghold": true,
+   "seats": [],
+   "conditional_seats": []
+  },
+  "antioch": {
+   "name": "Antioch",
+   "type": "city",
+   "allegiance": "roman",
+   "thema": "Antiocheia",
+   "gardens": true,
+   "is_stronghold": true,
+   "seats": [
+    "chatatourios"
+   ],
+   "conditional_seats": []
+  },
+  "artah": {
+   "name": "Artah",
+   "type": "unfortified_settlement",
+   "allegiance": "roman",
+   "thema": "Antiocheia",
+   "gardens": false,
+   "is_stronghold": false,
+   "seats": [],
+   "conditional_seats": []
+  },
+  "laodikeia": {
+   "name": "Laodikeia",
+   "type": "fort",
+   "allegiance": "roman",
+   "thema": "Antiocheia",
+   "gardens": false,
+   "is_stronghold": true,
+   "seats": [],
+   "conditional_seats": []
+  },
+  "koloneia": {
+   "name": "Koloneia",
+   "type": "fort",
+   "allegiance": "roman",
+   "thema": "Koloneia",
+   "gardens": false,
+   "is_stronghold": true,
+   "seats": [],
+   "conditional_seats": []
+  },
+  "keltzene": {
+   "name": "Keltzene",
+   "type": "town",
+   "allegiance": "roman",
+   "thema": "Koloneia",
+   "gardens": true,
+   "is_stronghold": true,
+   "seats": [],
+   "conditional_seats": []
+  },
+  "chaldia": {
+   "name": "Chaldia",
+   "type": "wilderness",
+   "allegiance": "roman",
+   "thema": "Chaldia",
+   "gardens": false,
+   "is_stronghold": false,
+   "seats": [],
+   "conditional_seats": []
+  },
+  "theodosiopolis": {
+   "name": "Theodosiopolis",
+   "type": "town",
+   "allegiance": "roman",
+   "thema": "Iberia",
+   "gardens": true,
+   "is_stronghold": true,
+   "seats": [],
+   "conditional_seats": []
+  },
+  "romanoupolis": {
+   "name": "Romanoupolis",
+   "type": "town",
+   "allegiance": "roman",
+   "thema": "Mesopotamia",
+   "gardens": true,
+   "is_stronghold": true,
+   "seats": [],
+   "conditional_seats": []
+  },
+  "hama": {
+   "name": "Hama",
+   "type": "fort",
+   "allegiance": "fatimid",
+   "thema": null,
+   "gardens": false,
+   "is_stronghold": true,
+   "seats": [
+    "ibn_khan"
+   ],
+   "conditional_seats": []
+  },
+  "aleppo": {
+   "name": "Aleppo",
+   "type": "city",
+   "allegiance": "fatimid",
+   "thema": null,
+   "gardens": true,
+   "is_stronghold": true,
+   "seats": [],
+   "conditional_seats": []
+  },
+  "syria": {
+   "name": "Syria",
+   "type": "wilderness",
+   "allegiance": "fatimid",
+   "thema": null,
+   "gardens": false,
+   "is_stronghold": false,
+   "seats": [],
+   "conditional_seats": []
+  },
+  "manbij": {
+   "name": "Manbij",
+   "type": "fort",
+   "allegiance": "seljuk",
+   "thema": null,
+   "gardens": false,
+   "is_stronghold": true,
+   "seats": [],
+   "conditional_seats": []
+  },
+  "azaz": {
+   "name": "Azaz",
+   "type": "fort",
+   "allegiance": "seljuk",
+   "thema": null,
+   "gardens": false,
+   "is_stronghold": true,
+   "seats": [],
+   "conditional_seats": []
+  },
+  "jazira": {
+   "name": "Jazira",
+   "type": "wilderness",
+   "allegiance": "seljuk",
+   "thema": null,
+   "gardens": false,
+   "is_stronghold": false,
+   "seats": [],
+   "conditional_seats": []
+  },
+  "nusaybin": {
+   "name": "Nusaybin",
+   "type": "town",
+   "allegiance": "seljuk",
+   "thema": null,
+   "gardens": true,
+   "is_stronghold": true,
+   "seats": [],
+   "conditional_seats": []
+  },
+  "amid": {
+   "name": "Amid",
+   "type": "town",
+   "allegiance": "seljuk",
+   "thema": null,
+   "gardens": true,
+   "is_stronghold": true,
+   "seats": [],
+   "conditional_seats": [
+    {
+     "lord": "alp_arslan",
+     "when": "marwanid_alliance"
+    },
+    {
+     "lord": "afsin_beg",
+     "when": "marwanid_alliance"
+    },
+    {
+     "lord": "arisighi",
+     "when": "marwanid_alliance"
+    },
+    {
+     "lord": "artuk_beg",
+     "when": "marwanid_alliance"
+    },
+    {
+     "lord": "sav_tekin",
+     "when": "marwanid_alliance"
+    },
+    {
+     "lord": "emir_of_arran",
+     "when": "marwanid_alliance"
+    },
+    {
+     "lord": "ibn_khan",
+     "when": "marwanid_alliance"
+    },
+    {
+     "lord": "sanduq_al_turki",
+     "when": "marwanid_alliance"
+    },
+    {
+     "lord": "artuk_beg",
+     "when": "artukid_legacy_supply_and_bounty_only"
+    }
+   ]
+  },
+  "mayyafariqin": {
+   "name": "Mayyafariqin",
+   "type": "fort",
+   "allegiance": "seljuk",
+   "thema": null,
+   "gardens": false,
+   "is_stronghold": true,
+   "seats": [],
+   "conditional_seats": [
+    {
+     "lord": "alp_arslan",
+     "when": "marwanid_alliance"
+    },
+    {
+     "lord": "afsin_beg",
+     "when": "marwanid_alliance"
+    },
+    {
+     "lord": "arisighi",
+     "when": "marwanid_alliance"
+    },
+    {
+     "lord": "artuk_beg",
+     "when": "marwanid_alliance"
+    },
+    {
+     "lord": "sav_tekin",
+     "when": "marwanid_alliance"
+    },
+    {
+     "lord": "emir_of_arran",
+     "when": "marwanid_alliance"
+    },
+    {
+     "lord": "ibn_khan",
+     "when": "marwanid_alliance"
+    },
+    {
+     "lord": "sanduq_al_turki",
+     "when": "marwanid_alliance"
+    },
+    {
+     "lord": "artuk_beg",
+     "when": "artukid_legacy_supply_and_bounty_only"
+    }
+   ]
+  },
+  "vaspurakan": {
+   "name": "Vaspurakan",
+   "type": "wilderness",
+   "allegiance": "seljuk",
+   "thema": null,
+   "gardens": false,
+   "is_stronghold": false,
+   "seats": [],
+   "conditional_seats": []
+  },
+  "anzitene": {
+   "name": "Anzitene",
+   "type": "wilderness",
+   "allegiance": "seljuk",
+   "thema": null,
+   "gardens": false,
+   "is_stronghold": false,
+   "seats": [],
+   "conditional_seats": []
+  },
+  "khliat": {
+   "name": "Khliat",
+   "type": "fort",
+   "allegiance": "seljuk",
+   "thema": null,
+   "gardens": false,
+   "is_stronghold": true,
+   "seats": [],
+   "conditional_seats": []
+  },
+  "manzikert": {
+   "name": "Manzikert",
+   "type": "fort",
+   "allegiance": "seljuk",
+   "thema": null,
+   "gardens": false,
+   "is_stronghold": true,
+   "seats": [],
+   "conditional_seats": []
+  },
+  "mempet": {
+   "name": "Mempet",
+   "type": "fort",
+   "allegiance": "seljuk",
+   "thema": null,
+   "gardens": false,
+   "is_stronghold": true,
+   "seats": [],
+   "conditional_seats": []
+  },
+  "arkesh": {
+   "name": "Arkesh",
+   "type": "fort",
+   "allegiance": "seljuk",
+   "thema": null,
+   "gardens": false,
+   "is_stronghold": true,
+   "seats": [],
+   "conditional_seats": []
+  },
+  "ararat": {
+   "name": "Ararat",
+   "type": "wilderness",
+   "allegiance": "seljuk",
+   "thema": null,
+   "gardens": false,
+   "is_stronghold": false,
+   "seats": [],
+   "conditional_seats": []
+  },
+  "ani": {
+   "name": "Ani",
+   "type": "city",
+   "allegiance": "seljuk",
+   "thema": null,
+   "gardens": true,
+   "is_stronghold": true,
+   "seats": [
+    "alp_arslan",
+    "afsin_beg",
+    "sav_tekin",
+    "emir_of_arran",
+    "sanduq_al_turki"
+   ],
+   "conditional_seats": []
+  },
+  "to_mosul_and_baghdad": {
+   "name": "To Mosul and Baghdad",
+   "type": "holding_box",
+   "allegiance": "seljuk",
+   "thema": null,
+   "gardens": false,
+   "is_stronghold": false,
+   "seats": [
+    "alp_arslan",
+    "afsin_beg",
+    "arisighi",
+    "artuk_beg"
+   ],
+   "conditional_seats": [
+    {
+     "lord": "robert_crepin",
+     "when": "seljuk_aligned_and_seat_enemy_occupied"
+    },
+    {
+     "lord": "roussel_de_bailleul",
+     "when": "seljuk_aligned_and_seat_enemy_occupied"
+    }
+   ]
+  }
+ },
+ "ways": [
+  {
+   "a": "mopsuestia",
+   "b": "germanikeia",
+   "type": "pass",
+   "whole_command_card": false
+  },
+  {
+   "a": "melitene",
+   "b": "edessa",
+   "type": "pass",
+   "whole_command_card": false
+  },
+  {
+   "a": "melitene",
+   "b": "amid",
+   "type": "pass",
+   "whole_command_card": false
+  },
+  {
+   "a": "melitene",
+   "b": "romanoupolis",
+   "type": "pass",
+   "whole_command_card": false
+  },
+  {
+   "a": "romanoupolis",
+   "b": "keltzene",
+   "type": "pass",
+   "whole_command_card": false
+  },
+  {
+   "a": "keltzene",
+   "b": "chaldia",
+   "type": "pass",
+   "whole_command_card": false
+  },
+  {
+   "a": "chaldia",
+   "b": "koloneia",
+   "type": "pass",
+   "whole_command_card": false
+  },
+  {
+   "a": "chaldia",
+   "b": "theodosiopolis",
+   "type": "pass",
+   "whole_command_card": false
+  },
+  {
+   "a": "nusaybin",
+   "b": "mayyafariqin",
+   "type": "pass",
+   "whole_command_card": false
+  },
+  {
+   "a": "mayyafariqin",
+   "b": "khliat",
+   "type": "pass",
+   "whole_command_card": false
+  },
+  {
+   "a": "khliat",
+   "b": "anzitene",
+   "type": "pass",
+   "whole_command_card": false
+  },
+  {
+   "a": "ani",
+   "b": "ararat",
+   "type": "pass",
+   "whole_command_card": false
+  },
+  {
+   "a": "ararat",
+   "b": "arkesh",
+   "type": "pass",
+   "whole_command_card": false
+  },
+  {
+   "a": "ararat",
+   "b": "vaspurakan",
+   "type": "pass",
+   "whole_command_card": false
+  },
+  {
+   "a": "vaspurakan",
+   "b": "to_mosul_and_baghdad",
+   "type": "pass",
+   "whole_command_card": true
+  },
+  {
+   "a": "nusaybin",
+   "b": "to_mosul_and_baghdad",
+   "type": "road",
+   "whole_command_card": true
+  },
+  {
+   "a": "nusaybin",
+   "b": "jazira",
+   "type": "road",
+   "whole_command_card": false
+  },
+  {
+   "a": "jazira",
+   "b": "syria",
+   "type": "road",
+   "whole_command_card": false
+  },
+  {
+   "a": "syria",
+   "b": "aleppo",
+   "type": "road",
+   "whole_command_card": false
+  },
+  {
+   "a": "aleppo",
+   "b": "hama",
+   "type": "road",
+   "whole_command_card": false
+  },
+  {
+   "a": "hama",
+   "b": "laodikeia",
+   "type": "road",
+   "whole_command_card": false
+  },
+  {
+   "a": "laodikeia",
+   "b": "antioch",
+   "type": "road",
+   "whole_command_card": false
+  },
+  {
+   "a": "antioch",
+   "b": "artah",
+   "type": "road",
+   "whole_command_card": false
+  },
+  {
+   "a": "antioch",
+   "b": "mopsuestia",
+   "type": "road",
+   "whole_command_card": false
+  },
+  {
+   "a": "artah",
+   "b": "azaz",
+   "type": "road",
+   "whole_command_card": false
+  },
+  {
+   "a": "azaz",
+   "b": "aleppo",
+   "type": "road",
+   "whole_command_card": false
+  },
+  {
+   "a": "azaz",
+   "b": "manbij",
+   "type": "road",
+   "whole_command_card": false
+  },
+  {
+   "a": "artah",
+   "b": "manbij",
+   "type": "road",
+   "whole_command_card": false
+  },
+  {
+   "a": "manbij",
+   "b": "edessa",
+   "type": "road",
+   "whole_command_card": false
+  },
+  {
+   "a": "edessa",
+   "b": "amid",
+   "type": "road",
+   "whole_command_card": false
+  },
+  {
+   "a": "amid",
+   "b": "nusaybin",
+   "type": "road",
+   "whole_command_card": false
+  },
+  {
+   "a": "amid",
+   "b": "mayyafariqin",
+   "type": "road",
+   "whole_command_card": false
+  },
+  {
+   "a": "khliat",
+   "b": "manzikert",
+   "type": "road",
+   "whole_command_card": false
+  },
+  {
+   "a": "manzikert",
+   "b": "arkesh",
+   "type": "road",
+   "whole_command_card": false
+  },
+  {
+   "a": "ani",
+   "b": "mempet",
+   "type": "road",
+   "whole_command_card": false
+  },
+  {
+   "a": "manzikert",
+   "b": "theodosiopolis",
+   "type": "road",
+   "whole_command_card": false
+  },
+  {
+   "a": "mempet",
+   "b": "theodosiopolis",
+   "type": "road",
+   "whole_command_card": false
+  },
+  {
+   "a": "theodosiopolis",
+   "b": "keltzene",
+   "type": "road",
+   "whole_command_card": false
+  },
+  {
+   "a": "germanikeia",
+   "b": "melitene",
+   "type": "road",
+   "whole_command_card": false
+  },
+  {
+   "a": "melitene",
+   "b": "lykandos",
+   "type": "road",
+   "whole_command_card": false
+  },
+  {
+   "a": "lykandos",
+   "b": "germanikeia",
+   "type": "road",
+   "whole_command_card": false
+  },
+  {
+   "a": "melitene",
+   "b": "larisa",
+   "type": "road",
+   "whole_command_card": false
+  },
+  {
+   "a": "lykandos",
+   "b": "kaisareia",
+   "type": "road",
+   "whole_command_card": false
+  },
+  {
+   "a": "mopsuestia",
+   "b": "tarsos",
+   "type": "road",
+   "whole_command_card": false
+  },
+  {
+   "a": "tarsos",
+   "b": "herakleia_kybistra",
+   "type": "road",
+   "whole_command_card": false
+  },
+  {
+   "a": "herakleia_kybistra",
+   "b": "ikonion",
+   "type": "road",
+   "whole_command_card": false
+  },
+  {
+   "a": "herakleia_kybistra",
+   "b": "kaisareia",
+   "type": "road",
+   "whole_command_card": false
+  },
+  {
+   "a": "ikonion",
+   "b": "western_anatolia",
+   "type": "road",
+   "whole_command_card": false
+  },
+  {
+   "a": "western_anatolia",
+   "b": "to_constantinople",
+   "type": "road",
+   "whole_command_card": true
+  },
+  {
+   "a": "ankyra",
+   "b": "to_constantinople",
+   "type": "road",
+   "whole_command_card": true
+  },
+  {
+   "a": "ankyra",
+   "b": "charsianon",
+   "type": "road",
+   "whole_command_card": false
+  },
+  {
+   "a": "ankyra",
+   "b": "amaseia",
+   "type": "road",
+   "whole_command_card": false
+  },
+  {
+   "a": "amaseia",
+   "b": "neokaisareia",
+   "type": "road",
+   "whole_command_card": false
+  },
+  {
+   "a": "neokaisareia",
+   "b": "sebasteia",
+   "type": "road",
+   "whole_command_card": false
+  },
+  {
+   "a": "charsianon",
+   "b": "sebasteia",
+   "type": "road",
+   "whole_command_card": false
+  },
+  {
+   "a": "sebasteia",
+   "b": "larisa",
+   "type": "road",
+   "whole_command_card": false
+  },
+  {
+   "a": "sebasteia",
+   "b": "tephrike",
+   "type": "road",
+   "whole_command_card": false
+  },
+  {
+   "a": "tephrike",
+   "b": "keltzene",
+   "type": "road",
+   "whole_command_card": false
+  },
+  {
+   "a": "koloneia",
+   "b": "tephrike",
+   "type": "road",
+   "whole_command_card": false
+  },
+  {
+   "a": "keltzene",
+   "b": "koloneia",
+   "type": "road",
+   "whole_command_card": false
+  },
+  {
+   "a": "koloneia",
+   "b": "neokaisareia",
+   "type": "road",
+   "whole_command_card": false
+  },
+  {
+   "a": "anzitene",
+   "b": "romanoupolis",
+   "type": "road",
+   "whole_command_card": false
+  }
+ ]
+}

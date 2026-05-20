@@ -1,0 +1,371 @@
+{
+ "_source": "Seljuk Themata and Scenario Reference.txt + Rules of Play section 7 Remove-from-Play lists. Paphlagonia omitted (only the Constantinople Holding Box, no Themata). Roman-side only (1.5.1).",
+ "marker_notation": "symbols=2 is a single 'double' marker: rolls ONE Protection die vs Ravage and is Lost on a failed roll; deploys 2 units as Garrison in Storm.",
+ "baseline_1068": {
+  "Boukellarion": [
+   {
+    "unit": "infantry",
+    "symbols": 1
+   },
+   {
+    "unit": "tagmata",
+    "symbols": 1
+   }
+  ],
+  "Anatolikon": [
+   {
+    "unit": "tagmata",
+    "symbols": 1
+   },
+   {
+    "unit": "infantry",
+    "symbols": 1
+   },
+   {
+    "unit": "militia",
+    "symbols": 1
+   }
+  ],
+  "Armeniakon": [
+   {
+    "unit": "tagmata",
+    "symbols": 1
+   },
+   {
+    "unit": "infantry",
+    "symbols": 1
+   },
+   {
+    "unit": "infantry",
+    "symbols": 1
+   }
+  ],
+  "Charsianon": [
+   {
+    "unit": "militia",
+    "symbols": 1
+   },
+   {
+    "unit": "tagmata",
+    "symbols": 1
+   }
+  ],
+  "Kappadokia": [
+   {
+    "unit": "infantry",
+    "symbols": 1
+   }
+  ],
+  "Kilikia": [
+   {
+    "unit": "infantry",
+    "symbols": 1
+   },
+   {
+    "unit": "infantry",
+    "symbols": 1
+   },
+   {
+    "unit": "tagmata",
+    "symbols": 1
+   }
+  ],
+  "Lykandos": [
+   {
+    "unit": "militia",
+    "symbols": 1
+   }
+  ],
+  "Sebasteia": [
+   {
+    "unit": "infantry",
+    "symbols": 1
+   },
+   {
+    "unit": "infantry",
+    "symbols": 2
+   },
+   {
+    "unit": "tagmata",
+    "symbols": 1
+   }
+  ],
+  "Melitene": [
+   {
+    "unit": "tagmata",
+    "symbols": 1
+   },
+   {
+    "unit": "infantry",
+    "symbols": 2
+   },
+   {
+    "unit": "militia",
+    "symbols": 1
+   },
+   {
+    "unit": "turkic_horse",
+    "symbols": 1
+   }
+  ],
+  "Antiocheia": [
+   {
+    "unit": "infantry",
+    "symbols": 1
+   },
+   {
+    "unit": "infantry",
+    "symbols": 1
+   },
+   {
+    "unit": "tagmata",
+    "symbols": 1
+   }
+  ],
+  "Koloneia": [
+   {
+    "unit": "infantry",
+    "symbols": 1
+   },
+   {
+    "unit": "tagmata",
+    "symbols": 1
+   }
+  ],
+  "Chaldia": [
+   {
+    "unit": "infantry",
+    "symbols": 1
+   }
+  ],
+  "Iberia": [
+   {
+    "unit": "tagmata",
+    "symbols": 1
+   },
+   {
+    "unit": "turkic_horse",
+    "symbols": 1
+   }
+  ],
+  "Mesopotamia": [
+   {
+    "unit": "infantry",
+    "symbols": 1
+   }
+  ]
+ },
+ "scenario_removals": {
+  "emperor_and_the_lion": {
+   "Charsianon": [
+    {
+     "unit": "tagmata",
+     "symbols": 1
+    }
+   ]
+  },
+  "specter_of_norman_betrayal": {
+   "Charsianon": [
+    {
+     "unit": "tagmata",
+     "symbols": 1
+    }
+   ],
+   "Iberia": [
+    {
+     "unit": "turkic_horse",
+     "symbols": 1
+    },
+    {
+     "unit": "tagmata",
+     "symbols": 1
+    }
+   ],
+   "Melitene": [
+    {
+     "unit": "tagmata",
+     "symbols": 1
+    }
+   ]
+  },
+  "year_of_treacherous_ambition": {
+   "Iberia": [
+    {
+     "unit": "turkic_horse",
+     "symbols": 1
+    },
+    {
+     "unit": "tagmata",
+     "symbols": 1
+    }
+   ],
+   "Charsianon": [
+    {
+     "unit": "tagmata",
+     "symbols": 1
+    }
+   ],
+   "Melitene": [
+    {
+     "unit": "tagmata",
+     "symbols": 1
+    },
+    {
+     "unit": "infantry",
+     "symbols": 2
+    }
+   ],
+   "Anatolikon": [
+    {
+     "unit": "militia",
+     "symbols": 1
+    },
+    {
+     "unit": "tagmata",
+     "symbols": 1
+    }
+   ],
+   "Koloneia": [
+    {
+     "unit": "tagmata",
+     "symbols": 1
+    }
+   ],
+   "Sebasteia": [
+    {
+     "unit": "infantry",
+     "symbols": 1
+    }
+   ]
+  },
+  "showdown_in_anatolia": {
+   "Iberia": [
+    {
+     "unit": "turkic_horse",
+     "symbols": 1
+    },
+    {
+     "unit": "tagmata",
+     "symbols": 1
+    }
+   ],
+   "Charsianon": [
+    {
+     "unit": "tagmata",
+     "symbols": 1
+    }
+   ],
+   "Melitene": [
+    {
+     "unit": "tagmata",
+     "symbols": 1
+    },
+    {
+     "unit": "infantry",
+     "symbols": 2
+    }
+   ],
+   "Anatolikon": [
+    {
+     "unit": "militia",
+     "symbols": 1
+    },
+    {
+     "unit": "tagmata",
+     "symbols": 1
+    }
+   ],
+   "Koloneia": [
+    {
+     "unit": "tagmata",
+     "symbols": 1
+    }
+   ],
+   "Sebasteia": [
+    {
+     "unit": "infantry",
+     "symbols": 1
+    }
+   ]
+  },
+  "manzikert": {
+   "Charsianon": [
+    {
+     "unit": "tagmata",
+     "symbols": 1
+    },
+    {
+     "unit": "militia",
+     "symbols": 1
+    }
+   ],
+   "Melitene": [
+    {
+     "unit": "infantry",
+     "symbols": 2
+    },
+    {
+     "unit": "tagmata",
+     "symbols": 1
+    }
+   ],
+   "Anatolikon": [
+    {
+     "unit": "tagmata",
+     "symbols": 1
+    },
+    {
+     "unit": "infantry",
+     "symbols": 1
+    },
+    {
+     "unit": "militia",
+     "symbols": 1
+    }
+   ],
+   "Koloneia": [
+    {
+     "unit": "tagmata",
+     "symbols": 1
+    },
+    {
+     "unit": "infantry",
+     "symbols": 1
+    }
+   ],
+   "Sebasteia": [
+    {
+     "unit": "infantry",
+     "symbols": 1
+    }
+   ],
+   "Kappadokia": [
+    {
+     "unit": "infantry",
+     "symbols": 1
+    }
+   ],
+   "Armeniakon": [
+    {
+     "unit": "tagmata",
+     "symbols": 1
+    },
+    {
+     "unit": "infantry",
+     "symbols": 1
+    }
+   ],
+   "Iberia": [
+    {
+     "unit": "tagmata",
+     "symbols": 1
+    },
+    {
+     "unit": "turkic_horse",
+     "symbols": 1
+    }
+   ]
+  }
+ },
+ "face_up_note": "Face-up-on-map placements are a setup/visual convention from the scenario-setup illustrations (Themata reference); the marker still belongs to its Thema box for rules purposes."
+}

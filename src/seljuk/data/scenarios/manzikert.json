@@ -1,0 +1,196 @@
+{
+ "name": "Manzikert: The Fall of the Roman East",
+ "start_box": 10,
+ "final_box": 12,
+ "skip_first_levy": true,
+ "seljuk_unity_targets": {},
+ "starting_vp": {
+  "roman": 1.0,
+  "seljuk": 3.5
+ },
+ "first_turn_plan_size": 4,
+ "mustered": [
+  {
+   "lord": "romanos_diogenes",
+   "locale": "to_constantinople",
+   "capabilities": [
+    "R20",
+    "R7"
+   ]
+  },
+  {
+   "lord": "andronikos_doukas",
+   "locale": "to_constantinople",
+   "assets_override": {
+    "carts": 2
+   },
+   "capabilities": [
+    "R13"
+   ]
+  },
+  {
+   "lord": "arisighi",
+   "locale": "to_constantinople",
+   "side": "roman"
+  },
+  {
+   "lord": "roussel_de_bailleul",
+   "locale": "ankyra",
+   "side": "roman",
+   "capabilities": [
+    "R8"
+   ]
+  },
+  {
+   "lord": "alp_arslan",
+   "locale": "aleppo",
+   "assets_override": {
+    "carts": 3
+   },
+   "capabilities": [
+    "S4",
+    "S1"
+   ]
+  },
+  {
+   "lord": "artuk_beg",
+   "locale": "aleppo",
+   "capabilities": [
+    "S2",
+    "S10"
+   ]
+  },
+  {
+   "lord": "emir_of_arran",
+   "locale": "aleppo",
+   "capabilities": [
+    "S11"
+   ]
+  },
+  {
+   "lord": "sav_tekin",
+   "locale": "ani",
+   "assets_override": {
+    "carts": 2
+   },
+   "vassals_levied": [
+    {
+     "infantry": 2
+    }
+   ]
+  }
+ ],
+ "service": {
+  "andronikos_doukas": 11,
+  "roussel_de_bailleul": 11,
+  "artuk_beg": 11,
+  "sav_tekin": 12,
+  "emir_of_arran": 12,
+  "arisighi": 12,
+  "romanos_diogenes": 12,
+  "alp_arslan": 12
+ },
+ "on_calendar": [
+  {
+   "lord": "chatatourios",
+   "box": 10
+  },
+  {
+   "lord": "joseph_tarchaneiotes",
+   "box": 10
+  },
+  {
+   "lord": "nikephoros_bryennios",
+   "box": 10
+  },
+  {
+   "lord": "afsin_beg",
+   "box": 10
+  },
+  {
+   "lord": "sanduq_al_turki",
+   "box": 10
+  }
+ ],
+ "removed_lords": [
+  "ibn_khan",
+  "robert_crepin",
+  "manuel_komnenos"
+ ],
+ "board_edge_capabilities": {
+  "roman": [
+   "R16",
+   "R25"
+  ],
+  "seljuk": [
+   "S8"
+  ]
+ },
+ "capability_coins": {},
+ "markers": {
+  "ruins": [
+   {
+    "locale": "kaisareia",
+    "color": "seljuk"
+   }
+  ],
+  "conquered": [],
+  "ravaged": [
+   {
+    "locale": "western_anatolia",
+    "side": "seljuk"
+   },
+   {
+    "locale": "ikonion",
+    "side": "seljuk"
+   },
+   {
+    "locale": "herakleia_kybistra",
+    "side": "seljuk"
+   },
+   {
+    "locale": "melitene",
+    "side": "seljuk"
+   },
+   {
+    "locale": "lykandos",
+    "side": "seljuk"
+   },
+   {
+    "locale": "sebasteia",
+    "side": "seljuk"
+   }
+  ],
+  "siege": [
+   {
+    "locale": "aleppo",
+    "count": 1
+   }
+  ],
+  "bypass": [],
+  "fort": [
+   "chaldia",
+   "romanoupolis"
+  ],
+  "strategic_objective_locale": [
+   "manzikert"
+  ]
+ },
+ "holding_boxes": {
+  "mosul_baghdad_loot": 0,
+  "constantinople_strategic_objectives_available": 0,
+  "constantinople_roman_vp_markers": 1
+ },
+ "themata_key": "manzikert",
+ "strategic_objectives_removed_from_play": 1,
+ "special_vp_rules": [
+  "Both sides score 1 VP for each permanently Disbanded enemy Lord",
+  "Aleppo Independence considered already revealed"
+ ],
+ "calendar_reminders": [
+  "Nomisma Debased marker pre-placed at Autumn 1069 (box 6)",
+  "Closed Passes event marker at Spring 1071 (box 10): Passes closed turn 1 (Unpredictable Weather)"
+ ],
+ "nomisma_debased_used": true,
+ "aleppo_independence_played": true
+}

@@ -1,0 +1,955 @@
+{
+ "_source": "Seljuk Arts of War Reference.txt (card text + integrated Background Book/errata clarifications). Each card: Event (upper) + Capability (lower); only one in effect at a time. 'side_wide' Capabilities (ALL) go to the board edge; 'this_lord' Capabilities attach to the Levying Lord (max 2 per mat, no duplicates). Phase 4 implements effects; this is data only.",
+ "tags_legend": {
+  "hold": "kept hidden, played later",
+  "asterisk": "once per game (mark Calendar)",
+  "treachery": "adds the Treachery card to the Plan",
+  "this_campaign": "effect lasts until end of Campaign/Season",
+  "immediate": "resolve when revealed, return to deck"
+ },
+ "cards": {
+  "R1": {
+   "side": "roman",
+   "event": {
+    "name": "Flooded River Crossing",
+    "text": "Alp Arslan undergoes Wastage 3 times (mark); if already marked, instead 1 Seljuk Lord -1 Lordship this Muster (Seljuk choice).",
+    "tags": [
+     "asterisk"
+    ]
+   },
+   "capability": {
+    "name": "Imperial Fortress Construction",
+    "scope": "this_lord",
+    "heraldry": "Any",
+    "eligible_lords": null,
+    "text": "Place 2 Fort markers on this card (when Levied); as a Command action this Lord may place a Fort marker on an unfortified/Ruined Locale in the Roman Empire (removes a Seljuk Ruins there, adjust VP)."
+   }
+  },
+  "R2": {
+   "side": "roman",
+   "event": {
+    "name": "Mountain Ambush",
+    "text": "HOLD: play in Battle if the Locale is adjacent to a Pass. Round 1, Roman Walls 1-3 vs Missiles.",
+    "tags": [
+     "hold"
+    ]
+   },
+   "capability": {
+    "name": "Oghuz Mercenaries",
+    "scope": "this_lord",
+    "heraldry": "Any",
+    "eligible_lords": null,
+    "text": "Add the Oghuz Mercenaries special Vassal (2 Turkic Horse, S2) to this Lord's mat."
+   }
+  },
+  "R3": {
+   "side": "roman",
+   "event": {
+    "name": "Summer Heat",
+    "text": "HOLD: play in Summer after Seljuks reveal a Command card; that Lord is Command 1.",
+    "tags": [
+     "hold"
+    ]
+   },
+   "capability": {
+    "name": "Steeled Resolve",
+    "scope": "this_lord",
+    "heraldry": "Any",
+    "eligible_lords": null,
+    "text": "This Lord's Infantry have Armor 1-3 vs Horse in any 1 Round of Battle (mark)."
+   }
+  },
+  "R4": {
+   "side": "roman",
+   "event": {
+    "name": "Sultan's Horse Is Killed",
+    "text": "HOLD: where Alp Arslan Besieges with >1 Siege marker, remove 1 Siege; OR during Storm reduce Rounds by 1.",
+    "tags": [
+     "hold"
+    ]
+   },
+   "capability": {
+    "name": "Pressed Levy Service",
+    "scope": "side_wide",
+    "heraldry": "ALL",
+    "eligible_lords": null,
+    "text": "Romans may keep 1 Unpaid Thema's Levied Themata with a Lord at end of each Campaign."
+   }
+  },
+  "R5": {
+   "side": "roman",
+   "event": {
+    "name": "Fatimid Conflict",
+    "text": "Shift any 1 Seljuk cylinder or Service of an Unbesieged Lord 1 Calendar box (any direction, Roman choice).",
+    "tags": [
+     "immediate"
+    ]
+   },
+   "capability": {
+    "name": "Norman Heavy Cavalry",
+    "scope": "this_lord",
+    "heraldry": "Robert Crepin and Roussel de Bailleul",
+    "eligible_lords": [
+     "robert_crepin",
+     "roussel_de_bailleul"
+    ],
+    "text": "This Lord may reroll 1 Norman Knights' Armor each Missiles step AND each Melee step."
+   }
+  },
+  "R6": {
+   "side": "roman",
+   "event": {
+    "name": "Michael Attaleiates",
+    "text": "HOLD: play on Romanos during Muster for Lordship +1.",
+    "tags": [
+     "hold"
+    ]
+   },
+   "capability": {
+    "name": "Centralized Administration",
+    "scope": "this_lord",
+    "heraldry": "Any, except Chatatourios, Robert Crepin, Roussel de Bailleul",
+    "eligible_lords": [
+     "romanos_diogenes",
+     "manuel_komnenos",
+     "andronikos_doukas",
+     "joseph_tarchaneiotes",
+     "nikephoros_bryennios"
+    ],
+    "text": "This Lord beginning his activation inside the Roman Empire with a Supply Route gets +1 Command."
+   }
+  },
+  "R7": {
+   "side": "roman",
+   "event": {
+    "name": "Basil Alousianos Tricks the Sultan",
+    "text": "HOLD: as a Roman Stronghold Surrenders on a roll of 3 or less, do not place Conquered; replace all Siege with Bypass (mark). If marked, discard and draw new Event.",
+    "tags": [
+     "hold",
+     "asterisk"
+    ]
+   },
+   "capability": {
+    "name": "Emperor's Retinue",
+    "scope": "this_lord",
+    "heraldry": "Romanos Diogenes",
+    "eligible_lords": [
+     "romanos_diogenes"
+    ],
+    "text": "Add the Emperor's Retinue special Vassal (1 Varangian Guard, 1 Hetaireia, S1) to this Lord's mat."
+   }
+  },
+  "R8": {
+   "side": "roman",
+   "event": {
+    "name": "Roman Persuasion",
+    "text": "Add your Treachery card to this Season's Command Deck (Plan); Seljuk must add 1 No Command.",
+    "tags": [
+     "treachery"
+    ]
+   },
+   "capability": {
+    "name": "Martial Society",
+    "scope": "this_lord",
+    "heraldry": "Robert Crepin and Roussel de Bailleul",
+    "eligible_lords": [
+     "robert_crepin",
+     "roussel_de_bailleul"
+    ],
+    "text": "This Lord is Command +1 (while Levied)."
+   }
+  },
+  "R9": {
+   "side": "roman",
+   "event": {
+    "name": "Winter Campaign",
+    "text": "HOLD: play in Winter before Bounty to activate a Roman Lord (may be Besieged).",
+    "tags": [
+     "hold"
+    ]
+   },
+   "capability": {
+    "name": "Provincial Bureaucracy",
+    "scope": "this_lord",
+    "heraldry": "Any Commander (Romanos Diogenes or Manuel Komnenos)",
+    "eligible_lords": [
+     "romanos_diogenes",
+     "manuel_komnenos"
+    ],
+    "text": "This Lord's first Tax Command outside Constantinople each Campaign does not place Ravaged."
+   }
+  },
+  "R10": {
+   "side": "roman",
+   "event": {
+    "name": "Afsin Murders Seljuk Officer",
+    "text": "Afsin Beg's Fealty is 2 (mark); if already marked, instead 1 Seljuk Lord -1 Lordship this Muster (Seljuk choice).",
+    "tags": [
+     "asterisk"
+    ]
+   },
+   "capability": {
+    "name": "Reconquista & Sicilian Commanders",
+    "scope": "this_lord",
+    "heraldry": "Robert Crepin and Roussel de Bailleul",
+    "eligible_lords": [
+     "robert_crepin",
+     "roussel_de_bailleul"
+    ],
+    "text": "This Lord's Lordship +1 (while Levied)."
+   }
+  },
+  "R11": {
+   "side": "roman",
+   "event": {
+    "name": "Chrysoskoulos Counsels the Court",
+    "text": "If Arisighi is a Roman ally, Seljuks discard 1 random Held card.",
+    "tags": [
+     "immediate"
+    ]
+   },
+   "capability": {
+    "name": "Klibanophoroi",
+    "scope": "this_lord",
+    "heraldry": "Any",
+    "eligible_lords": null,
+    "text": "This Lord's Tagmata have Armor 1-4 (vs Missiles and Melee; not for post-Battle Losses; while Levied)."
+   }
+  },
+  "R12": {
+   "side": "roman",
+   "event": {
+    "name": "Afsin Recalled",
+    "text": "Shift Afsin Beg's cylinder or Service 1 Calendar box (Roman choice of direction).",
+    "tags": [
+     "immediate"
+    ]
+   },
+   "capability": {
+    "name": "Empress Eudokia Makrembolitissa",
+    "scope": "side_wide",
+    "heraldry": "ALL",
+    "eligible_lords": null,
+    "text": "Make the Empress token available each Call to Arms (3.5.1.2). Board edge."
+   }
+  },
+  "R13": {
+   "side": "roman",
+   "event": {
+    "name": "Thrakion Reinforcements",
+    "text": "Return a previously-removed Themata Service Marker to its home Thema box.",
+    "tags": [
+     "immediate"
+    ]
+   },
+   "capability": {
+    "name": "Syndosis",
+    "scope": "this_lord",
+    "heraldry": "Andronikos Doukas and Chatatourios",
+    "eligible_lords": [
+     "andronikos_doukas",
+     "chatatourios"
+    ],
+    "text": "This Lord's Militia have Armor 1-2 (vs Missiles and Melee; not for post-Battle Losses; while Levied)."
+   }
+  },
+  "R14": {
+   "side": "roman",
+   "event": {
+    "name": "Aleppo Independence",
+    "text": "Unless Aleppo is Conquered, it becomes Friendly to both sides (mark); neither may Withdraw inside. Enables Seljuk Aleppo auto-victory (5.2).",
+    "tags": [
+     "immediate"
+    ]
+   },
+   "capability": {
+    "name": "Imperial Coffers",
+    "scope": "side_wide",
+    "heraldry": "ALL",
+    "eligible_lords": null,
+    "text": "Discard during Arts of War if a Roman is adjacent to a Seljuk-allied Robert/Roussel: make 1 Loyalty Check vs that Lord. May not be Levied if neither is Seljuk-allied. Board edge."
+   }
+  },
+  "R15": {
+   "side": "roman",
+   "event": {
+    "name": "Emir of Aleppo Spurns Alp Arslan",
+    "text": "If Aleppo is Seljuk Conquered with no Siege marker, place Independent Aleppo; if already present, place Roman Conquered instead. Adjust VP (mark). If marked or no effect, discard and draw new Event.",
+    "tags": [
+     "asterisk"
+    ]
+   },
+   "capability": {
+    "name": "Fealty to the Basileus",
+    "scope": "this_lord",
+    "heraldry": "Any",
+    "eligible_lords": null,
+    "text": "This Lord may choose not to return to Seat in Winter (may stay even if Besieging)."
+   }
+  },
+  "R16": {
+   "side": "roman",
+   "event": {
+    "name": "Anglo-Saxon Exiles",
+    "text": "If available, add 1 Varangian Guard to any Roman Lord (not Robert/Roussel) who has none.",
+    "tags": [
+     "immediate"
+    ]
+   },
+   "capability": {
+    "name": "Armenian Garrisons",
+    "scope": "side_wide",
+    "heraldry": "ALL",
+    "eligible_lords": null,
+    "text": "All Roman-Conquered Strongholds outside the Roman Empire use BOTH Seljuk and Roman Garrison units. Board edge."
+   }
+  },
+  "R17": {
+   "side": "roman",
+   "event": {
+    "name": "Unpredictable Weather",
+    "text": "This Campaign: if Spring/Autumn, Passes cannot be used for Supply/March/Avoid/Retreat; if Summer, Plan stack is 9 cards and Seljuk adds 1 No Command.",
+    "tags": [
+     "this_campaign"
+    ]
+   },
+   "capability": {
+    "name": "Scholai",
+    "scope": "this_lord",
+    "heraldry": "Romanos Diogenes and Andronikos Doukas",
+    "eligible_lords": [
+     "romanos_diogenes",
+     "andronikos_doukas"
+    ],
+    "text": "Add the Scholai special Vassal (1 Hetaireia, S1) to this Lord's mat."
+   }
+  },
+  "R18": {
+   "side": "roman",
+   "event": {
+    "name": "Local Scouts",
+    "text": "HOLD: as Enemy Avoids Battle, Enemy chooses 1 Avoiding Lord to Battle or Withdraw instead.",
+    "tags": [
+     "hold"
+    ]
+   },
+   "capability": {
+    "name": "Icon of the Virgin Mary",
+    "scope": "this_lord",
+    "heraldry": "Any",
+    "eligible_lords": null,
+    "text": "Discard when calculating Losses after Battle: this Lord's Routed units recover per Armor regardless of situation."
+   }
+  },
+  "R19": {
+   "side": "roman",
+   "event": {
+    "name": "Resilient Agriculture",
+    "text": "Remove 2 Seljuk Ravaged markers from the Roman Empire (mandatory, as many as possible).",
+    "tags": [
+     "immediate"
+    ]
+   },
+   "capability": {
+    "name": "Nomisma Debased",
+    "scope": "side_wide",
+    "heraldry": "ALL",
+    "eligible_lords": null,
+    "text": "Discard during Pay (Levy) to shift all Roman Service 1 box; non-Commander Roman Lords may not Tax for rest of game (mark). Once per game. Board edge."
+   }
+  },
+  "R20": {
+   "side": "roman",
+   "event": {
+    "name": "Armenian Resistance",
+    "text": "If Khliat, Manzikert, or Arkesh is Seljuk-friendly, choose one and place Roman Conquered (adjust VP). If a Seljuk Lord is present there, Seljuk places a Siege or Bypass; if a Strategic Objective is there, return it to available.",
+    "tags": [
+     "immediate"
+    ]
+   },
+   "capability": {
+    "name": "Siege Weaponry",
+    "scope": "this_lord",
+    "heraldry": "Any, except Robert Crepin and Roussel de Bailleul",
+    "eligible_lords": [
+     "romanos_diogenes",
+     "manuel_komnenos",
+     "andronikos_doukas",
+     "joseph_tarchaneiotes",
+     "nikephoros_bryennios",
+     "chatatourios"
+    ],
+    "text": "This Lord, Unrouted at a Storm (incl. Reserve), reduces Enemy Walls -1."
+   }
+  },
+  "R21": {
+   "side": "roman",
+   "event": {
+    "name": "Nomadic Tribes Go Rogue",
+    "text": "HOLD: before Battle or Storm, remove up to 2 Turkic Horse units at the Active Lord's Locale from play (no recovery; may cause Disband).",
+    "tags": [
+     "hold"
+    ]
+   },
+   "capability": {
+    "name": "Bardoukia",
+    "scope": "this_lord",
+    "heraldry": "Any",
+    "eligible_lords": null,
+    "text": "This Lord's Tagmata inflict -1 to target Armor during each Melee Strike step of Battle."
+   }
+  },
+  "R22": {
+   "side": "roman",
+   "event": {
+    "name": "Assassination Plot in Tyre",
+    "text": "Unless Ibn Khan within 2 Locales of Aleppo, permanently Disband him; otherwise shift his Service 1 box (Roman choice, may Disband).",
+    "tags": [
+     "immediate"
+    ]
+   },
+   "capability": {
+    "name": "Cavalry Supply Line Raiders",
+    "scope": "this_lord",
+    "heraldry": "Any",
+    "eligible_lords": null,
+    "text": "During Wastage, 1 Enemy Lord adjacent to This Lord undergoes Wastage twice (Roman chooses if multiple)."
+   }
+  },
+  "R23": {
+   "side": "roman",
+   "event": {
+    "name": "Kleisourai",
+    "text": "HOLD: when a Seljuk Lord Marches/Avoids/Retreats across a Pass, each moving Seljuk Lord takes 1 Hit (as if in Battle; failed Protection eliminates with no recovery).",
+    "tags": [
+     "hold"
+    ]
+   },
+   "capability": {
+    "name": "Alakatia",
+    "scope": "this_lord",
+    "heraldry": "Any",
+    "eligible_lords": null,
+    "text": "This Lord with >=2 Infantry in Battle adds 1 extra Missile Hit with -1 to target Armor (does not scale beyond 2)."
+   }
+  },
+  "R24": {
+   "side": "roman",
+   "event": {
+    "name": "Cavalry Charge",
+    "text": "HOLD: on 1 Roman Lord in Battle, Round 1 that Lord's Horse Melee precedes all Missiles (skips its usual Melee). Takes precedence over Command Confusion.",
+    "tags": [
+     "hold"
+    ]
+   },
+   "capability": {
+    "name": "Mules",
+    "scope": "this_lord",
+    "heraldry": "Any",
+    "eligible_lords": null,
+    "text": "This Lord's first March across a Pass each Command card spends only 1 Command even if Laden (not under Lieutenant/Group March)."
+   }
+  },
+  "R25": {
+   "side": "roman",
+   "event": {
+    "name": "Honors of War",
+    "text": "HOLD: during a Siege on a Fort, instead of rolling the Fort automatically Surrenders; take no Spoils (active Lord must still take a Siege action).",
+    "tags": [
+     "hold"
+    ]
+   },
+   "capability": {
+    "name": "Psiloi",
+    "scope": "side_wide",
+    "heraldry": "ALL",
+    "eligible_lords": null,
+    "text": "Roman (non-garrison) Militia have Missiles x1/2. Board edge."
+   }
+  },
+  "S1": {
+   "side": "seljuk",
+   "event": {
+    "name": "Surprise",
+    "text": "HOLD: upon Besieging an enemy Fort/Town where no other Lord, place 2 Siege there (not 1), then Storm.",
+    "tags": [
+     "hold"
+    ]
+   },
+   "capability": {
+    "name": "Lamellar Armor",
+    "scope": "this_lord",
+    "heraldry": "Emir of Arran, Alp Arslan, Artuk Beg",
+    "eligible_lords": [
+     "emir_of_arran",
+     "alp_arslan",
+     "artuk_beg"
+    ],
+    "text": "This Lord's Turkic Horse have Armor 1-3 until 3 of them Rout (then off for the Battle); per Melee Hit may use Lamellar OR Evade. (Copy 1 of 2.)"
+   }
+  },
+  "S2": {
+   "side": "seljuk",
+   "event": {
+    "name": "Mountain Ambush",
+    "text": "HOLD: play in Battle if the Locale is adjacent to a Pass. Round 1, Seljuk Walls 1-3 vs Missiles.",
+    "tags": [
+     "hold"
+    ]
+   },
+   "capability": {
+    "name": "Lamellar Armor",
+    "scope": "this_lord",
+    "heraldry": "Emir of Arran, Alp Arslan, Artuk Beg",
+    "eligible_lords": [
+     "emir_of_arran",
+     "alp_arslan",
+     "artuk_beg"
+    ],
+    "text": "Identical to S1 Lamellar Armor. (Copy 2 of 2.)"
+   }
+  },
+  "S3": {
+   "side": "seljuk",
+   "event": {
+    "name": "The Betrayal of Andronikos Doukas",
+    "text": "HOLD: after the Reposition step in Battle, if more than one enemy Lord, move a non-Commander Roman Lord to Reserve (may rejoin later).",
+    "tags": [
+     "hold",
+     "asterisk"
+    ]
+   },
+   "capability": {
+    "name": "Steppe Raiders",
+    "scope": "this_lord",
+    "heraldry": "Sanduq al-Turki, Arisighi, Ibn Khan",
+    "eligible_lords": [
+     "sanduq_al_turki",
+     "arisighi",
+     "ibn_khan"
+    ],
+    "text": "This Lord may Ravage adjacent Locales (incl. across a Pass) where no enemy Lord, if he has Turkic Horse."
+   }
+  },
+  "S4": {
+   "side": "seljuk",
+   "event": {
+    "name": "Summer Heat",
+    "text": "HOLD: play in Summer after Romans reveal a Command card; that Lord is Command 1.",
+    "tags": [
+     "hold"
+    ]
+   },
+   "capability": {
+    "name": "Shock Tactics",
+    "scope": "this_lord",
+    "heraldry": "Any",
+    "eligible_lords": null,
+    "text": "Half of this Lord's Turkic Horse (round up) have Melee x1/2. (Copy 1 of 2.)"
+   }
+  },
+  "S5": {
+   "side": "seljuk",
+   "event": {
+    "name": "Siege of Bari",
+    "text": "Remove from play 2 Unlevied Themata (mark); if already marked, instead 1 Seljuk Lord +1 Lordship this Muster (Seljuk choice).",
+    "tags": [
+     "asterisk"
+    ]
+   },
+   "capability": {
+    "name": "Forced Conscription",
+    "scope": "this_lord",
+    "heraldry": "Sav-Tekin",
+    "eligible_lords": [
+     "sav_tekin"
+    ],
+    "text": "Each Muster phase, this Lord at an Unbesieged Friendly Locale may restore 1 of his Lost units (Vassal or original Force), beyond normal Muster actions."
+   }
+  },
+  "S6": {
+   "side": "seljuk",
+   "event": {
+    "name": "Command Confusion",
+    "text": "HOLD: on a Roman Lord in Battle, his Missiles and Melee each Strike second. Cavalry Charge takes precedence.",
+    "tags": [
+     "hold"
+    ]
+   },
+   "capability": {
+    "name": "Shock Tactics",
+    "scope": "this_lord",
+    "heraldry": "Any",
+    "eligible_lords": null,
+    "text": "Identical to S4 Shock Tactics. (Copy 2 of 2.)"
+   }
+  },
+  "S7": {
+   "side": "seljuk",
+   "event": {
+    "name": "Deserters",
+    "text": "Remove from play 1 Themata from a border Thema (Iberia, Mesopotamia, Melitene, Antiocheia), not one Levied to the Commander's mat.",
+    "tags": [
+     "immediate"
+    ]
+   },
+   "capability": {
+    "name": "Trusted Commander",
+    "scope": "this_lord",
+    "heraldry": "Emir of Arran, Artuk Beg, Sav-Tekin",
+    "eligible_lords": [
+     "emir_of_arran",
+     "artuk_beg",
+     "sav_tekin"
+    ],
+    "text": "This Lord may March as a Commander with 1 (only) other Seljuk Lord (March only; not Commander status)."
+   }
+  },
+  "S8": {
+   "side": "seljuk",
+   "event": {
+    "name": "Caliphate Merchant Financing",
+    "text": "1 Seljuk Lord may exchange any of his Carts for Coin or vice versa (his own Carts only).",
+    "tags": [
+     "immediate"
+    ]
+   },
+   "capability": {
+    "name": "Marwanid Alliance",
+    "scope": "side_wide",
+    "heraldry": "ALL",
+    "eligible_lords": null,
+    "text": "May spend Coin during Call to Arms to create special Seljuk Seats at Amid/Mayyafariqin (3.5.1.1). Board edge."
+   }
+  },
+  "S9": {
+   "side": "seljuk",
+   "event": {
+    "name": "Alp Arslan's Moustache",
+    "text": "This Campaign, Alp Arslan's Forage rolls -2 (Alp Arslan only).",
+    "tags": [
+     "this_campaign"
+    ]
+   },
+   "capability": {
+    "name": "Imperial Rivalry",
+    "scope": "side_wide",
+    "heraldry": "ALL",
+    "eligible_lords": null,
+    "text": "Each Levy, Romans must attempt once to Muster Andronikos Doukas if Ready. Board edge."
+   }
+  },
+  "S10": {
+   "side": "seljuk",
+   "event": {
+    "name": "Eastern Rebellions Defeated",
+    "text": "HOLD: play on Alp Arslan during Muster for Lordship +1.",
+    "tags": [
+     "hold"
+    ]
+   },
+   "capability": {
+    "name": "Artukid Legacy",
+    "scope": "this_lord",
+    "heraldry": "Artuk Beg",
+    "eligible_lords": [
+     "artuk_beg"
+    ],
+    "text": "This Lord may always use Mayyafariqin and Amid as Supply Source and for returning Loot during Bounty (himself only), regardless of Marwanid Alliance."
+   }
+  },
+  "S11": {
+   "side": "seljuk",
+   "event": {
+    "name": "Norman Scheming",
+    "text": "If Roussel or Robert is a Seljuk ally, Romans discard 1 random Held card.",
+    "tags": [
+     "immediate"
+    ]
+   },
+   "capability": {
+    "name": "Javelins",
+    "scope": "this_lord",
+    "heraldry": "Sav-Tekin and Emir of Arran",
+    "eligible_lords": [
+     "sav_tekin",
+     "emir_of_arran"
+    ],
+    "text": "This Lord's Infantry have Missiles x1 in any 1 Battle Round (every Battle, not Storm)."
+   }
+  },
+  "S12": {
+   "side": "seljuk",
+   "event": {
+    "name": "Doukai Court Intrigues",
+    "text": "Shift any 1 Roman cylinder or Service 1 Calendar box (any direction, Seljuk choice).",
+    "tags": [
+     "immediate"
+    ]
+   },
+   "capability": {
+    "name": "The Sickle of Anatolia",
+    "scope": "this_lord",
+    "heraldry": "Afsin Beg",
+    "eligible_lords": [
+     "afsin_beg"
+    ],
+    "text": "This Lord is Command +1 (while Levied; one extra action, not an All+1)."
+   }
+  },
+  "S13": {
+   "side": "seljuk",
+   "event": {
+    "name": "Peace Offering",
+    "text": "This Season, no Approach/Storm/Siege unless that Lord pays 1 Coin that Command card. Adds Gifts Exchanged to Seljuk Levied Capabilities.",
+    "tags": [
+     "this_campaign"
+    ]
+   },
+   "capability": {
+    "name": "Gifts Exchanged",
+    "scope": "side_wide",
+    "heraldry": "ALL",
+    "eligible_lords": null,
+    "text": "Muster only if Friendly and Enemy Lords adjacent. Put 4 Coin on card; Seljuks then Romans may each take up to 2 Coin onto an Unbesieged Lord. Discard at end of Season. Board edge."
+   }
+  },
+  "S14": {
+   "side": "seljuk",
+   "event": {
+    "name": "Manuel Komnenos Falls Ill",
+    "text": "Shift Manuel Komnenos's Service or cylinder 1 Calendar box (Seljuk choice of direction).",
+    "tags": [
+     "immediate"
+    ]
+   },
+   "capability": {
+    "name": "Support from Aleppo",
+    "scope": "this_lord",
+    "heraldry": "Ibn Khan",
+    "eligible_lords": [
+     "ibn_khan"
+    ],
+    "text": "This Lord is Command +1 on a die roll of 1-3 each of his Command cards. Discard if this Lord Ravages Aleppo."
+   }
+  },
+  "S15": {
+   "side": "seljuk",
+   "event": {
+    "name": "Thematic Troops Desert",
+    "text": "Alp Arslan in a Thema removes 1 Levied or Unlevied Themata Service Marker there (Seljuk choice; even Besieged).",
+    "tags": [
+     "immediate"
+    ]
+   },
+   "capability": {
+    "name": "Nizam al-Mulk Administrates the Sultanate",
+    "scope": "this_lord",
+    "heraldry": "Any",
+    "eligible_lords": null,
+    "text": "This Lord may choose not to return to Seat in Winter (may stay even if Besieging)."
+   }
+  },
+  "S16": {
+   "side": "seljuk",
+   "event": {
+    "name": "Norman Extortion",
+    "text": "Add your Treachery card to this Season's Command Deck (Plan); Roman must add 1 No Command. Only one Treachery Event per Arts of War phase.",
+    "tags": [
+     "treachery"
+    ]
+   },
+   "capability": {
+    "name": "Parthian Shot",
+    "scope": "this_lord",
+    "heraldry": "Any",
+    "eligible_lords": null,
+    "text": "This Lord's Turkic Horse select targets during the Missile phase in Battle (not Storm)."
+   }
+  },
+  "S17": {
+   "side": "seljuk",
+   "event": {
+    "name": "Unpredictable Weather",
+    "text": "This Campaign: if Spring/Autumn, Passes cannot be used for Supply/March/Avoid/Retreat; if Summer, Plan stack is 9 cards and Roman adds 1 No Command.",
+    "tags": [
+     "this_campaign"
+    ]
+   },
+   "capability": {
+    "name": "Deep Raids",
+    "scope": "this_lord",
+    "heraldry": "Any",
+    "eligible_lords": null,
+    "text": "In Call to Arms, Disband this Lord in Ikonion for 2 VP or Western Anatolia for 3 VP (place Loot in Mosul & Baghdad box)."
+   }
+  },
+  "S18": {
+   "side": "seljuk",
+   "event": {
+    "name": "Winter March",
+    "text": "HOLD: play in Winter before Bounty to activate a Seljuk Lord (may be Besieged).",
+    "tags": [
+     "hold"
+    ]
+   },
+   "capability": {
+    "name": "Unstoppable Turkmen",
+    "scope": "this_lord",
+    "heraldry": "Any, except Robert Crepin and Roussel de Bailleul",
+    "eligible_lords": [
+     "alp_arslan",
+     "afsin_beg",
+     "arisighi",
+     "artuk_beg",
+     "sav_tekin",
+     "emir_of_arran",
+     "ibn_khan",
+     "sanduq_al_turki"
+    ],
+    "text": "Once per Command, this Lord may Bypass without stopping (Laden March still costs extra; Battle still ends the card)."
+   }
+  },
+  "S19": {
+   "side": "seljuk",
+   "event": {
+    "name": "Norman Pay Revolt",
+    "text": "Add your Treachery card to this Season's Command Deck (Plan); Roman must add 1 No Command. Only one Treachery Event per Arts of War phase.",
+    "tags": [
+     "treachery"
+    ]
+   },
+   "capability": {
+    "name": "Baghdad Reinforcements",
+    "scope": "this_lord",
+    "heraldry": "Any, except Robert Crepin and Roussel de Bailleul",
+    "eligible_lords": [
+     "alp_arslan",
+     "afsin_beg",
+     "arisighi",
+     "artuk_beg",
+     "sav_tekin",
+     "emir_of_arran",
+     "ibn_khan",
+     "sanduq_al_turki"
+    ],
+    "text": "Each Muster phase, this Lord at an Unbesieged Friendly Locale may restore 1 Lost unit (Vassal or original Force) for free (no Lordship)."
+   }
+  },
+  "S20": {
+   "side": "seljuk",
+   "event": {
+    "name": "Alp Arslan Consolidates Power",
+    "text": "Lower this year's Seljuk Unity threshold by the number of permanently disbanded Seljuk Lords (mark).",
+    "tags": [
+     "immediate"
+    ]
+   },
+   "capability": {
+    "name": "Elite Ghulam Cavalry",
+    "scope": "this_lord",
+    "heraldry": "Any, except Robert Crepin and Roussel de Bailleul",
+    "eligible_lords": [
+     "alp_arslan",
+     "afsin_beg",
+     "arisighi",
+     "artuk_beg",
+     "sav_tekin",
+     "emir_of_arran",
+     "ibn_khan",
+     "sanduq_al_turki"
+    ],
+    "text": "Add the Ghulam special Vassal (1 Ghulam, S1) to this Lord's mat."
+   }
+  },
+  "S21": {
+   "side": "seljuk",
+   "event": {
+    "name": "Common Cultural Cause",
+    "text": "HOLD: in Battle or Storm, remove up to 2 Turkic Horse Themata markers and/or Turkic Horse units at the Active Lord's Locale from play (may cause Disband).",
+    "tags": [
+     "hold"
+    ]
+   },
+   "capability": {
+    "name": "Brutal Reputation",
+    "scope": "this_lord",
+    "heraldry": "Any",
+    "eligible_lords": null,
+    "text": "This Lord's Siege action may reroll 1 Surrender die (keep the new roll)."
+   }
+  },
+  "S22": {
+   "side": "seljuk",
+   "event": {
+    "name": "Massacre of Orthodox Clergy",
+    "text": "A Seljuk Lord at an Enemy Locale adds 1 Loot (even if Besieged).",
+    "tags": [
+     "immediate"
+    ]
+   },
+   "capability": {
+    "name": "Turkmen Skirmishers",
+    "scope": "this_lord",
+    "heraldry": "Sanduq al-Turki, Arisighi, Ibn Khan",
+    "eligible_lords": [
+     "sanduq_al_turki",
+     "arisighi",
+     "ibn_khan"
+    ],
+    "text": "During Wastage, 1 Enemy Lord adjacent to This Lord undergoes Wastage twice (Seljuk chooses if multiple)."
+   }
+  },
+  "S23": {
+   "side": "seljuk",
+   "event": {
+    "name": "Reinforcements Denied",
+    "text": "Shift 1 Roman Lord's Service 1 Calendar box (Seljuk choice of direction).",
+    "tags": [
+     "immediate"
+    ]
+   },
+   "capability": {
+    "name": "Fortified Garrisons",
+    "scope": "side_wide",
+    "heraldry": "ALL",
+    "eligible_lords": null,
+    "text": "Each Roman Storm, replace 1 Garrison Militia with Infantry (once per Storm, at Array/Play Events). Board edge."
+   }
+  },
+  "S24": {
+   "side": "seljuk",
+   "event": {
+    "name": "Bad Omens",
+    "text": "HOLD: on a Seljuk Command card, inspect the top 2 Roman Plan cards and replace them in either order (immediately after revealing, before actions).",
+    "tags": [
+     "hold"
+    ]
+   },
+   "capability": {
+    "name": "Prisoners",
+    "scope": "this_lord",
+    "heraldry": "Any",
+    "eligible_lords": null,
+    "text": "This Lord in Winter Bounty may return 1 Loot beyond his Carts (max 1 excess per Bounty)."
+   }
+  },
+  "S25": {
+   "side": "seljuk",
+   "event": {
+    "name": "Mercenary Discipline Falters",
+    "text": "Each Roman Lord at a Ravaged Locale suffers Wastage now (friendly and enemy Ravaged markers).",
+    "tags": [
+     "immediate"
+    ]
+   },
+   "capability": {
+    "name": "Mules",
+    "scope": "this_lord",
+    "heraldry": "Any",
+    "eligible_lords": null,
+    "text": "This Lord's first March across a Pass each Command card spends only 1 Command even if Laden (not under Lieutenant/Group March)."
+   }
+  }
+ }
+}

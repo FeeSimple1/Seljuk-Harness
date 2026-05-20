@@ -1,0 +1,166 @@
+{
+ "name": "Showdown in Anatolia",
+ "start_box": 7,
+ "final_box": 12,
+ "skip_first_levy": false,
+ "seljuk_unity_targets": {
+  "9": 15
+ },
+ "starting_vp": {
+  "roman": 3.0,
+  "seljuk": 3.0
+ },
+ "mustered": [
+  {
+   "lord": "manuel_komnenos",
+   "locale": "to_constantinople"
+  },
+  {
+   "lord": "chatatourios",
+   "locale": "antioch"
+  },
+  {
+   "lord": "roussel_de_bailleul",
+   "locale": "ankyra",
+   "side": "roman"
+  },
+  {
+   "lord": "alp_arslan",
+   "locale": "ani",
+   "assets_override": {
+    "carts": 3
+   }
+  },
+  {
+   "lord": "arisighi",
+   "locale": "ani",
+   "side": "seljuk"
+  },
+  {
+   "lord": "emir_of_arran",
+   "locale": "manbij",
+   "capabilities": [
+    "S15"
+   ]
+  }
+ ],
+ "service": {
+  "roussel_de_bailleul": 8,
+  "emir_of_arran": 9,
+  "arisighi": 9,
+  "manuel_komnenos": 9,
+  "chatatourios": 9,
+  "alp_arslan": 11
+ },
+ "on_calendar": [
+  {
+   "lord": "joseph_tarchaneiotes",
+   "box": 7
+  },
+  {
+   "lord": "afsin_beg",
+   "box": 7
+  },
+  {
+   "lord": "sav_tekin",
+   "box": 9
+  },
+  {
+   "lord": "artuk_beg",
+   "box": 9
+  },
+  {
+   "lord": "romanos_diogenes",
+   "box": 10
+  },
+  {
+   "lord": "nikephoros_bryennios",
+   "box": 10
+  },
+  {
+   "lord": "andronikos_doukas",
+   "box": 10
+  },
+  {
+   "lord": "sanduq_al_turki",
+   "box": 10
+  }
+ ],
+ "removed_lords": [
+  "robert_crepin",
+  "ibn_khan"
+ ],
+ "board_edge_capabilities": {
+  "roman": [],
+  "seljuk": [
+   "S8"
+  ]
+ },
+ "capability_coins": {
+  "S8": 1
+ },
+ "markers": {
+  "ruins": [
+   {
+    "locale": "kaisareia",
+    "color": "seljuk"
+   }
+  ],
+  "conquered": [
+   {
+    "locale": "arkesh",
+    "side": "roman"
+   },
+   {
+    "locale": "manzikert",
+    "side": "roman"
+   },
+   {
+    "locale": "manbij",
+    "side": "roman"
+   }
+  ],
+  "ravaged": [
+   {
+    "locale": "romanoupolis",
+    "side": "seljuk"
+   },
+   {
+    "locale": "keltzene",
+    "side": "seljuk"
+   },
+   {
+    "locale": "edessa",
+    "side": "seljuk"
+   },
+   {
+    "locale": "melitene",
+    "side": "seljuk"
+   },
+   {
+    "locale": "theodosiopolis",
+    "side": "seljuk"
+   }
+  ],
+  "siege": [
+   {
+    "locale": "manbij",
+    "count": 1
+   }
+  ],
+  "bypass": [],
+  "fort": [],
+  "strategic_objective_locale": []
+ },
+ "holding_boxes": {
+  "mosul_baghdad_loot": 0,
+  "constantinople_strategic_objectives_available": 0,
+  "constantinople_roman_vp_markers": 0
+ },
+ "themata_key": "showdown_in_anatolia",
+ "special_vp_rules": [],
+ "calendar_reminders": [
+  "Nomisma Debased marker pre-placed at Autumn 1069 (box 6): R19 considered already used"
+ ],
+ "nomisma_debased_used": true
+}

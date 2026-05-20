@@ -1,0 +1,76 @@
+{
+  "_source": "Seljuk_Units_and_Strongholds.txt (Strongholds player aid) + Rules 1.3.1, 4.5.1, 4.9.1. Garrison archers (all Strongholds in Storm): Missile 0.5, -1 target Armor, select target. All dice d6.",
+  "types": {
+    "fort": {
+      "value": 1, "size": 1, "lord_capacity": 1, "walls": [1, 3], "surrender_dice": 1, "gardens": false,
+      "garrison": {
+        "roman": {"infantry": 0, "militia": 1},
+        "seljuk": {"infantry": 1, "militia": 1}
+      },
+      "garrison_archers": {"missile": 0.5, "target_armor_modifier": -1, "select_target": true},
+      "themata_max": 1,
+      "conquered_markers": 1, "vp_per_conquered_roman": 1, "vp_per_conquered_seljuk": 0,
+      "sack_spoils": {"coin": 1, "loot": 0, "provender": 1}
+    },
+    "town": {
+      "value": 2, "size": 2, "lord_capacity": 2, "walls": [1, 4], "surrender_dice": 2, "gardens": true,
+      "garrison": {
+        "roman": {"infantry": 0, "militia": 1},
+        "seljuk": {"infantry": 1, "militia": 2}
+      },
+      "garrison_archers": {"missile": 0.5, "target_armor_modifier": -1, "select_target": true},
+      "themata_max": 2,
+      "conquered_markers": 2, "vp_per_conquered_roman": 1, "vp_per_conquered_seljuk": 0,
+      "sack_spoils": {"coin": 1, "loot": 0, "provender": 2}
+    },
+    "city": {
+      "value": 3, "size": 3, "lord_capacity": 3, "walls": [1, 4], "surrender_dice": 3, "gardens": true,
+      "garrison": {
+        "roman": {"infantry": 1, "militia": 1},
+        "seljuk": {"infantry": 1, "militia": 3}
+      },
+      "garrison_archers": {"missile": 0.5, "target_armor_modifier": -1, "select_target": true},
+      "themata_max": 3,
+      "conquered_markers": 3, "vp_per_conquered_roman": 1, "vp_per_conquered_seljuk": 0,
+      "sack_spoils": {"coin": 2, "loot": 2, "provender": 4}
+    }
+  },
+  "aleppo_overrides": {
+    "base_type": "city",
+    "surrender_dice": 4,
+    "garrison_column": "seljuk",
+    "_note": "Aleppo always uses the Seljuk Garrison column regardless of current allegiance (Fatimid Caliphate, 1.3.1).",
+    "special_rules": [
+      "Roman may not Withdraw inside Aleppo (or Hama)",
+      "Roman does not auto-succeed at Forage at Aleppo (or Hama)",
+      "Aleppo Independence event (R14) can make it Friendly to both sides; neither may Withdraw inside",
+      "If Aleppo Independence has been played for effect AND Seljuks hold Aleppo through the next Winter, Seljuk automatic victory (4.7.6, 5.2)"
+    ]
+  },
+  "surrender": {
+    "_rule": "4.5.1. Roll dice = Stronghold value (4 for Aleppo). Each die <= (Siege markers + Ravaged markers, max 4 Siege + 0/1 Ravaged) seizes the Stronghold.",
+    "dice_by_type": {"fort": 1, "town": 2, "city": 3, "aleppo": 4}
+  },
+  "storm_garrison_rules": {
+    "reference": "4.9.1",
+    "rules": [
+      "Garrison Foot units have BOTH Melee and Missiles.",
+      "Garrison Infantry/Militia are x1/2 Missile units with -1 to target Armor; Select Targets (4.8.2).",
+      "Garrison Strikes add to the Defending Lord's Strikes (round up); Garrisons are otherwise separate from the Lord and ignore cards affecting the Lord individually.",
+      "Defender must assign Hits to Garrison units first; the Lord's Forces absorb Hits only after the Garrison is Routed.",
+      "Garrison units return to the pool when Routed or at end of Storm.",
+      "The full Garrison complement defends in every enemy Storm action regardless of past Storms.",
+      "Fatimid Caliphate Strongholds (Hama, Aleppo, Syria) always use the Seljuk Garrison column.",
+      "R16 Armenian Garrisons: Roman-conquered Strongholds outside the Roman Empire receive Garrison units from BOTH columns simultaneously."
+    ]
+  },
+  "themata_service_markers": {
+    "side": "roman",
+    "reference": "1.5.1, 4.9.1",
+    "source_location": "the Stronghold's Thema box on the map",
+    "not_spawned_from_pool": true,
+    "selection": "Roman player chooses available Themata in that Thema to defend at the start of a Siege (4.3.5), up to the Stronghold Size",
+    "on_storm_win": "defending Themata remain in the Stronghold",
+    "on_storm_loss": "defending Themata are permanently removed from the game (Sack 4.9.1; also 4.5.1 Surrender)"
+  }
+}

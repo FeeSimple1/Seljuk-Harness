@@ -12,14 +12,19 @@ accuracy and completeness are the priority** — see the hard constraints there.
 
 ## Status
 
-**Phase 0 — skeleton.** This is the foundation only: repo structure, the
-state-JSON-schema scaffold, reference and source material, module stubs, a CLI
-entry point, a green test framework, and the project-discipline documents.
-**No game logic yet.** The phase plan (in `BRIEF.md`) sequences the full build:
-state model and static data (Phase 1), Levy (Phase 2), Plan + simple Commands
+**Phase 1 — state model, static data, scenario loaders (merged).** The harness
+now encodes all static reference data as JSON (Forces, Strongholds, the 44-Locale
+map graph with 15 Pass + 47 Road Ways, Lords, Themata rosters, all 50 Arts of War
+cards, and the Command decks), a full Pydantic `GameState` that round-trips to a
+single JSON file, loaders for all five scenarios, victory math (5.1-5.3), state
+rendering (summary / verbose / focused), and the `new` and `state` CLI commands.
+Every scenario's recomputed VP is asserted equal to its printed starting VP.
+**Action handlers and the legal-moves enumerator are not built yet** (Phase 2+).
+
+The phase plan (in `BRIEF.md`) continues: Levy (Phase 2), Plan + simple Commands
 and End-Campaign/Winter (Phase 3a), March + Battle (Phase 3b), Siege/Storm/Sally
-(Phase 3c), the 50 Arts of War card effects (Phase 4), and the LLM interface
-plus audit agents (Phase 5).
+(Phase 3c), the 50 Arts of War card effects (Phase 4), and the LLM interface plus
+audit agents (Phase 5).
 
 ## Where things are
 

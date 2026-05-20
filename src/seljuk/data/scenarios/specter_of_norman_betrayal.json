@@ -1,0 +1,186 @@
+{
+ "name": "Specter of Norman Betrayal",
+ "start_box": 4,
+ "final_box": 6,
+ "skip_first_levy": false,
+ "seljuk_unity_targets": {
+  "6": 13
+ },
+ "starting_vp": {
+  "roman": 1.5,
+  "seljuk": 5.5
+ },
+ "mustered": [
+  {
+   "lord": "romanos_diogenes",
+   "locale": "to_constantinople",
+   "assets_override": {
+    "coin": 1
+   }
+  },
+  {
+   "lord": "nikephoros_bryennios",
+   "locale": "to_constantinople"
+  },
+  {
+   "lord": "joseph_tarchaneiotes",
+   "locale": "to_constantinople"
+  },
+  {
+   "lord": "chatatourios",
+   "locale": "antioch"
+  },
+  {
+   "lord": "afsin_beg",
+   "locale": "to_mosul_and_baghdad",
+   "assets_override": {
+    "coin": 1
+   }
+  },
+  {
+   "lord": "arisighi",
+   "locale": "to_mosul_and_baghdad",
+   "side": "seljuk"
+  },
+  {
+   "lord": "sav_tekin",
+   "locale": "ani"
+  },
+  {
+   "lord": "robert_crepin",
+   "locale": "edessa",
+   "side": "seljuk"
+  }
+ ],
+ "service": {
+  "nikephoros_bryennios": 4,
+  "romanos_diogenes": 5,
+  "chatatourios": 5,
+  "joseph_tarchaneiotes": 5,
+  "robert_crepin": 5,
+  "afsin_beg": 5,
+  "sav_tekin": 5,
+  "arisighi": 5
+ },
+ "on_calendar": [
+  {
+   "lord": "andronikos_doukas",
+   "box": 3
+  },
+  {
+   "lord": "manuel_komnenos",
+   "box": 4
+  },
+  {
+   "lord": "emir_of_arran",
+   "box": 4
+  },
+  {
+   "lord": "sanduq_al_turki",
+   "box": 4
+  },
+  {
+   "lord": "ibn_khan",
+   "box": 5
+  },
+  {
+   "lord": "artuk_beg",
+   "box": 6
+  },
+  {
+   "lord": "roussel_de_bailleul",
+   "box": 7,
+   "side": "roman"
+  },
+  {
+   "lord": "alp_arslan",
+   "box": 7
+  }
+ ],
+ "removed_lords": [],
+ "board_edge_capabilities": {
+  "roman": [
+   "R19"
+  ],
+  "seljuk": [
+   "S8"
+  ]
+ },
+ "capability_coins": {
+  "S8": 1
+ },
+ "markers": {
+  "ruins": [
+   {
+    "locale": "kaisareia",
+    "color": "seljuk"
+   }
+  ],
+  "conquered": [
+   {
+    "locale": "edessa",
+    "side": "seljuk"
+   },
+   {
+    "locale": "hama",
+    "side": "seljuk"
+   },
+   {
+    "locale": "manbij",
+    "side": "roman"
+   }
+  ],
+  "ravaged": [
+   {
+    "locale": "chaldia",
+    "side": "seljuk"
+   },
+   {
+    "locale": "keltzene",
+    "side": "seljuk"
+   },
+   {
+    "locale": "melitene",
+    "side": "seljuk"
+   },
+   {
+    "locale": "romanoupolis",
+    "side": "seljuk"
+   },
+   {
+    "locale": "larisa",
+    "side": "seljuk"
+   },
+   {
+    "locale": "tephrike",
+    "side": "seljuk"
+   },
+   {
+    "locale": "edessa",
+    "side": "seljuk"
+   },
+   {
+    "locale": "theodosiopolis",
+    "side": "seljuk"
+   },
+   {
+    "locale": "manbij",
+    "side": "roman"
+   }
+  ],
+  "siege": [],
+  "bypass": [],
+  "fort": [],
+  "strategic_objective_locale": []
+ },
+ "holding_boxes": {
+  "mosul_baghdad_loot": 1,
+  "constantinople_strategic_objectives_available": 1,
+  "constantinople_roman_vp_markers": 0
+ },
+ "themata_key": "specter_of_norman_betrayal",
+ "special_vp_rules": [],
+ "calendar_reminders": [
+  "Alp Arslan does not start on map; Roman cannot achieve Aleppo auto-victory until he is in play"
+ ]
+}
