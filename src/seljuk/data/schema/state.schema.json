@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/FeeSimple1/Seljuk-Harness/state.schema.json",
+  "title": "Seljuk Harness Game State (DRAFT)",
+  "description": "Phase 0 scaffold of the single-file game-state schema. Properties are illustrative placeholders; the authoritative shape is fixed by the Pydantic model in src/seljuk/state.py during Phase 1, which will regenerate this file.",
+  "type": "object",
+  "required": ["meta"],
+  "properties": {
+    "meta": {
+      "type": "object",
+      "description": "Scenario id, calendar position, active player, RNG state, victory totals.",
+      "properties": {
+        "scenario": {"type": "string"},
+        "seed": {"type": "integer"},
+        "rng_state": {"description": "Opaque serialized RNG state (see rng.py)."},
+        "calendar_box": {"type": "integer", "minimum": 1, "maximum": 12},
+        "phase": {"type": "string", "enum": ["levy", "campaign", "winter"]},
+        "active_player": {"type": "string", "enum": ["seljuk", "roman"]},
+        "vp": {"type": "object"}
+      }
+    },
+    "lords": {"type": "object", "description": "Per-Lord state, keyed by Lord id."},
+    "locales": {"type": "object", "description": "Per-Locale state, keyed by Locale id."},
+    "themata": {"type": "object", "description": "Thema-box contents (Roman only)."},
+    "holding_boxes": {"type": "object", "description": "Constantinople and Mosul & Baghdad."},
+    "decks": {"type": "object", "description": "Arts of War and Command decks per side."},
+    "history": {"type": "array", "items": {"type": "object"}}
+  }
+}
