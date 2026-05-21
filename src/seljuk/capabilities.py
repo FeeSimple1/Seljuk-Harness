@@ -79,3 +79,40 @@ def lordship_rating(gs, lord_id: str) -> int:
     if lord_has(gs, lord_id, "Reconquista & Sicilian Commanders"):  # R10 (Robert/Roussel)
         bonus += 1
     return base + bonus
+
+
+# --- combat Protection modifiers (Battle/Storm) -----------------------------
+
+_ARMORED = {"tagmata": (1, 3), "norman_knights": (1, 4), "scholai_hetaireia": (1, 4),
+            "ghulam_cavalry": (1, 4), "varangian_guard": (1, 4), "infantry": (1, 3)}
+
+
+def lamellar_active(gs, lord_id: str) -> bool:
+    """Lamellar Armor (S1/S2) gives Turkic Horse Armor 1-3 until 3 of this
+    Lord's Turkic Horse Rout in the Battle (S1/S2 clarification)."""
+    if not lord_has(gs, lord_id, "Lamellar Armor"):
+        return False
+    return int(gs.lords[lord_id].flags.get("turkic_routed_battle", 0)) < 3
+
+
+def protection_range(gs, lord_id: str, unit: str, hit_type: str, storm: bool = False) -> tuple[int, int]:
+    """Protection range that NEGATES a Hit (4.8.2), including Capabilities.
+
+    Turkic Horse: Lamellar Armor -> Armor 1-3; else Unarmored vs Missiles and
+    (Battle only) Evade 1-3 vs Melee; in Storm, Evade is not used. Klibanophoroi
+    -> Tagmata 1-4; Syndosis -> Militia 1-2; Steeled Resolve -> Infantry 1-4.
+    """
+    names = lord_capability_names(gs, lord_id)
+    if unit == "turkic_horse":
+        if lamellar_active(gs, lord_id):
+            return (1, 3)
+        if storm:
+            return (1, 1)  # no Evade in Storm
+        return (1, 1) if hit_type == "missile" else (1, 3)  # Unarmored vs Missiles, Evade vs Melee
+    if unit == "militia":
+        return (1, 2) if "Syndosis" in names else (1, 1)
+    if unit == "tagmata":
+        return (1, 4) if "Klibanophoroi" in names else (1, 3)
+    if unit == "infantry":
+        return (1, 4) if "Steeled Resolve" in names else (1, 3)
+    return _ARMORED[unit]
