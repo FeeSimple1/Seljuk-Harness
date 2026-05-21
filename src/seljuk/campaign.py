@@ -157,6 +157,7 @@ def _reveal_next(gs: GameState) -> None:
         lord = gs.lords[card]
         gs.meta.active_lord = card
         gs.meta.actions_remaining = sd.lord(card)["ratings"]["command"]
+        lord.flags.pop("first_march_used", None)
         return
 
 
@@ -513,6 +514,14 @@ def h_end_activation(gs: GameState, action: dict[str, Any], roller: DiceRoller) 
 
 
 def legal_moves_campaign(gs: GameState) -> list[dict[str, Any]]:
+    ap = next((p for p in gs.meta.pending if p["type"] == "approach_response"), None)
+    if ap is not None:
+        return [{"type": "respond_approach", "_defenders": ap["defenders"], "_locale": ap["locale"],
+                 "_desc": "Each defending Lord: Avoid Battle / Withdraw / Stand (4.3.4)"}]
+    bb = next((p for p in gs.meta.pending if p["type"] == "besiege_or_bypass"), None)
+    if bb is not None:
+        return [{"type": "besiege_bypass", "choice": "besiege", "_desc": "Besiege the Stronghold (4.3.5)"},
+                {"type": "besiege_bypass", "choice": "bypass", "_desc": "Bypass the Stronghold (4.3.5)"}]
     pend = next((p for p in gs.meta.pending if p["type"] == "ravage_defence"), None)
     if pend is not None:
         moves = [{"type": "resolve_ravage_defence", "defend_with": None,
@@ -551,6 +560,11 @@ def command_menu(gs: GameState) -> list[dict[str, Any]]:
     try:
         st = gs.locales[loc_id]
         info = sd.locale(loc_id)
+        # March (4.3): one option per connected Way (cost computed by handler).
+        if not lord.besieged:
+            for edge in gmap.ways_from(loc_id):
+                out.append({"type": "cmd_march", "lord": lid, "to": edge["to"], "way_type": edge["type"],
+                            "_desc": f"March to {sd.locale(edge['to'])['name']} via {edge['type']} (4.3)"})
         # Forage (4.5.4): available unless the Locale is Ravaged.
         if st.ravaged_side is None and not lord.besieged:
             out.append({"type": "cmd_forage", "lord": lid, "_desc": "Forage for Provender (4.5.4)"})
@@ -849,3 +863,232 @@ def h_cmd_recruit(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> 
     spend_actions(gs, 1)
     return {"ok": True, "action": "cmd_recruit", "lord": lord.id, "thema": thema,
             "marker": {"unit": marker.unit, "symbols": marker.symbols}}
+
+
+# === March (4.3) and Approach (4.3.4) / Besiege-Bypass (4.3.5) ===============
+
+def _enemy_lord_ids_at(gs: GameState, locale_id: str, side: str) -> list[str]:
+    return [lid for lid, l in gs.lords.items()
+            if l.mustered and l.cylinder == locale_id and l.side == _enemy(side) and not l.besieged]
+
+
+def _all_turkic(lords: list[LordState]) -> bool:
+    for l in lords:
+        if not l.forces:
+            return False
+        if any(u != "turkic_horse" and n > 0 for u, n in l.forces.items()):
+            return False
+    return True
+
+
+def group_laden(gs: GameState, lords: list[LordState]) -> bool:
+    """4.3.2: a group is Laden if it carries any Loot, or more Provender than
+    Carts (shared across the group)."""
+    loot = sum(l.assets.loot for l in lords)
+    prov = sum(l.assets.provender for l in lords)
+    carts = sum(l.assets.carts for l in lords)
+    return loot > 0 or prov > carts
+
+
+def _over_laden(gs: GameState, lords: list[LordState]) -> bool:
+    prov = sum(l.assets.provender for l in lords)
+    carts = sum(l.assets.carts for l in lords)
+    return prov > 2 * carts  # 4.3.2: more than two Provender per Cart cannot move
+
+
+def _way_between(origin: str, to: str, way_type: str | None):
+    cands = gmap.ways_between(origin, to)
+    if not cands:
+        return None
+    if way_type:
+        for w in cands:
+            if w["type"] == way_type:
+                return w
+        return None
+    return cands[0]
+
+
+def march_cost(gs: GameState, lords: list[LordState], way: dict, first_march: bool) -> int | str:
+    """Action cost of a March (4.3.3). Returns 'whole_card' for Holding-Box Ways."""
+    if way["whole_command_card"]:
+        return "whole_card"
+    laden = group_laden(gs, lords)
+    cost = 2 if laden else 1
+    if first_march and _all_turkic(lords):
+        cost = max(0, cost - 1)  # Turkic-Horse first March of the card (-1)
+    if way["type"] == "pass":
+        cost += 1
+    return cost
+
+
+def _marching_group(gs: GameState, lord: LordState, co_marchers: list[str]) -> list[LordState]:
+    """The set of Lords that move together (4.3.1 Group March + 4.1.3 stack)."""
+    group = [lord]
+    # A Lieutenant brings his Lower Lord; a Lower Lord cannot be the active card.
+    if lord.lower_lord and lord.lower_lord in gs.lords:
+        group.append(gs.lords[lord.lower_lord])
+    if co_marchers:
+        if not actions.is_commander(gs, lord.id):
+            raise IllegalAction("not_commander_group", "only a Commander may lead a Group March (4.3.1)")
+        for cid in co_marchers:
+            other = gs.lords.get(cid)
+            if other is None or other.side != lord.side or not on_map(other) or other.cylinder != lord.cylinder:
+                raise IllegalAction("bad_co_marcher", f"{cid} cannot Group-March with {lord.id}")
+            if other.besieged:
+                raise IllegalAction("besieged", f"{cid} is Besieged")
+            group.append(other)
+            if other.lower_lord and other.lower_lord in gs.lords:
+                group.append(gs.lords[other.lower_lord])
+    return group
+
+
+def h_cmd_march(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
+    lord = _require(action.get("lord"), gs)
+    if lord.besieged:
+        raise IllegalAction("besieged", "a Besieged Lord may only Sally/Pass/Forage (4.2.1)")
+    to = action.get("to")
+    if to not in gs.locales:
+        raise IllegalAction("bad_destination", "unknown destination Locale")
+    way = _way_between(lord.cylinder, to, action.get("way_type"))
+    if way is None:
+        raise IllegalAction("no_way", f"no Way from {lord.cylinder} to {to}")
+    group = _marching_group(gs, lord, action.get("group", []))
+    if _over_laden(gs, group):
+        raise IllegalAction("over_laden", "group carries more than two Provender per Cart (discard to March, 4.3.2)")
+    # Holding-Box rule: only the owning side may enter its own Box; no enemy box.
+    dest_info = sd.locale(to)
+    if dest_info["type"] == "holding_box" and dest_info["allegiance"] != lord.side:
+        raise IllegalAction("enemy_holding_box", "no Lord may enter an Enemy Holding Box (1.3.1)")
+    first_march = not lord.flags.get("first_march_used")
+    cost = march_cost(gs, group, way, first_march)
+    if cost == "whole_card":
+        cost = gs.meta.actions_remaining
+    if cost > gs.meta.actions_remaining:
+        raise IllegalAction("insufficient_actions", f"March costs {cost}, only {gs.meta.actions_remaining} left")
+    # Move the group.
+    for g in group:
+        g.cylinder = to
+        g.moved_fought = True
+    lord.flags["first_march_used"] = True
+    gs.meta.actions_remaining -= cost
+    res = {"ok": True, "action": "cmd_march", "lord": lord.id, "to": to,
+           "way": way["type"], "cost": cost, "group": [g.id for g in group]}
+    arrival = _resolve_arrival(gs, group, to)
+    res.update(arrival)
+    if not arrival.get("pending") and gs.meta.actions_remaining <= 0:
+        _after_card(gs)
+    return res
+
+
+def _resolve_arrival(gs: GameState, group: list[LordState], to: str) -> dict[str, Any]:
+    """After a March: Approach (enemy Lords present) or Besiege/Bypass (enemy
+    Stronghold, no enemy Lords outside) — both as pending sub-decisions."""
+    side = group[0].side
+    enemy_lords = _enemy_lord_ids_at(gs, to, side)
+    if gs.locales[to].bypass:
+        enemy_lords = []  # already Bypassing this Locale
+    if enemy_lords:
+        gs.meta.pending.append({
+            "type": "approach_response", "locale": to, "attackers": [g.id for g in group],
+            "defenders": enemy_lords, "_owed_by": _enemy(side),
+        })
+        return {"pending": "approach_response", "defenders": enemy_lords}
+    info = sd.locale(to)
+    enemy_sh = info.get("is_stronghold") and not gs.locales[to].ruins \
+        and actions.current_allegiance(gs, to) == _enemy(side)
+    if enemy_sh and not gs.locales[to].bypass and gs.locales[to].siege_markers == 0:
+        gs.meta.pending.append({
+            "type": "besiege_or_bypass", "locale": to, "lords": [g.id for g in group], "_owed_by": side,
+        })
+        return {"pending": "besiege_or_bypass"}
+    return {}
+
+
+def h_respond_approach(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
+    """4.3.4: each Inactive (defending) Lord chooses Avoid Battle, Withdraw, or
+    Stand. ``choices`` maps lord_id -> {"action": "avoid"|"withdraw"|"stand",
+    "to": <locale for avoid>}. Standers (if any) trigger a Battle (resolved in
+    the Battle engine)."""
+    pend = next((p for p in gs.meta.pending if p["type"] == "approach_response"), None)
+    if pend is None:
+        raise IllegalAction("no_pending", "no Approach to respond to")
+    to = pend["locale"]
+    choices = action.get("choices", {})
+    side = gs.lords[pend["defenders"][0]].side
+    standers, avoided, withdrew = [], [], []
+    attacker_origin = gs.lords[pend["attackers"][0]].cylinder  # they are now at `to`
+    for did in pend["defenders"]:
+        ch = choices.get(did, {"action": "stand"})
+        kind = ch.get("action", "stand")
+        lord = gs.lords[did]
+        if kind == "avoid":
+            dest = ch.get("to")
+            _validate_avoid(gs, lord, to, dest, side)
+            lord.cylinder = dest
+            lord.moved_fought = True
+            avoided.append(did)
+        elif kind == "withdraw":
+            _validate_withdraw(gs, lord, to)
+            lord.besieged = True  # inside the Stronghold at `to`
+            withdrew.append(did)
+        else:
+            standers.append(did)
+    gs.meta.pending.remove(pend)
+    if standers:
+        from . import battle
+        res = battle.begin_battle(gs, pend["attackers"], standers, to,
+                                  scripted=action.get("battle_decisions"))
+        # A Battle ends the active Lord's card (4.8.6): skip remaining actions.
+        if gs.meta.phase == "campaign":
+            gs.meta.actions_remaining = 0
+            _after_card(gs)
+        return {"ok": True, "action": "respond_approach", "battle": res}
+    # No defenders left to fight -> the attacker may now Besiege/Bypass if a
+    # Stronghold remains, else the card continues.
+    arrival = _resolve_arrival(gs, [gs.lords[a] for a in pend["attackers"]], to)
+    if not arrival.get("pending") and gs.meta.actions_remaining <= 0:
+        _after_card(gs)
+    return {"ok": True, "action": "respond_approach", "avoided": avoided,
+            "withdrew": withdrew, "standers": standers, **arrival}
+
+
+def _validate_avoid(gs: GameState, lord: LordState, battle_loc: str, dest: str, side: str) -> None:
+    if dest not in gs.locales or not gmap.is_adjacent(battle_loc, dest):
+        raise IllegalAction("bad_avoid", "Avoid Battle moves to an adjacent Locale (4.3.4)")
+    if _enemy_lord_ids_at(gs, dest, side):
+        raise IllegalAction("avoid_into_enemy", "may not Avoid into a Locale with an Unbesieged Enemy Lord (4.3.4)")
+    if group_laden(gs, [lord]):
+        raise IllegalAction("avoid_laden", "Lords may only Avoid Battle Unladen (4.3.4)")
+
+
+def _validate_withdraw(gs: GameState, lord: LordState, battle_loc: str) -> None:
+    info = sd.locale(battle_loc)
+    if not info.get("is_stronghold") or gs.locales[battle_loc].ruins:
+        raise IllegalAction("no_stronghold", "Withdraw requires a Friendly Stronghold here (4.3.4)")
+    if actions.current_allegiance(gs, battle_loc) != lord.side:
+        raise IllegalAction("not_friendly_stronghold", "Withdraw requires a Friendly Stronghold (4.3.4)")
+    if battle_loc == "aleppo":
+        raise IllegalAction("no_withdraw_aleppo", "no Lord may Withdraw inside Aleppo (1.3.1)")
+
+
+def h_besiege_bypass(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
+    pend = next((p for p in gs.meta.pending if p["type"] == "besiege_or_bypass"), None)
+    if pend is None:
+        raise IllegalAction("no_pending", "no Besiege/Bypass to resolve")
+    to = pend["locale"]
+    side = gs.lords[pend["lords"][0]].side
+    choice = action.get("choice")
+    gs.meta.pending.remove(pend)
+    if choice == "besiege":
+        gs.locales[to].siege_markers = max(1, gs.locales[to].siege_markers)  # place first Siege marker (4.3.5)
+        gs.meta.actions_remaining = 0  # Besieging ends the card
+        _after_card(gs)
+        return {"ok": True, "action": "besiege", "locale": to}
+    elif choice == "bypass":
+        gs.locales[to].bypass = True
+        for lid in pend["lords"]:
+            gs.lords[lid].bypassed = True
+        if gs.meta.actions_remaining <= 0:
+            _after_card(gs)
+        return {"ok": True, "action": "bypass", "locale": to}
+    raise IllegalAction("bad_choice", "choose 'besiege' or 'bypass' (4.3.5)")

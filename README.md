@@ -12,21 +12,23 @@ accuracy and completeness are the priority** — see the hard constraints there.
 
 ## Status
 
-**Phase 3a — Campaign structure + non-combat Commands (merged).** A full
-Seasonal Turn now runs: Levy (Phase 2) -> Campaign. The Campaign machine covers
-Capability Discard (4.0), Plan (4.1, season counts + first-turn override,
-Lieutenants), alternating Command Activations (4.2), the Feed-Pay-Disband cycle
-(4.6), End Campaign (4.7: Grow, Repair, Wastage, Reset), and Winter (4.7.6:
-Aleppo auto-victory, Bounty, Seljuk Unity, Winter Quarters, Aleppo Diplomacy),
-with the immediate no-Mustered-Lords victory (5.2) and end-of-scenario scoring
-(5.3). The non-combat Command menu is implemented: Pass, Tax, Forage, Ravage
-(incl. the Seljuk 1-action Themata defence), Supply (route/Cart costs), and
-Recruit. Round-trip enumerator/handler sweeps run over Levy and Campaign as CI
-gates. **March and the combat Commands (Siege/Storm/Sally) are Phases 3b/3c;
-per-card Arts of War effects are Phase 4.**
+**Phase 3b — March + Approach + Battle (merged).** Lords now move and fight.
+March (4.3) covers adjacency, the cost model (Laden, Turkic-Horse first-march,
+Pass, whole-card Holding-Box), Group March (4.3.1) and Lieutenant stacks; the
+Approach decision tree (4.3.4: Avoid Battle / Withdraw / Stand) and Besiege/
+Bypass (4.3.5) are pending sub-decisions. The full Battle engine (4.8) runs the
+Array (3 Front + Reserve), Rounds (Concede + Pursuit halving, Reposition with
+Reserve-advance and Center-fill), the six Strike steps in initiative order
+(Missile then Melee; Defending then Attacking; Horse before Foot), Flanking,
+Hits (summed Strike values, rounded up), Protection by Hit type (Armor / Evade
+/ Unarmored), Rout, and the Ending (Retreat / Withdraw / Removal, Losses —
+Harsh vs Normal, Spoils, Service shift, Lord Removal by Combat 4.8.5,
+Aftermath). Player choices flow through a DecisionContext (typed scripted
+entries for tests, else a deterministic fallback).
 
-Next: Phase 3b (March + Approach + Battle), 3c (Siege/Storm/Sally), 4 (the 50
-card effects), 5 (LLM interface + agents).
+Next: Phase 3c (Siege, Storm, Sally, Relief Sally — Garrisons/Themata/
+Siegeworks/Sack), then Phase 4 (the 50 Arts of War card effects) and Phase 5
+(LLM interface + agents).
 
 ## Where things are
 
