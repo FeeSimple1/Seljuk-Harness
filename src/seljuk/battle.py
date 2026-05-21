@@ -1,11 +1,19 @@
-"""Battle, Storm, and Sally resolution (Phases 3b-3c).
+"""Battle / Storm / Sally resolution (Phase 3b/3c).
 
-Implements the Array (up to three Front positions plus Reserve), Rounds,
-Concede + Pursuit, Reposition (incl. Center fill and Relief-Sally row
-adjustment), Strike initiative (Missile then Melee; Horse before Foot in
-Battle, all Defenders before all Attackers in Storm), Flanking, Hits /
-Protection / Rout, Walls / Siegeworks / Garrison / Themata defence, the 6-Hit
-Storm Melee cap, Retreat / Withdraw / Removal, Losses, Spoils, Service shift,
-Sack (Conquer / Ruin), and Aftermath. Player choice points flow through a
-decision context (BRIEF.md, "Engine / Operator Split").
+Increment 1 records a triggered Battle as a pending sub-decision; the full
+resolution engine (Array, Strike initiative, Flanking, Pursuit, Losses, Spoils,
+Service, Aftermath) lands in the next increment per BRIEF.md.
 """
+from __future__ import annotations
+
+from typing import Any
+
+from .state import GameState
+
+
+def begin_battle(gs: GameState, attackers: list[str], defenders: list[str], locale: str) -> dict[str, Any]:
+    gs.meta.pending.append({
+        "type": "battle", "locale": locale,
+        "attackers": list(attackers), "defenders": list(defenders),
+    })
+    return {"pending": "battle", "locale": locale, "attackers": list(attackers), "defenders": list(defenders)}
