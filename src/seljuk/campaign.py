@@ -705,11 +705,30 @@ def command_menu(gs: GameState) -> list[dict[str, Any]]:
     try:
         st = gs.locales[loc_id]
         info = sd.locale(loc_id)
-        # March (4.3): one option per connected Way (cost computed by handler).
+        # March (4.3): one option per connected Way the active Lord can actually
+        # take now (mirror h_cmd_march: not over-laden, affordable, legal dest).
         if not lord.besieged:
-            for edge in gmap.ways_from(loc_id):
-                out.append({"type": "cmd_march", "lord": lid, "to": edge["to"], "way_type": edge["type"],
-                            "_desc": f"March to {sd.locale(edge['to'])['name']} via {edge['type']} (4.3)"})
+            mgroup = _marching_group(gs, lord, [])
+            if not _over_laden(gs, mgroup):
+                first_march = not lord.flags.get("first_march_used")
+                for edge in gmap.ways_from(loc_id):
+                    to = edge["to"]
+                    dest_info = sd.locale(to)
+                    if dest_info["type"] == "holding_box" and dest_info["allegiance"] != lord.side:
+                        continue  # no Lord may enter an Enemy Holding Box (1.3.1)
+                    way = _way_between(loc_id, to, edge["type"])
+                    if way is None:
+                        continue
+                    cost = march_cost(gs, mgroup, way, first_march)
+                    if cost != "whole_card":  # whole-card Ways always use the rest of the card
+                        if (way["type"] == "pass" and len(mgroup) == 1 and not lord.lower_lord
+                                and not lord.lieutenant_of and capabilities.lord_has(gs, lord.id, "Mules")
+                                and not lord.flags.get("mules_used_this_card")):
+                            cost = min(cost, 1)  # Mules: first Pass March = 1 (no state mutation here)
+                        if cost > gs.meta.actions_remaining:
+                            continue
+                    out.append({"type": "cmd_march", "lord": lid, "to": to, "way_type": edge["type"],
+                                "_desc": f"March to {sd.locale(to)['name']} via {edge['type']} (4.3)"})
         # Forage (4.5.4): available unless the Locale is Ravaged.
         if st.ravaged_side is None and not lord.besieged:
             out.append({"type": "cmd_forage", "lord": lid, "_desc": "Forage for Provender (4.5.4)"})
@@ -727,7 +746,8 @@ def command_menu(gs: GameState) -> list[dict[str, Any]]:
             if lord.side == "roman":
                 out.append({"type": "cmd_ravage", "lord": lid, "_desc": "Ravage (Roman, 1 action, auto) (4.5.5)"})
             else:
-                out.append({"type": "cmd_ravage", "lord": lid, "actions": 2, "_desc": "Ravage (Seljuk, 2 actions, auto) (4.5.5)"})
+                if gs.meta.actions_remaining >= 2:
+                    out.append({"type": "cmd_ravage", "lord": lid, "actions": 2, "_desc": "Ravage (Seljuk, 2 actions, auto) (4.5.5)"})
                 if gs.meta.actions_remaining >= 1:
                     out.append({"type": "cmd_ravage", "lord": lid, "actions": 1, "_desc": "Ravage (Seljuk, 1 action; Roman may defend with Themata) (4.5.5)"})
         # Supply (4.4): a Route to an un-Ruined Seat within Cart budget.
