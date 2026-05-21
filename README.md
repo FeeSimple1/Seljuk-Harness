@@ -12,30 +12,26 @@ accuracy and completeness are the priority** — see the hard constraints there.
 
 ## Status
 
-**Phase 4 — Arts of War card effects (merged, substantially complete).** The 50
-cards are wired to their mechanics through `capabilities.py` (passive) and
-`events.py` (active). Implemented Capabilities: command/lordship bonuses (R6,
-R8, R9, R10, S12, S14); combat Protection (Klibanophoroi, Syndosis, Steeled
-Resolve, Lamellar Armor, Norman Heavy Cavalry reroll); combat Strikes (Javelins,
-Shock Tactics, Bardoukia, Alakatia — anti-armor); Siege Weaponry (-1 Walls);
-Storm Garrison (Armenian Garrisons, Fortified Garrisons); and Mules, Provincial
-Bureaucracy, Fealty-to-the-Basileus / Nizam (Winter stay), Prisoners, Artukid
-Legacy, Brutal Reputation. Implemented immediate Events (resolved via
-`resolve_event`): the Calendar shifts (R5, R12, S12, S14, S23), Afsin Murders
-(R10), Thrakion Reinforcements (R13), Aleppo Independence (R14), Resilient
-Agriculture (R19), Armenian Resistance (R20), Deserters (S7), Caliphate Merchant
-Financing (S8), Thematic Troops Desert (S15), Siege of Bari (S5), Alp Arslan
-Consolidates Power (S20), Massacre of Orthodox Clergy (S22). One rules call is
-pending your confirmation: **Q-002** (Turkic-Horse base Melee / Shock Tactics).
+**Phase 5 — LLM interface + audit agents (merged).** `src/seljuk/llm/` provides
+the consumer interface: a hidden-information `view` (opponent deck/hand/unrevealed
+Plan masked), a compact `briefing`, card/Lord/Locale `tools` lookups, and an
+`LLMSession` (start_new / state / briefing / legal_actions / pending / apply /
+lookups / save / load) that routes through the same engine and manages
+Levy<->Campaign transitions. `scripts/self_play.py` is a greedy bug-finding
+driver that plays every scenario to a terminal state; `scripts/roundtrip_sweep.py`
+is the standalone enumerator/handler sweep. Both run as CI gates across all five
+scenarios.
 
-**Documented Phase 4 remainder** (tracked, not silently skipped): the *play-time
-hooks* for Hold Events (played in Battle/Storm/Muster/Winter), the Treachery
-Events (R8/S16/S19) that add a Treachery card to the Plan and trigger Loyalty
-Checks (the Loyalty resolver itself exists), the special-Vassal-adder Events,
-and a handful of conditional immediate Events; unimplemented Event resolvers
-currently discard with no effect rather than mis-resolve.
+**The harness is feature-complete against the rules**, with the documented
+remainders noted below. 210 tests pass.
 
-Next: Phase 5 (the LLM-consumer interface and the audit agents/sweeps).
+### Known remainders (tracked, not silently skipped)
+- Phase 4: play-time hooks for Hold Events, the Treachery/Loyalty Plan wiring
+  (the Loyalty resolver exists), special-Vassal-adder Events, and some
+  conditional immediate Events (these currently no-op-discard).
+- The full Relief Sally rearguard nuance (4.8.1).
+- A combat-aggressive self-play variant (the greedy driver favors advancing the
+  turn structure over forcing battles).
 
 ## Where things are
 

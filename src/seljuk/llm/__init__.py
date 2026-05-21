@@ -1,2 +1,5 @@
-"""LLM-consumer interface (Phase 5): hidden-info filter, briefing, lookups,
-session routing through the same handlers as every other entry point."""
+"""LLM-consumer interface (Phase 5): hidden-info view, briefing, lookups, and
+the LLMSession that routes actions through the same engine as every other path."""
+from .session import LLMSession
+
+__all__ = ["LLMSession"]

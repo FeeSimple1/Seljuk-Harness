@@ -195,7 +195,10 @@ def resolve_event(gs: GameState, card_id: str, args: dict, roller: DiceRoller) -
         # Tracked-but-not-yet-implemented Event: discard with no mechanical effect.
         gs.meta.pending.remove(pend)
         return {"ok": True, "card": card_id, "no_op": True, "reason": "resolver not yet implemented (Phase 4 remainder)"}
-    result = _RESOLVERS[card_id](gs, args or {}, roller)
+    try:
+        result = _RESOLVERS[card_id](gs, args or {}, roller)
+    except (KeyError, IndexError, TypeError) as e:
+        raise IllegalAction("missing_or_bad_arg", f"Event {card_id} needs a valid argument ({e})")
     gs.meta.pending.remove(pend)
     # Return the card to its deck (immediate Events are not held).
     side = pend["side"]

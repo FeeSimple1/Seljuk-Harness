@@ -51,6 +51,11 @@ def start_campaign(gs: GameState) -> None:
     for _l in gs.lords.values():
         _l.flags.pop("prov_bureau_used_campaign", None)
     _capability_discard(gs)
+    # 5.2: a side with no Mustered Lords during Campaign loses immediately.
+    if not any(l.mustered and l.side == "seljuk" for l in gs.lords.values()):
+        _set_game_over(gs, "roman"); return
+    if not any(l.mustered and l.side == "roman" for l in gs.lords.values()):
+        _set_game_over(gs, "seljuk"); return
     gs.meta.subphase = "campaign.plan"
     gs.meta.plan_submitted = {}
     gs.meta.active_player = "seljuk"
