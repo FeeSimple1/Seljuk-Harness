@@ -12,23 +12,30 @@ accuracy and completeness are the priority** — see the hard constraints there.
 
 ## Status
 
-**Phase 3c — Siege, Storm, Sally (merged).** The combat system is complete.
-Siege (4.5.1): Surrender roll (dice = Stronghold Value, vs the Siege+Ravaged
-threshold), Conquer (markers, Strategic-Objective claim, Ravaged flip, Fatimid
-exception), Siegeworks (+1 Siege up to 4), and the Themata-defender assignment
-(4.3.5) when a Roman Stronghold is first Besieged. Storm (4.9.1): Garrison units
-by column (Fatimid -> Seljuk) plus Themata defenders, Walls and Siegeworks rolls,
-the Storm Strike order (all Defending Melee before Attacking), the 6-Hit Melee
-cap, no-Evade and Armored-first absorption for the attacker, the Storm length of
-(# Siege markers) Rounds, and the Sack (Conquer / Ruin / Spoils / remove Lords
-and Themata). Sally (4.9.2): Besieged attacks the Besiegers with Siegeworks for
-the Besiegers, losing Besiegers Retreat (Siege ends), losing Sallying Lords
-Withdraw back inside, and the Raid (failed Sally -> all but one Siege removed).
+**Phase 4 — Arts of War card effects (merged, substantially complete).** The 50
+cards are wired to their mechanics through `capabilities.py` (passive) and
+`events.py` (active). Implemented Capabilities: command/lordship bonuses (R6,
+R8, R9, R10, S12, S14); combat Protection (Klibanophoroi, Syndosis, Steeled
+Resolve, Lamellar Armor, Norman Heavy Cavalry reroll); combat Strikes (Javelins,
+Shock Tactics, Bardoukia, Alakatia — anti-armor); Siege Weaponry (-1 Walls);
+Storm Garrison (Armenian Garrisons, Fortified Garrisons); and Mules, Provincial
+Bureaucracy, Fealty-to-the-Basileus / Nizam (Winter stay), Prisoners, Artukid
+Legacy, Brutal Reputation. Implemented immediate Events (resolved via
+`resolve_event`): the Calendar shifts (R5, R12, S12, S14, S23), Afsin Murders
+(R10), Thrakion Reinforcements (R13), Aleppo Independence (R14), Resilient
+Agriculture (R19), Armenian Resistance (R20), Deserters (S7), Caliphate Merchant
+Financing (S8), Thematic Troops Desert (S15), Siege of Bari (S5), Alp Arslan
+Consolidates Power (S20), Massacre of Orthodox Clergy (S22). One rules call is
+pending your confirmation: **Q-002** (Turkic-Horse base Melee / Shock Tactics).
 
-**A complete game is now mechanically playable end to end** — Levy and Campaign
-with every Command including March, Battle, Siege, Storm, and Sally. **Per-card
-Arts of War effects (the 50 cards' Events/Capabilities) are Phase 4**; the LLM
-interface and audit agents are Phase 5.
+**Documented Phase 4 remainder** (tracked, not silently skipped): the *play-time
+hooks* for Hold Events (played in Battle/Storm/Muster/Winter), the Treachery
+Events (R8/S16/S19) that add a Treachery card to the Plan and trigger Loyalty
+Checks (the Loyalty resolver itself exists), the special-Vassal-adder Events,
+and a handful of conditional immediate Events; unimplemented Event resolvers
+currently discard with no effect rather than mis-resolve.
+
+Next: Phase 5 (the LLM-consumer interface and the audit agents/sweeps).
 
 ## Where things are
 

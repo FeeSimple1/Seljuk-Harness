@@ -116,3 +116,11 @@ def protection_range(gs, lord_id: str, unit: str, hit_type: str, storm: bool = F
     if unit == "infantry":
         return (1, 4) if "Steeled Resolve" in names else (1, 3)
     return _ARMORED[unit]
+
+
+def fealty_rating(gs, lord_id: str) -> int:
+    """Fealty including Event modifiers (R10 Afsin Murders -> Afsin Beg Fealty 2)."""
+    base = sd.lord(lord_id)["ratings"]["fealty"]
+    if lord_id == "afsin_beg" and gs.meta.notes.get("afsin_fealty_2"):
+        return 2
+    return base

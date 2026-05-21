@@ -48,6 +48,8 @@ def on_map(lord: LordState) -> bool:
 
 def start_campaign(gs: GameState) -> None:
     gs.meta.phase = "campaign"
+    for _l in gs.lords.values():
+        _l.flags.pop("prov_bureau_used_campaign", None)
     _capability_discard(gs)
     gs.meta.subphase = "campaign.plan"
     gs.meta.plan_submitted = {}
@@ -164,6 +166,7 @@ def _reveal_next(gs: GameState) -> None:
         gs.meta.actions_remaining = capabilities.command_rating(gs, card, _r)
         _s = _r.get_state(); gs.meta.rng_state = [_s[0], list(_s[1]), _s[2]]
         lord.flags.pop("first_march_used", None)
+        lord.flags.pop("mules_used_this_card", None)
         return
 
 
@@ -410,7 +413,9 @@ def _bounty(gs: GameState) -> None:
     for lid, lord in gs.lords.items():
         if lord.side != "seljuk" or not on_map(lord) or lord.assets.loot <= 0:
             continue
-        seats = [s for s in sd.lord(lid).get("seats", [])]
+        seats = list(sd.lord(lid).get("seats", []))
+        if lid == "artuk_beg" and capabilities.lord_has(gs, "artuk_beg", "Artukid Legacy"):
+            seats += ["to_mosul_and_baghdad", "amid"]
         # BFS over bounty-traversable Locales from the Lord to one of his Seats.
         from collections import deque
         seen = {lord.cylinder}
@@ -433,7 +438,8 @@ def _bounty(gs: GameState) -> None:
         carts = lord.assets.carts + sum(
             o.assets.carts for o in gs.lords.values()
             if o is not lord and o.side == "seljuk" and o.cylinder == lord.cylinder and on_map(o))
-        scored = min(lord.assets.loot, carts)
+        cap = carts + (1 if capabilities.lord_has(gs, lid, "Prisoners") else 0)  # S24
+        scored = min(lord.assets.loot, cap)
         lord.assets.loot -= scored
         gs.holding_boxes.mosul_baghdad_loot += scored
 
@@ -460,6 +466,9 @@ def _winter_quarters(gs: GameState) -> None:
     for lid, lord in gs.lords.items():
         if not on_map(lord):
             continue
+        if (capabilities.lord_has(gs, lid, "Fealty to the Basileus")
+                or capabilities.lord_has(gs, lid, "Nizam al-Mulk Administrates the Sultanate")):
+            continue  # may choose not to return to Seat in Winter (R15 / S15)
         seats = sd.lord(lid).get("seats", [])
         dest = None
         for s in seats:
@@ -668,9 +677,14 @@ def h_cmd_tax(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict
     lord.assets.coin = min(lord.assets.coin + 1, 8)
     placed_ravage = False
     if commander_empire_tax:
-        gs.locales[loc_id].ravaged_side = "seljuk"  # Roman Commander Tax places a Seljuk Ravaged marker
-        placed_ravage = True
-        gs.meta.vp = scenarios.score(gs)
+        prov = (capabilities.lord_has(gs, lord.id, "Provincial Bureaucracy")
+                and not lord.flags.get("prov_bureau_used_campaign"))
+        if prov:
+            lord.flags["prov_bureau_used_campaign"] = True  # R9: first Empire Tax this Campaign, no Ravaged
+        else:
+            gs.locales[loc_id].ravaged_side = "seljuk"  # Roman Commander Tax places a Seljuk Ravaged marker
+            placed_ravage = True
+            gs.meta.vp = scenarios.score(gs)
     gs.meta.actions_remaining = 0  # Tax uses the entire card (4.5.6)
     _after_card(gs)
     return {"ok": True, "action": "cmd_tax", "lord": lord.id, "coin": lord.assets.coin, "placed_ravaged": placed_ravage}
@@ -822,6 +836,8 @@ def _min_supply_cost(gs: GameState, lord: LordState) -> int | None:
     """Cheapest Cart cost (Road 1, Pass 2 per Way) of a Route from the Lord to
     any of his own un-Ruined Seats, avoiding blocked Locales. None if no route."""
     seats = [s for s in sd.lord(lord.id).get("seats", []) if not gs.locales[s].ruins]
+    if lord.id == "artuk_beg" and capabilities.lord_has(gs, "artuk_beg", "Artukid Legacy"):
+        seats += [s for s in ("to_mosul_and_baghdad", "amid") if not gs.locales[s].ruins]
     if not seats:
         return None
     origin = lord.cylinder
@@ -983,6 +999,10 @@ def h_cmd_march(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> di
     cost = march_cost(gs, group, way, first_march)
     if cost == "whole_card":
         cost = gs.meta.actions_remaining
+    elif (way["type"] == "pass" and len(group) == 1 and not lord.lower_lord and not lord.lieutenant_of
+          and capabilities.lord_has(gs, lord.id, "Mules") and not lord.flags.get("mules_used_this_card")):
+        cost = min(cost, 1)  # Mules (R24/S25): first Pass March = 1 Command even if Laden
+        lord.flags["mules_used_this_card"] = True
     if cost > gs.meta.actions_remaining:
         raise IllegalAction("insufficient_actions", f"March costs {cost}, only {gs.meta.actions_remaining} left")
     # Move the group.
@@ -1145,6 +1165,11 @@ def h_cmd_siege(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> di
         dice_n = sd.stronghold_profile(loc_id)["surrender_dice"]
         threshold = min(siege, 4) + (1 if gs.locales[loc_id].ravaged_side is not None else 0)
         rolls = roller.roll(dice_n)
+        if capabilities.lord_has(gs, lord.id, "Brutal Reputation"):  # S21: reroll 1 Surrender die
+            for i, r in enumerate(rolls):
+                if r > threshold:
+                    rolls[i] = roller.d6()
+                    break
         seized = all(r <= threshold for r in rolls)
         result.update({"surrender_roll": rolls, "threshold": threshold, "seized": seized})
         if seized:
