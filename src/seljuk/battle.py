@@ -124,30 +124,43 @@ def begin_battle(gs: GameState, attackers: list[str], defenders: list[str], loca
                  scripted: Optional[list] = None, events: Optional[dict] = None) -> dict[str, Any]:
     """Entry point from the Approach 'Stand' path (4.3.4 -> 4.8). ``events`` maps
     a side to the Held Battle Events it plays (R2/S2 Mountain Ambush, S3 Betrayal)."""
-    played = _consume_battle_events(gs, events)
+    played, cc, charge = _consume_battle_events(gs, events)
     ctx = DecisionContext(scripted)
     roller = _roller(gs)
-    result = resolve_battle(gs, attackers, defenders, locale, ctx, roller, played)
+    result = resolve_battle(gs, attackers, defenders, locale, ctx, roller, played, cc, charge)
     _save_roller(gs, roller)
     # remove the pending battle marker if present
     gs.meta.pending = [p for p in gs.meta.pending if p.get("type") != "battle"]
     return result
 
 
-_BATTLE_HOLDS = {"R2", "S2", "S3"}  # implemented Battle Hold Events (Mountain Ambush, Betrayal)
+_BATTLE_HOLDS = {"R2", "S2", "S3", "R24", "S6"}  # Mountain Ambush, Betrayal, Cavalry Charge, Command Confusion
 
 
-def _consume_battle_events(gs: GameState, events: Optional[dict]) -> dict:
+def _consume_battle_events(gs: GameState, events: Optional[dict]):
+    """Validate/consume played Battle Hold Events. Returns (played, cc, charge):
+    played[side] = simple cards (R2/S2/S3); cc = Roman Lords under Command
+    Confusion (S6, played by Seljuk); charge = Roman Lords with Cavalry Charge
+    (R24, played by Roman)."""
     played = {"seljuk": [], "roman": []}
+    cc: set = set()
+    charge: set = set()
     if not events:
-        return played
+        return played, cc, charge
     for side in ("seljuk", "roman"):
-        for cid in events.get(side, []):
-            if cid in _BATTLE_HOLDS and cid in gs.side_decks(side).held_events:
-                gs.side_decks(side).held_events.remove(cid)
-                gs.side_decks(side).draw_deck.append(cid)
+        for entry in events.get(side, []):
+            cid = entry["card"] if isinstance(entry, dict) else entry
+            if cid not in _BATTLE_HOLDS or cid not in gs.side_decks(side).held_events:
+                continue
+            gs.side_decks(side).held_events.remove(cid)
+            gs.side_decks(side).draw_deck.append(cid)
+            if cid == "S6" and isinstance(entry, dict):       # Command Confusion -> a Roman Lord
+                cc.add(entry["lord"])
+            elif cid == "R24" and isinstance(entry, dict):    # Cavalry Charge -> a Roman Lord
+                charge.add(entry["lord"])
+            else:
                 played[side].append(cid)
-    return played
+    return played, cc, charge
 
 
 def _roller(gs: GameState) -> DiceRoller:
@@ -165,8 +178,11 @@ def _save_roller(gs: GameState, r: DiceRoller) -> None:
 
 def resolve_battle(gs: GameState, attacker_ids: list[str], defender_ids: list[str],
                    locale: str, ctx: DecisionContext, roller: DiceRoller,
-                   played: Optional[dict] = None) -> dict[str, Any]:
+                   played: Optional[dict] = None, cc: Optional[set] = None,
+                   charge: Optional[set] = None) -> dict[str, Any]:
     played = played or {"seljuk": [], "roman": []}
+    cc = cc or set()
+    charge = charge or set()
     active = gs.meta.active_lord if gs.meta.active_lord in attacker_ids else attacker_ids[0]
     for _lid in attacker_ids + defender_ids:
         gs.lords[_lid].flags["turkic_routed_battle"] = 0
@@ -217,7 +233,7 @@ def resolve_battle(gs: GameState, attacker_ids: list[str], defender_ids: list[st
                     if not betrayal_pending:
                         break
 
-        _strike_phase(gs, att, deff, pursuit, round_no, ctx, roller, rounds)
+        _strike_phase(gs, att, deff, pursuit, round_no, ctx, roller, rounds, cc=cc, charge=charge)
 
         att_alive = any(not _is_routed(gs.lords[l]) for l in att.all_lords())
         def_alive = any(not _is_routed(gs.lords[l]) for l in deff.all_lords())
@@ -353,26 +369,64 @@ def _lord_step_hits_caps(gs, lid, step, round_no):
     return max(0.0, normal), anti
 
 
+def _front_set(side: _Side) -> set:
+    return set(side.front_lords())
+
+
 def _strike_phase(gs: GameState, att: _Side, deff: _Side, pursuit: dict, round_no: int,
-                  ctx: DecisionContext, roller: DiceRoller, log: list) -> None:
-    steps = [
-        ("missile", deff, att, "defender"), ("missile", att, deff, "attacker"),
-        ("horse_melee", deff, att, "defender"), ("horse_melee", att, deff, "attacker"),
-        ("foot_melee", deff, att, "defender"), ("foot_melee", att, deff, "attacker"),
-    ]
-    for step, striking, target_side, role in steps:
-        _resolve_step(gs, step, striking, target_side, role, pursuit, round_no, ctx, roller, log)
+                  ctx: DecisionContext, roller: DiceRoller, log: list,
+                  cc: set | None = None, charge: set | None = None) -> None:
+    cc = cc or set()
+    charge = charge or set()
+    sides = ((deff, att, "defender"), (att, deff, "attacker"))
+    # Cavalry Charge (R24): Round 1, charged Lords' Horse Melee strikes before
+    # all Missiles; those Horse skip the normal Horse-Melee step this Round.
+    charged: set = set()
+    if round_no == 1 and charge:
+        for striking, target_side, role in (sides[1], sides[0]):  # attacker then defender
+            ids = _front_set(striking) & charge
+            if ids:
+                _resolve_step(gs, "horse_melee", striking, target_side, role, pursuit, round_no,
+                              ctx, roller, log, restrict=ids)
+                charged |= ids
+    cc_eff = cc - charge  # Cavalry Charge takes precedence over Command Confusion
+    # Missiles: non-Command-Confusion Lords first, then the CC Lords (strike second).
+    for striking, target_side, role in sides:
+        _resolve_step(gs, "missile", striking, target_side, role, pursuit, round_no, ctx, roller, log,
+                      restrict=_front_set(striking) - cc_eff)
+    for striking, target_side, role in sides:
+        ids = _front_set(striking) & cc_eff
+        if ids:
+            _resolve_step(gs, "missile", striking, target_side, role, pursuit, round_no, ctx, roller, log, restrict=ids)
+    # Melee (Horse then Foot, Defending then Attacking): non-CC Lords first.
+    for mstep in ("horse_melee", "foot_melee"):
+        for striking, target_side, role in sides:
+            _resolve_step(gs, mstep, striking, target_side, role, pursuit, round_no, ctx, roller, log,
+                          restrict=_front_set(striking) - cc_eff, skip_charge=charged)
+    # Then the CC Lords' Melee (strike second).
+    for mstep in ("horse_melee", "foot_melee"):
+        for striking, target_side, role in sides:
+            ids = _front_set(striking) & cc_eff
+            if ids:
+                _resolve_step(gs, mstep, striking, target_side, role, pursuit, round_no, ctx, roller, log,
+                              restrict=ids, skip_charge=charged)
 
 
 def _resolve_step(gs, step, striking: _Side, target_side: _Side, role, pursuit, round_no,
-                  ctx: DecisionContext, roller: DiceRoller, log: list) -> None:
+                  ctx: DecisionContext, roller: DiceRoller, log: list,
+                  restrict=None, skip_charge=None) -> None:
     hit_type = "missile" if step == "missile" else "melee"
+    skip_charge = skip_charge or set()
     by_normal: dict[str, float] = {}
     by_anti: dict[str, float] = {}
     for slot in SLOTS:
         lid = striking.front[slot]
         if not lid or _is_routed(gs.lords[lid]):
             continue
+        if restrict is not None and lid not in restrict:
+            continue
+        if step == "horse_melee" and lid in skip_charge:
+            continue  # Horse already struck via Cavalry Charge this Round
         target = _target_of(slot, target_side, ctx)
         if not target:
             continue
