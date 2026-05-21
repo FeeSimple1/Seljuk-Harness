@@ -52,6 +52,9 @@ _HANDLERS: dict[str, Callable[[GameState, dict, DiceRoller], dict]] = {
     "levy_capability": actions.h_levy_capability,
     "levy_vassal": actions.h_levy_vassal,
     "levy_themata": actions.h_levy_themata,
+    "deploy_capability": actions.h_deploy_capability,
+    "cta_loot": actions.h_cta_loot,
+    "cta_strategic_objective": actions.h_cta_strategic_objective,
     "pass_step": actions.h_pass_step,
 }
 
@@ -81,7 +84,10 @@ def legal_moves(gs: GameState) -> list[dict[str, Any]]:
         moves = actions.enumerate_muster(gs)
         moves.append({"type": "pass_step", "_desc": "Finish Muster for this side (3.4)"})
         return moves
-    # call_to_arms enumeration arrives in a later commit.
+    if step == "levy.call_to_arms":
+        moves = actions.enumerate_call_to_arms(gs)
+        moves.append({"type": "pass_step", "_desc": "Decline a Call to Arms option for this side (3.5)"})
+        return moves
     return []
 
 
@@ -106,8 +112,9 @@ def _enter_step(gs: GameState, step: str) -> None:
     elif step == "muster":
         actions.reset_muster_segment(gs)
     elif step == "arts_of_war":
-        # Draw resolution (3.1) is engine-driven; implemented in a later commit.
-        # For now the step is a no-op pass-through so Pay can be exercised.
+        roller = roller_for(gs)
+        actions.resolve_arts_of_war(gs, roller)
+        _save_roller(gs, roller)
         _advance_step(gs)
 
 

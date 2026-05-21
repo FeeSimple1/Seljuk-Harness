@@ -12,19 +12,24 @@ accuracy and completeness are the priority** — see the hard constraints there.
 
 ## Status
 
-**Phase 1 — state model, static data, scenario loaders (merged).** The harness
-now encodes all static reference data as JSON (Forces, Strongholds, the 44-Locale
-map graph with 15 Pass + 47 Road Ways, Lords, Themata rosters, all 50 Arts of War
-cards, and the Command decks), a full Pydantic `GameState` that round-trips to a
-single JSON file, loaders for all five scenarios, victory math (5.1-5.3), state
-rendering (summary / verbose / focused), and the `new` and `state` CLI commands.
-Every scenario's recomputed VP is asserted equal to its printed starting VP.
-**Action handlers and the legal-moves enumerator are not built yet** (Phase 2+).
+**Phase 2 — Levy mechanics (merged).** The full Levy sequence runs end to end:
+the step machine (Arts of War -> Pay -> Disband -> Muster -> Call to Arms,
+Seljuk-then-Roman), an `apply_action` dispatcher, and a `legal_moves`
+enumerator. Implemented: Pay (3.2, incl. Commander long-range Coin and Loot
+restrictions), Disband (3.3, beyond-service removal with Strategic-Objective
+claim + This-Lord Capability return, and at-limit re-Muster), Muster (3.4 —
+Lords with seeded Fealty rolls and Seat/Holding-Box placement, Vassals incl.
+Special Vassals, Transport, Capabilities with scope/eligibility/2-cap, Themata),
+the Arts of War draw + classification (3.1), the self-contained Call to Arms
+options (Loot 3.5.2, Strategic Objective 3.5.3), and Loyalty-Check resolution
+(1.4). An enumerator/handler round-trip sweep runs over all five scenarios as a
+CI gate (it already caught SMOKE-001). **Per-card Event/Capability EFFECTS — and
+the Capability-driven Call to Arms options (Marwanid, Empress, Deep Raids) — are
+Phase 4**, as planned.
 
-The phase plan (in `BRIEF.md`) continues: Levy (Phase 2), Plan + simple Commands
-and End-Campaign/Winter (Phase 3a), March + Battle (Phase 3b), Siege/Storm/Sally
-(Phase 3c), the 50 Arts of War card effects (Phase 4), and the LLM interface plus
-audit agents (Phase 5).
+Next: Phase 3a (Plan + simple Commands + End-Campaign/Winter), 3b (March +
+Battle), 3c (Siege/Storm/Sally), 4 (the 50 card effects), 5 (LLM interface +
+agents).
 
 ## Where things are
 
