@@ -307,6 +307,28 @@ def _muster_lord_onto_map(gs: GameState, lord: LordState, seat: str) -> None:
     lord.flags["mustered_this_segment"] = True
 
 
+def resolve_treachery_reentry(gs: GameState) -> list[dict[str, Any]]:
+    """1.4.2 + errata (Rulebook p6, 1.4.2 Ex#3): a Lord who failed a Loyalty
+    Check, switched sides, and went off-map rejoins under his new owner, placed
+    at a free Seat at the start of the FOLLOWING season's Levy, before the Pay
+    phase. If no Seat is free yet, he waits and retries the next season."""
+    placed: list[dict[str, Any]] = []
+    for lid, lord in gs.lords.items():
+        box = lord.flags.get("treachery_reentry_box")
+        if box is None or lord.mustered or lord.cylinder != "offboard":
+            continue
+        if gs.meta.calendar_box <= box:
+            continue  # not until the following season's Levy
+        seats = _muster_seats(gs, lid, lord.side)
+        if not seats:
+            continue  # no free Seat yet; retry next season
+        _muster_lord_onto_map(gs, lord, seats[0])
+        lord.flags.pop("treachery_reentry_box", None)
+        lord.flags.pop("mustered_this_segment", None)
+        placed.append({"lord": lid, "seat": seats[0], "side": lord.side})
+    return placed
+
+
 def h_levy_lord(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
     """3.4.1 Levy Other Lords: spend 1 Lordship, roll Fealty for a Ready Lord."""
     if gs.meta.subphase != "levy.muster":
@@ -707,8 +729,9 @@ def _switch_side(gs: GameState, lord: LordState) -> None:
     if lord.cylinder == "calendar":
         pass  # cylinder stays on the Calendar, now the other color
     else:
-        lord.cylinder = "offboard"  # rejoins at his Seat next Pay phase (1.4.2)
+        lord.cylinder = "offboard"  # rejoins at his Seat next Levy, before Pay (1.4.2 + errata p6)
         lord.cylinder_calendar_box = None
+        lord.flags["treachery_reentry_box"] = gs.meta.calendar_box
 
 
 def h_resolve_event(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:

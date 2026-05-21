@@ -142,7 +142,11 @@ def _enter_step(gs: GameState, step: str) -> None:
     gs.meta.subphase = f"levy.{step}"
     gs.meta.active_player = "seljuk"
     gs.meta.levy_step_passed = {}
-    if step == "disband":
+    if step == "pay":
+        # Treachery re-entry (1.4.2 + errata p6): switched Lords rejoin at a
+        # free Seat before this season's Pay phase.
+        actions.resolve_treachery_reentry(gs)
+    elif step == "disband":
         roller = roller_for(gs)
         for side in SIDES:
             actions.resolve_disband(gs, side)
