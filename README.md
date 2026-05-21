@@ -26,21 +26,23 @@ scenarios.
 remainders noted below. 210 tests pass.
 
 ### Known remainders (tracked, not silently skipped)
-Most of the Phase-4/5 remainder is now closed (Phase 6): special-Vassal-adder
-Capabilities (R2/R7/R17/S20), the remaining immediate/This-Campaign Event
-resolvers, the Treachery/Loyalty Plan wiring (R8/S16/S19 + Imperial Coffers R14),
-most Hold Events (Michael Attaleiates, Eastern Rebellions, Sultan's Horse,
-Nomadic Tribes, Common Cultural Cause, Bad Omens, Summer Heat, Kleisourai,
-Honors of War, plus Mountain Ambush and Betrayal in Battle), the Relief Sally
-core (besieged Lords join a relief Attack, 4.8.1), and a combat-aggressive
-self-play agent. Still genuinely open (each needs invasive timing/ordering work):
-- Cavalry Charge (R24) and Command Confusion (S6) — per-Lord Strike sub-ordering
-  within a step.
-- Surprise (S1, besiege-2-then-Storm), Winter Campaign / Winter March (R9/S18,
-  a pre-Bounty activation window), Local Scouts (R18, forcing an Avoider to
-  Battle), Basil Alousianos (R7, Surrender-to-Bypass).
-- The full Relief Sally rearguard rows + Siegeworks-vs-Sallying-only nuance
-  (the core join-the-attack is implemented; rows are approximated).
+The Phase-4/5/6 remainder is essentially closed: special-Vassal-adder
+Capabilities, every immediate/This-Campaign Event resolver, Treachery/Loyalty
+wiring (incl. Imperial Coffers), and all the Hold Events — Michael Attaleiates,
+Eastern Rebellions, Sultan's Horse, Nomadic Tribes, Common Cultural Cause, Bad
+Omens, Summer Heat, Kleisourai, Honors of War, Mountain Ambush, Betrayal,
+Cavalry Charge, Command Confusion, Surprise, Local Scouts, Basil Alousianos —
+plus the Relief Sally core and greedy + combat-aggressive self-play agents.
+
+Two known simplifications remain, deliberately deferred (each needs an invasive
+engine restructure for a niche effect; deferred to protect the tested engine):
+- Winter Campaign / Winter March (R9/S18): a mid-Winter full Command-card
+  activation. Winter is automatic and the Command handlers are coupled to the
+  campaign turn flow, so this needs a Winter activation window + winter-aware
+  command termination.
+- Full Relief Sally rearguard rows (4.8.1): the join-the-attack core is done;
+  the four-row array (Front / Defenders / Sallying-behind / Rearguard) with
+  Siegeworks-vs-Sallying-only is not.
 
 ## Where things are
 
