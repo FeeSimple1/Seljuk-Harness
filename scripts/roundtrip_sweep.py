@@ -14,6 +14,7 @@ import argparse
 from seljuk.llm import LLMSession
 from seljuk import scenarios
 from seljuk.state import GameState, IllegalAction
+from seljuk.invariants import check_invariants
 from self_play import _resolve_pending, _build_plan_action  # type: ignore
 
 # moves the consumer must parameterise (not directly snapshot-appliable as-is)
@@ -54,6 +55,10 @@ def sweep_game(scenario: str, seed: int, max_steps: int = 4000) -> list[str]:
         except IllegalAction as e:
             # A divergence-detector must report, not abort: record and stop this game.
             findings.append(f"{scenario}#{seed} {s.gs.meta.subphase}: advancing apply -> {e}")
+            break
+        inv = check_invariants(s.gs)
+        if inv:
+            findings.append(f"{scenario}#{seed} {s.gs.meta.subphase}: invariant -> {inv[0]}")
             break
     return findings
 
