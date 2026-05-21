@@ -1,80 +1,185 @@
 {
-  "_source": "Seljuk_Units_and_Strongholds.txt (Player Aid Forces), errata applied. Strike value = dice rolled per unit (0.5 = x1/2); sum within a step, round up. Protection range: roll within range cancels the Hit, else Rout. All dice d6.",
-  "units": {
-    "tagmata": {
-      "category": "horse", "allegiance": "roman",
-      "strikes": {"missile": 0.5, "melee": 1},
-      "protection": {"armored": [1, 3]},
-      "capability_modifiers": {
-        "BARDOUKIA": "-1 to target Armor during each Melee Strike step of Battle (roll those Hits' Protection separately)",
-        "KLIBANOPHOROI": "Armor range becomes 1-4"
-      }
-    },
-    "norman_knights": {
-      "category": "horse", "allegiance": "roman",
-      "strikes": {"melee": 2, "storm": 1},
-      "protection": {"armored": [1, 4]},
-      "capability_modifiers": {
-        "NORMAN_HEAVY_CAVALRY": "reroll 1 unit's Armor each Missiles AND Melee step (two rerolls, possibly different units)"
-      }
-    },
-    "scholai_hetaireia": {
-      "category": "horse", "allegiance": "roman",
-      "strikes": {"missile": 1, "melee": 1},
-      "protection": {"armored": [1, 4]},
-      "capability_modifiers": {}
-    },
-    "ghulam_cavalry": {
-      "category": "horse", "allegiance": "seljuk",
-      "strikes": {"missile": 0.5, "melee": 1},
-      "protection": {"armored": [1, 4]},
-      "capability_modifiers": {}
-    },
-    "turkic_horse": {
-      "category": "horse", "allegiance": "seljuk",
-      "strikes": {"missile": 1, "melee": 0.5},
-      "protection": {
-        "unarmored": {"range": [1, 1], "applies_to": "Missile Hits, and any Hits in Storm"},
-        "evade": {"range": [1, 3], "applies_to": "Melee Hits in Battle only (not Missiles, not Storm)"},
-        "armored": {"range": [1, 3], "requires_capability": "LAMELLAR_ARMOR"}
-      },
-      "capability_modifiers": {
-        "PARTHIAN_SHOT": "select Missile targets in Battle (not Storm)",
-        "SHOCK_TACTICS": "half of this Lord's Turkic Horse (round up) do x1/2 Melee each",
-        "LAMELLAR_ARMOR": "Armor 1-3 until 3 Turkic Horse Rout from this Lord; per Melee Hit may use Lamellar OR Evade, not both (errata)"
-      },
-      "special_rules": {
-        "all_turkic_horse_first_march_cost_modifier": -1,
-        "pursuit_exception": "a single Conceding Lord with ONLY Turkic Horse at battle start facing a single opposing Lord causes BOTH sides' Hits to be halved in Pursuit"
-      }
-    },
-    "varangian_guard": {
-      "category": "foot", "allegiance": "roman",
-      "strikes": {"melee": 3, "storm": 1},
-      "melee_restriction": "may Strike in first Round only, no halving for Pursuit (mark) [errata: 'attack in Melee' corrected to 'Strike']",
-      "protection": {"armored": [1, 4]},
-      "capability_modifiers": {}
-    },
-    "infantry": {
-      "category": "foot", "allegiance": "both",
-      "strikes": {"missile": {"value": 1, "availability": "any 1 Round", "requires_capability": "JAVELINS"}, "melee": 1},
-      "protection": {"armored": [1, 3]},
-      "garrison_storm": {"missile": 0.5, "target_armor_modifier": -1, "select_target": true, "rule": "4.9.1 (gains x1/2 Missiles as Garrison even without JAVELINS)"},
-      "capability_modifiers": {
-        "JAVELINS": "any 1 Round: x1 Missiles in Battle (not Storm)",
-        "ALAKATIA": "with >=2 Unrouted Infantry, add 1 extra Missile Hit with -1 to target Armor (does not scale beyond 2)",
-        "STEELED_RESOLVE": "Armor 1-4 vs Horse for any 1 Round of Battle (mark)"
-      }
-    },
-    "militia": {
-      "category": "foot", "allegiance": "both",
-      "strikes": {"missile": 0.5, "melee": 0.5},
-      "protection": {"unarmored": [1, 1]},
-      "garrison_storm": {"missile": 0.5, "target_armor_modifier": -1, "select_target": true, "rule": "4.9.1 (Roman Garrison Militia have x1/2 Missiles by default)"},
-      "capability_modifiers": {
-        "PSILOI": "non-garrison Roman Militia have Missiles x1/2 (board edge, ALL; not attached to a Lord)",
-        "SYNDOSIS": "Armor 1-2 (vs both Missiles and Melee; not used for post-Battle Losses)"
-      }
+ "_source": "Seljuk_Units_and_Strongholds.txt (Player Aid Forces), errata applied. Strike value = dice rolled per unit (0.5 = x1/2); sum within a step, round up. Protection range: roll within range cancels the Hit, else Rout. All dice d6.",
+ "units": {
+  "tagmata": {
+   "category": "horse",
+   "allegiance": "roman",
+   "strikes": {
+    "missile": 0.5,
+    "melee": 1
+   },
+   "protection": {
+    "armored": [
+     1,
+     3
+    ]
+   },
+   "capability_modifiers": {
+    "BARDOUKIA": "-1 to target Armor during each Melee Strike step of Battle (roll those Hits' Protection separately)",
+    "KLIBANOPHOROI": "Armor range becomes 1-4"
+   }
+  },
+  "norman_knights": {
+   "category": "horse",
+   "allegiance": "roman",
+   "strikes": {
+    "melee": 2,
+    "storm": 1
+   },
+   "protection": {
+    "armored": [
+     1,
+     4
+    ]
+   },
+   "capability_modifiers": {
+    "NORMAN_HEAVY_CAVALRY": "reroll 1 unit's Armor each Missiles AND Melee step (two rerolls, possibly different units)"
+   }
+  },
+  "scholai_hetaireia": {
+   "category": "horse",
+   "allegiance": "roman",
+   "strikes": {
+    "missile": 1,
+    "melee": 1
+   },
+   "protection": {
+    "armored": [
+     1,
+     4
+    ]
+   },
+   "capability_modifiers": {}
+  },
+  "ghulam_cavalry": {
+   "category": "horse",
+   "allegiance": "seljuk",
+   "strikes": {
+    "missile": 0.5,
+    "melee": 1
+   },
+   "protection": {
+    "armored": [
+     1,
+     4
+    ]
+   },
+   "capability_modifiers": {}
+  },
+  "turkic_horse": {
+   "category": "horse",
+   "allegiance": "seljuk",
+   "strikes": {
+    "missile": 1,
+    "melee": {
+     "base": 0,
+     "granted_by": "SHOCK_TACTICS",
+     "value_when_granted": 0.5,
+     "applies_to": "ceil(n/2) units (round up)",
+     "note": "Turkic Horse have NO base Melee; Shock Tactics grants it (D-002, Playbook pp.14,17)."
     }
+   },
+   "protection": {
+    "unarmored": {
+     "range": [
+      1,
+      1
+     ],
+     "applies_to": "Missile Hits, and any Hits in Storm"
+    },
+    "evade": {
+     "range": [
+      1,
+      3
+     ],
+     "applies_to": "Melee Hits in Battle only (not Missiles, not Storm)"
+    },
+    "armored": {
+     "range": [
+      1,
+      3
+     ],
+     "requires_capability": "LAMELLAR_ARMOR"
+    }
+   },
+   "capability_modifiers": {
+    "PARTHIAN_SHOT": "select Missile targets in Battle (not Storm)",
+    "SHOCK_TACTICS": "half of this Lord's Turkic Horse (round up) do x1/2 Melee each",
+    "LAMELLAR_ARMOR": "Armor 1-3 until 3 Turkic Horse Rout from this Lord; per Melee Hit may use Lamellar OR Evade, not both (errata)"
+   },
+   "special_rules": {
+    "all_turkic_horse_first_march_cost_modifier": -1,
+    "pursuit_exception": "a single Conceding Lord with ONLY Turkic Horse at battle start facing a single opposing Lord causes BOTH sides' Hits to be halved in Pursuit"
+   }
+  },
+  "varangian_guard": {
+   "category": "foot",
+   "allegiance": "roman",
+   "strikes": {
+    "melee": 3,
+    "storm": 1
+   },
+   "melee_restriction": "may Strike in first Round only, no halving for Pursuit (mark) [errata: 'attack in Melee' corrected to 'Strike']",
+   "protection": {
+    "armored": [
+     1,
+     4
+    ]
+   },
+   "capability_modifiers": {}
+  },
+  "infantry": {
+   "category": "foot",
+   "allegiance": "both",
+   "strikes": {
+    "missile": {
+     "value": 1,
+     "availability": "any 1 Round",
+     "requires_capability": "JAVELINS"
+    },
+    "melee": 1
+   },
+   "protection": {
+    "armored": [
+     1,
+     3
+    ]
+   },
+   "garrison_storm": {
+    "missile": 0.5,
+    "target_armor_modifier": -1,
+    "select_target": true,
+    "rule": "4.9.1 (gains x1/2 Missiles as Garrison even without JAVELINS)"
+   },
+   "capability_modifiers": {
+    "JAVELINS": "any 1 Round: x1 Missiles in Battle (not Storm)",
+    "ALAKATIA": "with >=2 Unrouted Infantry, add 1 extra Missile Hit with -1 to target Armor (does not scale beyond 2)",
+    "STEELED_RESOLVE": "Armor 1-4 vs Horse for any 1 Round of Battle (mark)"
+   }
+  },
+  "militia": {
+   "category": "foot",
+   "allegiance": "both",
+   "strikes": {
+    "missile": 0.5,
+    "melee": 0.5
+   },
+   "protection": {
+    "unarmored": [
+     1,
+     1
+    ]
+   },
+   "garrison_storm": {
+    "missile": 0.5,
+    "target_armor_modifier": -1,
+    "select_target": true,
+    "rule": "4.9.1 (Roman Garrison Militia have x1/2 Missiles by default)"
+   },
+   "capability_modifiers": {
+    "PSILOI": "non-garrison Roman Militia have Missiles x1/2 (board edge, ALL; not attached to a Lord)",
+    "SYNDOSIS": "Armor 1-2 (vs both Missiles and Melee; not used for post-Battle Losses)"
+   }
   }
+ }
 }
