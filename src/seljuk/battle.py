@@ -480,3 +480,465 @@ def _remove_by_combat(gs: GameState, lord: LordState) -> None:
     """4.8.5: a Lord removed in combat Disbands as if Beyond Service (3.3.1)."""
     from . import actions
     actions._disband_beyond(gs, lord)
+
+
+# --- Shared combat-result helpers (Siege/Storm) -----------------------------
+
+def _value(locale: str) -> int:
+    return {"fort": 1, "town": 2, "city": 3}.get(sd.locale(locale)["type"], 0)
+
+
+def conquer(gs: GameState, locale: str, by_side: str) -> dict[str, Any]:
+    """Set a Stronghold to ``by_side``'s control (1.3.1, 4.5.1/4.9.1)."""
+    loc = gs.locales[locale]
+    info = sd.locale(locale)
+    printed = info["allegiance"]
+    enemy = "roman" if by_side == "seljuk" else "seljuk"
+    loc.siege_markers = 0
+    loc.bypass = False
+    placed = None
+    if printed == "fatimid" and by_side == "roman":
+        # Fatimid exception: Roman only removes Seljuk Conquered, places none.
+        if loc.conquered_side == "seljuk":
+            loc.conquered_side = None
+            loc.conquered_count = 0
+    elif printed == by_side:
+        loc.conquered_side = None  # re-conquering own territory removes enemy markers
+        loc.conquered_count = 0
+    else:
+        loc.conquered_side = by_side
+        loc.conquered_count = _value(locale)
+        placed = by_side
+    # Re-conquering a Friendly Stronghold flips a same-color Ravaged marker (4.9.1 play note)
+    if loc.ravaged_side == by_side and printed == by_side:
+        loc.ravaged_side = enemy
+    if loc.strategic_objective:  # Roman claims a Strategic Objective here (4.5.1/4.9.1)
+        gs.holding_boxes.constantinople_roman_vp_markers += 1
+        loc.strategic_objective = False
+    loc.themata_defending = []  # garrisoning Themata removed from the game
+    return {"conquered_by": by_side, "placed_markers": placed}
+
+
+def ruin(gs: GameState, locale: str) -> dict[str, Any]:
+    """Seljuk-only Sack option on a Roman-Empire Stronghold (4.9.1)."""
+    loc = gs.locales[locale]
+    loc.siege_markers = 0
+    loc.bypass = False
+    loc.conquered_side = None
+    loc.conquered_count = 0
+    loc.ruins = True
+    loc.ruins_color = "seljuk"
+    if loc.strategic_objective:
+        gs.holding_boxes.constantinople_roman_vp_markers += 1
+        loc.strategic_objective = False
+    loc.themata_defending = []
+    return {"ruined": locale}
+
+
+def award_spoils(gs: GameState, locale: str, to_lords: list[str]) -> dict[str, int]:
+    """Sack Spoils by Stronghold Value (4.9.1): Coin/Loot/Provender to the first
+    Besieging Lord (a player choice; deterministic here)."""
+    sh = sd.stronghold_profile(locale)
+    if not sh or not to_lords:
+        return {}
+    spoils = dict(sh["sack_spoils"])
+    w = gs.lords[to_lords[0]]
+    for k in ("coin", "loot", "provender"):
+        setattr(w.assets, k, min(8, getattr(w.assets, k) + spoils.get(k, 0)))
+    return spoils
+
+
+# === Storm (4.9.1) ==========================================================
+# Reuses the Strike/Protection model with Storm modifications: Garrison + Walls
+# for the defender, Siegeworks for the attacker, all Defending Melee before
+# Attacking, no Evade, Hits vs the attacker hit Armored first, a 6-Hit Melee cap
+# per Lord, and a Storm length of (number of Siege markers) Rounds. The
+# defender losing -> Sack (Conquer/Ruin/Spoils/remove Lords + Themata).
+
+def _storm_protection(unit: str) -> tuple[int, int]:
+    """Protection in Storm: Evade is not used, so Turkic Horse is Unarmored."""
+    if unit in ("turkic_horse", "militia"):
+        return (1, 1)
+    return _ARMORED[unit]
+
+
+def _garrison_column(gs: GameState, locale: str) -> str:
+    info = sd.locale(locale)
+    if info["allegiance"] == "fatimid":
+        return "seljuk"  # Fatimid Caliphate always uses the Seljuk column (4.9.1)
+    cur = (gs.locales[locale].conquered_side
+           or ("seljuk" if info["allegiance"] == "seljuk" else "roman"))
+    return cur
+
+
+def _build_garrison(gs: GameState, locale: str) -> dict[str, int]:
+    """Garrison foot units (by column) plus any Themata defenders, as a unit
+    pool (4.9.1). Themata are expanded into units for the Storm; their markers
+    survive if the defender wins and are removed on a Sack."""
+    prof = sd.stronghold_profile(locale)
+    col = _garrison_column(gs, locale)
+    g: dict[str, int] = {}
+    for u, n in prof["garrison"][col].items():
+        if n:
+            g[u] = g.get(u, 0) + n
+    for marker in gs.locales[locale].themata_defending:
+        g[marker.unit] = g.get(marker.unit, 0) + marker.symbols
+    return g
+
+
+def resolve_storm(gs: GameState, attacker_ids: list[str], locale: str,
+                  ctx: DecisionContext, roller: DiceRoller) -> dict[str, Any]:
+    a_side = gs.lords[attacker_ids[0]].side
+    d_side = "roman" if a_side == "seljuk" else "seljuk"
+    size = _value(locale)
+    walls = sd.stronghold_profile(locale)["walls"]            # defender Walls range
+    siege = gs.locales[locale].siege_markers                  # = Siegeworks Walls value for attacker
+    defender_ids = [lid for lid, l in gs.lords.items()
+                    if l.mustered and l.cylinder == locale and l.besieged and l.side == d_side]
+    garrison = _build_garrison(gs, locale)
+    garrison_routed: dict[str, int] = {}
+
+    att = _Side(gs, list(attacker_ids), "attacker")
+    deff = _Side(gs, list(defender_ids), "defender")
+    # Storm Array: at most one Lord in Front; the rest in Reserve.
+    if att.reserve:
+        att.front["center"] = att.reserve.pop(0)
+    if deff.reserve:
+        deff.front["center"] = deff.reserve.pop(0)
+
+    log = []
+    attacker_conceded = False
+    round_no = 0
+    while round_no < siege:
+        round_no += 1
+        if round_no > 1:
+            if ctx.decide("concede", [False, True], {"role": "attacker"}):  # Attacker only (4.9.1)
+                attacker_conceded = True
+                break
+            _storm_reposition(gs, att, deff, size, ctx)
+        _storm_strike(gs, att, deff, garrison, garrison_routed, walls, siege, round_no, ctx, roller, log)
+        if _garrison_and_lords_routed(gs, deff, garrison):
+            break  # defender wiped -> Storm ends, defender loses
+        if _all_routed(gs, att):
+            break
+        _purge_routed(att); _purge_routed(deff)
+
+    defender_routed = _garrison_and_lords_routed(gs, deff, garrison)
+    if defender_routed and not attacker_conceded:
+        outcome = _sack(gs, attacker_ids, defender_ids, locale, a_side, ctx, roller)
+        result = {"winner": "attacker", "sack": outcome}
+    else:
+        # Attacker loses: no Retreat, no Spoils; Siege continues (4.9.1).
+        result = {"winner": "defender", "siege_continues": True}
+        _storm_losses(gs, attacker_ids, defender_ids, defender_won=True, roller=roller, ctx=ctx, log=result)
+    for lid in attacker_ids + defender_ids:  # Moved/Fought, even Reserve (4.9.1)
+        if lid in gs.lords and gs.lords[lid].mustered:
+            gs.lords[lid].moved_fought = True
+    gs.meta.vp = scenarios.score(gs)
+    result.update({"ok": True, "action": "storm", "locale": locale, "rounds": round_no,
+                   "strikes": log, "decisions": ctx.trace})
+    return result
+
+
+def _all_routed(gs: GameState, side: _Side) -> bool:
+    return all(_is_routed(gs.lords[l]) for l in side.front_lords() + side.reserve) \
+        if (side.front_lords() or side.reserve) else True
+
+
+def _garrison_and_lords_routed(gs: GameState, deff: _Side, garrison: dict[str, int]) -> bool:
+    if any(n > 0 for n in garrison.values()):
+        return False
+    lords = deff.front_lords() + deff.reserve
+    return all(_is_routed(gs.lords[l]) for l in lords) if lords else True
+
+
+def _storm_reposition(gs: GameState, att: _Side, deff: _Side, size: int, ctx: DecisionContext) -> None:
+    _purge_routed(att); _purge_routed(deff)
+    for side in (att, deff):
+        n_front = len(side.front_lords())
+        if n_front < size and side.reserve:
+            slot = next(s for s in SLOTS if side.front[s] is None)
+            choice = ctx.decide("reserve_advance", list(side.reserve), {"role": side.role})
+            side.front[slot] = choice
+            side.reserve.remove(choice)
+
+
+def _storm_strike(gs, att, deff, garrison, garrison_routed, walls, siege, round_no, ctx, roller, log):
+    # Defending side (Garrison + Lords) strikes first, then Attacker.
+    # Missiles, then all Defending Melee, then all Attacking Melee.
+    # 1) Defending Missiles (Garrison 0.5 each foot, -1 Armor; + defending Lord missiles)
+    d_missile = _garrison_missile_hits(garrison) + _lord_step_hits(gs, deff, "missile", round_no)
+    _hit_attacker(gs, att, _round_up(d_missile), "missile", siege, anti_armor=True, roller=roller, ctx=ctx, log=log, step="def_missile", round_no=round_no)
+    # 2) Attacking Missiles -> garrison/defender Lord, Walls cancel
+    a_missile = _lord_step_hits(gs, att, "missile", round_no)
+    _hit_defender(gs, deff, garrison, garrison_routed, _round_up(a_missile), "missile", walls, roller, ctx, log, "att_missile", round_no)
+    # 3) Defending Melee (Horse then Foot), capped 6/Lord; Garrison foot melee
+    d_melee = _garrison_melee_hits(garrison) + _lord_melee_capped(gs, deff, round_no)
+    _hit_attacker(gs, att, _round_up(d_melee), "melee", siege, anti_armor=False, roller=roller, ctx=ctx, log=log, step="def_melee", round_no=round_no)
+    # 4) Attacking Melee -> garrison/defender Lord
+    a_melee = _lord_melee_capped(gs, att, round_no)
+    _hit_defender(gs, deff, garrison, garrison_routed, _round_up(a_melee), "melee", walls, roller, ctx, log, "att_melee", round_no)
+
+
+def _round_up(x: float) -> int:
+    return int(x + 0.999) if x > 0 else 0
+
+
+def _garrison_missile_hits(garrison: dict[str, int]) -> float:
+    return 0.5 * sum(n for u, n in garrison.items() if _category(u) == "foot")
+
+
+def _garrison_melee_hits(garrison: dict[str, int]) -> float:
+    total = 0.0
+    for u, n in garrison.items():
+        if _category(u) == "foot":
+            total += {"infantry": 1.0, "militia": 0.5, "varangian_guard": 3.0}.get(u, 0.0) * n
+        else:  # Themata Horse garrison (e.g. Tagmata, Turkic)
+            total += _HORSE_MELEE.get(u, 0.0) * n
+    return total
+
+
+def _lord_step_hits(gs: GameState, side: _Side, step: str, round_no: int) -> float:
+    table = _strike_table(step, round_no)
+    total = 0.0
+    for lid in side.front_lords():
+        for u, n in _unrouted_units(gs.lords[lid]).items():
+            total += table.get(u, 0.0) * n
+    return total
+
+
+def _lord_melee_capped(gs: GameState, side: _Side, round_no: int) -> float:
+    total = 0.0
+    for lid in side.front_lords():
+        h = 0.0
+        h += sum(_HORSE_MELEE.get(u, 0.0) * n for u, n in _unrouted_units(gs.lords[lid]).items() if _category(u) == "horse")
+        foot = _strike_table("foot_melee", round_no)
+        h += sum(foot.get(u, 0.0) * n for u, n in _unrouted_units(gs.lords[lid]).items() if _category(u) == "foot")
+        total += min(h, 6.0)  # 6-Hit Melee cap per Lord (4.9.1)
+    return total
+
+
+def _hit_attacker(gs, att: _Side, hits, hit_type, siege, anti_armor, roller, ctx, log, step, round_no):
+    """Hits onto the attacker: Siegeworks (Walls=Siege count) cancel, then assign
+    Armored-first (4.9.1), Protection (no Evade)."""
+    if hits <= 0:
+        return
+    front = att.front_lords()
+    if not front:
+        return
+    target = gs.lords[front[0]]
+    hits = _roll_walls(roller, hits, (1, siege)) if siege > 0 else hits
+    routed = _absorb_storm(gs, target, hits, anti_armor, armored_first=True, ctx=ctx, roller=roller)
+    log.append({"round": round_no, "step": step, "target": target.id, "hits": hits, "routed": routed})
+
+
+def _hit_defender(gs, deff: _Side, garrison, garrison_routed, hits, hit_type, walls, roller, ctx, log, step, round_no):
+    """Hits onto the defender: Walls cancel, then Garrison units first, then the
+    Front defending Lord (4.9.1)."""
+    if hits <= 0:
+        return
+    hits = _roll_walls(roller, hits, walls)
+    # Garrison absorbs first.
+    while hits > 0 and any(n > 0 for n in garrison.values()):
+        unit = next(u for u, n in garrison.items() if n > 0)
+        lo, hi = _storm_protection(unit)
+        if not (lo <= roller.d6() <= hi):
+            garrison[unit] -= 1
+            garrison_routed[unit] = garrison_routed.get(unit, 0) + 1
+        hits -= 1
+    front = deff.front_lords()
+    if hits > 0 and front:
+        target = gs.lords[front[0]]
+        _absorb_storm(gs, target, hits, anti_armor=False, armored_first=False, ctx=ctx, roller=roller)
+    log.append({"round": round_no, "step": step, "hits_remaining_after_garrison": max(0, hits)})
+
+
+def _roll_walls(roller: DiceRoller, hits: int, wrange: tuple[int, int]) -> int:
+    """Roll dice = Hits; each roll within the Walls range cancels one Hit (4.8.2)."""
+    lo, hi = wrange
+    remaining = hits
+    for _ in range(hits):
+        if lo <= roller.d6() <= hi:
+            remaining -= 1
+    return max(0, remaining)
+
+
+def _absorb_storm(gs: GameState, lord: LordState, hits: int, anti_armor: bool, armored_first: bool,
+                  ctx: DecisionContext, roller: DiceRoller) -> list[str]:
+    routed = []
+    for _ in range(hits):
+        avail = [u for u, n in lord.forces.items() if n > 0]
+        if not avail:
+            break
+        if armored_first:  # Storm: Hits vs the attacker hit Armored before Unarmored (4.9.1)
+            armored = [u for u in avail if u not in ("turkic_horse", "militia")]
+            unit = armored[0] if armored else avail[0]
+        else:
+            unit = ctx.decide("hit_absorption", avail, {"lord": lord.id})
+        lo, hi = _storm_protection(unit)
+        if anti_armor and unit not in ("turkic_horse", "militia"):
+            hi = max(lo, hi - 1)  # Garrison Missiles: -1 to target Armor (min 1)
+        if not (lo <= roller.d6() <= hi):
+            lord.forces[unit] -= 1
+            lord.routed[unit] = lord.routed.get(unit, 0) + 1
+            routed.append(unit)
+    return routed
+
+
+def _sack(gs: GameState, attacker_ids, defender_ids, locale, a_side, ctx, roller) -> dict[str, Any]:
+    """Defenders lost the Storm (4.9.1): Conquer or (Seljuk, Roman Empire) Ruin,
+    Award Spoils, remove losing Lords and Themata."""
+    info = sd.locale(locale)
+    can_ruin = (a_side == "seljuk" and info["allegiance"] == "roman")
+    choice = "conquer"
+    if can_ruin:
+        choice = ctx.decide("sack_choice", ["conquer", "ruin"], {"locale": locale})
+    out = ruin(gs, locale) if choice == "ruin" else conquer(gs, locale, a_side)
+    survivors = [l for l in attacker_ids if not _is_routed(gs.lords[l]) and gs.lords[l].mustered]
+    out["spoils"] = award_spoils(gs, locale, survivors)
+    # Losses first (both sides), then remove losing Lords with no Forces (4.8.5).
+    _storm_losses(gs, attacker_ids, defender_ids, defender_won=False, roller=roller, ctx=ctx, log=out)
+    out["removed"] = []
+    for lid in defender_ids:
+        if lid in gs.lords and gs.lords[lid].mustered:
+            from . import actions
+            actions._disband_beyond(gs, gs.lords[lid])
+            out["removed"].append(lid)
+    return out
+
+
+def _storm_losses(gs, attacker_ids, defender_ids, defender_won, roller, ctx, log) -> None:
+    """4.9.1: Routed Defending units roll inherent Protection; Routed Attacking
+    units are Lost unless they roll a 1 (Harsh)."""
+    losses = []
+    for lid in attacker_ids:
+        losses.append(_loss_roll(gs, gs.lords[lid], harsh=True, roller=roller))
+    for lid in defender_ids:
+        losses.append(_loss_roll(gs, gs.lords[lid], harsh=False, roller=roller))
+    if isinstance(log, dict):
+        log.setdefault("losses", []).extend([l for l in losses if l])
+
+
+def _loss_roll(gs: GameState, lord: LordState, harsh: bool, roller: DiceRoller):
+    recovered, lost = {}, {}
+    for unit, n in list(lord.routed.items()):
+        for _ in range(n):
+            roll = roller.d6()
+            ok = (roll == 1) if harsh else (lambda lh: lh[0] <= roll <= lh[1])(_natural_protection(unit))
+            if ok:
+                lord.forces[unit] = lord.forces.get(unit, 0) + 1
+                recovered[unit] = recovered.get(unit, 0) + 1
+            else:
+                lost[unit] = lost.get(unit, 0) + 1
+        lord.routed[unit] = 0
+    lord.routed = {u: n for u, n in lord.routed.items() if n > 0}
+    return {"lord": lord.id, "recovered": recovered, "lost": lost, "harsh": harsh} if (recovered or lost) else None
+
+
+# === Sally (4.9.2) ==========================================================
+
+def resolve_sally(gs: GameState, sallying_ids: list[str], besieger_ids: list[str], locale: str,
+                  ctx: DecisionContext, roller: DiceRoller) -> dict[str, Any]:
+    """A Besieged Lord Attacks the Besiegers (4.9.2). Battle rules, but the
+    Besiegers (defenders here) get Siegeworks as Walls and the Sallying side
+    gets no Walls/Garrison. Storm-like Array/Reposition. Raid on a failed Sally."""
+    gs.meta.active_lord = sallying_ids[0]
+    siege = gs.locales[locale].siege_markers
+    att = _Side(gs, list(sallying_ids), "attacker")   # Sallying side attacks
+    deff = _Side(gs, list(besieger_ids), "defender")  # Besiegers defend
+    if att.reserve:
+        att.front["center"] = att.reserve.pop(0)
+    if deff.reserve:
+        deff.front["center"] = deff.reserve.pop(0)
+    size = _value(locale)
+    log = []
+    conceded = False
+    round_no = 0
+    while round_no < 30:
+        round_no += 1
+        if round_no > 1:
+            if ctx.decide("concede", [False, True], {"role": "attacker"}):
+                conceded = True
+                break
+            _storm_reposition(gs, att, deff, size, ctx)
+        # Sally Strike order follows Storm (Defending then Attacking); Besiegers
+        # benefit from Siegeworks (Walls = Siege count); Sallying side has none.
+        d_missile = _lord_step_hits(gs, deff, "missile", round_no)
+        _absorb_simple(gs, att, _round_up(d_missile), "missile", 0, roller, ctx, log, "def_missile", round_no)
+        a_missile = _lord_step_hits(gs, att, "missile", round_no)
+        _absorb_simple(gs, deff, _round_up(a_missile), "missile", siege, roller, ctx, log, "att_missile", round_no)
+        d_melee = _lord_melee_capped(gs, deff, round_no)
+        _absorb_simple(gs, att, _round_up(d_melee), "melee", 0, roller, ctx, log, "def_melee", round_no)
+        a_melee = _lord_melee_capped(gs, att, round_no)
+        _absorb_simple(gs, deff, _round_up(a_melee), "melee", siege, roller, ctx, log, "att_melee", round_no)
+        if _all_routed(gs, deff) or _all_routed(gs, att):
+            break
+        _purge_routed(att); _purge_routed(deff)
+
+    besiegers_routed = _all_routed(gs, deff)
+    if besiegers_routed and not conceded:
+        # Losing Besiegers Retreat; the Siege ends.
+        winner = "sally"
+        _end_sally_besiegers_lose(gs, besieger_ids, locale, ctx, roller)
+        gs.locales[locale].siege_markers = 0
+        gs.locales[locale].bypass = False
+        for lid in sallying_ids:  # Sallying Lords stay (Withdraw back inside)
+            gs.lords[lid].besieged = True
+    else:
+        # Sally fails: Sallying Lords Withdraw back inside; Raid removes all but
+        # one Siege marker (4.9.2).
+        winner = "besiegers"
+        for lid in sallying_ids:
+            gs.lords[lid].besieged = True
+        gs.locales[locale].siege_markers = 1  # Raid: remove all but one Siege marker (4.9.2)
+    # Losses for both sides.
+    for lid in sallying_ids + besieger_ids:
+        if lid in gs.lords:
+            _loss_roll(gs, gs.lords[lid], harsh=False, roller=roller)
+    for lid in sallying_ids + besieger_ids:
+        if lid in gs.lords and gs.lords[lid].mustered and _is_routed(gs.lords[lid]):
+            from . import actions
+            actions._disband_beyond(gs, gs.lords[lid])
+    for lid in sallying_ids + besieger_ids:
+        if lid in gs.lords and gs.lords[lid].mustered:
+            gs.lords[lid].moved_fought = True
+    gs.meta.vp = scenarios.score(gs)
+    return {"ok": True, "action": "sally", "locale": locale, "winner": winner,
+            "rounds": round_no, "strikes": log, "decisions": ctx.trace}
+
+
+def _end_sally_besiegers_lose(gs: GameState, besieger_ids, locale, ctx, roller) -> None:
+    from . import map as gmap
+    for lid in besieger_ids:
+        lord = gs.lords[lid]
+        if _is_routed(lord):
+            continue
+        enemy = "roman" if lord.side == "seljuk" else "seljuk"
+        opts = [e["to"] for e in gmap.ways_from(locale)
+                if not any(o.mustered and o.cylinder == e["to"] and o.side == enemy for o in gs.lords.values())]
+        if opts:
+            lord.cylinder = ctx.decide("retreat", opts, {"lord": lid})
+
+
+def _absorb_simple(gs, side: _Side, hits, hit_type, walls_value, roller, ctx, log, step, round_no):
+    """Battle-style Hit absorption for Sally, with optional Siegeworks Walls."""
+    if hits <= 0:
+        return
+    front = side.front_lords()
+    if not front:
+        return
+    target = gs.lords[front[0]]
+    if walls_value > 0:
+        hits = _roll_walls(roller, hits, (1, walls_value))
+    routed = []
+    for _ in range(hits):
+        avail = [u for u, n in target.forces.items() if n > 0]
+        if not avail:
+            break
+        unit = ctx.decide("hit_absorption", avail, {"lord": target.id})
+        lo, hi = protection_range(unit, hit_type)
+        if not (lo <= roller.d6() <= hi):
+            target.forces[unit] -= 1
+            target.routed[unit] = target.routed.get(unit, 0) + 1
+            routed.append(unit)
+    log.append({"round": round_no, "step": step, "target": target.id, "hits": hits, "routed": routed})

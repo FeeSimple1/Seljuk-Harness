@@ -93,8 +93,12 @@ def test_besiege_places_siege_and_ends_card_435():
     aa = gs.lords["alp_arslan"]; aa.cylinder = "larisa"
     _activate(gs, "alp_arslan")
     engine.apply_action(gs, {"type": "cmd_march", "lord": "alp_arslan", "to": "melitene", "way_type": "road"})
-    engine.apply_action(gs, {"type": "besiege_bypass", "choice": "besiege"})
+    r = engine.apply_action(gs, {"type": "besiege_bypass", "choice": "besiege"})
     assert gs.locales["melitene"].siege_markers == 1
+    # Besieging a Roman Stronghold pauses for the Roman Themata-defender choice (4.3.5);
+    # resolving it (assign none) then ends the card.
+    assert r.get("pending") == "assign_themata_defenders"
+    engine.apply_action(gs, {"type": "assign_themata_defenders", "markers": []})
     assert gs.meta.active_lord != "alp_arslan"  # card ended (4.3.5)
 
 
