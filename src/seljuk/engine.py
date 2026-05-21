@@ -57,6 +57,8 @@ _HANDLERS: dict[str, Callable[[GameState, dict, DiceRoller], dict]] = {
     "cta_strategic_objective": actions.h_cta_strategic_objective,
     "pass_step": actions.h_pass_step,
     "resolve_event": actions.h_resolve_event,
+    "discard_imperial_coffers": campaign.h_discard_imperial_coffers,
+    "play_hold_event": actions.h_play_hold_event,
 }
 
 _CAMPAIGN_HANDLERS: dict[str, Callable[[GameState, dict, DiceRoller], dict]] = {
@@ -77,6 +79,9 @@ _CAMPAIGN_HANDLERS: dict[str, Callable[[GameState, dict, DiceRoller], dict]] = {
     "cmd_storm": campaign.h_cmd_storm,
     "cmd_sally": campaign.h_cmd_sally,
     "resolve_event": actions.h_resolve_event,
+    "resolve_loyalty": campaign.h_resolve_loyalty,
+    "discard_imperial_coffers": campaign.h_discard_imperial_coffers,
+    "play_hold_event": actions.h_play_hold_event,
 }
 
 

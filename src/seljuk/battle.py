@@ -100,6 +100,8 @@ class _Side:
     def __init__(self, gs: GameState, lord_ids: list[str], role: str) -> None:
         self.gs = gs
         self.role = role  # "attacker" | "defender"
+        self.locale = None
+        self.mountain_ambush = False
         self.front: dict[str, Optional[str]] = {"left": None, "center": None, "right": None}
         self.reserve: list[str] = list(lord_ids)
 
@@ -119,15 +121,33 @@ def _is_routed(lord: LordState) -> bool:
 
 
 def begin_battle(gs: GameState, attackers: list[str], defenders: list[str], locale: str,
-                 scripted: Optional[list] = None) -> dict[str, Any]:
-    """Entry point from the Approach 'Stand' path (4.3.4 -> 4.8)."""
+                 scripted: Optional[list] = None, events: Optional[dict] = None) -> dict[str, Any]:
+    """Entry point from the Approach 'Stand' path (4.3.4 -> 4.8). ``events`` maps
+    a side to the Held Battle Events it plays (R2/S2 Mountain Ambush, S3 Betrayal)."""
+    played = _consume_battle_events(gs, events)
     ctx = DecisionContext(scripted)
     roller = _roller(gs)
-    result = resolve_battle(gs, attackers, defenders, locale, ctx, roller)
+    result = resolve_battle(gs, attackers, defenders, locale, ctx, roller, played)
     _save_roller(gs, roller)
     # remove the pending battle marker if present
     gs.meta.pending = [p for p in gs.meta.pending if p.get("type") != "battle"]
     return result
+
+
+_BATTLE_HOLDS = {"R2", "S2", "S3"}  # implemented Battle Hold Events (Mountain Ambush, Betrayal)
+
+
+def _consume_battle_events(gs: GameState, events: Optional[dict]) -> dict:
+    played = {"seljuk": [], "roman": []}
+    if not events:
+        return played
+    for side in ("seljuk", "roman"):
+        for cid in events.get(side, []):
+            if cid in _BATTLE_HOLDS and cid in gs.side_decks(side).held_events:
+                gs.side_decks(side).held_events.remove(cid)
+                gs.side_decks(side).draw_deck.append(cid)
+                played[side].append(cid)
+    return played
 
 
 def _roller(gs: GameState) -> DiceRoller:
@@ -144,7 +164,9 @@ def _save_roller(gs: GameState, r: DiceRoller) -> None:
 
 
 def resolve_battle(gs: GameState, attacker_ids: list[str], defender_ids: list[str],
-                   locale: str, ctx: DecisionContext, roller: DiceRoller) -> dict[str, Any]:
+                   locale: str, ctx: DecisionContext, roller: DiceRoller,
+                   played: Optional[dict] = None) -> dict[str, Any]:
+    played = played or {"seljuk": [], "roman": []}
     active = gs.meta.active_lord if gs.meta.active_lord in attacker_ids else attacker_ids[0]
     for _lid in attacker_ids + defender_ids:
         gs.lords[_lid].flags["turkic_routed_battle"] = 0
@@ -156,6 +178,17 @@ def resolve_battle(gs: GameState, attacker_ids: list[str], defender_ids: list[st
     _fill_front(att, ctx, "initial_placement_attacker")
     # Defender opposite each Front attacker: center first, then L, R.
     _fill_defender(att, deff, ctx)
+    # Mountain Ambush (R2/S2): Round-1 Walls 1-3 vs Missiles for the playing
+    # side, if the Locale is adjacent to a Pass (1.3.1).
+    from . import map as gmap
+    for side_obj, sname in ((att, gs.lords[active].side), (deff, gs.lords[defender_ids[0]].side)):
+        side_obj.locale = locale
+        amb = "R2" if sname == "roman" else "S2"
+        if amb in played.get(sname, []) and gmap.adjacent_to_pass(locale):
+            side_obj.mountain_ambush = True
+    betrayal_pending = "S3" in played.get("seljuk", [])
+    if betrayal_pending and "S3" not in gs.meta.asterisks_used:
+        gs.meta.asterisks_used.append("S3")
 
     rounds = []
     pursuit = {"attacker": False, "defender": False}
@@ -172,6 +205,17 @@ def resolve_battle(gs: GameState, attacker_ids: list[str], defender_ids: list[st
                     pursuit[role] = True
             # Reposition
             _reposition(gs, att, deff, ctx)
+            if betrayal_pending:  # S3 Betrayal: move a non-commander Roman Front Lord to Reserve
+                for sd_obj in (att, deff):
+                    for slot in SLOTS:
+                        lid = sd_obj.front[slot]
+                        if lid and gs.lords[lid].side == "roman" and not sd.lord(lid).get("commander"):
+                            sd_obj.front[slot] = None
+                            sd_obj.reserve.append(lid)
+                            betrayal_pending = False
+                            break
+                    if not betrayal_pending:
+                        break
 
         _strike_phase(gs, att, deff, pursuit, round_no, ctx, roller, rounds)
 
@@ -343,6 +387,9 @@ def _resolve_step(gs, step, striking: _Side, target_side: _Side, role, pursuit, 
             a_raw /= 2.0
         n_hits = int(n_raw + 0.999)
         a_hits = int(a_raw + 0.999)
+        if step == "missile" and round_no == 1 and target_side.mountain_ambush:
+            n_hits = _roll_walls(roller, n_hits, (1, 3))  # Mountain Ambush (R2/S2)
+            a_hits = _roll_walls(roller, a_hits, (1, 3))
         applied = []
         if n_hits:
             applied += _apply_hits(gs, target, n_hits, hit_type, ctx, roller)

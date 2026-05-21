@@ -26,12 +26,21 @@ scenarios.
 remainders noted below. 210 tests pass.
 
 ### Known remainders (tracked, not silently skipped)
-- Phase 4: play-time hooks for Hold Events, the Treachery/Loyalty Plan wiring
-  (the Loyalty resolver exists), special-Vassal-adder Events, and some
-  conditional immediate Events (these currently no-op-discard).
-- The full Relief Sally rearguard nuance (4.8.1).
-- A combat-aggressive self-play variant (the greedy driver favors advancing the
-  turn structure over forcing battles).
+Most of the Phase-4/5 remainder is now closed (Phase 6): special-Vassal-adder
+Capabilities (R2/R7/R17/S20), the remaining immediate/This-Campaign Event
+resolvers, the Treachery/Loyalty Plan wiring (R8/S16/S19 + Imperial Coffers R14),
+most Hold Events (Michael Attaleiates, Eastern Rebellions, Sultan's Horse,
+Nomadic Tribes, Common Cultural Cause, Bad Omens, Summer Heat, Kleisourai,
+Honors of War, plus Mountain Ambush and Betrayal in Battle), the Relief Sally
+core (besieged Lords join a relief Attack, 4.8.1), and a combat-aggressive
+self-play agent. Still genuinely open (each needs invasive timing/ordering work):
+- Cavalry Charge (R24) and Command Confusion (S6) — per-Lord Strike sub-ordering
+  within a step.
+- Surprise (S1, besiege-2-then-Storm), Winter Campaign / Winter March (R9/S18,
+  a pre-Bounty activation window), Local Scouts (R18, forcing an Avoider to
+  Battle), Basil Alousianos (R7, Surrender-to-Bypass).
+- The full Relief Sally rearguard rows + Siegeworks-vs-Sallying-only nuance
+  (the core join-the-attack is implemented; rows are approximated).
 
 ## Where things are
 
