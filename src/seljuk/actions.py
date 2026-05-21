@@ -13,7 +13,7 @@ from typing import Any
 from . import scenarios, static_data as sd
 from . import capabilities
 from .rng import DiceRoller
-from .state import GameState, IllegalAction, LordState
+from .state import GameState, IllegalAction, LordState, VassalSlot
 
 OFF_RIGHT = 13  # Service Marker shifted right beyond box 12 sits off-board (2.2.3)
 
@@ -385,6 +385,7 @@ def h_levy_capability(gs: GameState, action: dict[str, Any], roller: DiceRoller)
     cap = sd.card(card_id)["capability"]
     if cap["scope"] == "this_lord":
         lord.capabilities.append(card_id)
+        _maybe_add_special_vassal(gs, lord, card_id)  # R2/R7/R17/S20 add the Vassal slot
         placement = "this_lord_mat"
     else:
         gs.side_decks(lord.side).capabilities_in_play.append(card_id)
@@ -713,3 +714,21 @@ def h_resolve_event(gs: GameState, action: dict[str, Any], roller: DiceRoller) -
     """Resolve a queued immediate Event (Phase 4). See events.py."""
     from . import events
     return events.resolve_event(gs, action.get("card"), action.get("args"), roller)
+
+
+_SPECIAL_VASSAL_BY_CARD = {"R2": "oghuz_mercenaries", "R7": "emperors_retinue",
+                           "R17": "scholai", "S20": "elite_ghulam_cavalry"}
+
+
+def _maybe_add_special_vassal(gs: GameState, lord: LordState, card_id: str) -> None:
+    """3.4.2 / Capability text: levying a special-Vassal-adder Capability (R2,
+    R7, R17, S20) puts the special Vassal's Service Marker on this Lord's mat,
+    if it is not already there (e.g. Oghuz Mercenaries has no printed home)."""
+    key = _SPECIAL_VASSAL_BY_CARD.get(card_id)
+    if key is None:
+        return
+    if any(v.requires_capability == card_id for v in lord.vassals):
+        return  # printed slot already on this Lord's mat
+    roster = sd.lords()["special_vassals_roster"][key]
+    lord.vassals.append(VassalSlot(forces=dict(roster["forces"]), service=roster.get("service"),
+                                   special_name=key, requires_capability=card_id))
