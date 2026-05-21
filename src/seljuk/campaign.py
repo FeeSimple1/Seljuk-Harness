@@ -1035,9 +1035,14 @@ def h_respond_approach(gs: GameState, action: dict[str, Any], roller: DiceRoller
             standers.append(did)
     gs.meta.pending.remove(pend)
     if standers:
-        # Hand off to the Battle engine (Phase 3b increment 2).
         from . import battle
-        return battle.begin_battle(gs, pend["attackers"], standers, to)
+        res = battle.begin_battle(gs, pend["attackers"], standers, to,
+                                  scripted=action.get("battle_decisions"))
+        # A Battle ends the active Lord's card (4.8.6): skip remaining actions.
+        if gs.meta.phase == "campaign":
+            gs.meta.actions_remaining = 0
+            _after_card(gs)
+        return {"ok": True, "action": "respond_approach", "battle": res}
     # No defenders left to fight -> the attacker may now Besiege/Bypass if a
     # Stronghold remains, else the card continues.
     arrival = _resolve_arrival(gs, [gs.lords[a] for a in pend["attackers"]], to)

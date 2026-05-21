@@ -140,15 +140,16 @@ def test_approach_withdraw_into_friendly_stronghold_434():
     assert ch.besieged and ch.cylinder == "melitene"
 
 
-def test_approach_stand_triggers_battle_pending_434():
-    gs = S.load_scenario("emperor_and_the_lion")
+def test_approach_stand_resolves_battle_434():
+    gs = S.load_scenario("emperor_and_the_lion", seed=5)
     aa = gs.lords["alp_arslan"]; aa.cylinder = "larisa"
-    ch = gs.lords["chatatourios"]; ch.cylinder = "melitene"
+    ch = gs.lords["chatatourios"]; ch.cylinder = "melitene"; ch.forces = {"militia": 1}
     _activate(gs, "alp_arslan")
     engine.apply_action(gs, {"type": "cmd_march", "lord": "alp_arslan", "to": "melitene", "way_type": "road"})
     r = engine.apply_action(gs, {"type": "respond_approach", "choices": {"chatatourios": {"action": "stand"}}})
-    assert r.get("pending") == "battle"
-    assert any(p["type"] == "battle" for p in gs.meta.pending)
+    # Stand resolves the Battle immediately (4.8) and clears the pending marker.
+    assert r["battle"]["winner"] in ("attacker", "defender")
+    assert not any(p["type"] == "battle" for p in gs.meta.pending)
 
 
 def test_group_march_moves_commander_and_co_located_431():
