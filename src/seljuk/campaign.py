@@ -1110,9 +1110,25 @@ def h_respond_approach(gs: GameState, action: dict[str, Any], roller: DiceRoller
     gs.meta.pending.remove(pend)
     if standers:
         from . import battle
-        res = battle.begin_battle(gs, pend["attackers"], standers, to,
+        attackers = list(pend["attackers"])
+        att_side = gs.lords[attackers[0]].side
+        # Relief Sally (4.8.1): friendly Besieged Lords at this Locale join the
+        # relief Attack for no extra Command actions. (Rearguard rows and the
+        # Siegeworks-vs-Sallying-only nuance are a documented approximation.)
+        sallying = [lid for lid, l in gs.lords.items()
+                    if l.mustered and l.cylinder == to and l.side == att_side and l.besieged]
+        attackers += sallying
+        res = battle.begin_battle(gs, attackers, standers, to,
                                   scripted=action.get("battle_decisions"),
                                   events=action.get("battle_events"))
+        if sallying:
+            res["relief_sally"] = list(sallying)
+            for lid in sallying:                       # Sallying Lords withdraw back inside
+                if lid in gs.lords and gs.lords[lid].mustered:
+                    gs.lords[lid].besieged = True
+                    gs.lords[lid].cylinder = to
+            if res.get("winner") == "defender" and gs.locales[to].siege_markers > 0:
+                gs.locales[to].siege_markers = 1       # reduce Siege markers to one (4.8.1)
         # A Battle ends the active Lord's card (4.8.6): skip remaining actions.
         if gs.meta.phase == "campaign":
             gs.meta.actions_remaining = 0
