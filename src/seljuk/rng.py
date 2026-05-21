@@ -31,6 +31,10 @@ class DiceRoller:
         """Roll ``n`` d6 and return the results in order."""
         return [self.d6() for _ in range(n)]
 
+    def shuffle(self, seq: list) -> None:
+        """Shuffle a list in place using the seeded RNG (deterministic)."""
+        self._rng.shuffle(seq)
+
     def get_state(self) -> tuple:
         """Opaque RNG state for serialization into ``state.meta.rng_state``."""
         return self._rng.getstate()

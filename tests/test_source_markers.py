@@ -1,12 +1,13 @@
-"""Source-marker regression-test pattern (CROSS_PROJECT_LESSONS.md section 2).
+"""Source-marker regression tests (CROSS_PROJECT_LESSONS.md section 2).
 
-Once SMOKE findings exist, each fix gets a one-liner here asserting its
-``SMOKE-NNN`` marker is still present in the source it guards, so a later
-refactor that drops the guard fails CI. Phase 0 has no findings yet; this file
-documents the pattern and keeps the test module in place.
+Each SMOKE fix leaves a marker in the source it guards; this asserts the marker
+is still present, so a later refactor that drops the guard fails CI.
 """
+import inspect
+
+from seljuk import actions
 
 
-def test_no_smoke_markers_expected_in_phase0():
-    # Placeholder: SMOKE numbering begins in Phase 2+ (see SMOKE_TEST_FINDINGS.md).
-    assert True
+def test_smoke_001_marker_present():
+    """SMOKE-001: Strategic Objective 'place' enumerates concrete targets."""
+    assert "SMOKE-001" in inspect.getsource(actions)
