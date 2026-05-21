@@ -55,10 +55,14 @@ class VassalSlot(_Model):
 
 
 class ThemataMarker(_Model):
-    """A Themata Service Marker (1.5.1). ``symbols`` 2 = a 'double' marker."""
+    """A Themata Service Marker (1.5.1). ``symbols`` 2 = a 'double' marker.
+
+    ``home_thema`` records the Thema box a Levied/Recruited marker came from, so
+    it can be returned there on Commander Disband (3.3.2 errata) or Reset."""
 
     unit: str
     symbols: int = 1
+    home_thema: Optional[str] = None
 
 
 class LordState(_Model):
@@ -140,6 +144,8 @@ class Meta(_Model):
     asterisks_used: list[str] = Field(default_factory=list)
     skip_first_levy: bool = False
     special_vp_rules: list[str] = Field(default_factory=list)
+    levy_step_passed: dict[str, bool] = Field(default_factory=dict)  # which sides finished the current Levy step
+    pending: list[dict[str, Any]] = Field(default_factory=list)      # pending sub-decisions (who owes a response)
     notes: dict[str, Any] = Field(default_factory=dict)
 
 
