@@ -238,10 +238,11 @@ def reset_muster_segment(gs: GameState) -> None:
     for lord in gs.lords.values():
         lord.flags.pop("lordship_spent", None)
         lord.flags.pop("mustered_this_segment", None)
+        lord.flags.pop("lordship_bonus", None)
 
 
 def lordship_remaining(gs: GameState, lord: LordState) -> int:
-    rating = capabilities.lordship_rating(gs, lord.id)
+    rating = capabilities.lordship_rating(gs, lord.id) + int(lord.flags.get("lordship_bonus", 0))
     return rating - int(lord.flags.get("lordship_spent", 0))
 
 
@@ -732,3 +733,8 @@ def _maybe_add_special_vassal(gs: GameState, lord: LordState, card_id: str) -> N
     roster = sd.lords()["special_vassals_roster"][key]
     lord.vassals.append(VassalSlot(forces=dict(roster["forces"]), service=roster.get("service"),
                                    special_name=key, requires_capability=card_id))
+
+
+def h_play_hold_event(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
+    from . import events
+    return events.play_hold_event(gs, action.get("card"), action.get("args"), roller)

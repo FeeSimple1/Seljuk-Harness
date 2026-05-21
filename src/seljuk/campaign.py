@@ -1111,7 +1111,8 @@ def h_respond_approach(gs: GameState, action: dict[str, Any], roller: DiceRoller
     if standers:
         from . import battle
         res = battle.begin_battle(gs, pend["attackers"], standers, to,
-                                  scripted=action.get("battle_decisions"))
+                                  scripted=action.get("battle_decisions"),
+                                  events=action.get("battle_events"))
         # A Battle ends the active Lord's card (4.8.6): skip remaining actions.
         if gs.meta.phase == "campaign":
             gs.meta.actions_remaining = 0
@@ -1195,6 +1196,21 @@ def h_cmd_siege(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> di
     siege = gs.locales[loc_id].siege_markers
     result = {"ok": True, "action": "cmd_siege", "lord": lord.id, "locale": loc_id}
     seized = False
+    # Honors of War (R25): a Held Roman Event auto-Surrenders a Fort (no Spoils).
+    if (action.get("honors_of_war") and "R25" in gs.roman.held_events
+            and sd.locale(loc_id)["type"] == "fort" and lord.side == "roman"
+            and not _besieged_enemy_inside(gs, loc_id, lord.side)):
+        from . import battle
+        result["honors_of_war"] = True
+        result["conquer"] = battle.conquer(gs, loc_id, "roman")
+        gs.roman.held_events.remove("R25"); gs.roman.draw_deck.append("R25")
+        gs.meta.vp = scenarios.score(gs)
+        for l in gs.lords.values():
+            if l.mustered and l.cylinder == loc_id:
+                l.moved_fought = True
+        gs.meta.actions_remaining = 0
+        _after_card(gs)
+        return result
     if not _besieged_enemy_inside(gs, loc_id, lord.side) and action.get("roll_surrender", True):
         dice_n = sd.stronghold_profile(loc_id)["surrender_dice"]
         threshold = min(siege, 4) + (1 if gs.locales[loc_id].ravaged_side is not None else 0)

@@ -336,3 +336,117 @@ def resolve_event(gs: GameState, card_id: str, args: dict, roller: DiceRoller) -
     if card_id not in gs.side_decks(side).draw_deck:
         gs.side_decks(side).draw_deck.append(card_id)
     return {"ok": True, "action": "resolve_event", "card": card_id, **result}
+
+
+# === Hold Events played at a later moment (4.1.3 / 3.1.3) ===================
+# Self-contained timing hooks here; the Battle-order Hold Events (Mountain
+# Ambush, Cavalry Charge, Command Confusion, Betrayal) are applied inside the
+# Battle engine via begin_battle/resolve_storm 'events' arguments.
+
+def _remove_turkic_at(gs, locale, count):
+    removed = 0
+    for l in gs.lords.values():
+        if removed >= count:
+            break
+        if l.mustered and l.cylinder == locale:
+            while removed < count and l.forces.get("turkic_horse", 0) > 0:
+                l.forces["turkic_horse"] -= 1
+                removed += 1
+    return removed
+
+
+def _hold_michael_attaleiates(gs, args, roller):   # R6 (Muster, on Romanos)
+    if gs.meta.subphase != "levy.muster":
+        raise IllegalAction("wrong_timing", "play during Muster (R6)")
+    rom = gs.lords["romanos_diogenes"]
+    if not rom.mustered:
+        raise IllegalAction("not_available", "Romanos is not Mustered")
+    rom.flags["lordship_bonus"] = int(rom.flags.get("lordship_bonus", 0)) + 1
+    return {"romanos_lordship": "+1"}
+
+
+def _hold_eastern_rebellions(gs, args, roller):     # S10 (Muster, on Alp Arslan)
+    if gs.meta.subphase != "levy.muster":
+        raise IllegalAction("wrong_timing", "play during Muster (S10)")
+    aa = gs.lords["alp_arslan"]
+    if not aa.mustered:
+        raise IllegalAction("not_available", "Alp Arslan is not Mustered")
+    aa.flags["lordship_bonus"] = int(aa.flags.get("lordship_bonus", 0)) + 1
+    return {"alp_arslan_lordship": "+1"}
+
+
+def _hold_sultans_horse(gs, args, roller):          # R4 (remove 1 Siege where Alp Arslan besieging >1)
+    aa = gs.lords["alp_arslan"]
+    if not aa.mustered or gs.locales[aa.cylinder].siege_markers <= 1:
+        raise IllegalAction("not_applicable", "Alp Arslan must be at a Locale with >1 Siege marker (R4)")
+    gs.locales[aa.cylinder].siege_markers -= 1
+    return {"removed_siege_at": aa.cylinder}
+
+
+def _hold_nomadic_tribes(gs, args, roller):         # R21 (remove up to 2 Turkic at a Locale)
+    n = _remove_turkic_at(gs, args["locale"], min(2, int(args.get("count", 2))))
+    return {"turkic_removed": n}
+
+
+def _hold_common_cultural(gs, args, roller):        # S21 (remove up to 2 Turkic at a Locale)
+    n = _remove_turkic_at(gs, args["locale"], min(2, int(args.get("count", 2))))
+    return {"turkic_removed": n}
+
+
+def _hold_bad_omens(gs, args, roller):              # S24 (reorder top 2 unrevealed Roman Plan cards)
+    pp = gs.roman.plan_pointer
+    plan = gs.roman.command_plan
+    if len(plan) - pp >= 2:
+        plan[pp], plan[pp + 1] = plan[pp + 1], plan[pp]
+        return {"reordered": plan[pp:pp + 2]}
+    return {"no_op": True, "reason": "fewer than 2 unrevealed Roman cards"}
+
+
+def _hold_summer_heat(gs, args, roller):            # R3/S4 (enemy Command 1 after reveal)
+    from . import campaign
+    if gs.meta.subphase != "campaign.command" or gs.meta.active_lord is None:
+        raise IllegalAction("wrong_timing", "play after the enemy reveals a Command card (R3/S4)")
+    if campaign.season_index(gs.meta.calendar_box) != 1:
+        raise IllegalAction("not_summer", "Summer Heat is played in Summer (R3/S4)")
+    gs.meta.actions_remaining = min(gs.meta.actions_remaining, 1)  # that Lord is Command 1
+    return {"command_1": gs.meta.active_lord}
+
+
+def _hold_kleisourai(gs, args, roller):             # R23 (1 Hit on a moving Seljuk Lord crossing a Pass)
+    from . import capabilities
+    lord = gs.lords[args["lord"]]
+    if lord.side != "seljuk":
+        raise IllegalAction("bad_target", "Kleisourai hits a moving Seljuk Lord (R23)")
+    avail = [u for u, n in lord.forces.items() if n > 0]
+    if not avail:
+        return {"no_op": True}
+    unit = args.get("unit", avail[0])
+    lo, hi = capabilities.protection_range(gs, lord.id, unit, "melee", storm=False)  # treated as a Battle Hit
+    roll = roller.d6()
+    if not (lo <= roll <= hi):
+        lord.forces[unit] -= 1  # eliminated, no recovery (clarification)
+        return {"eliminated": unit, "roll": roll}
+    return {"protected": unit, "roll": roll}
+
+
+_HOLD_RESOLVERS = {
+    "R6": _hold_michael_attaleiates, "S10": _hold_eastern_rebellions, "R4": _hold_sultans_horse,
+    "R21": _hold_nomadic_tribes, "S21": _hold_common_cultural, "S24": _hold_bad_omens,
+    "R3": _hold_summer_heat, "S4": _hold_summer_heat, "R23": _hold_kleisourai,
+}
+
+
+def play_hold_event(gs: GameState, card_id: str, args: dict, roller: DiceRoller) -> dict[str, Any]:
+    side = sd.card(card_id)["side"]
+    if card_id not in gs.side_decks(side).held_events:
+        raise IllegalAction("not_held", f"{card_id} is not a Held Event for {side}")
+    if card_id not in _HOLD_RESOLVERS:
+        raise IllegalAction("hold_not_implemented",
+                            f"{card_id} is a Battle/timing Hold Event without a self-contained hook yet")
+    try:
+        result = _HOLD_RESOLVERS[card_id](gs, args or {}, roller)
+    except (KeyError, IndexError, TypeError) as e:
+        raise IllegalAction("missing_or_bad_arg", f"Hold Event {card_id} needs a valid argument ({e})")
+    gs.side_decks(side).held_events.remove(card_id)
+    gs.side_decks(side).draw_deck.append(card_id)
+    return {"ok": True, "action": "play_hold_event", "card": card_id, **result}
