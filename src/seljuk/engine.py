@@ -56,6 +56,7 @@ _HANDLERS: dict[str, Callable[[GameState, dict, DiceRoller], dict]] = {
     "cta_loot": actions.h_cta_loot,
     "cta_strategic_objective": actions.h_cta_strategic_objective,
     "pass_step": actions.h_pass_step,
+    "resolve_event": actions.h_resolve_event,
 }
 
 _CAMPAIGN_HANDLERS: dict[str, Callable[[GameState, dict, DiceRoller], dict]] = {
@@ -75,6 +76,7 @@ _CAMPAIGN_HANDLERS: dict[str, Callable[[GameState, dict, DiceRoller], dict]] = {
     "assign_themata_defenders": campaign.h_assign_themata_defenders,
     "cmd_storm": campaign.h_cmd_storm,
     "cmd_sally": campaign.h_cmd_sally,
+    "resolve_event": actions.h_resolve_event,
 }
 
 

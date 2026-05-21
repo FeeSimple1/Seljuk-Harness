@@ -11,6 +11,7 @@ from __future__ import annotations
 from typing import Any
 
 from . import scenarios, static_data as sd
+from . import capabilities
 from .rng import DiceRoller
 from .state import GameState, IllegalAction, LordState
 
@@ -240,7 +241,7 @@ def reset_muster_segment(gs: GameState) -> None:
 
 
 def lordship_remaining(gs: GameState, lord: LordState) -> int:
-    rating = sd.lord(lord.id)["ratings"]["lordship"]
+    rating = capabilities.lordship_rating(gs, lord.id)
     return rating - int(lord.flags.get("lordship_spent", 0))
 
 
@@ -328,7 +329,7 @@ def h_levy_lord(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> di
             raise IllegalAction("no_free_seat", f"{target.id} has no free Seat (3.4.1)")
         seat = seats[0]
     _spend_lordship(levyer, 1)
-    fealty = sd.lord(target.id)["ratings"]["fealty"]
+    fealty = capabilities.fealty_rating(gs, target.id)
     roll = roller.d6()
     success = roll <= fealty
     if success:
@@ -674,7 +675,7 @@ def resolve_loyalty_check(gs: GameState, target_id: str, revealing_side: str,
     target Lord's Fealty, he switches sides (1.4.2)."""
     if target_id not in gs.lords:
         raise IllegalAction("bad_lord", f"no such Lord {target_id}")
-    fealty = sd.lord(target_id)["ratings"]["fealty"]
+    fealty = capabilities.fealty_rating(gs, target_id)
     nat = roller.d6()
     modified = nat + coins_for - coins_against
     if nat == 1:
@@ -706,3 +707,9 @@ def _switch_side(gs: GameState, lord: LordState) -> None:
     else:
         lord.cylinder = "offboard"  # rejoins at his Seat next Pay phase (1.4.2)
         lord.cylinder_calendar_box = None
+
+
+def h_resolve_event(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
+    """Resolve a queued immediate Event (Phase 4). See events.py."""
+    from . import events
+    return events.resolve_event(gs, action.get("card"), action.get("args"), roller)

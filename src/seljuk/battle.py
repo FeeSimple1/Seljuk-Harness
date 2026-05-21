@@ -20,6 +20,7 @@ from __future__ import annotations
 from typing import Any, Optional
 
 from . import scenarios, static_data as sd
+from . import capabilities
 from .rng import DiceRoller
 from .state import GameState, LordState
 
@@ -31,7 +32,7 @@ SLOTS = ["left", "center", "right"]
 _MISSILE = {"tagmata": 0.5, "scholai_hetaireia": 1.0, "ghulam_cavalry": 0.5,
             "turkic_horse": 1.0, "militia": 0.5}
 _HORSE_MELEE = {"tagmata": 1.0, "norman_knights": 2.0, "scholai_hetaireia": 1.0,
-                "ghulam_cavalry": 1.0, "turkic_horse": 0.5}
+                "ghulam_cavalry": 1.0}  # Turkic Horse base Melee 0 (Shock Tactics grants it; Q-002)
 _FOOT_MELEE = {"varangian_guard": 3.0, "infantry": 1.0, "militia": 0.5}
 
 _ARMORED = {"tagmata": (1, 3), "norman_knights": (1, 4), "scholai_hetaireia": (1, 4),
@@ -145,6 +146,8 @@ def _save_roller(gs: GameState, r: DiceRoller) -> None:
 def resolve_battle(gs: GameState, attacker_ids: list[str], defender_ids: list[str],
                    locale: str, ctx: DecisionContext, roller: DiceRoller) -> dict[str, Any]:
     active = gs.meta.active_lord if gs.meta.active_lord in attacker_ids else attacker_ids[0]
+    for _lid in attacker_ids + defender_ids:
+        gs.lords[_lid].flags["turkic_routed_battle"] = 0
     att = _Side(gs, [a for a in attacker_ids if a != active], "attacker")
     deff = _Side(gs, list(defender_ids), "defender")
 
@@ -269,6 +272,43 @@ def _target_of(striker_slot: str, enemy: _Side, ctx: DecisionContext) -> Optiona
     return choice
 
 
+import math as _math
+
+
+def _lord_step_hits_caps(gs, lid, step, round_no):
+    """(normal_hits, anti_armor_hits) for one Lord in a Strike step, applying
+    Capabilities (Javelins, Alakatia, Shock Tactics, Bardoukia)."""
+    lord = gs.lords[lid]
+    names = capabilities.lord_capability_names(gs, lid)
+    units = _unrouted_units(lord)
+    normal = 0.0
+    anti = 0.0
+    if step == "missile":
+        for u, n in units.items():
+            normal += _MISSILE.get(u, 0.0) * n
+        if "Javelins" in names:                       # S11: Infantry Missiles x1
+            normal += units.get("infantry", 0) * 1.0
+        if "Alakatia" in names and units.get("infantry", 0) >= 2:  # R23: +1 anti-armor Missile Hit
+            anti += 1.0
+    elif step == "horse_melee":
+        for u, n in units.items():
+            if _category(u) == "horse":
+                normal += _HORSE_MELEE.get(u, 0.0) * n
+        if "Shock Tactics" in names:                  # S4/S6: ceil(turkic/2) x1/2
+            tk = units.get("turkic_horse", 0)
+            normal += _math.ceil(tk / 2) * 0.5
+        if "Bardoukia" in names:                       # R21: Tagmata Melee -> anti-armor
+            tag = _HORSE_MELEE.get("tagmata", 1.0) * units.get("tagmata", 0)
+            normal -= tag
+            anti += tag
+    elif step == "foot_melee":
+        table = _strike_table("foot_melee", round_no)
+        for u, n in units.items():
+            if _category(u) == "foot":
+                normal += table.get(u, 0.0) * n
+    return max(0.0, normal), anti
+
+
 def _strike_phase(gs: GameState, att: _Side, deff: _Side, pursuit: dict, round_no: int,
                   ctx: DecisionContext, roller: DiceRoller, log: list) -> None:
     steps = [
@@ -282,11 +322,9 @@ def _strike_phase(gs: GameState, att: _Side, deff: _Side, pursuit: dict, round_n
 
 def _resolve_step(gs, step, striking: _Side, target_side: _Side, role, pursuit, round_no,
                   ctx: DecisionContext, roller: DiceRoller, log: list) -> None:
-    table = _strike_table(step, round_no)
-    cat = "horse" if step == "horse_melee" else ("foot" if step == "foot_melee" else None)
     hit_type = "missile" if step == "missile" else "melee"
-    # Group strikers by the enemy Lord they hit.
-    by_target: dict[str, float] = {}
+    by_normal: dict[str, float] = {}
+    by_anti: dict[str, float] = {}
     for slot in SLOTS:
         lid = striking.front[slot]
         if not lid or _is_routed(gs.lords[lid]):
@@ -294,38 +332,52 @@ def _resolve_step(gs, step, striking: _Side, target_side: _Side, role, pursuit, 
         target = _target_of(slot, target_side, ctx)
         if not target:
             continue
-        hits = 0.0
-        for unit, n in _unrouted_units(gs.lords[lid]).items():
-            if cat and _category(unit) != cat:
-                continue
-            hits += table.get(unit, 0.0) * n
-        by_target[target] = by_target.get(target, 0.0) + hits
-    for target, raw in by_target.items():
-        if raw <= 0:
-            continue
+        normal, anti = _lord_step_hits_caps(gs, lid, step, round_no)
+        by_normal[target] = by_normal.get(target, 0.0) + normal
+        by_anti[target] = by_anti.get(target, 0.0) + anti
+    for target in set(by_normal) | set(by_anti):
+        n_raw = by_normal.get(target, 0.0)
+        a_raw = by_anti.get(target, 0.0)
         if pursuit.get(role):  # Conceding side halves its Hits (Pursuit, 4.8.2)
-            raw = raw / 2.0
-        hits = int(raw + 0.999)  # round up
-        applied = _apply_hits(gs, target, hits, hit_type, ctx, roller)
-        log.append({"round": round_no, "step": step, "by": role, "target": target,
-                    "hits": hits, "routed_units": applied})
+            n_raw /= 2.0
+            a_raw /= 2.0
+        n_hits = int(n_raw + 0.999)
+        a_hits = int(a_raw + 0.999)
+        applied = []
+        if n_hits:
+            applied += _apply_hits(gs, target, n_hits, hit_type, ctx, roller)
+        if a_hits:  # anti-armor Hits roll Protection at -1 Armor (Bardoukia/Alakatia)
+            applied += _apply_hits(gs, target, a_hits, hit_type, ctx, roller, anti_armor=True)
+        if n_hits or a_hits:
+            log.append({"round": round_no, "step": step, "by": role, "target": target,
+                        "hits": n_hits + a_hits, "routed_units": applied})
 
 
 def _apply_hits(gs: GameState, target_id: str, hits: int, hit_type: str,
-                ctx: DecisionContext, roller: DiceRoller) -> list[str]:
+                ctx: DecisionContext, roller: DiceRoller, anti_armor: bool = False) -> list[str]:
     lord = gs.lords[target_id]
     routed_units: list[str] = []
+    reroll_used = False
+    norman = capabilities.lord_has(gs, target_id, "Norman Heavy Cavalry")
     for _ in range(hits):
         avail = [u for u, n in lord.forces.items() if n > 0]
         if not avail:
             break
         unit = ctx.decide("hit_absorption", avail, {"lord": target_id, "hit_type": hit_type})
-        lo, hi = protection_range(unit, hit_type)
+        lo, hi = capabilities.protection_range(gs, target_id, unit, hit_type, storm=False)
+        if anti_armor and unit not in ("turkic_horse", "militia"):
+            hi = max(lo, hi - 1)  # -1 to target Armor (Bardoukia/Alakatia)
         roll = roller.d6()
-        if not (lo <= roll <= hi):
+        ok = lo <= roll <= hi
+        if not ok and norman and unit == "norman_knights" and not reroll_used:
+            reroll_used = True  # Norman Heavy Cavalry: reroll 1 Armor per step (R5)
+            ok = lo <= roller.d6() <= hi
+        if not ok:
             lord.forces[unit] -= 1
             lord.routed[unit] = lord.routed.get(unit, 0) + 1
             routed_units.append(unit)
+            if unit == "turkic_horse":
+                lord.flags["turkic_routed_battle"] = int(lord.flags.get("turkic_routed_battle", 0)) + 1
     return routed_units
 
 
@@ -571,16 +623,30 @@ def _garrison_column(gs: GameState, locale: str) -> str:
     return cur
 
 
-def _build_garrison(gs: GameState, locale: str) -> dict[str, int]:
+def _build_garrison(gs: GameState, locale: str, attacker_side: str = "seljuk") -> dict[str, int]:
     """Garrison foot units (by column) plus any Themata defenders, as a unit
-    pool (4.9.1). Themata are expanded into units for the Storm; their markers
-    survive if the defender wins and are removed on a Sack."""
+    pool (4.9.1). Themata are expanded into units; their markers survive if the
+    defender wins and are removed on a Sack. Capabilities: Armenian Garrisons
+    (R16) adds both columns; Fortified Garrisons (S23) swaps a Garrison Militia
+    for Infantry on a Roman Storm."""
     prof = sd.stronghold_profile(locale)
+    info = sd.locale(locale)
     col = _garrison_column(gs, locale)
+    defender_side = "roman" if attacker_side == "seljuk" else "seljuk"
     g: dict[str, int] = {}
-    for u, n in prof["garrison"][col].items():
-        if n:
-            g[u] = g.get(u, 0) + n
+    # Armenian Garrisons (R16): Roman-Conquered Stronghold outside the Roman
+    # Empire uses BOTH columns.
+    both = (defender_side == "roman" and capabilities.side_has(gs, "roman", "Armenian Garrisons")
+            and gs.locales[locale].conquered_side == "roman" and info["allegiance"] != "roman")
+    cols = ["roman", "seljuk"] if both else [col]
+    for c in cols:
+        for u, n in prof["garrison"][c].items():
+            if n:
+                g[u] = g.get(u, 0) + n
+    # Fortified Garrisons (S23): on a Roman Storm, swap 1 Garrison Militia for Infantry.
+    if attacker_side == "roman" and capabilities.side_has(gs, "seljuk", "Fortified Garrisons") and g.get("militia", 0) > 0:
+        g["militia"] -= 1
+        g["infantry"] = g.get("infantry", 0) + 1
     for marker in gs.locales[locale].themata_defending:
         g[marker.unit] = g.get(marker.unit, 0) + marker.symbols
     return g
@@ -595,9 +661,11 @@ def resolve_storm(gs: GameState, attacker_ids: list[str], locale: str,
     siege = gs.locales[locale].siege_markers                  # = Siegeworks Walls value for attacker
     defender_ids = [lid for lid, l in gs.lords.items()
                     if l.mustered and l.cylinder == locale and l.besieged and l.side == d_side]
-    garrison = _build_garrison(gs, locale)
+    garrison = _build_garrison(gs, locale, a_side)
     garrison_routed: dict[str, int] = {}
 
+    for _lid in attacker_ids + defender_ids:
+        gs.lords[_lid].flags["turkic_routed_battle"] = 0
     att = _Side(gs, list(attacker_ids), "attacker")
     deff = _Side(gs, list(defender_ids), "defender")
     # Storm Array: at most one Lord in Front; the rest in Reserve.
@@ -671,13 +739,24 @@ def _storm_strike(gs, att, deff, garrison, garrison_routed, walls, siege, round_
     _hit_attacker(gs, att, _round_up(d_missile), "missile", siege, anti_armor=True, roller=roller, ctx=ctx, log=log, step="def_missile", round_no=round_no)
     # 2) Attacking Missiles -> garrison/defender Lord, Walls cancel
     a_missile = _lord_step_hits(gs, att, "missile", round_no)
-    _hit_defender(gs, deff, garrison, garrison_routed, _round_up(a_missile), "missile", walls, roller, ctx, log, "att_missile", round_no)
+    eff_walls = _effective_walls(gs, att, walls)
+    _hit_defender(gs, deff, garrison, garrison_routed, _round_up(a_missile), "missile", eff_walls, roller, ctx, log, "att_missile", round_no)
     # 3) Defending Melee (Horse then Foot), capped 6/Lord; Garrison foot melee
     d_melee = _garrison_melee_hits(garrison) + _lord_melee_capped(gs, deff, round_no)
     _hit_attacker(gs, att, _round_up(d_melee), "melee", siege, anti_armor=False, roller=roller, ctx=ctx, log=log, step="def_melee", round_no=round_no)
     # 4) Attacking Melee -> garrison/defender Lord
     a_melee = _lord_melee_capped(gs, att, round_no)
-    _hit_defender(gs, deff, garrison, garrison_routed, _round_up(a_melee), "melee", walls, roller, ctx, log, "att_melee", round_no)
+    _hit_defender(gs, deff, garrison, garrison_routed, _round_up(a_melee), "melee", _effective_walls(gs, att, walls), roller, ctx, log, "att_melee", round_no)
+
+
+def _effective_walls(gs, att: _Side, walls: tuple) -> tuple:
+    """Siege Weaponry (R20): an Unrouted attacking Lord (incl. Reserve) reduces
+    Enemy Walls by 1."""
+    lo, hi = walls
+    for lid in att.front_lords() + att.reserve:
+        if not _is_routed(gs.lords[lid]) and capabilities.lord_has(gs, lid, "Siege Weaponry"):
+            return (lo, max(lo, hi - 1))
+    return walls
 
 
 def _round_up(x: float) -> int:
@@ -710,10 +789,12 @@ def _lord_step_hits(gs: GameState, side: _Side, step: str, round_no: int) -> flo
 def _lord_melee_capped(gs: GameState, side: _Side, round_no: int) -> float:
     total = 0.0
     for lid in side.front_lords():
-        h = 0.0
-        h += sum(_HORSE_MELEE.get(u, 0.0) * n for u, n in _unrouted_units(gs.lords[lid]).items() if _category(u) == "horse")
+        units = _unrouted_units(gs.lords[lid])
+        h = sum(_HORSE_MELEE.get(u, 0.0) * n for u, n in units.items() if _category(u) == "horse")
         foot = _strike_table("foot_melee", round_no)
-        h += sum(foot.get(u, 0.0) * n for u, n in _unrouted_units(gs.lords[lid]).items() if _category(u) == "foot")
+        h += sum(foot.get(u, 0.0) * n for u, n in units.items() if _category(u) == "foot")
+        if "Shock Tactics" in capabilities.lord_capability_names(gs, lid):  # S4/S6
+            h += _math.ceil(units.get("turkic_horse", 0) / 2) * 0.5
         total += min(h, 6.0)  # 6-Hit Melee cap per Lord (4.9.1)
     return total
 
@@ -766,6 +847,8 @@ def _roll_walls(roller: DiceRoller, hits: int, wrange: tuple[int, int]) -> int:
 def _absorb_storm(gs: GameState, lord: LordState, hits: int, anti_armor: bool, armored_first: bool,
                   ctx: DecisionContext, roller: DiceRoller) -> list[str]:
     routed = []
+    reroll_used = False
+    norman = capabilities.lord_has(gs, lord.id, "Norman Heavy Cavalry")
     for _ in range(hits):
         avail = [u for u, n in lord.forces.items() if n > 0]
         if not avail:
@@ -775,13 +858,20 @@ def _absorb_storm(gs: GameState, lord: LordState, hits: int, anti_armor: bool, a
             unit = armored[0] if armored else avail[0]
         else:
             unit = ctx.decide("hit_absorption", avail, {"lord": lord.id})
-        lo, hi = _storm_protection(unit)
+        lo, hi = capabilities.protection_range(gs, lord.id, unit, "missile" if anti_armor else "melee", storm=True)
         if anti_armor and unit not in ("turkic_horse", "militia"):
             hi = max(lo, hi - 1)  # Garrison Missiles: -1 to target Armor (min 1)
-        if not (lo <= roller.d6() <= hi):
+        roll = roller.d6()
+        ok = lo <= roll <= hi
+        if not ok and norman and unit == "norman_knights" and not reroll_used:
+            reroll_used = True
+            ok = lo <= roller.d6() <= hi
+        if not ok:
             lord.forces[unit] -= 1
             lord.routed[unit] = lord.routed.get(unit, 0) + 1
             routed.append(unit)
+            if unit == "turkic_horse":
+                lord.flags["turkic_routed_battle"] = int(lord.flags.get("turkic_routed_battle", 0)) + 1
     return routed
 
 
@@ -844,6 +934,8 @@ def resolve_sally(gs: GameState, sallying_ids: list[str], besieger_ids: list[str
     gets no Walls/Garrison. Storm-like Array/Reposition. Raid on a failed Sally."""
     gs.meta.active_lord = sallying_ids[0]
     siege = gs.locales[locale].siege_markers
+    for _lid in sallying_ids + besieger_ids:
+        gs.lords[_lid].flags["turkic_routed_battle"] = 0
     att = _Side(gs, list(sallying_ids), "attacker")   # Sallying side attacks
     deff = _Side(gs, list(besieger_ids), "defender")  # Besiegers defend
     if att.reserve:
@@ -936,9 +1028,11 @@ def _absorb_simple(gs, side: _Side, hits, hit_type, walls_value, roller, ctx, lo
         if not avail:
             break
         unit = ctx.decide("hit_absorption", avail, {"lord": target.id})
-        lo, hi = protection_range(unit, hit_type)
+        lo, hi = capabilities.protection_range(gs, target.id, unit, hit_type, storm=False)
         if not (lo <= roller.d6() <= hi):
             target.forces[unit] -= 1
             target.routed[unit] = target.routed.get(unit, 0) + 1
             routed.append(unit)
+            if unit == "turkic_horse":
+                target.flags["turkic_routed_battle"] = int(target.flags.get("turkic_routed_battle", 0)) + 1
     log.append({"round": round_no, "step": step, "target": target.id, "hits": hits, "routed": routed})
