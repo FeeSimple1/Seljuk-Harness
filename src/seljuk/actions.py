@@ -11,6 +11,7 @@ from __future__ import annotations
 from typing import Any
 
 from . import scenarios, static_data as sd
+from . import capabilities
 from .rng import DiceRoller
 from .state import GameState, IllegalAction, LordState
 
@@ -240,7 +241,7 @@ def reset_muster_segment(gs: GameState) -> None:
 
 
 def lordship_remaining(gs: GameState, lord: LordState) -> int:
-    rating = sd.lord(lord.id)["ratings"]["lordship"]
+    rating = capabilities.lordship_rating(gs, lord.id)
     return rating - int(lord.flags.get("lordship_spent", 0))
 
 

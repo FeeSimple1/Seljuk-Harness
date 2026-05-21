@@ -14,6 +14,7 @@ from typing import Any
 
 from . import scenarios, static_data as sd, map as gmap
 from . import actions
+from . import capabilities
 from .rng import DiceRoller
 from .state import Assets, GameState, IllegalAction, LordState
 
@@ -156,7 +157,12 @@ def _reveal_next(gs: GameState) -> None:
             return
         lord = gs.lords[card]
         gs.meta.active_lord = card
-        gs.meta.actions_remaining = sd.lord(card)["ratings"]["command"]
+        _r = DiceRoller(seed=gs.meta.seed)
+        if gs.meta.rng_state is not None:
+            _st = gs.meta.rng_state
+            _r.set_state((_st[0], tuple(_st[1]), _st[2]))
+        gs.meta.actions_remaining = capabilities.command_rating(gs, card, _r)
+        _s = _r.get_state(); gs.meta.rng_state = [_s[0], list(_s[1]), _s[2]]
         lord.flags.pop("first_march_used", None)
         return
 
