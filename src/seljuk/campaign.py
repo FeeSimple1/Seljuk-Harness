@@ -13,6 +13,7 @@ from __future__ import annotations
 from typing import Any
 
 from . import scenarios, static_data as sd, map as gmap
+from . import actions
 from .rng import DiceRoller
 from .state import Assets, GameState, IllegalAction, LordState
 
@@ -310,6 +311,14 @@ def h_end_activation(gs: GameState, action: dict[str, Any], roller: DiceRoller) 
 
 
 def legal_moves_campaign(gs: GameState) -> list[dict[str, Any]]:
+    pend = next((p for p in gs.meta.pending if p["type"] == "ravage_defence"), None)
+    if pend is not None:
+        moves = [{"type": "resolve_ravage_defence", "defend_with": None,
+                  "_desc": "Decline to defend the Ravage with a Themata (4.5.5)"}]
+        for opt in pend["options"]:
+            moves.append({"type": "resolve_ravage_defence", "defend_with": opt["index"],
+                          "_desc": f"Defend with {opt['unit']} Themata (4.5.5)"})
+        return moves
     step = gs.meta.subphase
     if step == "campaign.plan":
         side = gs.meta.active_player
@@ -329,6 +338,312 @@ def legal_moves_campaign(gs: GameState) -> list[dict[str, Any]]:
 
 
 def command_menu(gs: GameState) -> list[dict[str, Any]]:
-    """Non-combat Command options for the active Lord. Extended in increment 2;
-    returns [] until the simple-Command handlers land."""
-    return []
+    """Non-combat Command options for the active Lord (March/combat in 3b/3c).
+    Defensive: a data hiccup suppresses an option rather than crashing (lessons)."""
+    out: list[dict[str, Any]] = []
+    if gs.meta.active_lord is None or gs.meta.actions_remaining <= 0:
+        return out
+    lord = gs.lords[gs.meta.active_lord]
+    loc_id = lord.cylinder
+    lid = lord.id
+    try:
+        st = gs.locales[loc_id]
+        info = sd.locale(loc_id)
+        # Forage (4.5.4): available unless the Locale is Ravaged.
+        if st.ravaged_side is None and not lord.besieged:
+            out.append({"type": "cmd_forage", "lord": lid, "_desc": "Forage for Provender (4.5.4)"})
+        # Tax (4.5.6): own Seat, or Roman Commander Friendly Empire Stronghold.
+        if not lord.besieged:
+            at_seat = loc_id in sd.lord(lid).get("seats", [])
+            empire_tax = (actions.is_commander(gs, lid) and lord.side == "roman"
+                          and info.get("is_stronghold") and info["allegiance"] == "roman"
+                          and actions.is_friendly_locale(gs, loc_id, "roman")
+                          and st.ravaged_side is None)
+            if at_seat or empire_tax:
+                out.append({"type": "cmd_tax", "lord": lid, "_desc": "Tax for a Coin — uses the whole card (4.5.6)"})
+        # Ravage (4.5.5): Enemy, not yet Ravaged, not Besieged.
+        if not lord.besieged and st.ravaged_side is None and actions.current_allegiance(gs, loc_id) == _enemy(lord.side):
+            if lord.side == "roman":
+                out.append({"type": "cmd_ravage", "lord": lid, "_desc": "Ravage (Roman, 1 action, auto) (4.5.5)"})
+            else:
+                out.append({"type": "cmd_ravage", "lord": lid, "actions": 2, "_desc": "Ravage (Seljuk, 2 actions, auto) (4.5.5)"})
+                if gs.meta.actions_remaining >= 1:
+                    out.append({"type": "cmd_ravage", "lord": lid, "actions": 1, "_desc": "Ravage (Seljuk, 1 action; Roman may defend with Themata) (4.5.5)"})
+        # Supply (4.4): a Route to an un-Ruined Seat within Cart budget.
+        if not lord.besieged:
+            cost = _min_supply_cost(gs, lord)
+            if cost is not None and cost <= _available_carts(gs, lord):
+                out.append({"type": "cmd_supply", "lord": lid, "_desc": "Supply Provender via a Route (4.4)"})
+        # Recruit (4.5.7): Roman Commander in a Thema with available Themata.
+        if lord.side == "roman" and actions.is_commander(gs, lid) and not lord.besieged:
+            thema = info.get("thema")
+            if thema and gs.themata.get(thema):
+                out.append({"type": "cmd_recruit", "lord": lid, "_desc": "Recruit a Themata into Forces (4.5.7)"})
+    except (KeyError, AttributeError):  # pragma: no cover - suppress over offer
+        return out
+    return out
+
+
+# === Non-combat Commands (Phase 3a) =========================================
+# March and the combat Commands (Siege/Storm/Sally) are Phases 3b/3c.
+
+def _active_lord(gs: GameState) -> LordState:
+    if gs.meta.subphase != "campaign.command" or gs.meta.active_lord is None:
+        raise IllegalAction("no_active_lord", "no Lord is currently activated")
+    return gs.lords[gs.meta.active_lord]
+
+
+def _require(lord_id: str, gs: GameState) -> LordState:
+    if gs.meta.active_lord != lord_id:
+        raise IllegalAction("not_active_lord", f"{lord_id} is not the activated Lord")
+    return gs.lords[lord_id]
+
+
+def _enemy(side: str) -> str:
+    return "roman" if side == "seljuk" else "seljuk"
+
+
+def _enemy_lords_at(gs: GameState, locale_id: str, side: str) -> int:
+    return sum(1 for l in gs.lords.values()
+               if l.mustered and l.cylinder == locale_id and l.side == _enemy(side))
+
+
+# --- Tax (4.5.6) ------------------------------------------------------------
+
+def h_cmd_tax(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
+    lord = _require(action.get("lord"), gs)
+    if lord.besieged:
+        raise IllegalAction("besieged", "a Besieged Lord may not Tax (4.5.6)")
+    loc_id = lord.cylinder
+    info = sd.lord(lord.id)
+    at_own_seat = loc_id in info.get("seats", [])
+    commander_empire_tax = False
+    if not at_own_seat:
+        # Roman Commander may Tax any Friendly Stronghold in the Roman Empire (not his Seat).
+        if actions.is_commander(gs, lord.id) and lord.side == "roman":
+            loc = sd.locale(loc_id)
+            if loc.get("is_stronghold") and loc["allegiance"] == "roman" \
+                    and actions.is_friendly_locale(gs, loc_id, "roman"):
+                if gs.locales[loc_id].ravaged_side is not None:
+                    raise IllegalAction("already_ravaged", "Roman Commander may not Tax a Ravaged Stronghold (4.5.6)")
+                commander_empire_tax = True
+        if not commander_empire_tax:
+            raise IllegalAction("not_taxable", "Tax requires the Lord's own Seat, or Roman Commander Tax in the Empire (4.5.6)")
+    lord.assets.coin = min(lord.assets.coin + 1, 8)
+    placed_ravage = False
+    if commander_empire_tax:
+        gs.locales[loc_id].ravaged_side = "seljuk"  # Roman Commander Tax places a Seljuk Ravaged marker
+        placed_ravage = True
+        gs.meta.vp = scenarios.score(gs)
+    gs.meta.actions_remaining = 0  # Tax uses the entire card (4.5.6)
+    _after_card(gs)
+    return {"ok": True, "action": "cmd_tax", "lord": lord.id, "coin": lord.assets.coin, "placed_ravaged": placed_ravage}
+
+
+# --- Forage (4.5.4) ---------------------------------------------------------
+
+def h_cmd_forage(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
+    lord = _require(action.get("lord"), gs)
+    loc_id = lord.cylinder
+    st = gs.locales[loc_id]
+    if st.ravaged_side is not None:
+        raise IllegalAction("ravaged", "Ravage blocks Forage (4.5.4)")
+    info = sd.locale(loc_id)
+    friendly = actions.is_friendly_locale(gs, loc_id, lord.side)
+    is_sh = info.get("is_stronghold") and not st.ruins
+    gardens = info.get("gardens") and info["type"] in ("town", "city")
+    # Besieged by >= Size enemy Lords blocks Forage (4.5.4), except Gardens.
+    size = {"fort": 1, "town": 2, "city": 3}.get(info["type"], 0)
+    heavily_besieged = is_sh and _enemy_lords_at(gs, loc_id, lord.side) >= size and size > 0
+    auto = False
+    if friendly and gardens:
+        auto = True  # Gardens: auto even if Besieged (4.5.4)
+    elif friendly and is_sh and not heavily_besieged and not lord.besieged:
+        auto = True
+    if auto:
+        added = True
+        roll = None
+    else:
+        roll = roller.d6()
+        added = roll <= 3
+    if added:
+        lord.assets.provender = min(lord.assets.provender + 1, 8)
+    spend_actions(gs, 1)
+    return {"ok": True, "action": "cmd_forage", "lord": lord.id, "auto": auto, "roll": roll,
+            "provender_added": added, "provender": lord.assets.provender}
+
+
+# --- Ravage (4.5.5) ---------------------------------------------------------
+
+_THEMATA_PROT = {"tagmata": (1, 3), "infantry": (1, 3), "militia": (1, 1), "turkic_horse": (1, 3)}
+
+
+def _ravage_succeeds_effects(gs: GameState, lord: LordState, loc_id: str) -> None:
+    gs.locales[loc_id].ravaged_side = lord.side  # opposite of the Locale's (enemy) Allegiance
+    lord.assets.provender = min(lord.assets.provender + 1, 8)
+    info = sd.locale(loc_id)
+    if info.get("is_stronghold") and not gs.locales[loc_id].ruins:
+        lord.assets.loot = min(lord.assets.loot + 1, 8)
+    gs.meta.vp = scenarios.score(gs)
+
+
+def h_cmd_ravage(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
+    lord = _require(action.get("lord"), gs)
+    if lord.besieged:
+        raise IllegalAction("besieged", "a Besieged Lord may not Ravage (4.5.5)")
+    loc_id = lord.cylinder
+    st = gs.locales[loc_id]
+    if actions.current_allegiance(gs, loc_id) == lord.side:
+        raise IllegalAction("not_enemy", "Ravage targets an Enemy Locale (4.5.5)")
+    if st.ravaged_side is not None:
+        raise IllegalAction("already_ravaged", "Locale is already Ravaged (4.5.5)")
+    if lord.side == "roman":
+        _ravage_succeeds_effects(gs, lord, loc_id)
+        spend_actions(gs, 1)
+        return {"ok": True, "action": "cmd_ravage", "lord": lord.id, "success": True, "cost": 1}
+    # Seljuk: 1 or 2 actions
+    n = int(action.get("actions", 2))
+    if n not in (1, 2):
+        raise IllegalAction("bad_actions", "Seljuk Ravage uses 1 or 2 Command actions (4.5.5)")
+    if n > gs.meta.actions_remaining:
+        raise IllegalAction("insufficient_actions", "not enough Command actions for this Ravage")
+    in_empire = sd.locale(loc_id)["allegiance"] == "roman"
+    thema = sd.locale(loc_id)["thema"]
+    can_defend = (n == 1 and in_empire and thema and bool(gs.themata.get(thema)))
+    if not can_defend:
+        _ravage_succeeds_effects(gs, lord, loc_id)
+        spend_actions(gs, n)
+        return {"ok": True, "action": "cmd_ravage", "lord": lord.id, "success": True, "cost": n}
+    # 1-action Seljuk Ravage in the Roman Empire: Roman MAY defend with a Themata.
+    gs.meta.actions_remaining -= n  # the action is spent now; resolution is owed by Roman
+    gs.meta.pending.append({
+        "type": "ravage_defence", "locale": loc_id, "thema": thema, "ravager": lord.id,
+        "options": [{"index": i, "unit": m.unit} for i, m in enumerate(gs.themata[thema])],
+    })
+    return {"ok": True, "action": "cmd_ravage", "lord": lord.id, "pending": "ravage_defence",
+            "thema": thema, "_owed_by": "roman"}
+
+
+def h_resolve_ravage_defence(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
+    pend = next((p for p in gs.meta.pending if p["type"] == "ravage_defence"), None)
+    if pend is None:
+        raise IllegalAction("no_pending", "no Ravage to defend")
+    loc_id = pend["locale"]
+    thema = pend["thema"]
+    lord = gs.lords[pend["ravager"]]
+    defend_index = action.get("defend_with")  # None = Roman declines
+    if defend_index is None:
+        _ravage_succeeds_effects(gs, lord, loc_id)
+        result = {"defended": False, "success": True}
+    else:
+        box = gs.themata[thema]
+        if defend_index < 0 or defend_index >= len(box):
+            raise IllegalAction("bad_themata", "no such defending Themata")
+        marker = box[defend_index]
+        lo, hi = _THEMATA_PROT.get(marker.unit, (1, 1))
+        roll = roller.d6()
+        protected = lo <= roll <= hi
+        if protected:
+            result = {"defended": True, "roll": roll, "unit": marker.unit, "success": False}  # Ravage fails
+        else:
+            box.pop(defend_index)  # Themata eliminated from play
+            _ravage_succeeds_effects(gs, lord, loc_id)
+            result = {"defended": True, "roll": roll, "unit": marker.unit, "themata_lost": True, "success": True}
+    gs.meta.pending.remove(pend)
+    if gs.meta.actions_remaining <= 0:
+        _after_card(gs)
+    return {"ok": True, "action": "resolve_ravage_defence", **result}
+
+
+# --- Supply (4.4) -----------------------------------------------------------
+
+def _available_carts(gs: GameState, lord: LordState) -> int:
+    carts = lord.assets.carts
+    for other in gs.lords.values():  # Sharing co-located Carts (1.5.2)
+        if other is not lord and other.side == lord.side and other.cylinder == lord.cylinder and on_map(other):
+            carts += other.assets.carts
+    return carts
+
+
+def _blocks_supply(gs: GameState, locale_id: str, side: str, origin: str) -> bool:
+    """A Supply Route may not pass through a Locale with an Enemy Lord or Enemy
+    Stronghold unless it is Besieged or Bypassed (4.4.1). The origin Locale is
+    exempt (the Lord is there)."""
+    if locale_id == origin:
+        return False
+    st = gs.locales[locale_id]
+    if st.siege_markers > 0 or st.bypass:
+        return False
+    if _enemy_lords_at(gs, locale_id, side) > 0:
+        return True
+    loc = sd.locale(locale_id)
+    if loc.get("is_stronghold") and actions.current_allegiance(gs, locale_id) == _enemy(side) and not st.ruins:
+        return True
+    return False
+
+
+def _min_supply_cost(gs: GameState, lord: LordState) -> int | None:
+    """Cheapest Cart cost (Road 1, Pass 2 per Way) of a Route from the Lord to
+    any of his own un-Ruined Seats, avoiding blocked Locales. None if no route."""
+    seats = [s for s in sd.lord(lord.id).get("seats", []) if not gs.locales[s].ruins]
+    if not seats:
+        return None
+    origin = lord.cylinder
+    if origin in seats:
+        return 0
+    import heapq
+    best = {origin: 0}
+    pq = [(0, origin)]
+    while pq:
+        cost, loc = heapq.heappop(pq)
+        if loc in seats:
+            return cost
+        if cost > best.get(loc, 1 << 30):
+            continue
+        for edge in gmap.ways_from(loc):
+            nxt = edge["to"]
+            if _blocks_supply(gs, nxt, lord.side, origin):
+                continue
+            step = 2 if edge["type"] == "pass" else 1
+            nc = cost + step
+            if nc < best.get(nxt, 1 << 30):
+                best[nxt] = nc
+                heapq.heappush(pq, (nc, nxt))
+    return min((best[s] for s in seats if s in best), default=None)
+
+
+def h_cmd_supply(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
+    lord = _require(action.get("lord"), gs)
+    if lord.besieged:
+        raise IllegalAction("besieged", "a Besieged Lord may not Supply (4.4)")
+    cost = _min_supply_cost(gs, lord)
+    if cost is None:
+        raise IllegalAction("no_supply_route", "no Route to an un-Ruined Seat (4.4.1)")
+    if cost > _available_carts(gs, lord):
+        raise IllegalAction("insufficient_carts", f"need {cost} Carts for the Route (4.4.1)")
+    lord.assets.provender = min(lord.assets.provender + 1, 8)
+    spend_actions(gs, 1)
+    return {"ok": True, "action": "cmd_supply", "lord": lord.id, "route_cost": cost, "provender": lord.assets.provender}
+
+
+# --- Recruit (4.5.7) --------------------------------------------------------
+
+def h_cmd_recruit(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
+    lord = _require(action.get("lord"), gs)
+    if lord.side != "roman" or not actions.is_commander(gs, lord.id):
+        raise IllegalAction("not_roman_commander", "only the Roman Commander may Recruit (4.5.7)")
+    if lord.besieged:
+        raise IllegalAction("besieged", "a Besieged Lord may not Recruit (4.5.7)")
+    thema = sd.locale(lord.cylinder)["thema"]
+    if not thema or not gs.themata.get(thema):
+        raise IllegalAction("no_themata_here", "no available Themata in this Lord's Thema (4.5.7)")
+    idx = int(action.get("marker_index", 0))
+    box = gs.themata[thema]
+    if idx < 0 or idx >= len(box):
+        raise IllegalAction("bad_themata_index", "no such Themata marker")
+    marker = box.pop(idx)
+    marker.home_thema = thema
+    lord.themata_on_mat.append(marker)
+    spend_actions(gs, 1)
+    return {"ok": True, "action": "cmd_recruit", "lord": lord.id, "thema": thema,
+            "marker": {"unit": marker.unit, "symbols": marker.symbols}}
