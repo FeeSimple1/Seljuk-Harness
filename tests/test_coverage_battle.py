@@ -31,7 +31,9 @@ def test_strike_table_varangian_zeroed_after_round_one():
 
 
 def test_garrison_hit_helpers():
-    assert B._garrison_missile_hits({"infantry": 2, "turkic_horse": 1}) == 1.0  # 0.5 * 2 foot
+    # Each garrison unit fires its own Missile: infantry (foot, no innate Missile)
+    # gains x1/2 -> 2 x 0.5 = 1.0; Turkic Horse fires x1 -> 1.0; total 2.0.
+    assert B._garrison_missile_hits({"infantry": 2, "turkic_horse": 1}) == 2.0
     melee = B._garrison_melee_hits({"infantry": 2, "militia": 2, "varangian_guard": 1})
     assert melee == 2.0 + 1.0 + 3.0  # 2x1 + 2x0.5 + 1x3
 

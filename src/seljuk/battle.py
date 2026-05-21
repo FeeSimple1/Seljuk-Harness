@@ -978,7 +978,18 @@ def _round_up(x: float) -> int:
 
 
 def _garrison_missile_hits(garrison: dict[str, int]) -> float:
-    return 0.5 * sum(n for u, n in garrison.items() if _category(u) == "foot")
+    """Garrison Missile Hits (4.9.1 / Strongholds player aid). Each garrison
+    unit fires at its own Missile value (Tagmata x1/2, Turkic Horse x1, etc.);
+    a foot unit that normally lacks Missiles gains x1/2 because it is a Garrison
+    unit. Themata Horse defending as Garrison keep their Missile fire (Playbook
+    Example of Play: Tagmata 1/2 + Turkic 1 + Militia 1/2 = x2)."""
+    total = 0.0
+    for u, n in garrison.items():
+        m = _MISSILE.get(u)
+        if m is None:
+            m = 0.5 if _category(u) == "foot" else 0.0  # foot Garrison units gain x1/2
+        total += m * n
+    return total
 
 
 def _garrison_melee_hits(garrison: dict[str, int]) -> float:

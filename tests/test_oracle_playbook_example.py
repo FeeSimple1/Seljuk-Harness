@@ -86,3 +86,46 @@ def test_p17_attacker_retreats_to_origin_cannot_withdraw():
     fate = _lord_fate(gs, a, "attacker", locale, conceded=False, ctx=DecisionContext())
     assert fate != "withdraw"
     assert a.besieged is False and a.cylinder != locale  # retreated off the battle site
+
+
+# === Example of Play: STORM at Theodosiopolis (Background Book / Playbook pp.13-15) ===
+# The garrison is the two Iberia Themata (Tagmata + Turkic Horse) plus the Town's
+# Militia. Numbers below are the Playbook's printed values (Shock Tactics uses the
+# Jan-2026 errata correction: ceil(3/2)=2 units x1/2 = x1, not the uncorrected x2).
+def test_storm_example_garrison_missile_total_is_two():
+    g = {"tagmata": 1, "turkic_horse": 1, "militia": 1}
+    # "Tagmata is x1/2, Turkic Horse is x1, Militia (Garrison) gains x1/2" -> x2
+    assert B._garrison_missile_hits(g) == 2.0
+
+
+def test_storm_example_round1_attacker_missiles_total_four():
+    gs = S.load_scenario("emperor_and_the_lion", seed=1)
+    aa = _seljuk_lord(gs, "alp_arslan", {"turkic_horse": 3, "ghulam_cavalry": 2}, [])
+    from seljuk.battle import _Side, _lord_step_hits
+    side = _Side(gs, [], "attacker"); side.front["center"] = "alp_arslan"
+    # "three Turkic Horse each x1, two Ghulam each x1/2 -> x4"
+    assert _lord_step_hits(gs, side, "missile", 1) == 4.0
+
+
+def test_storm_example_siegeworks_and_walls_rolls():
+    # Round 1 defender missiles: Siegeworks (2 markers, range 1-2), roll {1,5} -> 1 through.
+    assert _roll_walls(SeqRoller(1, 5), hits=2, wrange=(1, 2)) == 1
+    # Round 1 attacker missiles: Town Walls 1-4, roll {2,3,6,6} -> 2 through.
+    assert _roll_walls(SeqRoller(2, 3, 6, 6), hits=4, wrange=(1, 4)) == 2
+    # Round 2 attacker melee: Walls 1-4, roll blocks 3 of 6, "other three make it through".
+    assert _roll_walls(SeqRoller(1, 2, 3, 4, 5, 6), hits=6, wrange=(1, 4)) == 2
+
+
+def test_storm_example_round1_defender_melee_tagmata_one():
+    g = {"tagmata": 1}  # after the Turkic Themata was removed, "x1 for Tagmata"
+    assert B._garrison_melee_hits(g) == 1.0
+
+
+def test_storm_example_shock_tactics_with_two_turkic_one_ghulam_errata():
+    # Page 14 (errata-corrected): after losses Alp Arslan has 2 Turkic + 1 Ghulam.
+    # ceil(2/2)=1 unit x1/2 = x0.5 ... but the errata works the example with the
+    # ORIGINAL 3 Turkic: ceil(3/2)=2 x1/2 = x1, + x1 Ghulam = 2 Hits.
+    gs = S.load_scenario("emperor_and_the_lion", seed=1)
+    _seljuk_lord(gs, "alp_arslan", {"turkic_horse": 3, "ghulam_cavalry": 1}, ["S4"])
+    normal, _ = _lord_step_hits_caps(gs, "alp_arslan", "horse_melee", 1)
+    assert normal == 2.0   # errata: x1 (Shock Tactics) + x1 (Ghulam)
