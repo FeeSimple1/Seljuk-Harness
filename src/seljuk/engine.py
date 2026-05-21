@@ -71,6 +71,10 @@ _CAMPAIGN_HANDLERS: dict[str, Callable[[GameState, dict, DiceRoller], dict]] = {
     "cmd_march": campaign.h_cmd_march,
     "respond_approach": campaign.h_respond_approach,
     "besiege_bypass": campaign.h_besiege_bypass,
+    "cmd_siege": campaign.h_cmd_siege,
+    "assign_themata_defenders": campaign.h_assign_themata_defenders,
+    "cmd_storm": campaign.h_cmd_storm,
+    "cmd_sally": campaign.h_cmd_sally,
 }
 
 

@@ -12,23 +12,23 @@ accuracy and completeness are the priority** — see the hard constraints there.
 
 ## Status
 
-**Phase 3b — March + Approach + Battle (merged).** Lords now move and fight.
-March (4.3) covers adjacency, the cost model (Laden, Turkic-Horse first-march,
-Pass, whole-card Holding-Box), Group March (4.3.1) and Lieutenant stacks; the
-Approach decision tree (4.3.4: Avoid Battle / Withdraw / Stand) and Besiege/
-Bypass (4.3.5) are pending sub-decisions. The full Battle engine (4.8) runs the
-Array (3 Front + Reserve), Rounds (Concede + Pursuit halving, Reposition with
-Reserve-advance and Center-fill), the six Strike steps in initiative order
-(Missile then Melee; Defending then Attacking; Horse before Foot), Flanking,
-Hits (summed Strike values, rounded up), Protection by Hit type (Armor / Evade
-/ Unarmored), Rout, and the Ending (Retreat / Withdraw / Removal, Losses —
-Harsh vs Normal, Spoils, Service shift, Lord Removal by Combat 4.8.5,
-Aftermath). Player choices flow through a DecisionContext (typed scripted
-entries for tests, else a deterministic fallback).
+**Phase 3c — Siege, Storm, Sally (merged).** The combat system is complete.
+Siege (4.5.1): Surrender roll (dice = Stronghold Value, vs the Siege+Ravaged
+threshold), Conquer (markers, Strategic-Objective claim, Ravaged flip, Fatimid
+exception), Siegeworks (+1 Siege up to 4), and the Themata-defender assignment
+(4.3.5) when a Roman Stronghold is first Besieged. Storm (4.9.1): Garrison units
+by column (Fatimid -> Seljuk) plus Themata defenders, Walls and Siegeworks rolls,
+the Storm Strike order (all Defending Melee before Attacking), the 6-Hit Melee
+cap, no-Evade and Armored-first absorption for the attacker, the Storm length of
+(# Siege markers) Rounds, and the Sack (Conquer / Ruin / Spoils / remove Lords
+and Themata). Sally (4.9.2): Besieged attacks the Besiegers with Siegeworks for
+the Besiegers, losing Besiegers Retreat (Siege ends), losing Sallying Lords
+Withdraw back inside, and the Raid (failed Sally -> all but one Siege removed).
 
-Next: Phase 3c (Siege, Storm, Sally, Relief Sally — Garrisons/Themata/
-Siegeworks/Sack), then Phase 4 (the 50 Arts of War card effects) and Phase 5
-(LLM interface + agents).
+**A complete game is now mechanically playable end to end** — Levy and Campaign
+with every Command including March, Battle, Siege, Storm, and Sally. **Per-card
+Arts of War effects (the 50 cards' Events/Capabilities) are Phase 4**; the LLM
+interface and audit agents are Phase 5.
 
 ## Where things are
 

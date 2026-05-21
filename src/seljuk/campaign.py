@@ -514,6 +514,13 @@ def h_end_activation(gs: GameState, action: dict[str, Any], roller: DiceRoller) 
 
 
 def legal_moves_campaign(gs: GameState) -> list[dict[str, Any]]:
+    at = next((p for p in gs.meta.pending if p["type"] == "assign_themata_defenders"), None)
+    if at is not None:
+        thema = sd.locale(at["locale"])["thema"]
+        box = gs.themata.get(thema, [])
+        return [{"type": "assign_themata_defenders", "_locale": at["locale"], "_thema": thema,
+                 "_available": [{"index": i, "unit": m.unit} for i, m in enumerate(box)],
+                 "_desc": "Assign up to Size available Themata to defend the Stronghold (4.3.5)"}]
     ap = next((p for p in gs.meta.pending if p["type"] == "approach_response"), None)
     if ap is not None:
         return [{"type": "respond_approach", "_defenders": ap["defenders"], "_locale": ap["locale"],
@@ -590,6 +597,13 @@ def command_menu(gs: GameState) -> list[dict[str, Any]]:
             cost = _min_supply_cost(gs, lord)
             if cost is not None and cost <= _available_carts(gs, lord):
                 out.append({"type": "cmd_supply", "lord": lid, "_desc": "Supply Provender via a Route (4.4)"})
+        # Siege/Storm (4.5.1-.2): a Besieging Lord may advance the Siege or Storm.
+        if _besieging(gs, lord):
+            out.append({"type": "cmd_siege", "lord": lid, "_desc": "Siege: roll Surrender / add Siegeworks (4.5.1)"})
+            out.append({"type": "cmd_storm", "lord": lid, "_desc": "Storm the Stronghold (4.5.2)"})
+        # Sally (4.5.3): a Besieged Lord may Attack the Besiegers.
+        if lord.besieged:
+            out.append({"type": "cmd_sally", "lord": lid, "_desc": "Sally against the Besiegers (4.5.3)"})
         # Recruit (4.5.7): Roman Commander in a Thema with available Themata.
         if lord.side == "roman" and actions.is_commander(gs, lid) and not lord.besieged:
             thema = info.get("thema")
@@ -1082,6 +1096,9 @@ def h_besiege_bypass(gs: GameState, action: dict[str, Any], roller: DiceRoller) 
     if choice == "besiege":
         gs.locales[to].siege_markers = max(1, gs.locales[to].siege_markers)  # place first Siege marker (4.3.5)
         gs.meta.actions_remaining = 0  # Besieging ends the card
+        if _needs_themata_assignment(gs, to, side):
+            gs.meta.pending.append({"type": "assign_themata_defenders", "locale": to, "_owed_by": "roman"})
+            return {"ok": True, "action": "besiege", "locale": to, "pending": "assign_themata_defenders"}
         _after_card(gs)
         return {"ok": True, "action": "besiege", "locale": to}
     elif choice == "bypass":
@@ -1092,3 +1109,130 @@ def h_besiege_bypass(gs: GameState, action: dict[str, Any], roller: DiceRoller) 
             _after_card(gs)
         return {"ok": True, "action": "bypass", "locale": to}
     raise IllegalAction("bad_choice", "choose 'besiege' or 'bypass' (4.3.5)")
+
+
+# === Siege (4.5.1) and Themata-defender assignment (4.3.5) ==================
+
+def _besieging(gs: GameState, lord: LordState) -> bool:
+    return on_map(lord) and not lord.besieged and gs.locales[lord.cylinder].siege_markers > 0
+
+
+def _besieged_enemy_inside(gs: GameState, locale: str, side: str) -> bool:
+    return any(l.mustered and l.cylinder == locale and l.side == _enemy(side) and l.besieged
+               for l in gs.lords.values())
+
+
+def h_cmd_siege(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
+    """4.5.1: a Besieging Lord uses the entire card to roll for Surrender and/or
+    add a Siege marker (Siegeworks)."""
+    lord = _require(action.get("lord"), gs)
+    if not _besieging(gs, lord):
+        raise IllegalAction("not_besieging", "only a Besieging Lord may Siege (4.5.1)")
+    loc_id = lord.cylinder
+    from . import battle
+    info = sd.locale(loc_id)
+    size = battle._value(loc_id)
+    siege = gs.locales[loc_id].siege_markers
+    result = {"ok": True, "action": "cmd_siege", "lord": lord.id, "locale": loc_id}
+    seized = False
+    if not _besieged_enemy_inside(gs, loc_id, lord.side) and action.get("roll_surrender", True):
+        dice_n = sd.stronghold_profile(loc_id)["surrender_dice"]
+        threshold = min(siege, 4) + (1 if gs.locales[loc_id].ravaged_side is not None else 0)
+        rolls = roller.roll(dice_n)
+        seized = all(r <= threshold for r in rolls)
+        result.update({"surrender_roll": rolls, "threshold": threshold, "seized": seized})
+        if seized:
+            result["conquer"] = battle.conquer(gs, loc_id, lord.side)
+            gs.meta.vp = scenarios.score(gs)
+    if not seized:
+        besiegers = sum(1 for l in gs.lords.values()
+                        if l.mustered and l.cylinder == loc_id and l.side == lord.side and not l.besieged)
+        if besiegers >= size and gs.locales[loc_id].siege_markers < 4:
+            gs.locales[loc_id].siege_markers += 1
+            result["siegeworks_added"] = True
+    for l in gs.lords.values():  # mark all Lords at the Locale Moved/Fought
+        if l.mustered and l.cylinder == loc_id:
+            l.moved_fought = True
+    gs.meta.actions_remaining = 0  # Siege uses the entire card (4.5.1)
+    _after_card(gs)
+    return result
+
+
+def _needs_themata_assignment(gs: GameState, locale: str, besieging_side: str) -> bool:
+    info = sd.locale(locale)
+    if besieging_side != "seljuk" or info["allegiance"] != "roman":
+        return False
+    thema = info.get("thema")
+    return bool(thema and gs.themata.get(thema)) and not gs.locales[locale].themata_defending
+
+
+def h_assign_themata_defenders(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
+    """4.3.5: when a Roman Stronghold is first Besieged, the Roman player may
+    assign up to Size available Themata from its Thema as defenders."""
+    pend = next((p for p in gs.meta.pending if p["type"] == "assign_themata_defenders"), None)
+    if pend is None:
+        raise IllegalAction("no_pending", "no Themata defenders to assign")
+    loc_id = pend["locale"]
+    from . import battle
+    size = battle._value(loc_id)
+    thema = sd.locale(loc_id)["thema"]
+    box = gs.themata[thema]
+    idxs = sorted(set(action.get("markers", [])), reverse=True)
+    if len(idxs) > size:
+        raise IllegalAction("too_many_themata", f"at most {size} Themata may defend (4.3.5)")
+    chosen = []
+    for i in idxs:
+        if i < 0 or i >= len(box):
+            raise IllegalAction("bad_themata_index", "no such Themata marker")
+    for i in idxs:
+        marker = box.pop(i)
+        marker.home_thema = thema
+        gs.locales[loc_id].themata_defending.append(marker)
+        chosen.append(marker.unit)
+    gs.meta.pending.remove(pend)
+    if gs.meta.actions_remaining <= 0:
+        _after_card(gs)
+    return {"ok": True, "action": "assign_themata_defenders", "locale": loc_id, "assigned": chosen}
+
+
+# === Storm (4.5.2 / 4.9.1) and Sally (4.5.3 / 4.9.2) commands ===============
+
+def _besieging_lords_at(gs: GameState, locale: str, side: str) -> list[str]:
+    active = gs.meta.active_lord
+    others = [lid for lid, l in gs.lords.items()
+              if l.mustered and l.cylinder == locale and l.side == side and not l.besieged and lid != active]
+    return ([active] if active else []) + others
+
+
+def h_cmd_storm(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
+    lord = _require(action.get("lord"), gs)
+    if not _besieging(gs, lord):
+        raise IllegalAction("not_besieging", "only a Besieging Lord may Storm (4.5.2)")
+    if gs.locales[lord.cylinder].siege_markers <= 0:
+        raise IllegalAction("no_siege", "no Siege markers to Storm with")
+    from . import battle
+    attackers = _besieging_lords_at(gs, lord.cylinder, lord.side)
+    ctx = battle.DecisionContext(action.get("storm_decisions"))
+    res = battle.resolve_storm(gs, attackers, lord.cylinder, ctx, roller)
+    gs.meta.actions_remaining = 0  # Storm ends the card (4.5.2)
+    _after_card(gs)
+    return {"ok": True, "action": "cmd_storm", "storm": res}
+
+
+def h_cmd_sally(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
+    lord = _require(action.get("lord"), gs)
+    if not lord.besieged:
+        raise IllegalAction("not_besieged", "only a Besieged Lord may Sally (4.5.3)")
+    from . import battle
+    locale = lord.cylinder
+    besiegers = [lid for lid, l in gs.lords.items()
+                 if l.mustered and l.cylinder == locale and l.side == _enemy(lord.side) and not l.besieged]
+    sallying = [lid for lid, l in gs.lords.items()
+                if l.mustered and l.cylinder == locale and l.side == lord.side and l.besieged]
+    # Active sallying Lord first.
+    sallying = [lord.id] + [s for s in sallying if s != lord.id]
+    ctx = battle.DecisionContext(action.get("battle_decisions"))
+    res = battle.resolve_sally(gs, sallying, besiegers, locale, ctx, roller)
+    gs.meta.actions_remaining = 0  # Sally ends the card (4.8.6)
+    _after_card(gs)
+    return {"ok": True, "action": "cmd_sally", "sally": res}
