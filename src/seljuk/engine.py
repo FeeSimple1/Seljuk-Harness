@@ -17,7 +17,7 @@ from __future__ import annotations
 
 from typing import Any, Callable
 
-from . import actions
+from . import actions, campaign
 from .rng import DiceRoller
 from .state import GameState, IllegalAction
 
@@ -58,21 +58,43 @@ _HANDLERS: dict[str, Callable[[GameState, dict, DiceRoller], dict]] = {
     "pass_step": actions.h_pass_step,
 }
 
+_CAMPAIGN_HANDLERS: dict[str, Callable[[GameState, dict, DiceRoller], dict]] = {
+    "build_plan": campaign.h_build_plan,
+    "cmd_pass": campaign.h_cmd_pass,
+    "end_activation": campaign.h_end_activation,
+    "cmd_tax": campaign.h_cmd_tax,
+    "cmd_forage": campaign.h_cmd_forage,
+    "cmd_ravage": campaign.h_cmd_ravage,
+    "resolve_ravage_defence": campaign.h_resolve_ravage_defence,
+    "cmd_supply": campaign.h_cmd_supply,
+    "cmd_recruit": campaign.h_cmd_recruit,
+}
+
+
+def _handlers_for_phase(phase: str) -> dict[str, Callable[[GameState, dict, DiceRoller], dict]]:
+    if phase == "levy":
+        return _HANDLERS
+    if phase == "campaign":
+        return _CAMPAIGN_HANDLERS
+    return {}
+
 
 def apply_action(gs: GameState, action: dict[str, Any]) -> dict[str, Any]:
     atype = action.get("type")
-    if atype not in _HANDLERS:
-        raise IllegalAction("unknown_action", f"no handler for action type {atype!r}")
-    if gs.meta.phase != "levy":
-        raise IllegalAction("wrong_phase", f"action {atype!r} not available in phase {gs.meta.phase}")
+    table = _handlers_for_phase(gs.meta.phase)
+    if atype not in table:
+        raise IllegalAction("unknown_action",
+                            f"no handler for action type {atype!r} in phase {gs.meta.phase}")
     roller = roller_for(gs)
-    result = _HANDLERS[atype](gs, action, roller)
+    result = table[atype](gs, action, roller)
     _save_roller(gs, roller)
     gs.history.append({"action": action, "result": result})
     return result
 
 
 def legal_moves(gs: GameState) -> list[dict[str, Any]]:
+    if gs.meta.phase == "campaign":
+        return campaign.legal_moves_campaign(gs)
     if gs.meta.phase != "levy":
         return []
     step = gs.meta.subphase

@@ -118,7 +118,8 @@ class SideDecks(_Model):
     capabilities_in_play: list[str] = Field(default_factory=list)  # side-wide (board edge) card ids
     held_events: list[str] = Field(default_factory=list)
     this_campaign_events: list[str] = Field(default_factory=list)
-    command_plan: list[str] = Field(default_factory=list)     # face-down Plan stack (Campaign)
+    command_plan: list[str] = Field(default_factory=list)     # face-down Plan stack (Campaign): lord ids / "no_command"
+    plan_pointer: int = 0                                     # how many Plan cards revealed
     treachery_available: bool = True
 
 
@@ -146,6 +147,10 @@ class Meta(_Model):
     special_vp_rules: list[str] = Field(default_factory=list)
     levy_step_passed: dict[str, bool] = Field(default_factory=dict)  # which sides finished the current Levy step
     pending: list[dict[str, Any]] = Field(default_factory=list)      # pending sub-decisions (who owes a response)
+    plan_submitted: dict[str, bool] = Field(default_factory=dict)    # which sides have built their Campaign Plan (4.1)
+    active_card: Optional[str] = None                                # currently-revealed Command card (lord id / "no_command")
+    active_lord: Optional[str] = None                                # Lord activated by the current card
+    actions_remaining: int = 0                                       # Command actions left this card (4.2.1)
     notes: dict[str, Any] = Field(default_factory=dict)
 
 
