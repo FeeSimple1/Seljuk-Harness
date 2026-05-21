@@ -191,6 +191,11 @@ def _after_card(gs: GameState) -> None:
     gs.meta.active_card = None
     gs.meta.active_lord = None
     gs.meta.actions_remaining = 0
+    # 5.2: a side with no Mustered Lords during Campaign loses immediately.
+    if not any(l.mustered and l.side == "seljuk" for l in gs.lords.values()):
+        _set_game_over(gs, "roman"); return
+    if not any(l.mustered and l.side == "roman" for l in gs.lords.values()):
+        _set_game_over(gs, "seljuk"); return
     gs.meta.active_player = _other(gs.meta.active_player)
     _reveal_next(gs)
 
@@ -276,10 +281,207 @@ def _share_food(gs: GameState, hungry: LordState, side: str, need: int) -> int:
     return paid
 
 
-# --- End Campaign (4.7) — minimal in increment 1; full steps in increment 3 -
+# --- End Campaign (4.7) and Winter (4.7.6) ----------------------------------
+
+def _set_game_over(gs: GameState, winner: str) -> None:
+    gs.meta.phase = "game_over"
+    gs.meta.subphase = "game_over"
+    gs.meta.notes["winner"] = winner
+
 
 def _end_campaign(gs: GameState) -> None:
-    gs.meta.subphase = "campaign.complete"
+    gs.meta.subphase = "campaign.end"
+    box = gs.meta.calendar_box
+    _grow(gs)       # 4.7.2 (Spring only)
+    _repair(gs)     # 4.7.3
+    _wastage(gs)    # 4.7.4
+    _reset(gs)      # 4.7.5 (non-advance parts)
+    gs.meta.vp = scenarios.score(gs)
+    if box in (3, 6, 9):                # 4.7.6 Winter on the first three Autumns
+        winner = _winter(gs)
+        gs.meta.vp = scenarios.score(gs)
+        if winner:
+            _set_game_over(gs, winner)
+            return
+    if box >= gs.meta.final_box:        # 4.7.1 Game End
+        _set_game_over(gs, scenarios.end_of_scenario_winner(gs))
+        return
+    # advance to next Turn's Levy (4.7.5 final bullet)
+    gs.meta.calendar_box = box + 1
+    gs.meta.phase = "levy"
+    gs.meta.subphase = None
+    gs.meta.plan_submitted = {}
+    gs.meta.active_card = None
+    gs.meta.active_lord = None
+
+
+def _grow(gs: GameState) -> None:
+    """4.7.2: at the end of each Spring turn, each side reduces the ENEMY's
+    Ravaged markers to half (rounded up) — i.e. removes floor(N/2)."""
+    if season_index(gs.meta.calendar_box) != 0:
+        return
+    for victim in ("roman", "seljuk"):  # Seljuk reduces Roman's, Roman reduces Seljuk's
+        marked = [lid for lid, l in gs.locales.items() if l.ravaged_side == victim]
+        remove = len(marked) // 2
+        for lid in marked[:remove]:
+            gs.locales[lid].ravaged_side = None
+
+
+def _repair(gs: GameState) -> None:
+    """4.7.3: remove one Siege marker from each Stronghold with 3 or 4."""
+    for l in gs.locales.values():
+        if l.siege_markers >= 3:
+            l.siege_markers -= 1
+
+
+def _wastage(gs: GameState) -> None:
+    """4.7.4: each Lord with more than one of any Asset type, or more than one
+    This-Lord Capability, discards one such item (Seljuk then Roman)."""
+    for side in SIDES:
+        for l in gs.lords.values():
+            if l.side != side or not l.mustered:
+                continue
+            assets = {"carts": l.assets.carts, "provender": l.assets.provender,
+                      "coin": l.assets.coin, "loot": l.assets.loot}
+            top = max(assets, key=lambda k: assets[k])
+            if assets[top] > 1:
+                setattr(l.assets, top, assets[top] - 1)
+            elif len(l.capabilities) > 1:
+                card = l.capabilities.pop()
+                gs.side_decks(side).draw_deck.append(card)
+
+
+def _reset(gs: GameState) -> None:
+    """4.7.5 (non-advance parts): return unpaid Themata, unstack Lieutenants,
+    discard This-Campaign Events. (Auto-returns Themata; pay-to-retain is a
+    player choice surfaced in a later phase.)"""
+    for l in gs.lords.values():
+        for marker in l.themata_on_mat:
+            home = marker.home_thema
+            if home and home in gs.themata:
+                marker.home_thema = None
+                gs.themata[home].append(marker)
+        l.themata_on_mat = []
+        l.lieutenant_of = None
+        l.lower_lord = None
+    for side in SIDES:
+        gs.side_decks(side).this_campaign_events = []
+
+
+def _winter(gs: GameState) -> str | None:
+    """4.7.6: Aleppo auto-victory, Bounty, Seljuk Unity, Winter Quarters,
+    Aleppo Diplomacy. Returns a winning side if the Aleppo auto-victory fires."""
+    # Aleppo Independence auto-victory (5.2)
+    if gs.meta.aleppo_independence_played and gs.locales["aleppo"].conquered_side == "seljuk":
+        return "seljuk"
+    _bounty(gs)
+    _seljuk_unity(gs)
+    _winter_quarters(gs)
+    _aleppo_diplomacy(gs)
+    return None
+
+
+def _bounty_traversable(gs: GameState, locale_id: str) -> bool:
+    """A Locale a Seljuk Bounty path may pass through (4.7.6, errata: Enemy
+    Lords block)."""
+    if _enemy_lords_at(gs, locale_id, "seljuk") > 0:
+        return False
+    st = gs.locales[locale_id]
+    info = sd.locale(locale_id)
+    if st.ruins or info["type"] in ("wilderness", "unfortified_settlement", "holding_box"):
+        return True
+    if info.get("is_stronghold"):
+        friendly = actions.current_allegiance(gs, locale_id) == "seljuk"
+        if friendly:
+            return True
+        # Enemy Stronghold: only if Bypassed or Besieged
+        return st.bypass or st.siege_markers > 0
+    return True
+
+
+def _bounty(gs: GameState) -> None:
+    for lid, lord in gs.lords.items():
+        if lord.side != "seljuk" or not on_map(lord) or lord.assets.loot <= 0:
+            continue
+        seats = [s for s in sd.lord(lid).get("seats", [])]
+        # BFS over bounty-traversable Locales from the Lord to one of his Seats.
+        from collections import deque
+        seen = {lord.cylinder}
+        dq = deque([lord.cylinder])
+        reached = lord.cylinder in seats
+        while dq and not reached:
+            cur = dq.popleft()
+            for edge in gmap.ways_from(cur):
+                nxt = edge["to"]
+                if nxt in seen:
+                    continue
+                if nxt in seats:
+                    reached = True
+                    break
+                if _bounty_traversable(gs, nxt):
+                    seen.add(nxt)
+                    dq.append(nxt)
+        if not reached:
+            continue
+        carts = lord.assets.carts + sum(
+            o.assets.carts for o in gs.lords.values()
+            if o is not lord and o.side == "seljuk" and o.cylinder == lord.cylinder and on_map(o))
+        scored = min(lord.assets.loot, carts)
+        lord.assets.loot -= scored
+        gs.holding_boxes.mosul_baghdad_loot += scored
+
+
+def _seljuk_unity(gs: GameState) -> None:
+    target = gs.meta.seljuk_unity_targets.get(str(gs.meta.calendar_box))
+    if not target:
+        return
+    count = sum(1 for l in gs.locales.values()
+                if (l.ruins and (l.ruins_color or "seljuk") == "seljuk")
+                or l.conquered_side == "seljuk" or l.ravaged_side == "seljuk")
+    if count >= target:
+        return
+    deficit = target - count
+    take = min(deficit, gs.holding_boxes.mosul_baghdad_loot)
+    gs.holding_boxes.mosul_baghdad_loot -= take
+    gs.holding_boxes.constantinople_roman_vp_markers += (deficit - take)
+
+
+def _winter_quarters(gs: GameState) -> None:
+    """4.7.6: return Lords to their Seats Unladen; Seat-if-Conquered -> allied
+    Holding Box; halve Carts (round up). (Capabilities that let a Lord stay are
+    Phase 4.)"""
+    for lid, lord in gs.lords.items():
+        if not on_map(lord):
+            continue
+        seats = sd.lord(lid).get("seats", [])
+        dest = None
+        for s in seats:
+            if gs.locales[s].conquered_side not in (None, lord.side):
+                continue
+            dest = s
+            break
+        if dest is None:
+            dest = "to_mosul_and_baghdad" if lord.side == "seljuk" else "to_constantinople"
+        lord.cylinder = dest
+        lord.assets.loot = 0  # Unladen
+        lord.assets.carts = -(-lord.assets.carts // 2)  # halve, round up
+        lord.assets.provender = min(lord.assets.provender, lord.assets.carts)
+        lord.besieged = False
+        lord.bypassed = False
+
+
+def _aleppo_diplomacy(gs: GameState) -> None:
+    if not gs.meta.independent_aleppo_on_map:
+        return
+    roller = DiceRoller(seed=gs.meta.seed)
+    if gs.meta.rng_state is not None:
+        s = gs.meta.rng_state
+        roller.set_state((s[0], tuple(s[1]), s[2]))
+    roll = roller.d6()
+    st = roller.get_state()
+    gs.meta.rng_state = [st[0], list(st[1]), st[2]]
+    if roll <= 2:
+        gs.meta.independent_aleppo_on_map = False
 
 
 # --- action handlers + enumerator (campaign) --------------------------------

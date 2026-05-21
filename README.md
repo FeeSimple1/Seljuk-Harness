@@ -12,24 +12,21 @@ accuracy and completeness are the priority** — see the hard constraints there.
 
 ## Status
 
-**Phase 2 — Levy mechanics (merged).** The full Levy sequence runs end to end:
-the step machine (Arts of War -> Pay -> Disband -> Muster -> Call to Arms,
-Seljuk-then-Roman), an `apply_action` dispatcher, and a `legal_moves`
-enumerator. Implemented: Pay (3.2, incl. Commander long-range Coin and Loot
-restrictions), Disband (3.3, beyond-service removal with Strategic-Objective
-claim + This-Lord Capability return, and at-limit re-Muster), Muster (3.4 —
-Lords with seeded Fealty rolls and Seat/Holding-Box placement, Vassals incl.
-Special Vassals, Transport, Capabilities with scope/eligibility/2-cap, Themata),
-the Arts of War draw + classification (3.1), the self-contained Call to Arms
-options (Loot 3.5.2, Strategic Objective 3.5.3), and Loyalty-Check resolution
-(1.4). An enumerator/handler round-trip sweep runs over all five scenarios as a
-CI gate (it already caught SMOKE-001). **Per-card Event/Capability EFFECTS — and
-the Capability-driven Call to Arms options (Marwanid, Empress, Deep Raids) — are
-Phase 4**, as planned.
+**Phase 3a — Campaign structure + non-combat Commands (merged).** A full
+Seasonal Turn now runs: Levy (Phase 2) -> Campaign. The Campaign machine covers
+Capability Discard (4.0), Plan (4.1, season counts + first-turn override,
+Lieutenants), alternating Command Activations (4.2), the Feed-Pay-Disband cycle
+(4.6), End Campaign (4.7: Grow, Repair, Wastage, Reset), and Winter (4.7.6:
+Aleppo auto-victory, Bounty, Seljuk Unity, Winter Quarters, Aleppo Diplomacy),
+with the immediate no-Mustered-Lords victory (5.2) and end-of-scenario scoring
+(5.3). The non-combat Command menu is implemented: Pass, Tax, Forage, Ravage
+(incl. the Seljuk 1-action Themata defence), Supply (route/Cart costs), and
+Recruit. Round-trip enumerator/handler sweeps run over Levy and Campaign as CI
+gates. **March and the combat Commands (Siege/Storm/Sally) are Phases 3b/3c;
+per-card Arts of War effects are Phase 4.**
 
-Next: Phase 3a (Plan + simple Commands + End-Campaign/Winter), 3b (March +
-Battle), 3c (Siege/Storm/Sally), 4 (the 50 card effects), 5 (LLM interface +
-agents).
+Next: Phase 3b (March + Approach + Battle), 3c (Siege/Storm/Sally), 4 (the 50
+card effects), 5 (LLM interface + agents).
 
 ## Where things are
 

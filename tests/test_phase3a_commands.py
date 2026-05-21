@@ -20,12 +20,17 @@ def _activate(gs, lord_id, actions=4):
 
 def test_tax_at_own_seat_adds_coin_and_ends_card_456():
     gs = S.load_scenario("emperor_and_the_lion")
+    # Give both sides an ongoing Plan so ending the Tax card hands off to the
+    # other side rather than cascading into End Campaign (whose Wastage would
+    # trim the freshly-taxed Coin).
+    gs.seljuk.command_plan = ["alp_arslan"]; gs.seljuk.plan_pointer = 1
+    gs.roman.command_plan = ["chatatourios"]; gs.roman.plan_pointer = 0
     _activate(gs, "alp_arslan")  # at Ani, his Seat
     before = gs.lords["alp_arslan"].assets.coin
     r = engine.apply_action(gs, {"type": "cmd_tax", "lord": "alp_arslan"})
     assert gs.lords["alp_arslan"].assets.coin == before + 1
     assert r["placed_ravaged"] is False
-    assert gs.meta.active_lord is None  # whole card consumed
+    assert gs.meta.active_lord != "alp_arslan"  # whole card consumed (4.5.6)
 
 
 def test_roman_commander_empire_tax_places_seljuk_ravaged_456():
