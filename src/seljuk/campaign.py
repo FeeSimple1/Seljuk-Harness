@@ -29,13 +29,20 @@ def is_autumn(box: int) -> bool:
     return season_index(box) == 2
 
 
-def plan_size(gs: GameState) -> int:
-    """Required Plan stack size this turn (4.1), honoring a scenario's
-    first-turn override (e.g. Year of Treacherous Ambition 6, Manzikert 4)."""
+def plan_size(gs: GameState, side: str | None = None) -> int:
+    """Required Plan stack size this turn (4.1), honoring a scenario's first-turn
+    override and any Treachery additions (Treachery card / forced No Command)."""
     override = gs.meta.notes.get("first_turn_plan_size")
     if override and not gs.meta.notes.get("first_plan_done"):
-        return int(override)
-    return [7, 8, 7][season_index(gs.meta.calendar_box)]
+        base = int(override)
+    else:
+        base = [7, 8, 7][season_index(gs.meta.calendar_box)]
+    if side:
+        if gs.meta.notes.get("treachery_side") == side:
+            base += 1  # the Treachery card
+        if gs.meta.notes.get("treachery_no_command_side") == side:
+            base += 1  # forced extra No Command
+    return base
 
 
 # --- predicates shared with actions.py via import there ---------------------
@@ -86,16 +93,23 @@ def build_plan(gs: GameState, side: str, cards: list[str], lieutenants: list[dic
         raise IllegalAction("wrong_step", "Plan is built in the Campaign Plan step (4.1)")
     if gs.meta.plan_submitted.get(side):
         raise IllegalAction("already_planned", f"{side} already built its Plan")
-    need = plan_size(gs)
+    need = plan_size(gs, side)
     if len(cards) != need:
         raise IllegalAction("bad_plan_size", f"{side} Plan must have {need} cards this turn (4.1)")
     counts: dict[str, int] = {}
     for c in cards:
         counts[c] = counts.get(c, 0) + 1
+    nc_cap = 5 + (1 if gs.meta.notes.get("treachery_no_command_side") == side else 0)
+    if gs.meta.notes.get("treachery_side") == side and counts.get("treachery", 0) != 1:
+        raise IllegalAction("treachery_required", f"{side} must include exactly one Treachery card (1.4)")
     for c, n in counts.items():
+        if c == "treachery":
+            if gs.meta.notes.get("treachery_side") != side:
+                raise IllegalAction("no_treachery", f"{side} has no Treachery card to play")
+            continue
         if c == "no_command":
-            if n > 5:
-                raise IllegalAction("too_many_no_command", "at most 5 No Command cards (1.9.2)")
+            if n > nc_cap:
+                raise IllegalAction("too_many_no_command", f"at most {nc_cap} No Command cards (1.9.2)")
             continue
         if c not in gs.lords:
             raise IllegalAction("bad_plan_card", f"no such Lord {c}")
@@ -112,6 +126,8 @@ def build_plan(gs: GameState, side: str, cards: list[str], lieutenants: list[dic
     gs.meta.plan_submitted[side] = True
     if all(gs.meta.plan_submitted.get(s) for s in SIDES):
         gs.meta.notes["first_plan_done"] = True
+        gs.meta.notes.pop("treachery_side", None)
+        gs.meta.notes.pop("treachery_no_command_side", None)
         _begin_command(gs)
     return {"ok": True, "side": side, "plan": list(cards)}
 
@@ -158,6 +174,10 @@ def _reveal_next(gs: GameState) -> None:
         card = d.command_plan[d.plan_pointer]
         d.plan_pointer += 1
         gs.meta.active_card = card
+        if card == "treachery":
+            targets = ["robert_crepin", "roussel_de_bailleul"] if side == "seljuk" else ["arisighi"]
+            gs.meta.pending.append({"type": "loyalty_check", "side": side, "targets": targets, "_owed_by": side})
+            return
         if _is_pass_card(gs, card):
             # No Command, off-map Lord, or a Lower Lord's card -> nothing (4.2.3)
             _after_card(gs)
@@ -536,6 +556,10 @@ def h_end_activation(gs: GameState, action: dict[str, Any], roller: DiceRoller) 
 
 
 def legal_moves_campaign(gs: GameState) -> list[dict[str, Any]]:
+    lc = next((p for p in gs.meta.pending if p["type"] == "loyalty_check"), None)
+    if lc is not None:
+        return [{"type": "resolve_loyalty", "target": tgt, "_desc": f"Loyalty Check vs {tgt} (1.4)"}
+                for tgt in lc["targets"]]
     at = next((p for p in gs.meta.pending if p["type"] == "assign_themata_defenders"), None)
     if at is not None:
         thema = sd.locale(at["locale"])["thema"]
@@ -1277,3 +1301,42 @@ def h_cmd_sally(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> di
     gs.meta.actions_remaining = 0  # Sally ends the card (4.8.6)
     _after_card(gs)
     return {"ok": True, "action": "cmd_sally", "sally": res}
+
+
+# === Loyalty Checks from Treachery (1.4) and Imperial Coffers (R14) =========
+
+def h_resolve_loyalty(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
+    """Resolve a Loyalty Check triggered by a revealed Treachery card (1.4.1)."""
+    pend = next((p for p in gs.meta.pending if p["type"] == "loyalty_check"), None)
+    if pend is None:
+        raise IllegalAction("no_pending", "no Loyalty Check to resolve")
+    target = action.get("target")
+    if target not in pend["targets"]:
+        raise IllegalAction("bad_target", f"choose one of {pend['targets']}")
+    res = actions.resolve_loyalty_check(gs, target, pend["side"], roller,
+                                        coins_for=int(action.get("coins_for", 0)),
+                                        coins_against=int(action.get("coins_against", 0)))
+    gs.meta.pending.remove(pend)
+    gs.meta.actions_remaining = 0  # the Treachery card carries no Command actions
+    _after_card(gs)
+    return {"ok": True, "action": "resolve_loyalty", "loyalty": res}
+
+
+def h_discard_imperial_coffers(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
+    """R14 Imperial Coffers: discard during Arts of War to make a Loyalty Check
+    against a Seljuk-allied Robert/Roussel adjacent to a Roman Lord (1.4.1)."""
+    if "R14" not in gs.roman.capabilities_in_play:
+        raise IllegalAction("no_imperial_coffers", "Imperial Coffers is not in play")
+    target = action.get("target")
+    tl = gs.lords.get(target)
+    if target not in ("robert_crepin", "roussel_de_bailleul") or tl is None or tl.side != "seljuk" or not tl.mustered:
+        raise IllegalAction("bad_target", "target must be a Mustered Seljuk-allied Robert/Roussel")
+    if not any(l.side == "roman" and l.mustered and gmap.is_adjacent(l.cylinder, tl.cylinder)
+               for l in gs.lords.values()):
+        raise IllegalAction("no_adjacent_roman", "no Roman Lord adjacent to the target (R14)")
+    gs.roman.capabilities_in_play.remove("R14")
+    gs.roman.draw_deck.append("R14")
+    res = actions.resolve_loyalty_check(gs, target, "roman", roller,
+                                        coins_for=int(action.get("coins_for", 0)),
+                                        coins_against=int(action.get("coins_against", 0)))
+    return {"ok": True, "action": "discard_imperial_coffers", "loyalty": res}

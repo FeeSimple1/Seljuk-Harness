@@ -90,6 +90,28 @@ def _distance_within(gs, a, b, n):
     return False
 
 
+def _set_treachery(gs, side):
+    """A Treachery Event adds that side's Treachery card to this Season's Plan
+    and the opponent adds a No Command (4.1/1.4). Only one per Arts of War phase."""
+    if gs.meta.notes.get("treachery_side"):
+        return {"no_op": True, "reason": "a Treachery Event already occurred this Arts of War phase"}
+    gs.meta.notes["treachery_side"] = side
+    gs.meta.notes["treachery_no_command_side"] = "roman" if side == "seljuk" else "seljuk"
+    return {"treachery_added_for": side}
+
+
+def _ev_roman_persuasion(gs, args, roller):       # R8
+    return _set_treachery(gs, "roman")
+
+
+def _ev_norman_extortion(gs, args, roller):       # S16
+    return _set_treachery(gs, "seljuk")
+
+
+def _ev_norman_pay_revolt(gs, args, roller):      # S19
+    return _set_treachery(gs, "seljuk")
+
+
 def _ev_flooded_river(gs, args, roller):          # R1*
     if "R1" in gs.meta.asterisks_used:
         lid = args.get("lord")
@@ -284,6 +306,7 @@ _RESOLVERS = {
     "S5": _ev_siege_of_bari, "S7": _ev_deserters, "S8": _ev_merchant_financing,
     "S12": _ev_doukai, "S14": _ev_manuel_ill, "S15": _ev_thematic_desert,
     "S20": _ev_consolidates_power, "S22": _ev_massacre, "S23": _ev_reinforcements_denied,
+    "R8": _ev_roman_persuasion, "S16": _ev_norman_extortion, "S19": _ev_norman_pay_revolt,
     "R1": _ev_flooded_river, "R11": _ev_chrysoskoulos, "R16": _ev_anglo_saxon,
     "R22": _ev_assassination, "S9": _ev_moustache, "S11": _ev_norman_scheming,
     "S13": _ev_peace_offering, "S25": _ev_mercenary_discipline,
