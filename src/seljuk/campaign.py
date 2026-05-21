@@ -381,6 +381,8 @@ def _reset(gs: GameState) -> None:
         l.lower_lord = None
     for side in SIDES:
         gs.side_decks(side).this_campaign_events = []
+    gs.meta.notes.pop("moustache_campaign", None)
+    gs.meta.notes.pop("peace_offering_season", None)
 
 
 def _winter(gs: GameState) -> str | None:
@@ -720,7 +722,10 @@ def h_cmd_forage(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> d
         roll = None
     else:
         roll = roller.d6()
-        added = roll <= 3
+        thresh = 3
+        if lord.id == "alp_arslan" and gs.meta.notes.get("moustache_campaign"):
+            thresh = 1  # S9 Alp Arslan's Moustache: -2 to Forage (penalty) this Campaign
+        added = roll <= thresh
     if added:
         lord.assets.provender = min(lord.assets.provender + 1, 8)
     spend_actions(gs, 1)

@@ -50,6 +50,111 @@ def _remove_themata(gs: GameState, thema: str, unit: str | None = None) -> dict:
 
 # --- per-card resolvers (immediate Events) ----------------------------------
 
+def _wastage_once(gs, lord) -> bool:
+    """Discard one excess Asset (or a This-Lord Capability) if the Lord qualifies (4.7.4)."""
+    assets = {"carts": lord.assets.carts, "provender": lord.assets.provender,
+              "coin": lord.assets.coin, "loot": lord.assets.loot}
+    top = max(assets, key=lambda k: assets[k])
+    if assets[top] > 1:
+        setattr(lord.assets, top, assets[top] - 1)
+        return True
+    if len(lord.capabilities) > 1:
+        lord.capabilities.pop()
+        return True
+    return False
+
+
+def _discard_random_held(gs, side, roller):
+    held = gs.side_decks(side).held_events
+    if not held:
+        return {"no_op": True, "reason": "no Held cards"}
+    idx = roller.d6() % len(held)
+    card = held.pop(idx)
+    gs.side_decks(side).draw_deck.append(card)
+    return {"discarded_held": card}
+
+
+def _distance_within(gs, a, b, n):
+    from . import map as gmap
+    from collections import deque
+    seen = {a}; dq = deque([(a, 0)])
+    while dq:
+        cur, d = dq.popleft()
+        if cur == b:
+            return True
+        if d >= n:
+            continue
+        for e in gmap.ways_from(cur):
+            if e["to"] not in seen:
+                seen.add(e["to"]); dq.append((e["to"], d + 1))
+    return False
+
+
+def _ev_flooded_river(gs, args, roller):          # R1*
+    if "R1" in gs.meta.asterisks_used:
+        lid = args.get("lord")
+        if lid in gs.lords:
+            gs.lords[lid].flags["lordship_spent"] = int(gs.lords[lid].flags.get("lordship_spent", 0)) + 1
+        return {"already_marked": True, "lordship_penalty": lid}
+    aa = gs.lords["alp_arslan"]
+    n = sum(1 for _ in range(3) if _wastage_once(gs, aa))
+    gs.meta.asterisks_used.append("R1")
+    return {"alp_arslan_wastage_times": n}
+
+
+def _ev_chrysoskoulos(gs, args, roller):          # R11
+    if gs.lords["arisighi"].side != "roman":
+        return {"no_op": True, "reason": "Arisighi not a Roman ally"}
+    return _discard_random_held(gs, "seljuk", roller)
+
+
+def _ev_anglo_saxon(gs, args, roller):            # R16
+    lid = args["lord"]; l = gs.lords[lid]
+    if l.side != "roman" or lid in ("robert_crepin", "roussel_de_bailleul") or l.forces.get("varangian_guard", 0) > 0:
+        return {"no_op": True}
+    if sum(x.forces.get("varangian_guard", 0) for x in gs.lords.values()) >= 2:
+        return {"no_op": True, "reason": "no Varangian Guard available"}
+    l.forces["varangian_guard"] = l.forces.get("varangian_guard", 0) + 1
+    return {"added_varangian": lid}
+
+
+def _ev_assassination(gs, args, roller):          # R22
+    ik = gs.lords["ibn_khan"]
+    if ik.mustered and _distance_within(gs, ik.cylinder, "aleppo", 2):
+        return _shift_calendar(gs, "ibn_khan", "service", args.get("direction", "left"))
+    if ik.mustered:
+        from . import actions
+        actions._disband_beyond(gs, ik)
+    return {"disbanded": "ibn_khan"}
+
+
+def _ev_norman_scheming(gs, args, roller):        # S11
+    if gs.lords["robert_crepin"].side != "seljuk" and gs.lords["roussel_de_bailleul"].side != "seljuk":
+        return {"no_op": True, "reason": "no Seljuk-allied Norman"}
+    return _discard_random_held(gs, "roman", roller)
+
+
+def _ev_moustache(gs, args, roller):              # S9 (This Campaign)
+    gs.meta.notes["moustache_campaign"] = True
+    return {"this_campaign": "alp_arslan_forage_minus2"}
+
+
+def _ev_mercenary_discipline(gs, args, roller):   # S25
+    n = 0
+    for l in gs.lords.values():
+        if l.side == "roman" and l.mustered and gs.locales[l.cylinder].ravaged_side is not None:
+            if _wastage_once(gs, l):
+                n += 1
+    return {"roman_wastage": n}
+
+
+def _ev_peace_offering(gs, args, roller):         # S13 (This Season; coin-gate is a noted partial)
+    gs.meta.notes["peace_offering_season"] = True
+    if "S13" not in gs.seljuk.capabilities_in_play:
+        gs.seljuk.capabilities_in_play.append("S13")  # Gifts Exchanged enters play
+    return {"this_season": "peace_offering", "note": "Approach/Storm/Siege coin-gate is a documented partial"}
+
+
 def _ev_shift_seljuk(gs, args, roller):          # R5 Fatimid Conflict
     return _shift_calendar(gs, args["lord"], args.get("what", "cylinder"), args.get("direction", "left"))
 
@@ -179,6 +284,9 @@ _RESOLVERS = {
     "S5": _ev_siege_of_bari, "S7": _ev_deserters, "S8": _ev_merchant_financing,
     "S12": _ev_doukai, "S14": _ev_manuel_ill, "S15": _ev_thematic_desert,
     "S20": _ev_consolidates_power, "S22": _ev_massacre, "S23": _ev_reinforcements_denied,
+    "R1": _ev_flooded_river, "R11": _ev_chrysoskoulos, "R16": _ev_anglo_saxon,
+    "R22": _ev_assassination, "S9": _ev_moustache, "S11": _ev_norman_scheming,
+    "S13": _ev_peace_offering, "S25": _ev_mercenary_discipline,
 }
 
 
