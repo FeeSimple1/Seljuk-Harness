@@ -47,6 +47,11 @@ def _save_roller(gs: GameState, r: DiceRoller) -> None:
 # Each handler: fn(gs, action, roller) -> dict result. Handlers mutate gs.
 _HANDLERS: dict[str, Callable[[GameState, dict, DiceRoller], dict]] = {
     "pay": actions.h_pay,
+    "levy_lord": actions.h_levy_lord,
+    "levy_transport": actions.h_levy_transport,
+    "levy_capability": actions.h_levy_capability,
+    "levy_vassal": actions.h_levy_vassal,
+    "levy_themata": actions.h_levy_themata,
     "pass_step": actions.h_pass_step,
 }
 
@@ -72,7 +77,11 @@ def legal_moves(gs: GameState) -> list[dict[str, Any]]:
         moves = actions.enumerate_pay(gs)
         moves.append({"type": "pass_step", "_desc": "Finish Pay for this side (3.2)"})
         return moves
-    # other interactive steps (muster, call_to_arms) arrive in later commits.
+    if step == "levy.muster":
+        moves = actions.enumerate_muster(gs)
+        moves.append({"type": "pass_step", "_desc": "Finish Muster for this side (3.4)"})
+        return moves
+    # call_to_arms enumeration arrives in a later commit.
     return []
 
 
@@ -94,6 +103,8 @@ def _enter_step(gs: GameState, step: str) -> None:
             actions.resolve_disband(gs, side)
         _save_roller(gs, roller)
         _advance_step(gs)
+    elif step == "muster":
+        actions.reset_muster_segment(gs)
     elif step == "arts_of_war":
         # Draw resolution (3.1) is engine-driven; implemented in a later commit.
         # For now the step is a no-op pass-through so Pay can be exercised.

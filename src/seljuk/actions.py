@@ -226,3 +226,253 @@ def _disband_at_limit(gs: GameState, lord: LordState) -> dict[str, Any]:
     lord.cylinder = "calendar"
     lord.cylinder_calendar_box = new_box
     return {"lord": lord.id, "disband": "at_limit_recyclable", "placed_calendar_box": new_box}
+
+
+# --- Muster (3.4) -----------------------------------------------------------
+# Each on-map Lord may spend Lordship to Levy other Lords, Vassals, Transport,
+# Capabilities, or (Roman Commander) Themata. Lords brought on this segment may
+# not themselves Levy until Call to Arms (3.4).
+
+def reset_muster_segment(gs: GameState) -> None:
+    for lord in gs.lords.values():
+        lord.flags.pop("lordship_spent", None)
+        lord.flags.pop("mustered_this_segment", None)
+
+
+def lordship_remaining(gs: GameState, lord: LordState) -> int:
+    rating = sd.lord(lord.id)["ratings"]["lordship"]
+    return rating - int(lord.flags.get("lordship_spent", 0))
+
+
+def _spend_lordship(lord: LordState, n: int = 1) -> None:
+    lord.flags["lordship_spent"] = int(lord.flags.get("lordship_spent", 0)) + n
+
+
+def _can_act_in_muster(gs: GameState, lord: LordState) -> bool:
+    """3.4: a Lord must have begun Muster at an Unbesieged Friendly Locale
+    (incl. Holding Box), have Lordship left, and not be freshly Mustered."""
+    if not _on_map(lord) or lord.side != gs.meta.active_player:
+        return False
+    if lord.besieged or lord.flags.get("mustered_this_segment"):
+        return False
+    if lordship_remaining(gs, lord) <= 0:
+        return False
+    return is_friendly_locale(gs, lord.cylinder, lord.side)
+
+
+def _seat_is_free(gs: GameState, side: str, seat: str) -> bool:
+    """3.4.1: a Seat is free if it has no enemy Lord and no enemy Conquered
+    markers (it may be Bypassed or Ravaged)."""
+    enemy = "roman" if side == "seljuk" else "seljuk"
+    loc = gs.locales[seat]
+    if loc.conquered_side == enemy:
+        return False
+    for l in gs.lords.values():
+        if l.mustered and l.cylinder == seat and l.side == enemy:
+            return False
+    return True
+
+
+def _muster_seats(gs: GameState, lord_id: str, side: str) -> list[str]:
+    """Free Seats where this Lord could Muster, with the dual-allegiance
+    Holding-Box fallback (1.4.2)."""
+    info = sd.lord(lord_id)
+    free = [s for s in info.get("seats", []) if _seat_is_free(gs, side, s)]
+    if free:
+        return free
+    # Holding-box fallback for Arisighi / Robert / Roussel (1.4.2)
+    if lord_id == "arisighi" and side == "roman":
+        return ["to_constantinople"]
+    if lord_id in ("robert_crepin", "roussel_de_bailleul") and side == "seljuk":
+        return ["to_mosul_and_baghdad"]
+    return []
+
+
+def _muster_lord_onto_map(gs: GameState, lord: LordState, seat: str) -> None:
+    info = sd.lord(lord.id)
+    from .state import Assets
+    slots, _ = scenarios._build_vassals(lord.id, [])
+    lord.mustered = True
+    lord.cylinder = seat
+    lord.cylinder_calendar_box = None
+    lord.forces = dict(info["starting_forces"])
+    lord.routed = {}
+    a = info["starting_assets"]
+    lord.assets = Assets(**{k: a.get(k, 0) for k in ("carts", "provender", "coin", "loot")})
+    lord.vassals = slots
+    sr = info["ratings"]["service"]
+    lord.service_box = min(gs.meta.calendar_box + sr, OFF_RIGHT)
+    lord.flags["mustered_this_segment"] = True
+
+
+def h_levy_lord(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
+    """3.4.1 Levy Other Lords: spend 1 Lordship, roll Fealty for a Ready Lord."""
+    if gs.meta.subphase != "levy.muster":
+        raise IllegalAction("wrong_step", "Muster actions only in the Levy Muster step (3.4)")
+    levyer = gs.lords.get(action.get("levyer"))
+    target = gs.lords.get(action.get("target"))
+    if levyer is None or target is None:
+        raise IllegalAction("bad_lord", "levyer/target not found")
+    if not _can_act_in_muster(gs, levyer):
+        raise IllegalAction("cannot_levy", f"{levyer.id} cannot take a Levy action now (3.4)")
+    if target.mustered or target.cylinder != "calendar" or target.cylinder_calendar_box is None:
+        raise IllegalAction("target_not_ready", f"{target.id} is not Ready to Muster")
+    if target.cylinder_calendar_box > gs.meta.calendar_box:
+        raise IllegalAction("target_not_ready", f"{target.id} is not yet Ready (2.2)")
+    seats = _muster_seats(gs, target.id, target.side)
+    seat = action.get("seat")
+    if seat is not None and seat not in seats:
+        raise IllegalAction("seat_not_free", f"{seat} is not a free Seat for {target.id}")
+    if seat is None:
+        if not seats:
+            raise IllegalAction("no_free_seat", f"{target.id} has no free Seat (3.4.1)")
+        seat = seats[0]
+    _spend_lordship(levyer, 1)
+    fealty = sd.lord(target.id)["ratings"]["fealty"]
+    roll = roller.d6()
+    success = roll <= fealty
+    if success:
+        _muster_lord_onto_map(gs, target, seat)
+    return {"ok": True, "action": "levy_lord", "levyer": levyer.id, "target": target.id,
+            "roll": roll, "fealty": fealty, "success": success,
+            "seat": seat if success else None}
+
+
+def h_levy_transport(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
+    """3.4.3 Levy Transport: a Lord at a Friendly Locale adds one Cart."""
+    if gs.meta.subphase != "levy.muster":
+        raise IllegalAction("wrong_step", "Muster actions only in the Levy Muster step (3.4)")
+    lord = gs.lords.get(action.get("lord"))
+    if lord is None or not _can_act_in_muster(gs, lord):
+        raise IllegalAction("cannot_levy", "Lord cannot take a Levy action now (3.4)")
+    _spend_lordship(lord, 1)
+    lord.assets.carts = min(lord.assets.carts + 1, 8)  # 8-cap (1.7.3)
+    return {"ok": True, "action": "levy_transport", "lord": lord.id, "carts": lord.assets.carts}
+
+
+def _capability_eligible(gs: GameState, lord: LordState, card_id: str) -> bool:
+    cdata = sd.card(card_id)
+    if cdata["side"] != lord.side:
+        return False
+    if card_id not in gs.side_decks(lord.side).draw_deck:
+        return False
+    cap = cdata["capability"]
+    if cap["scope"] == "this_lord":
+        elig = cap["eligible_lords"]
+        if elig is not None and lord.id not in elig:
+            return False
+        if len(lord.capabilities) >= 2:
+            return False
+        names = {sd.card(c)["capability"]["name"] for c in lord.capabilities}
+        if cap["name"] in names:  # no duplicate name (3.4.4)
+            return False
+    return True
+
+
+def h_levy_capability(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
+    """3.4.4 Levy Capabilities: 1 Lordship per card; respects scope/eligibility."""
+    if gs.meta.subphase != "levy.muster":
+        raise IllegalAction("wrong_step", "Muster actions only in the Levy Muster step (3.4)")
+    lord = gs.lords.get(action.get("lord"))
+    card_id = action.get("card")
+    if lord is None or not _can_act_in_muster(gs, lord):
+        raise IllegalAction("cannot_levy", "Lord cannot take a Levy action now (3.4)")
+    if card_id is None or not _capability_eligible(gs, lord, card_id):
+        raise IllegalAction("ineligible_capability", f"{lord.id} may not Levy {card_id} (3.4.4)")
+    _spend_lordship(lord, 1)
+    gs.side_decks(lord.side).draw_deck.remove(card_id)
+    cap = sd.card(card_id)["capability"]
+    if cap["scope"] == "this_lord":
+        lord.capabilities.append(card_id)
+        placement = "this_lord_mat"
+    else:
+        gs.side_decks(lord.side).capabilities_in_play.append(card_id)
+        placement = "board_edge"
+    return {"ok": True, "action": "levy_capability", "lord": lord.id, "card": card_id, "placement": placement}
+
+
+def _vassal_levyable(gs: GameState, lord: LordState, idx: int) -> bool:
+    if idx < 0 or idx >= len(lord.vassals):
+        return False
+    v = lord.vassals[idx]
+    if v.levied:
+        return False
+    if v.requires_capability:  # Special Vassal: its Capability must be in play
+        in_play = v.requires_capability in lord.capabilities or \
+            v.requires_capability in gs.side_decks(lord.side).capabilities_in_play
+        if not in_play:
+            return False
+    return True
+
+
+def h_levy_vassal(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
+    """3.4.2 Levy Vassals: 1 Lordship; slide a ready Vassal's Forces onto the mat."""
+    if gs.meta.subphase != "levy.muster":
+        raise IllegalAction("wrong_step", "Muster actions only in the Levy Muster step (3.4)")
+    lord = gs.lords.get(action.get("lord"))
+    idx = action.get("vassal_index")
+    if lord is None or not _can_act_in_muster(gs, lord):
+        raise IllegalAction("cannot_levy", "Lord cannot take a Levy action now (3.4)")
+    if idx is None or not _vassal_levyable(gs, lord, int(idx)):
+        raise IllegalAction("vassal_unavailable", f"{lord.id} cannot Levy that Vassal (3.4.2)")
+    _spend_lordship(lord, 1)
+    v = lord.vassals[int(idx)]
+    v.levied = True
+    for u, n in v.forces.items():
+        lord.forces[u] = lord.forces.get(u, 0) + n
+    return {"ok": True, "action": "levy_vassal", "lord": lord.id, "vassal_index": int(idx), "forces_added": v.forces}
+
+
+def h_levy_themata(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
+    """3.4.5 Levy Themata: the Roman Commander spends 1 Lordship in his current
+    Thema to take a Themata Service Marker (and its units) onto his mat."""
+    if gs.meta.subphase != "levy.muster":
+        raise IllegalAction("wrong_step", "Muster actions only in the Levy Muster step (3.4)")
+    lord = gs.lords.get(action.get("lord"))
+    if lord is None or not _can_act_in_muster(gs, lord):
+        raise IllegalAction("cannot_levy", "Lord cannot take a Levy action now (3.4)")
+    if lord.side != "roman" or not is_commander(gs, lord.id):
+        raise IllegalAction("not_roman_commander", "only the Roman Commander may Levy Themata (3.4.5)")
+    thema = sd.locale(lord.cylinder)["thema"]
+    if thema is None or not gs.themata.get(thema):
+        raise IllegalAction("no_themata_here", "no available Themata in this Lord's Thema (3.4.5)")
+    idx = int(action.get("marker_index", 0))
+    box = gs.themata[thema]
+    if idx < 0 or idx >= len(box):
+        raise IllegalAction("bad_themata_index", "no such Themata marker")
+    _spend_lordship(lord, 1)
+    marker = box.pop(idx)
+    marker.home_thema = thema
+    lord.themata_on_mat.append(marker)
+    return {"ok": True, "action": "levy_themata", "lord": lord.id, "thema": thema,
+            "marker": {"unit": marker.unit, "symbols": marker.symbols}}
+
+
+def enumerate_muster(gs: GameState) -> list[dict[str, Any]]:
+    side = gs.meta.active_player
+    out: list[dict[str, Any]] = []
+    actors = [(lid, l) for lid, l in gs.lords.items() if _can_act_in_muster(gs, l)]
+    ready = [(tid, t) for tid, t in gs.lords.items()
+             if not t.mustered and t.cylinder == "calendar"
+             and t.cylinder_calendar_box is not None and t.cylinder_calendar_box <= gs.meta.calendar_box
+             and t.side == side]
+    for lid, lord in actors:
+        for tid, t in ready:
+            if _muster_seats(gs, tid, t.side):
+                out.append({"type": "levy_lord", "levyer": lid, "target": tid,
+                            "_desc": f"{sd.lord(lid)['name']} rolls Fealty to Muster {sd.lord(tid)['name']} (3.4.1)"})
+        out.append({"type": "levy_transport", "lord": lid, "_desc": f"{sd.lord(lid)['name']} Levies a Cart (3.4.3)"})
+        for cid in gs.side_decks(side).draw_deck:
+            if _capability_eligible(gs, lord, cid):
+                out.append({"type": "levy_capability", "lord": lid, "card": cid,
+                            "_desc": f"{sd.lord(lid)['name']} Levies Capability {cid} (3.4.4)"})
+        for i in range(len(lord.vassals)):
+            if _vassal_levyable(gs, lord, i):
+                out.append({"type": "levy_vassal", "lord": lid, "vassal_index": i,
+                            "_desc": f"{sd.lord(lid)['name']} Levies Vassal #{i} (3.4.2)"})
+        if lord.side == "roman" and is_commander(gs, lid):
+            thema = sd.locale(lord.cylinder)["thema"]
+            if thema and gs.themata.get(thema):
+                out.append({"type": "levy_themata", "lord": lid, "thema": thema,
+                            "_desc": f"{sd.lord(lid)['name']} Levies Themata in {thema} (3.4.5)"})
+    return out
