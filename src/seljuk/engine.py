@@ -80,6 +80,7 @@ _CAMPAIGN_HANDLERS: dict[str, Callable[[GameState, dict, DiceRoller], dict]] = {
     "cmd_sally": campaign.h_cmd_sally,
     "resolve_event": actions.h_resolve_event,
     "resolve_loyalty": campaign.h_resolve_loyalty,
+    "basil_response": campaign.h_basil_response,
     "discard_imperial_coffers": campaign.h_discard_imperial_coffers,
     "play_hold_event": actions.h_play_hold_event,
 }

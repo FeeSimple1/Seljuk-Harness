@@ -556,6 +556,10 @@ def h_end_activation(gs: GameState, action: dict[str, Any], roller: DiceRoller) 
 
 
 def legal_moves_campaign(gs: GameState) -> list[dict[str, Any]]:
+    br = next((p for p in gs.meta.pending if p["type"] == "basil_response"), None)
+    if br is not None:
+        return [{"type": "basil_response", "play": True, "_desc": "Play Basil: Surrender -> Bypass (R7)"},
+                {"type": "basil_response", "play": False, "_desc": "Decline: Stronghold is Conquered"}]
     lc = next((p for p in gs.meta.pending if p["type"] == "loyalty_check"), None)
     if lc is not None:
         return [{"type": "resolve_loyalty", "target": tgt, "_desc": f"Loyalty Check vs {tgt} (1.4)"}
@@ -1087,8 +1091,16 @@ def h_respond_approach(gs: GameState, action: dict[str, Any], roller: DiceRoller
     if pend is None:
         raise IllegalAction("no_pending", "no Approach to respond to")
     to = pend["locale"]
-    choices = action.get("choices", {})
+    choices = dict(action.get("choices", {}))
     side = gs.lords[pend["defenders"][0]].side
+    att_side = gs.lords[pend["attackers"][0]].side
+    ls = action.get("local_scouts")
+    if ls and "R18" in gs.side_decks(att_side).held_events and ls.get("lord") in choices:
+        # R18 Local Scouts: the playing side forces one Avoiding Lord to Battle/Withdraw.
+        if choices[ls["lord"]].get("action") == "avoid":
+            choices[ls["lord"]] = {"action": ls.get("action", "stand")}
+            gs.side_decks(att_side).held_events.remove("R18")
+            gs.side_decks(att_side).draw_deck.append("R18")
     standers, avoided, withdrew = [], [], []
     attacker_origin = gs.lords[pend["attackers"][0]].cylinder  # they are now at `to`
     for did in pend["defenders"]:
@@ -1171,6 +1183,18 @@ def h_besiege_bypass(gs: GameState, action: dict[str, Any], roller: DiceRoller) 
     choice = action.get("choice")
     gs.meta.pending.remove(pend)
     if choice == "besiege":
+        lords_here = [l for l in gs.lords.values() if l.mustered and l.cylinder == to]
+        if (action.get("surprise") and side == "seljuk" and "S1" in gs.seljuk.held_events
+                and sd.locale(to)["type"] in ("fort", "town") and len(lords_here) == 1):
+            # S1 Surprise: place 2 Siege markers (not 1), then immediately Storm.
+            gs.locales[to].siege_markers = 2
+            gs.seljuk.held_events.remove("S1"); gs.seljuk.draw_deck.append("S1")
+            from . import battle
+            res = battle.resolve_storm(gs, [pend["lords"][0]], to,
+                                       battle.DecisionContext(action.get("storm_decisions")), roller)
+            gs.meta.actions_remaining = 0
+            _after_card(gs)
+            return {"ok": True, "action": "besiege_surprise", "locale": to, "storm": res}
         gs.locales[to].siege_markers = max(1, gs.locales[to].siege_markers)  # place first Siege marker (4.3.5)
         gs.meta.actions_remaining = 0  # Besieging ends the card
         if _needs_themata_assignment(gs, to, side):
@@ -1239,6 +1263,19 @@ def h_cmd_siege(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> di
         seized = all(r <= threshold for r in rolls)
         result.update({"surrender_roll": rolls, "threshold": threshold, "seized": seized})
         if seized:
+            # Basil Alousianos (R7*): the Roman may convert a Surrender (threshold
+            # exactly 3, not 4) of a Roman Stronghold into a Bypass instead of a
+            # Conquest. Pause for the Roman response.
+            if (info["allegiance"] == "roman" and lord.side == "seljuk" and threshold == 3
+                    and "R7" not in gs.meta.asterisks_used and "R7" in gs.roman.held_events):
+                for l in gs.lords.values():
+                    if l.mustered and l.cylinder == loc_id:
+                        l.moved_fought = True
+                gs.meta.actions_remaining = 0
+                gs.meta.pending.append({"type": "basil_response", "locale": loc_id,
+                                        "by_side": lord.side, "_owed_by": "roman"})
+                result["pending"] = "basil_response"
+                return result
             result["conquer"] = battle.conquer(gs, loc_id, lord.side)
             gs.meta.vp = scenarios.score(gs)
     if not seized:
@@ -1372,3 +1409,24 @@ def h_discard_imperial_coffers(gs: GameState, action: dict[str, Any], roller: Di
                                         coins_for=int(action.get("coins_for", 0)),
                                         coins_against=int(action.get("coins_against", 0)))
     return {"ok": True, "action": "discard_imperial_coffers", "loyalty": res}
+
+
+def h_basil_response(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
+    """Resolve a Basil Alousianos (R7) reaction to a Roman Stronghold Surrender."""
+    pend = next((p for p in gs.meta.pending if p["type"] == "basil_response"), None)
+    if pend is None:
+        raise IllegalAction("no_pending", "no Basil reaction owed")
+    loc_id = pend["locale"]
+    from . import battle
+    if action.get("play"):  # R7: replace all Siege with Bypass, place no Conquered (once per game)
+        gs.locales[loc_id].siege_markers = 0
+        gs.locales[loc_id].bypass = True
+        gs.roman.held_events.remove("R7"); gs.roman.draw_deck.append("R7")
+        gs.meta.asterisks_used.append("R7")
+        out = {"basil": "bypass"}
+    else:  # decline -> the Stronghold is Conquered as normal
+        out = {"basil": "declined", "conquer": battle.conquer(gs, loc_id, pend["by_side"])}
+    gs.meta.pending.remove(pend)
+    gs.meta.vp = scenarios.score(gs)
+    _after_card(gs)
+    return {"ok": True, "action": "basil_response", **out}
