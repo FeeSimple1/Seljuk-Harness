@@ -104,12 +104,24 @@ class _Side:
         self.mountain_ambush = False
         self.front: dict[str, Optional[str]] = {"left": None, "center": None, "right": None}
         self.reserve: list[str] = list(lord_ids)
+        # Relief Sally rows (4.8.1). The Attacker may have a Sallying row (the
+        # Besieged Lords who join the relief Attack, arrayed behind the
+        # Defenders); the Defender may have a Rearguard row (Reserve Lords
+        # positioned opposite the Sallying Attackers). Empty in a normal Battle.
+        self.sally: dict[str, Optional[str]] = {"left": None, "center": None, "right": None}
+        self.rearguard: dict[str, Optional[str]] = {"left": None, "center": None, "right": None}
 
     def front_lords(self) -> list[str]:
         return [self.front[s] for s in SLOTS if self.front[s]]
 
+    def sally_lords(self) -> list[str]:
+        return [self.sally[s] for s in SLOTS if self.sally[s]]
+
+    def rearguard_lords(self) -> list[str]:
+        return [self.rearguard[s] for s in SLOTS if self.rearguard[s]]
+
     def all_lords(self) -> list[str]:
-        return self.front_lords() + list(self.reserve)
+        return self.front_lords() + self.sally_lords() + self.rearguard_lords() + list(self.reserve)
 
 
 def _unrouted_units(lord: LordState) -> dict[str, int]:
@@ -191,14 +203,31 @@ def resolve_battle(gs: GameState, attacker_ids: list[str], defender_ids: list[st
     active = gs.meta.active_lord if gs.meta.active_lord in attacker_ids else attacker_ids[0]
     for _lid in attacker_ids + defender_ids:
         gs.lords[_lid].flags["turkic_routed_battle"] = 0
-    att = _Side(gs, [a for a in attacker_ids if a != active], "attacker")
+    # Sallying Lords (Relief Sally, 4.8.1) form their own row behind the
+    # Defenders; they are kept out of the relieving force's Front/Reserve.
+    relief = bool(sallying)
+    att_front_pool = [a for a in attacker_ids if a != active and a not in sallying]
+    att = _Side(gs, att_front_pool, "attacker")
     deff = _Side(gs, list(defender_ids), "defender")
 
     # --- Array (4.8.1): Active attacker at Front center; others fill L/R. ---
-    att.front["center"] = active
+    if active in sallying:
+        # A Besieged active Lord that Sallies has no relieving force at Front;
+        # he leads the Sallying row instead.
+        att.front["center"] = None
+    else:
+        att.front["center"] = active
     _fill_front(att, ctx, "initial_placement_attacker")
     # Defender opposite each Front attacker: center first, then L, R.
     _fill_defender(att, deff, ctx)
+    # Relief Sally rows: Sallying Attackers (incl. an active Sallying Lord) form
+    # a row behind the Defenders; the Defender's Reserve fills a Rearguard row
+    # opposite them, then any extra Defenders remain in Reserve (4.8.1).
+    if relief:
+        sally_pool = ([active] if active in sallying else []) + \
+                     [a for a in attacker_ids if a != active and a in sallying]
+        _fill_row(att, "sally", sally_pool, ctx, "sally_placement")
+        _fill_rearguard(att, deff, ctx)
     # Mountain Ambush (R2/S2): Round-1 Walls 1-3 vs Missiles for the playing
     # side, if the Locale is adjacent to a Pass (1.3.1).
     from . import map as gmap
@@ -285,22 +314,67 @@ def _fill_defender(att: _Side, deff: _Side, ctx: DecisionContext) -> None:
         deff.reserve.remove(choice)
 
 
+def _fill_row(side: _Side, row: str, pool: list[str], ctx: DecisionContext, dtype: str) -> None:
+    """Place up to three Lords from ``pool`` into ``row`` (center, then L, R);
+    any extra go to that side's Reserve (a row is at most 3 wide)."""
+    rowmap = getattr(side, row)
+    remaining = list(pool)
+    for slot in ("center", "left", "right"):
+        if not remaining:
+            break
+        choice = ctx.decide(dtype, list(remaining), {"slot": slot, "row": row})
+        rowmap[slot] = choice
+        remaining.remove(choice)
+    side.reserve.extend(remaining)
+
+
+def _fill_rearguard(att: _Side, deff: _Side, ctx: DecisionContext) -> None:
+    """4.8.1: Defending Reserve Lords position opposite the Sallying Attackers
+    as a Rearguard row (center first, then L, R), matching occupied Sally
+    slots; any beyond that stay in Reserve."""
+    order = [s for s in ("center", "left", "right") if att.sally[s]]
+    for slot in order:
+        if not deff.reserve:
+            break
+        choice = ctx.decide("rearguard_placement", list(deff.reserve), {"slot": slot})
+        deff.rearguard[slot] = choice
+        deff.reserve.remove(choice)
+
+
 def _offer_concede(gs: GameState, side: _Side, ctx: DecisionContext, role: str) -> bool:
     choice = ctx.decide("concede", [False, True], {"role": role})
     return bool(choice)
 
 
 def _purge_routed(side: _Side) -> None:
-    for slot in SLOTS:
-        lid = side.front[slot]
-        if lid and _is_routed(side.gs.lords[lid]):
-            side.front[slot] = None
+    for row in ("front", "sally", "rearguard"):
+        rowmap = getattr(side, row)
+        for slot in SLOTS:
+            lid = rowmap[slot]
+            if lid and _is_routed(side.gs.lords[lid]):
+                rowmap[slot] = None
     side.reserve = [l for l in side.reserve if not _is_routed(side.gs.lords[l])]
+
+
+def _adjust_rows(att: _Side, deff: _Side) -> None:
+    """ADJUST ROWS (1.2.2 B, Relief Sally only): when a whole row has Routed.
+    - If no Sallying Lords remain, the Rearguard becomes Reserve.
+    - If no Front Defenders remain, the Rearguard faces about as Reserve.
+    (The "no Rearguard -> Sallying Lords Flank Defenders" case needs no row
+    move: striking falls back to the Front row automatically when the Rearguard
+    is empty.)"""
+    if not att.sally_lords() or not deff.front_lords():
+        for slot in SLOTS:
+            lid = deff.rearguard[slot]
+            if lid:
+                deff.rearguard[slot] = None
+                deff.reserve.append(lid)
 
 
 def _reposition(gs: GameState, att: _Side, deff: _Side, ctx: DecisionContext) -> None:
     _purge_routed(att)
     _purge_routed(deff)
+    _adjust_rows(att, deff)
     # Advance Lords: Attacker then Defender slide Reserve into empty Front slots.
     for side, dtype in ((att, "reserve_advance"), (deff, "reserve_advance")):
         for slot in SLOTS:
@@ -321,20 +395,23 @@ def _reposition(gs: GameState, att: _Side, deff: _Side, ctx: DecisionContext) ->
                 side.front["center"] = choice
 
 
-def _target_of(striker_slot: str, enemy: _Side, ctx: DecisionContext) -> Optional[str]:
-    """The enemy Lord a Front striker hits: directly opposite, else Flank the
-    closest enemy in the row (Center may choose Left/Right)."""
-    if enemy.front[striker_slot]:
-        return enemy.front[striker_slot]
+def _target_of(striker_slot: str, enemy: _Side, ctx: DecisionContext,
+               row: str = "front") -> Optional[str]:
+    """The enemy Lord a striker hits within the given enemy ``row``: directly
+    opposite, else Flank the closest enemy in the row (Center may choose
+    Left/Right)."""
+    erow = getattr(enemy, row)
+    if erow[striker_slot]:
+        return erow[striker_slot]
     si = SLOTS.index(striker_slot)
-    present = [(abs(SLOTS.index(s) - si), s) for s in SLOTS if enemy.front[s]]
+    present = [(abs(SLOTS.index(s) - si), s) for s in SLOTS if erow[s]]
     if not present:
         return None
     present.sort()
     closest = [s for d, s in present if d == present[0][0]]
     if len(closest) == 1:
-        return enemy.front[closest[0]]
-    choice = ctx.decide("flanker_target", [enemy.front[s] for s in closest], {"striker_slot": striker_slot})
+        return erow[closest[0]]
+    choice = ctx.decide("flanker_target", [erow[s] for s in closest], {"striker_slot": striker_slot})
     return choice
 
 
@@ -385,8 +462,23 @@ def _strike_phase(gs: GameState, att: _Side, deff: _Side, pursuit: dict, round_n
                   sallying: set | None = None, siegeworks: int = 0) -> None:
     cc = cc or set()
     charge = charge or set()
-    sallying = sallying or set()
     sides = ((deff, att, "defender"), (att, deff, "attacker"))
+
+    def _secondary(striking, target_side, role, step):
+        """Relief Sally rows (4.8.1) Strike in their normal sub-step. Sallying
+        Attackers Strike the Rearguard row (or Flank the Front Defenders if no
+        Rearguard remains); their Hits are reduced by Siegeworks. The Rearguard
+        Strikes the Sallying row (Siegeworks do not protect Attackers)."""
+        if role == "attacker" and striking.sally_lords():
+            tr = "rearguard" if target_side.rearguard_lords() else "front"
+            _resolve_step(gs, step, striking, target_side, role, pursuit, round_no,
+                          ctx, roller, log, striker_row="sally", target_row=tr,
+                          step_walls=siegeworks)
+        if role == "defender" and striking.rearguard_lords():
+            _resolve_step(gs, step, striking, target_side, role, pursuit, round_no,
+                          ctx, roller, log, striker_row="rearguard", target_row="sally",
+                          step_walls=0)
+
     # Cavalry Charge (R24): Round 1, charged Lords' Horse Melee strikes before
     # all Missiles; those Horse skip the normal Horse-Melee step this Round.
     charged: set = set()
@@ -395,57 +487,57 @@ def _strike_phase(gs: GameState, att: _Side, deff: _Side, pursuit: dict, round_n
             ids = _front_set(striking) & charge
             if ids:
                 _resolve_step(gs, "horse_melee", striking, target_side, role, pursuit, round_no,
-                              ctx, roller, log, restrict=ids, sallying=sallying, siegeworks=siegeworks)
+                              ctx, roller, log, restrict=ids)
                 charged |= ids
     cc_eff = cc - charge  # Cavalry Charge takes precedence over Command Confusion
-    # Missiles: non-Command-Confusion Lords first, then the CC Lords (strike second).
+    # Missiles: non-Command-Confusion Front Lords plus the Relief-Sally rows
+    # first, then the CC Lords (who strike second).
     for striking, target_side, role in sides:
         _resolve_step(gs, "missile", striking, target_side, role, pursuit, round_no, ctx, roller, log,
-                      restrict=_front_set(striking) - cc_eff, sallying=sallying, siegeworks=siegeworks)
+                      restrict=_front_set(striking) - cc_eff)
+        _secondary(striking, target_side, role, "missile")
     for striking, target_side, role in sides:
         ids = _front_set(striking) & cc_eff
         if ids:
             _resolve_step(gs, "missile", striking, target_side, role, pursuit, round_no, ctx, roller, log,
-                          restrict=ids, sallying=sallying, siegeworks=siegeworks)
-    # Melee (Horse then Foot, Defending then Attacking): non-CC Lords first.
+                          restrict=ids)
+    # Melee (Horse then Foot, Defending then Attacking): non-CC Front Lords plus
+    # the Relief-Sally rows first.
     for mstep in ("horse_melee", "foot_melee"):
         for striking, target_side, role in sides:
             _resolve_step(gs, mstep, striking, target_side, role, pursuit, round_no, ctx, roller, log,
-                          restrict=_front_set(striking) - cc_eff, skip_charge=charged,
-                          sallying=sallying, siegeworks=siegeworks)
+                          restrict=_front_set(striking) - cc_eff, skip_charge=charged)
+            _secondary(striking, target_side, role, mstep)
     # Then the CC Lords' Melee (strike second).
     for mstep in ("horse_melee", "foot_melee"):
         for striking, target_side, role in sides:
             ids = _front_set(striking) & cc_eff
             if ids:
                 _resolve_step(gs, mstep, striking, target_side, role, pursuit, round_no, ctx, roller, log,
-                              restrict=ids, skip_charge=charged, sallying=sallying, siegeworks=siegeworks)
+                              restrict=ids, skip_charge=charged)
 
 
 def _resolve_step(gs, step, striking: _Side, target_side: _Side, role, pursuit, round_no,
                   ctx: DecisionContext, roller: DiceRoller, log: list,
-                  restrict=None, skip_charge=None, sallying=None, siegeworks: int = 0) -> None:
+                  restrict=None, skip_charge=None, striker_row: str = "front",
+                  target_row: str = "front", step_walls: int = 0) -> None:
     hit_type = "missile" if step == "missile" else "melee"
     skip_charge = skip_charge or set()
-    sallying = sallying or set()
-    # Accumulate hits per target, separating Sallying strikers (Relief Sally:
-    # Siegeworks protect the besieged Defenders against Sallying strikes only).
+    srow = getattr(striking, striker_row)
     by = {}        # target -> [normal, anti]
-    by_s = {}      # target -> [normal, anti] from Sallying Lords
     for slot in SLOTS:
-        lid = striking.front[slot]
+        lid = srow[slot]
         if not lid or _is_routed(gs.lords[lid]):
             continue
         if restrict is not None and lid not in restrict:
             continue
         if step == "horse_melee" and lid in skip_charge:
             continue  # Horse already struck via Cavalry Charge this Round
-        target = _target_of(slot, target_side, ctx)
+        target = _target_of(slot, target_side, ctx, row=target_row)
         if not target:
             continue
         normal, anti = _lord_step_hits_caps(gs, lid, step, round_no)
-        bucket = by_s if (role == "attacker" and lid in sallying) else by
-        cur = bucket.setdefault(target, [0.0, 0.0])
+        cur = by.setdefault(target, [0.0, 0.0])
         cur[0] += normal
         cur[1] += anti
 
@@ -469,13 +561,10 @@ def _resolve_step(gs, step, striking: _Side, target_side: _Side, role, pursuit, 
         if n_hits or a_hits:
             log.append({"round": round_no, "step": step, "by": role, "target": target,
                         "hits": n_hits + a_hits, "routed_units": applied,
-                        **({"sallying": True} if walls > 0 else {})})
+                        **({"sallying": True} if striker_row == "sally" else {})})
 
-    for target in set(by) | set(by_s):
-        if target in by:
-            _emit(target, by[target][0], by[target][1], 0)
-        if target in by_s:  # Sallying strikers: Defenders roll Siegeworks Walls
-            _emit(target, by_s[target][0], by_s[target][1], siegeworks)
+    for target, (n, a) in by.items():
+        _emit(target, n, a, step_walls)
 
 
 def _apply_hits(gs: GameState, target_id: str, hits: int, hit_type: str,

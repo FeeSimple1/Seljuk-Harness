@@ -678,9 +678,13 @@ def legal_moves_campaign(gs: GameState) -> list[dict[str, Any]]:
             return []
         avail = [lid for lid in sd.command_decks()[side]["lords_with_cards"]
                  if lid in gs.lords and gs.lords[lid].mustered and gs.lords[lid].side == side]
-        return [{"type": "build_plan", "side": side, "_plan_size": plan_size(gs),
+        need = plan_size(gs, side)  # include any Treachery card owed by this side (4.1)
+        treachery_required = gs.meta.notes.get("treachery_side") == side
+        return [{"type": "build_plan", "side": side, "_plan_size": need,
                  "_available_lords": avail, "_no_command": "no_command",
-                 "_desc": f"Build the {side} Campaign Plan: {plan_size(gs)} ordered cards (4.1)"}]
+                 "_treachery_required": treachery_required, "_treachery": "treachery",
+                 "_desc": f"Build the {side} Campaign Plan: {need} ordered cards (4.1)"
+                          + (" incl. one Treachery card" if treachery_required else "")}]
     if step == "campaign.command" and gs.meta.active_lord is not None:
         moves = command_menu(gs)  # defined in the commands module (increment 2)
         moves.append({"type": "cmd_pass", "_desc": "Pass: the active Lord does nothing (4.5.8)"})

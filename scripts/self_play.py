@@ -55,6 +55,8 @@ def _build_plan_action(s: LLMSession, move: dict) -> dict:
     avail = move["_available_lords"]
     need = move["_plan_size"]
     cards, per = [], {}
+    if move.get("_treachery_required"):
+        cards.append("treachery")  # exactly one Treachery card owed this turn (1.4)
     i = 0
     while len(cards) < need:
         if avail:

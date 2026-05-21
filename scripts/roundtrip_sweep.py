@@ -42,14 +42,19 @@ def sweep_game(scenario: str, seed: int, max_steps: int = 4000) -> list[str]:
             except IllegalAction as e:
                 findings.append(f"{scenario}#{seed} {s.gs.meta.subphase}: {mv['type']} -> {e}")
         types = {m["type"]: m for m in moves}
-        if "build_plan" in types:
-            s.apply(_build_plan_action(s, types["build_plan"]))
-        elif "pass_step" in types:
-            s.apply({"type": "pass_step"})
-        elif "end_activation" in types:
-            s.apply({"type": "end_activation"})
-        else:
-            s.apply(moves[0])
+        try:
+            if "build_plan" in types:
+                s.apply(_build_plan_action(s, types["build_plan"]))
+            elif "pass_step" in types:
+                s.apply({"type": "pass_step"})
+            elif "end_activation" in types:
+                s.apply({"type": "end_activation"})
+            else:
+                s.apply(moves[0])
+        except IllegalAction as e:
+            # A divergence-detector must report, not abort: record and stop this game.
+            findings.append(f"{scenario}#{seed} {s.gs.meta.subphase}: advancing apply -> {e}")
+            break
     return findings
 
 

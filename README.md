@@ -22,35 +22,27 @@ driver that plays every scenario to a terminal state; `scripts/roundtrip_sweep.p
 is the standalone enumerator/handler sweep. Both run as CI gates across all five
 scenarios.
 
-**The harness is feature-complete against the rules**, with the documented
-remainders noted below. 210 tests pass.
+**The harness is feature-complete against the rules.** 280 tests pass, and the
+enumerator/handler round-trip sweep is clean across all 5 scenarios x 5 seeds.
 
-### Known remainders
+### Coverage
 The card-effect, combat, and phase systems are complete: all 50 Arts of War
 cards (Events + Capabilities, including the Hold Events Mountain Ambush,
 Betrayal, Cavalry Charge, Command Confusion, Summer Heat, Kleisourai, Honors of
 War, Sultan's Horse, Nomadic Tribes, Common Cultural Cause, Bad Omens, Surprise,
 Local Scouts, Basil Alousianos, and Winter Campaign/March), Treachery/Loyalty,
-the full Levy and Campaign, and Battle/Siege/Storm/Sally with Relief Sally
-(besieged Lords join, Siegeworks protect the besiegers against Sallying strikes,
-Withdraw-back and Siege-to-one on a failed relief).
+the full Levy and Campaign, and Battle/Siege/Storm/Sally.
 
-One minor positional approximation remains: the explicit Relief Sally *rearguard
-row* (defending Reserves positioned opposite the Sallying Attackers rather than
-the Sallying Lords flanking the Front Defenders). The mechanical effects
-(Siegeworks-vs-Sallying, who fights, the outcome) are modeled; only the
-four-row array layout for the rare case where the besiegers hold Reserve Lords
-is approximated.
+Relief Sally (4.8.1) is modeled in full: besieged Lords join the relief Attack
+as a Sallying row arrayed behind the Defenders; the Defender's Reserve forms a
+Rearguard row opposite them; Sallying Lords Strike the Rearguard (or Flank the
+Front Defenders when no Rearguard remains); Siegeworks protect against Sallying
+Strikes only (rolled separately); the Reposition "Adjust Rows" step (1.2.2 B)
+collapses rows as they Rout; and a failed relief Withdraws the Sallying Lords
+back inside and reduces the Siege markers to one.
 
-Two known simplifications remain, deliberately deferred (each needs an invasive
-engine restructure for a niche effect; deferred to protect the tested engine):
-- Winter Campaign / Winter March (R9/S18): a mid-Winter full Command-card
-  activation. Winter is automatic and the Command handlers are coupled to the
-  campaign turn flow, so this needs a Winter activation window + winter-aware
-  command termination.
-- Full Relief Sally rearguard rows (4.8.1): the join-the-attack core is done;
-  the four-row array (Front / Defenders / Sallying-behind / Rearguard) with
-  Siegeworks-vs-Sallying-only is not.
+Winter Campaign / Winter March (R9/S18) is implemented as a mid-Winter
+Command-card activation window with winter-aware command termination.
 
 ## Where things are
 

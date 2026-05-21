@@ -20,6 +20,7 @@ def test_self_play_reaches_terminal(scenario):
 
 
 @pytest.mark.parametrize("scenario", S.SCENARIOS)
-def test_roundtrip_sweep_clean(scenario):
-    findings = sweep_game(scenario, seed=1)
-    assert findings == [], f"{scenario}: enumerator/handler divergence: {findings[:5]}"
+@pytest.mark.parametrize("seed", [1, 2, 3, 4, 5])
+def test_roundtrip_sweep_clean(scenario, seed):
+    findings = sweep_game(scenario, seed=seed)
+    assert findings == [], f"{scenario}#{seed}: enumerator/handler divergence: {findings[:5]}"
