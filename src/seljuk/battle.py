@@ -121,13 +121,16 @@ def _is_routed(lord: LordState) -> bool:
 
 
 def begin_battle(gs: GameState, attackers: list[str], defenders: list[str], locale: str,
-                 scripted: Optional[list] = None, events: Optional[dict] = None) -> dict[str, Any]:
+                 scripted: Optional[list] = None, events: Optional[dict] = None,
+                 sallying: Optional[set] = None, siegeworks: int = 0) -> dict[str, Any]:
     """Entry point from the Approach 'Stand' path (4.3.4 -> 4.8). ``events`` maps
-    a side to the Held Battle Events it plays (R2/S2 Mountain Ambush, S3 Betrayal)."""
+    a side to the Held Battle Events it plays; ``sallying``/``siegeworks`` carry
+    a Relief Sally (besieged Lords + the Defenders' Siegeworks Walls vs them)."""
     played, cc, charge = _consume_battle_events(gs, events)
     ctx = DecisionContext(scripted)
     roller = _roller(gs)
-    result = resolve_battle(gs, attackers, defenders, locale, ctx, roller, played, cc, charge)
+    result = resolve_battle(gs, attackers, defenders, locale, ctx, roller, played, cc, charge,
+                            sallying=sallying, siegeworks=siegeworks)
     _save_roller(gs, roller)
     # remove the pending battle marker if present
     gs.meta.pending = [p for p in gs.meta.pending if p.get("type") != "battle"]
@@ -179,10 +182,12 @@ def _save_roller(gs: GameState, r: DiceRoller) -> None:
 def resolve_battle(gs: GameState, attacker_ids: list[str], defender_ids: list[str],
                    locale: str, ctx: DecisionContext, roller: DiceRoller,
                    played: Optional[dict] = None, cc: Optional[set] = None,
-                   charge: Optional[set] = None) -> dict[str, Any]:
+                   charge: Optional[set] = None, sallying: Optional[set] = None,
+                   siegeworks: int = 0) -> dict[str, Any]:
     played = played or {"seljuk": [], "roman": []}
     cc = cc or set()
     charge = charge or set()
+    sallying = sallying or set()
     active = gs.meta.active_lord if gs.meta.active_lord in attacker_ids else attacker_ids[0]
     for _lid in attacker_ids + defender_ids:
         gs.lords[_lid].flags["turkic_routed_battle"] = 0
@@ -233,7 +238,8 @@ def resolve_battle(gs: GameState, attacker_ids: list[str], defender_ids: list[st
                     if not betrayal_pending:
                         break
 
-        _strike_phase(gs, att, deff, pursuit, round_no, ctx, roller, rounds, cc=cc, charge=charge)
+        _strike_phase(gs, att, deff, pursuit, round_no, ctx, roller, rounds, cc=cc, charge=charge,
+                      sallying=sallying, siegeworks=siegeworks)
 
         att_alive = any(not _is_routed(gs.lords[l]) for l in att.all_lords())
         def_alive = any(not _is_routed(gs.lords[l]) for l in deff.all_lords())
@@ -375,9 +381,11 @@ def _front_set(side: _Side) -> set:
 
 def _strike_phase(gs: GameState, att: _Side, deff: _Side, pursuit: dict, round_no: int,
                   ctx: DecisionContext, roller: DiceRoller, log: list,
-                  cc: set | None = None, charge: set | None = None) -> None:
+                  cc: set | None = None, charge: set | None = None,
+                  sallying: set | None = None, siegeworks: int = 0) -> None:
     cc = cc or set()
     charge = charge or set()
+    sallying = sallying or set()
     sides = ((deff, att, "defender"), (att, deff, "attacker"))
     # Cavalry Charge (R24): Round 1, charged Lords' Horse Melee strikes before
     # all Missiles; those Horse skip the normal Horse-Melee step this Round.
@@ -387,38 +395,43 @@ def _strike_phase(gs: GameState, att: _Side, deff: _Side, pursuit: dict, round_n
             ids = _front_set(striking) & charge
             if ids:
                 _resolve_step(gs, "horse_melee", striking, target_side, role, pursuit, round_no,
-                              ctx, roller, log, restrict=ids)
+                              ctx, roller, log, restrict=ids, sallying=sallying, siegeworks=siegeworks)
                 charged |= ids
     cc_eff = cc - charge  # Cavalry Charge takes precedence over Command Confusion
     # Missiles: non-Command-Confusion Lords first, then the CC Lords (strike second).
     for striking, target_side, role in sides:
         _resolve_step(gs, "missile", striking, target_side, role, pursuit, round_no, ctx, roller, log,
-                      restrict=_front_set(striking) - cc_eff)
+                      restrict=_front_set(striking) - cc_eff, sallying=sallying, siegeworks=siegeworks)
     for striking, target_side, role in sides:
         ids = _front_set(striking) & cc_eff
         if ids:
-            _resolve_step(gs, "missile", striking, target_side, role, pursuit, round_no, ctx, roller, log, restrict=ids)
+            _resolve_step(gs, "missile", striking, target_side, role, pursuit, round_no, ctx, roller, log,
+                          restrict=ids, sallying=sallying, siegeworks=siegeworks)
     # Melee (Horse then Foot, Defending then Attacking): non-CC Lords first.
     for mstep in ("horse_melee", "foot_melee"):
         for striking, target_side, role in sides:
             _resolve_step(gs, mstep, striking, target_side, role, pursuit, round_no, ctx, roller, log,
-                          restrict=_front_set(striking) - cc_eff, skip_charge=charged)
+                          restrict=_front_set(striking) - cc_eff, skip_charge=charged,
+                          sallying=sallying, siegeworks=siegeworks)
     # Then the CC Lords' Melee (strike second).
     for mstep in ("horse_melee", "foot_melee"):
         for striking, target_side, role in sides:
             ids = _front_set(striking) & cc_eff
             if ids:
                 _resolve_step(gs, mstep, striking, target_side, role, pursuit, round_no, ctx, roller, log,
-                              restrict=ids, skip_charge=charged)
+                              restrict=ids, skip_charge=charged, sallying=sallying, siegeworks=siegeworks)
 
 
 def _resolve_step(gs, step, striking: _Side, target_side: _Side, role, pursuit, round_no,
                   ctx: DecisionContext, roller: DiceRoller, log: list,
-                  restrict=None, skip_charge=None) -> None:
+                  restrict=None, skip_charge=None, sallying=None, siegeworks: int = 0) -> None:
     hit_type = "missile" if step == "missile" else "melee"
     skip_charge = skip_charge or set()
-    by_normal: dict[str, float] = {}
-    by_anti: dict[str, float] = {}
+    sallying = sallying or set()
+    # Accumulate hits per target, separating Sallying strikers (Relief Sally:
+    # Siegeworks protect the besieged Defenders against Sallying strikes only).
+    by = {}        # target -> [normal, anti]
+    by_s = {}      # target -> [normal, anti] from Sallying Lords
     for slot in SLOTS:
         lid = striking.front[slot]
         if not lid or _is_routed(gs.lords[lid]):
@@ -431,12 +444,13 @@ def _resolve_step(gs, step, striking: _Side, target_side: _Side, role, pursuit, 
         if not target:
             continue
         normal, anti = _lord_step_hits_caps(gs, lid, step, round_no)
-        by_normal[target] = by_normal.get(target, 0.0) + normal
-        by_anti[target] = by_anti.get(target, 0.0) + anti
-    for target in set(by_normal) | set(by_anti):
-        n_raw = by_normal.get(target, 0.0)
-        a_raw = by_anti.get(target, 0.0)
-        if pursuit.get(role):  # Conceding side halves its Hits (Pursuit, 4.8.2)
+        bucket = by_s if (role == "attacker" and lid in sallying) else by
+        cur = bucket.setdefault(target, [0.0, 0.0])
+        cur[0] += normal
+        cur[1] += anti
+
+    def _emit(target, n_raw, a_raw, walls):
+        if pursuit.get(role):  # Pursuit halving (4.8.2)
             n_raw /= 2.0
             a_raw /= 2.0
         n_hits = int(n_raw + 0.999)
@@ -444,14 +458,24 @@ def _resolve_step(gs, step, striking: _Side, target_side: _Side, role, pursuit, 
         if step == "missile" and round_no == 1 and target_side.mountain_ambush:
             n_hits = _roll_walls(roller, n_hits, (1, 3))  # Mountain Ambush (R2/S2)
             a_hits = _roll_walls(roller, a_hits, (1, 3))
+        if walls > 0:  # Siegeworks vs Sallying strikes (Relief Sally, 4.8.1)
+            n_hits = _roll_walls(roller, n_hits, (1, walls))
+            a_hits = _roll_walls(roller, a_hits, (1, walls))
         applied = []
         if n_hits:
             applied += _apply_hits(gs, target, n_hits, hit_type, ctx, roller)
-        if a_hits:  # anti-armor Hits roll Protection at -1 Armor (Bardoukia/Alakatia)
+        if a_hits:
             applied += _apply_hits(gs, target, a_hits, hit_type, ctx, roller, anti_armor=True)
         if n_hits or a_hits:
             log.append({"round": round_no, "step": step, "by": role, "target": target,
-                        "hits": n_hits + a_hits, "routed_units": applied})
+                        "hits": n_hits + a_hits, "routed_units": applied,
+                        **({"sallying": True} if walls > 0 else {})})
+
+    for target in set(by) | set(by_s):
+        if target in by:
+            _emit(target, by[target][0], by[target][1], 0)
+        if target in by_s:  # Sallying strikers: Defenders roll Siegeworks Walls
+            _emit(target, by_s[target][0], by_s[target][1], siegeworks)
 
 
 def _apply_hits(gs: GameState, target_id: str, hits: int, hit_type: str,

@@ -81,6 +81,8 @@ _CAMPAIGN_HANDLERS: dict[str, Callable[[GameState, dict, DiceRoller], dict]] = {
     "resolve_event": actions.h_resolve_event,
     "resolve_loyalty": campaign.h_resolve_loyalty,
     "basil_response": campaign.h_basil_response,
+    "winter_activate": campaign.h_winter_activate,
+    "winter_proceed": campaign.h_winter_proceed,
     "discard_imperial_coffers": campaign.h_discard_imperial_coffers,
     "play_hold_event": actions.h_play_hold_event,
 }
@@ -89,7 +91,7 @@ _CAMPAIGN_HANDLERS: dict[str, Callable[[GameState, dict, DiceRoller], dict]] = {
 def _handlers_for_phase(phase: str) -> dict[str, Callable[[GameState, dict, DiceRoller], dict]]:
     if phase == "levy":
         return _HANDLERS
-    if phase == "campaign":
+    if phase in ("campaign", "winter"):
         return _CAMPAIGN_HANDLERS
     return {}
 
@@ -108,7 +110,7 @@ def apply_action(gs: GameState, action: dict[str, Any]) -> dict[str, Any]:
 
 
 def legal_moves(gs: GameState) -> list[dict[str, Any]]:
-    if gs.meta.phase == "campaign":
+    if gs.meta.phase in ("campaign", "winter"):
         return campaign.legal_moves_campaign(gs)
     if gs.meta.phase != "levy":
         return []

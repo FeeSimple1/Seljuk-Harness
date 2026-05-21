@@ -216,6 +216,9 @@ def end_activation(gs: GameState) -> None:
 
 
 def _after_card(gs: GameState) -> None:
+    if gs.meta.phase == "winter":
+        _winter_end_activation(gs)
+        return
     roller = DiceRoller(seed=gs.meta.seed)
     if gs.meta.rng_state is not None:
         st = gs.meta.rng_state
@@ -333,21 +336,91 @@ def _end_campaign(gs: GameState) -> None:
     _reset(gs)      # 4.7.5 (non-advance parts)
     gs.meta.vp = scenarios.score(gs)
     if box in (3, 6, 9):                # 4.7.6 Winter on the first three Autumns
-        winner = _winter(gs)
-        gs.meta.vp = scenarios.score(gs)
-        if winner:
-            _set_game_over(gs, winner)
+        # Winter Campaign / Winter March (R9/S18): a pre-Bounty activation
+        # window. Pause if either side Holds the card; else resolve Winter now.
+        holders = [s for s, c in (("roman", "R9"), ("seljuk", "S18"))
+                   if c in gs.side_decks(s).held_events]
+        if holders:
+            gs.meta.phase = "winter"
+            gs.meta.subphase = "winter.activation"
+            gs.meta.active_player = holders[0]
+            gs.meta.active_lord = None
+            gs.meta.notes["winter_holders"] = holders
             return
+        _finalize_winter(gs)
+        return
+    _advance_or_end(gs)
+
+
+def _finalize_winter(gs: GameState) -> None:
+    winner = _winter(gs)
+    gs.meta.vp = scenarios.score(gs)
+    if winner:
+        _set_game_over(gs, winner)
+        return
+    _advance_or_end(gs)
+
+
+def _advance_or_end(gs: GameState) -> None:
+    box = gs.meta.calendar_box
     if box >= gs.meta.final_box:        # 4.7.1 Game End
         _set_game_over(gs, scenarios.end_of_scenario_winner(gs))
         return
-    # advance to next Turn's Levy (4.7.5 final bullet)
-    gs.meta.calendar_box = box + 1
+    gs.meta.calendar_box = box + 1      # advance to next Turn's Levy (4.7.5)
     gs.meta.phase = "levy"
     gs.meta.subphase = None
     gs.meta.plan_submitted = {}
     gs.meta.active_card = None
     gs.meta.active_lord = None
+    gs.meta.notes.pop("winter_holders", None)
+
+
+def _winter_end_activation(gs: GameState) -> None:
+    """Called when a Winter-activated Lord's card ends (instead of the campaign
+    _after_card). Move to the next Holder, or finalize Winter."""
+    gs.meta.active_lord = None
+    gs.meta.active_card = None
+    gs.meta.actions_remaining = 0
+    holders = gs.meta.notes.get("winter_holders", [])
+    if holders:
+        gs.meta.active_player = holders[0]   # next Holder may activate or proceed
+    else:
+        _finalize_winter(gs)
+
+
+def h_winter_activate(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
+    """R9/S18: play the Held card to activate one Lord in Winter (one Command card)."""
+    if gs.meta.subphase != "winter.activation":
+        raise IllegalAction("wrong_step", "Winter activation only in the Winter window (R9/S18)")
+    side = gs.meta.active_player
+    card = "R9" if side == "roman" else "S18"
+    if card not in gs.side_decks(side).held_events:
+        raise IllegalAction("not_held", f"{side} does not hold {card}")
+    lord = gs.lords.get(action.get("lord"))
+    if lord is None or lord.side != side or not lord.mustered:
+        raise IllegalAction("bad_lord", "activate one of your Mustered Lords (R9/S18)")
+    gs.side_decks(side).held_events.remove(card)
+    gs.side_decks(side).draw_deck.append(card)
+    gs.meta.notes["winter_holders"] = [h for h in gs.meta.notes.get("winter_holders", []) if h != side]
+    gs.meta.active_lord = lord.id
+    gs.meta.active_card = lord.id
+    gs.meta.actions_remaining = capabilities.command_rating(gs, lord.id, roller)
+    lord.flags.pop("first_march_used", None)
+    return {"ok": True, "action": "winter_activate", "lord": lord.id, "actions": gs.meta.actions_remaining}
+
+
+def h_winter_proceed(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
+    """Decline a Winter activation; move to the next Holder or resolve Winter."""
+    if gs.meta.subphase != "winter.activation":
+        raise IllegalAction("wrong_step", "not in the Winter activation window")
+    side = gs.meta.active_player
+    gs.meta.notes["winter_holders"] = [h for h in gs.meta.notes.get("winter_holders", []) if h != side]
+    holders = gs.meta.notes["winter_holders"]
+    if holders:
+        gs.meta.active_player = holders[0]
+        return {"ok": True, "action": "winter_proceed", "next_holder": holders[0]}
+    _finalize_winter(gs)
+    return {"ok": True, "action": "winter_proceed", "winter_resolved": True}
 
 
 def _grow(gs: GameState) -> None:
@@ -540,7 +613,7 @@ def h_build_plan(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> d
 
 
 def h_cmd_pass(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
-    if gs.meta.subphase != "campaign.command" or gs.meta.active_lord is None:
+    if gs.meta.subphase not in ("campaign.command", "winter.activation") or gs.meta.active_lord is None:
         raise IllegalAction("wrong_step", "Pass ends the active Lord's card (4.5.8)")
     lord = gs.meta.active_lord
     end_activation(gs)
@@ -548,7 +621,7 @@ def h_cmd_pass(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dic
 
 
 def h_end_activation(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
-    if gs.meta.subphase != "campaign.command" or gs.meta.active_lord is None:
+    if gs.meta.subphase not in ("campaign.command", "winter.activation") or gs.meta.active_lord is None:
         raise IllegalAction("wrong_step", "no active Lord to end")
     lord = gs.meta.active_lord
     end_activation(gs)
@@ -556,6 +629,17 @@ def h_end_activation(gs: GameState, action: dict[str, Any], roller: DiceRoller) 
 
 
 def legal_moves_campaign(gs: GameState) -> list[dict[str, Any]]:
+    if gs.meta.subphase == "winter.activation":
+        if gs.meta.active_lord is not None:
+            return command_menu(gs) + [{"type": "end_activation", "_desc": "End the Winter activation"}]
+        side = gs.meta.active_player
+        card = "R9" if side == "roman" else "S18"
+        out = [{"type": "winter_proceed", "_desc": "Decline the Winter activation (R9/S18)"}]
+        if card in gs.side_decks(side).held_events:
+            out = [{"type": "winter_activate", "lord": lid,
+                    "_desc": f"Winter Campaign/March: activate {lid} (R9/S18)"}
+                   for lid, l in gs.lords.items() if l.mustered and l.side == side] + out
+        return out
     br = next((p for p in gs.meta.pending if p["type"] == "basil_response"), None)
     if br is not None:
         return [{"type": "basil_response", "play": True, "_desc": "Play Basil: Surrender -> Bypass (R7)"},
@@ -1132,7 +1216,9 @@ def h_respond_approach(gs: GameState, action: dict[str, Any], roller: DiceRoller
         attackers += sallying
         res = battle.begin_battle(gs, attackers, standers, to,
                                   scripted=action.get("battle_decisions"),
-                                  events=action.get("battle_events"))
+                                  events=action.get("battle_events"),
+                                  sallying=set(sallying),
+                                  siegeworks=gs.locales[to].siege_markers if sallying else 0)
         if sallying:
             res["relief_sally"] = list(sallying)
             for lid in sallying:                       # Sallying Lords withdraw back inside

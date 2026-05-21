@@ -25,14 +25,22 @@ scenarios.
 **The harness is feature-complete against the rules**, with the documented
 remainders noted below. 210 tests pass.
 
-### Known remainders (tracked, not silently skipped)
-The Phase-4/5/6 remainder is essentially closed: special-Vassal-adder
-Capabilities, every immediate/This-Campaign Event resolver, Treachery/Loyalty
-wiring (incl. Imperial Coffers), and all the Hold Events — Michael Attaleiates,
-Eastern Rebellions, Sultan's Horse, Nomadic Tribes, Common Cultural Cause, Bad
-Omens, Summer Heat, Kleisourai, Honors of War, Mountain Ambush, Betrayal,
-Cavalry Charge, Command Confusion, Surprise, Local Scouts, Basil Alousianos —
-plus the Relief Sally core and greedy + combat-aggressive self-play agents.
+### Known remainders
+The card-effect, combat, and phase systems are complete: all 50 Arts of War
+cards (Events + Capabilities, including the Hold Events Mountain Ambush,
+Betrayal, Cavalry Charge, Command Confusion, Summer Heat, Kleisourai, Honors of
+War, Sultan's Horse, Nomadic Tribes, Common Cultural Cause, Bad Omens, Surprise,
+Local Scouts, Basil Alousianos, and Winter Campaign/March), Treachery/Loyalty,
+the full Levy and Campaign, and Battle/Siege/Storm/Sally with Relief Sally
+(besieged Lords join, Siegeworks protect the besiegers against Sallying strikes,
+Withdraw-back and Siege-to-one on a failed relief).
+
+One minor positional approximation remains: the explicit Relief Sally *rearguard
+row* (defending Reserves positioned opposite the Sallying Attackers rather than
+the Sallying Lords flanking the Front Defenders). The mechanical effects
+(Siegeworks-vs-Sallying, who fights, the outcome) are modeled; only the
+four-row array layout for the rare case where the besiegers hold Reserve Lords
+is approximated.
 
 Two known simplifications remain, deliberately deferred (each needs an invasive
 engine restructure for a niche effect; deferred to protect the tested engine):
