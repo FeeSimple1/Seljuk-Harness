@@ -22,6 +22,8 @@ driver that plays every scenario to a terminal state; `scripts/roundtrip_sweep.p
 is the standalone enumerator/handler sweep. Both run as CI gates across all five
 scenarios.
 
+**To play a game** (as a person or another agent), see [`LLM_PLAY_GUIDE.md`](LLM_PLAY_GUIDE.md): start with `seljuk new <scenario>` then drive the turn loop with `briefing` / `legal-moves` / `do` against a save file. Solo and two-chat head-to-head modes are both documented.
+
 **The harness is feature-complete against the rules.** 280 tests pass, and the
 enumerator/handler round-trip sweep is clean across all 5 scenarios x 5 seeds.
 
