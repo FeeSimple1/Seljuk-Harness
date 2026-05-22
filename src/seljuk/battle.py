@@ -203,6 +203,12 @@ def resolve_battle(gs: GameState, attacker_ids: list[str], defender_ids: list[st
     active = gs.meta.active_lord if gs.meta.active_lord in attacker_ids else attacker_ids[0]
     for _lid in attacker_ids + defender_ids:
         gs.lords[_lid].flags["turkic_routed_battle"] = 0
+    # Pursuit exception (4.8.2): a single Conceding Lord whose Forces are ONLY
+    # Turkic Horse at the START of the battle, facing a single opposing Lord,
+    # causes BOTH sides to halve Hits in the final Round.
+    _turkic_only_start = {lid: (set(u for u, n in gs.lords[lid].forces.items() if n > 0) == {"turkic_horse"})
+                          for lid in attacker_ids + defender_ids}
+    _solo_battle = len(attacker_ids) == 1 and len(defender_ids) == 1
     # Sallying Lords (Relief Sally, 4.8.1) form their own row behind the
     # Defenders; they are kept out of the relieving force's Front/Reserve.
     relief = bool(sallying)
@@ -253,6 +259,11 @@ def resolve_battle(gs: GameState, attacker_ids: list[str], defender_ids: list[st
                 if conceder is None and _offer_concede(gs, side, ctx, role):
                     conceder = role
                     pursuit[role] = True
+                    if _solo_battle:  # 4.8.2 Turkic-only Conceding exception -> halve BOTH
+                        conceding_lid = (attacker_ids if role == "attacker" else defender_ids)[0]
+                        if _turkic_only_start.get(conceding_lid):
+                            pursuit["attacker"] = True
+                            pursuit["defender"] = True
             # Reposition
             _reposition(gs, att, deff, ctx)
             if betrayal_pending:  # S3 Betrayal: move a non-commander Roman Front Lord to Reserve
