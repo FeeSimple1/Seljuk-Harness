@@ -109,3 +109,28 @@ def test_battle_terminates_even_in_stalemate():
     gs, res = _two_lord_battle(9, attacker="roussel_de_bailleul",
                                att_forces={"norman_knights": 3}, def_forces={"norman_knights": 3})
     assert res["rounds"] <= 30
+
+
+def test_conceding_loser_relocates_no_colocation_4_8_3():
+    """Inferno-Harness Retreat advisory: the cold 'loser survives -> Retreat'
+    branch (only reachable via Concede / early battle end) must RELOCATE the
+    losing Lord, not merely apply the Service penalty. A real Seljuk-vs-Roman
+    battle with a scripted Attacker Concede leaves the loser alive; assert he
+    moved OUT of the battle Locale, stayed Mustered, and that no two opposing
+    un-besieged Lords share a Locale (co-location invariant)."""
+    from seljuk.invariants import check_invariants
+    for seed in range(1, 12):
+        gs = S.load_scenario("emperor_and_the_lion", seed=seed)
+        a = gs.lords["alp_arslan"]; d = gs.lords["chatatourios"]
+        a.cylinder = "melitene"; d.cylinder = "melitene"
+        a.forces = {"ghulam_cavalry": 8}; d.forces = {"tagmata": 8}
+        gs.meta.phase = "campaign"; gs.meta.active_lord = "alp_arslan"
+        res = resolve_battle(gs, ["alp_arslan"], ["chatatourios"], "melitene",
+                             DecisionContext([("concede", True)]), DiceRoller(seed))
+        if res["conceder"] != "attacker" or sum(a.forces.values()) == 0:
+            continue  # round-1 rout pre-empted the concede, or pursuit wiped him
+        assert a.mustered is True, f"seed {seed}: surviving conceder un-mustered"
+        assert a.cylinder != "melitene", f"seed {seed}: loser not relocated (advisory bug)"
+        assert check_invariants(gs) == [], f"seed {seed}: {check_invariants(gs)}"
+        return  # one concrete surviving-conceder case is enough
+    raise AssertionError("no surviving-conceder case produced; adjust setup")

@@ -73,4 +73,31 @@ def check_invariants(gs: GameState) -> list[str]:
         if st.conquered_count < 0:
             bad.append(f"{locid}.conquered_count negative: {st.conquered_count}")
 
+    # No two opposing Lords, both "in the open" (neither Besieged-inside nor
+    # Bypassing), may share a Locale. Cheap class-closing guard (Inferno-Harness
+    # Retreat advisory): a post-combat Retreat/Sally that applied a Service
+    # penalty but forgot to relocate the loser would strand opposing Lords
+    # together and trip this check. Three states are legal co-locations and are
+    # excluded:
+    #   * Besieged-inside vs. besiegers-outside (keyed on `besieged`, not on a
+    #     Siege marker).
+    #   * A Bypassing Lord sharing the Locale with an enemy: the Approach trigger
+    #     fires only on an "Unbesieged, Unbypassed Enemy Lord" (4.3.4/4.3.5), so
+    #     a `bypassed` Lord legitimately coexists with an enemy.
+    #   * Mid-contact: right after a March into an enemy-occupied Locale an
+    #     `approach_response` is owed and both Lords are momentarily co-located
+    #     until the defender Avoids/Withdraws/Stands.
+    contact_pending = {p.get("locale") for p in gs.meta.pending
+                       if p.get("type") == "approach_response"}
+    open_sides: dict[str, set[str]] = {}
+    for lid, l in gs.lords.items():
+        if not l.mustered or l.cylinder in _SPECIAL_CYL or l.besieged or l.bypassed:
+            continue
+        if l.cylinder in contact_pending:
+            continue
+        open_sides.setdefault(l.cylinder, set()).add(l.side)
+    for loc, sides in open_sides.items():
+        if len(sides) > 1:
+            bad.append(f"opposing in-the-open Lords share Locale {loc}: {sorted(sides)}")
+
     return bad

@@ -60,7 +60,17 @@ def _rand_resolve_pending(s, rng, findings, tag):
             choices = {}
             for d in p["defenders"]:
                 choices[d] = {"action": rng.choice(["stand", "stand", "withdraw"])}
-            s.apply({"type": "respond_approach", "choices": choices})
+            try:
+                s.apply({"type": "respond_approach", "choices": choices})
+            except IllegalAction:
+                # SMOKE-004: "withdraw" is only legal into a Friendly Stronghold at
+                # the Locale; when there is none the engine (correctly) rejects it.
+                # Falling through to the outer `except -> pending.remove` would
+                # strand the attacker and defender co-located (an illegal state the
+                # co-location invariant now flags). Resolve validly instead: Stand
+                # always triggers a Battle and clears the Approach.
+                s.apply({"type": "respond_approach",
+                         "choices": {d: {"action": "stand"} for d in p["defenders"]}})
         elif t == "besiege_or_bypass":
             s.apply({"type": "besiege_bypass", "choice": rng.choice(["besiege", "bypass"])})
         elif t == "assign_themata_defenders":

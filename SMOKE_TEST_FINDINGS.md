@@ -102,3 +102,68 @@ classifies draws as Events (held/this-campaign/immediate), no `deploy_capability
 pendings. Marked `SMOKE-003` in `src/seljuk/scenarios.py`. Tests:
 `tests/test_phase2_aow_cta_loyalty.py::test_skip_first_levy_treats_setup_as_first_aow_smoke003`
 and `::test_load_scenario_first_aow_done_matches_skip_first_levy_smoke003`.
+
+### R-advisory — SMOKE-004: co-location invariant added; fuzzer stranded Lords by dropping an Approach
+
+**Pattern:** missing invariant + driver mishandling of an un-satisfiable pending
+(cf. Inferno-Harness Retreat advisory; same class as SMOKE-002).
+**Context:** acting on the Inferno-Harness cross-project advisory ("Retreat that
+penalizes but never relocates"). The advisory's MAIN bug is ABSENT here: Battle
+(`battle._lord_fate`) and Sally (`battle._end_sally_besiegers_lose`) both
+RELOCATE the losing Lord's `cylinder` (and a Storm correctly does not retreat
+the attacker). Verified on the cold "Concede -> loser survives -> Retreat"
+branch: a scripted Attacker Concede leaves the loser alive, relocated out of the
+battle Locale, still Mustered (test `test_phase3b_battle::
+test_conceding_loser_relocates_no_colocation_4_8_3`).
+**What was missing / found:** there was no invariant forbidding the illegal
+"opposing un-besieged Lords share a Locale" state (advisory #3). Added one in
+`invariants.py`, keyed on the `besieged`/`bypassed` flags and excluding the
+legitimate mid-Approach transient. With it active, the aggressive smoke fuzzer
+surfaced that `smoke_fuzz._rand_resolve_pending` resolved an `approach_response`
+by trying "withdraw" even with no Friendly Stronghold present; the engine
+correctly rejects it, after which the driver's `except -> pending.remove` left
+the attacker and defender stranded co-located.
+**Fix:** `scripts/smoke_fuzz.py` now falls back to "stand" (always legal,
+triggers the Battle) when a random Approach choice is rejected. The co-location
+invariant + the concede regression test are the durable guards. Marked
+`SMOKE-004`. Engine unchanged for this item.
+
+### SMOKE-005 (OPEN) — stale `locale.bypass` suppresses Approach against a fresh un-bypassed enemy Lord
+
+**Pattern:** lifecycle leak (a flag set but never cleared) producing an illegal
+board state — surfaced by the new SMOKE-004 co-location invariant.
+**Symptom (reproduced deterministically):** `locale.bypass` is set True when a
+Lord Bypasses a Stronghold (`campaign.h_besiege_bypass`) but is never cleared
+when the bypassing Lord leaves, nor at End Campaign (only `battle.py` clears it
+post-combat). `campaign._resolve_arrival` does `if gs.locales[to].bypass:
+enemy_lords = []`, so once a Locale's bypass flag is stale, a later enemy Lord
+marching in triggers NO Approach (4.3.4) and the two opposing Lords end
+un-besieged, un-bypassed, co-located. The same stale flag also blocks a later
+Besiege (`_resolve_arrival` line ~1185).
+**Rule basis:** Battle & Storm reference: Approach fires on an "Unbesieged,
+**Unbypassed** Enemy Lord"; the `bypassed` state is per-Lord, not a permanent
+property of the Locale.
+**Why not fixed yet:** the correct lifecycle of `locale.bypass` (cleared when
+the last bypasser leaves? at End Campaign? or replace the blanket
+locale-level suppression with a per-Lord `bypassed` exclusion in
+`_enemy_lord_ids_at`?) is a Rules-of-Play 4.3.5 / design question; needs
+consultation before a fix to avoid a regression. Surfaced to the user.
+
+### SMOKE-006 (OPEN) — Retreat destination rules incomplete (4.8.3)
+
+**Pattern:** rules-coverage gap (clear rule, partially enforced).
+**Symptom:** `battle._lord_fate` (Battle) and `battle._end_sally_besiegers_lose`
+(Sally) build Retreat options by excluding adjacent Locales that contain enemy
+**Lords**, but NOT those containing an enemy **Stronghold** that is not already
+Besieged or Bypassed (4.8.3 A). Two further 4.8.3 restrictions are unenforced
+because the approach breadcrumb is dropped: "Defenders may NOT Retreat along the
+Way the Attackers Approached" and "Marching Attackers MUST Retreat to the Locale
+whence they Approached." `campaign.h_respond_approach` even computes an
+`attacker_origin` variable, but it reads the attacker's CURRENT cylinder (= the
+battle Locale, since the March already moved them) and is unused — the true
+origin is never recorded on the March / approach pending.
+**Impact:** legal-state correctness (offers/forces illegal Retreat
+destinations), not an illegal co-location. Does not trip the SMOKE-004 invariant.
+**Fix scope:** the enemy-Stronghold exclusion is contained; the approach-Way
+rules require recording the March origin (h_cmd_march -> approach_response
+pending -> battle). Surfaced to the user for scope.
