@@ -134,3 +134,51 @@ def test_conceding_loser_relocates_no_colocation_4_8_3():
         assert check_invariants(gs) == [], f"seed {seed}: {check_invariants(gs)}"
         return  # one concrete surviving-conceder case is enough
     raise AssertionError("no surviving-conceder case produced; adjust setup")
+
+
+def test_retreat_blocked_by_unbesieged_enemy_stronghold_483():
+    """4.8.3 A: a Retreat target with an enemy Stronghold blocks unless that
+    Stronghold is already Besieged or Bypassed; friendly/Ruined never block."""
+    from seljuk import battle
+    gs = S.load_scenario("emperor_and_the_lion")  # melitene = Roman town
+    assert battle._retreat_blocked(gs, "melitene", "seljuk") is True       # enemy stronghold
+    gs.locales["melitene"].siege_markers = 1
+    assert battle._retreat_blocked(gs, "melitene", "seljuk") is False      # Besieged -> allowed
+    gs.locales["melitene"].siege_markers = 0; gs.locales["melitene"].bypass = True
+    assert battle._retreat_blocked(gs, "melitene", "seljuk") is False      # Bypassed -> allowed
+    gs.locales["melitene"].bypass = False
+    assert battle._retreat_blocked(gs, "melitene", "roman") is False       # own Stronghold ok
+
+
+def test_marching_attacker_retreats_to_approach_origin_483():
+    """4.8.3: a Marching Attacker that loses must Retreat to the Locale it
+    Approached from; if that Locale is not a legal target it cannot Retreat."""
+    from seljuk import battle, map as gmap
+    gs = S.load_scenario("emperor_and_the_lion")
+    lord = gs.lords["alp_arslan"]; lord.cylinder = "melitene"; lord.forces = {"ghulam_cavalry": 2}
+    origin = next(e["to"] for e in gmap.ways_from("melitene")
+                  if not battle._retreat_blocked(gs, e["to"], "seljuk"))
+    fate = battle._lord_fate(gs, lord, "attacker", "melitene", conceded=True,
+                             ctx=battle.DecisionContext(), approach_origin=origin, marcher_origin=origin)
+    assert fate == "retreat" and lord.cylinder == origin
+    # Origin not a legal/adjacent target -> the Attacker is Removed (cannot Retreat).
+    l2 = gs.lords["artuk_beg"]; l2.cylinder = "melitene"; l2.forces = {"infantry": 1}
+    fate2 = battle._lord_fate(gs, l2, "attacker", "melitene", conceded=True,
+                              ctx=battle.DecisionContext(), approach_origin="ani", marcher_origin="ani")
+    assert fate2 == "removed"
+
+
+def test_defender_cannot_retreat_along_approach_way_483():
+    """4.8.3: a losing Defender may not Retreat along the Way the Attackers
+    Approached from (the approach-origin Locale is excluded)."""
+    from seljuk import battle, map as gmap
+    gs = S.load_scenario("emperor_and_the_lion")
+    lord = gs.lords["chatatourios"]; lord.cylinder = "melitene"; lord.forces = {"infantry": 2}
+    clean = [e["to"] for e in gmap.ways_from("melitene") if not battle._retreat_blocked(gs, e["to"], "roman")]
+    assert len(clean) >= 2
+    origin = clean[0]
+    fate = battle._lord_fate(gs, lord, "defender", "melitene", conceded=False,
+                             ctx=battle.DecisionContext(), approach_origin=origin)
+    assert fate in ("retreat", "withdraw", "removed")
+    if fate == "retreat":
+        assert lord.cylinder != origin, "defender retreated back along the approach Way"

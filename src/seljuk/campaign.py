@@ -267,6 +267,10 @@ def feed_pay_disband(gs: GameState, roller: DiceRoller) -> dict:
     from . import actions
     for side in SIDES:
         result["disband"].extend(actions.resolve_disband(gs, side))
+    # SMOKE-005 (4.3.5/4.4.1): a Besieged/Bypassed Stronghold whose besiegers all
+    # Disbanded becomes free of Enemy Lords -> drop its Siege/Bypass markers.
+    for _loc in gs.locales:
+        _refresh_invest(gs, _loc)
     # Remove Moved/Fought markers (4.6.3)
     for l in gs.lords.values():
         l.moved_fought = False
@@ -1152,21 +1156,55 @@ def h_cmd_march(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> di
     if cost > gs.meta.actions_remaining:
         raise IllegalAction("insufficient_actions", f"March costs {cost}, only {gs.meta.actions_remaining} left")
     # Move the group.
+    march_from = lord.cylinder  # SMOKE-006: approach breadcrumb (origin Locale)
+    origins = {g.cylinder for g in group}
     for g in group:
         g.cylinder = to
         g.moved_fought = True
+        g.bypassed = False  # SMOKE-005: leaving a Locale ends any Bypass there
+    for origin in origins:
+        if origin != to:
+            _refresh_invest(gs, origin)  # clear stale Siege/Bypass if besiegers left
     lord.flags["first_march_used"] = True
     gs.meta.actions_remaining -= cost
     res = {"ok": True, "action": "cmd_march", "lord": lord.id, "to": to,
            "way": way["type"], "cost": cost, "group": [g.id for g in group]}
-    arrival = _resolve_arrival(gs, group, to)
+    arrival = _resolve_arrival(gs, group, to, from_locale=march_from)
     res.update(arrival)
     if not arrival.get("pending") and gs.meta.actions_remaining <= 0:
         _after_card(gs)
     return res
 
 
-def _resolve_arrival(gs: GameState, group: list[LordState], to: str) -> dict[str, Any]:
+def _refresh_invest(gs: GameState, locale: str) -> None:
+    """SMOKE-005 (4.3.5 / 4.4.1): "Whenever a Besieged or Bypassed Stronghold
+    becomes free of Enemy Lords in the Locale, remove all Siege and Bypass
+    markers there, then return all Themata Service Markers to their Thema box."
+    Without this the Bypass marker goes stale after the bypassing Lords leave,
+    and _resolve_arrival keeps suppressing the Approach (4.3.4) of a later
+    un-bypassed enemy Lord (and blocks re-Besiege)."""
+    st = gs.locales[locale]
+    if st.siege_markers == 0 and not st.bypass:
+        return
+    if not sd.locale(locale).get("is_stronghold"):
+        return
+    alleg = actions.current_allegiance(gs, locale)
+    # "Enemy Lords" = Lords of the side opposing the Stronghold (its besiegers /
+    # bypassers), which are always outside; a withdrawn defender is same-side.
+    if any(l.mustered and l.cylinder == locale and l.side != alleg for l in gs.lords.values()):
+        return
+    st.siege_markers = 0
+    st.bypass = False
+    for marker in st.themata_defending:
+        home = marker.home_thema
+        if home and home in gs.themata:
+            marker.home_thema = None
+            gs.themata[home].append(marker)
+    st.themata_defending = []
+
+
+def _resolve_arrival(gs: GameState, group: list[LordState], to: str,
+                     from_locale: str | None = None) -> dict[str, Any]:
     """After a March: Approach (enemy Lords present) or Besiege/Bypass (enemy
     Stronghold, no enemy Lords outside) — both as pending sub-decisions."""
     side = group[0].side
@@ -1176,7 +1214,7 @@ def _resolve_arrival(gs: GameState, group: list[LordState], to: str) -> dict[str
     if enemy_lords:
         gs.meta.pending.append({
             "type": "approach_response", "locale": to, "attackers": [g.id for g in group],
-            "defenders": enemy_lords, "_owed_by": _enemy(side),
+            "defenders": enemy_lords, "_owed_by": _enemy(side), "from": from_locale,
         })
         return {"pending": "approach_response", "defenders": enemy_lords}
     info = sd.locale(to)
@@ -1210,7 +1248,7 @@ def h_respond_approach(gs: GameState, action: dict[str, Any], roller: DiceRoller
             gs.side_decks(att_side).held_events.remove("R18")
             gs.side_decks(att_side).draw_deck.append("R18")
     standers, avoided, withdrew = [], [], []
-    attacker_origin = gs.lords[pend["attackers"][0]].cylinder  # they are now at `to`
+    approach_origin = pend.get("from")  # SMOKE-006: Locale the Attackers Approached from
     for did in pend["defenders"]:
         ch = choices.get(did, {"action": "stand"})
         kind = ch.get("action", "stand")
@@ -1242,7 +1280,8 @@ def h_respond_approach(gs: GameState, action: dict[str, Any], roller: DiceRoller
                                   scripted=action.get("battle_decisions"),
                                   events=action.get("battle_events"),
                                   sallying=set(sallying),
-                                  siegeworks=gs.locales[to].siege_markers if sallying else 0)
+                                  siegeworks=gs.locales[to].siege_markers if sallying else 0,
+                                  approach_origin=approach_origin)
         if sallying:
             res["relief_sally"] = list(sallying)
             for lid in sallying:                       # Sallying Lords withdraw back inside

@@ -167,3 +167,34 @@ destinations), not an illegal co-location. Does not trip the SMOKE-004 invariant
 **Fix scope:** the enemy-Stronghold exclusion is contained; the approach-Way
 rules require recording the March origin (h_cmd_march -> approach_response
 pending -> battle). Surfaced to the user for scope.
+
+### SMOKE-005 — RESOLVED
+
+Rules of Play 4.3.5 / 4.4.1 confirm: "A Locale can only have a maximum of one
+Bypass marker" and "Whenever a Besieged or Bypassed Stronghold becomes free of
+Enemy Lords in the Locale, remove all Siege and Bypass markers there, then
+return all Themata Service Markers." So Approach (4.3.4) correctly fires only on
+an Unbypassed Locale — the blanket suppression in `_resolve_arrival` is right;
+the bug was the never-cleared marker. **Fix:** `campaign._refresh_invest(locale)`
+removes Siege/Bypass markers and returns Themata once a Locale has no Lords of
+the besieging side; called after each March (on the vacated origin) and after
+Feed/Pay/Disband. A marching Lord's `bypassed` flag is also cleared on
+departure. Test `test_phase3b_march::test_bypass_marker_cleared_when_bypasser_
+leaves_smoke005`. Smoke fuzz now clean (co-location invariant satisfied).
+
+### SMOKE-006 — RESOLVED
+
+Per 4.8.3, implemented the three missing Retreat-destination rules.
+**Fix:** `battle._retreat_blocked(gs, dst, side)` now also rejects a destination
+holding an enemy Stronghold that is not Ruins / Besieged / Bypassed (used by both
+`_lord_fate` and the Sally besieger retreat). An approach breadcrumb is recorded
+on the March (`h_cmd_march` -> `_resolve_arrival` stores `from` on the
+`approach_response` pending -> `h_respond_approach` passes `approach_origin` to
+`begin_battle` -> `resolve_battle` -> `_end_battle` -> `_lord_fate`). With it:
+a losing Defender may not Retreat to the approach-origin Locale, and a Marching
+Attacker (not a Relief-Sally Lord) must Retreat to the approach origin or be
+Removed if that is not legal. The dead/incorrect `attacker_origin` variable was
+replaced. Tests in `test_phase3b_battle.py`
+(`test_retreat_blocked_by_unbesieged_enemy_stronghold_483`,
+`test_marching_attacker_retreats_to_approach_origin_483`,
+`test_defender_cannot_retreat_along_approach_way_483`).

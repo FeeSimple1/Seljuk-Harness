@@ -174,3 +174,21 @@ def test_avoid_blocked_when_laden_434():
     engine.apply_action(gs, {"type": "cmd_march", "lord": "alp_arslan", "to": "melitene", "way_type": "road"})
     with pytest.raises(IllegalAction):
         engine.apply_action(gs, {"type": "respond_approach", "choices": {"chatatourios": {"action": "avoid", "to": "germanikeia"}}})
+
+
+def test_bypass_marker_cleared_when_bypasser_leaves_smoke005():
+    """SMOKE-005 (4.3.5/4.4.1): "Whenever a Bypassed Stronghold becomes free of
+    Enemy Lords, remove all Bypass markers." When the bypassing Lord marches
+    away the marker (and his `bypassed` flag) must clear, so a later un-bypassed
+    enemy Lord entering the Locale is correctly Approached (4.3.4) instead of
+    being silently ignored by a stale Bypass marker."""
+    gs = S.load_scenario("emperor_and_the_lion")
+    aa = gs.lords["alp_arslan"]; aa.cylinder = "larisa"
+    _activate(gs, "alp_arslan", actions=4)
+    engine.apply_action(gs, {"type": "cmd_march", "lord": "alp_arslan", "to": "melitene", "way_type": "road"})
+    engine.apply_action(gs, {"type": "besiege_bypass", "choice": "bypass"})
+    assert gs.locales["melitene"].bypass and aa.bypassed
+    # March back out: Melitene is now free of enemy Lords -> Bypass marker gone.
+    engine.apply_action(gs, {"type": "cmd_march", "lord": "alp_arslan", "to": "larisa", "way_type": "road"})
+    assert not gs.locales["melitene"].bypass, "stale Bypass marker not cleared on departure"
+    assert not aa.bypassed, "stale bypassed flag not cleared on departure"
