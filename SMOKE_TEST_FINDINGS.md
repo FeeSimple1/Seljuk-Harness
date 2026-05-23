@@ -36,3 +36,37 @@ becomes the primary detector.
 **Fix:** the enumerator now emits one concrete `place` move per legal target —
 each Mustered enemy Seljuk Lord and each Enemy Stronghold in the Sultanate.
 Marked `SMOKE-001` in `src/seljuk/actions.py`.
+
+### R-hardening — SMOKE-002: self-play driver strands a revealed Treachery card (false stall)
+
+**Pattern:** harness-vs-driver divergence / incomplete sub-decision handling
+(CROSS_PROJECT_LESSONS.md: "agents surface stalls"; the driver itself was the
+agent that under-resolved a pending).
+**Found by:** a hardening pass running `self_play.play_game` across all five
+scenarios at seeds 1–5 and asserting `over is True`. `emperor_and_the_lion`
+seed=2 returned `over=False` at step 64 (calendar box 3) — not a max-steps
+timeout — i.e. `legal_actions()` was empty while the game was neither over nor
+owed a pending decision.
+**Symptom:** the active Seljuk Plan slot was a Treachery card
+(`active_card="treachery"`, `active_lord=None`, `actions_remaining=0`,
+`pending=[]`). `_reveal_next` (4.2 / 1.4.1) correctly enqueues a
+`loyalty_check` pending when it reveals a Treachery card, and
+`h_resolve_loyalty` is what calls `_after_card` to advance the Command
+sequence. But `self_play._resolve_pending` had no `loyalty_check` case, so it
+fell through to the `else: pending.remove(p)` branch, deleting the pending
+WITHOUT running the handler. `_after_card` was never called, leaving the
+Treachery card stranded as `active_card` with no legal moves forever.
+**Root cause:** the bug-finding driver, not the engine. Resolving the
+`loyalty_check` through the proper action (`{"type":"resolve_loyalty",...}`)
+lets the same game complete normally (winner=roman, box=5). The smoke fuzzer
+already handled `loyalty_check`, which is why only the greedy driver stalled.
+**Why it was masked:** `test_self_play_reaches_terminal` ran seed=1 only (no
+Treachery on that path), and `test_invariants_fuzz` tolerates an empty-moves
+break (a stalled state still satisfies all invariants).
+**Fix:** `scripts/self_play.py::_resolve_pending` now handles `loyalty_check`
+(and `basil_response`, for parity with the fuzzer and the documented pending
+set). Marked `SMOKE-002`. `tests/test_phase5b_selfplay.py` now parametrizes
+`test_self_play_reaches_terminal` over seeds 1–5 and adds a source-marker
+regression test (`test_self_play_resolves_loyalty_check`).
+**No engine change:** `src/seljuk/` is untouched; the harness already resolves
+Treachery/Loyalty correctly via the consumer interface.

@@ -42,6 +42,14 @@ def _resolve_pending(s: LLMSession) -> bool:
             s.apply({"type": "assign_themata_defenders", "markers": []})
         elif t == "ravage_defence":
             s.apply({"type": "resolve_ravage_defence", "defend_with": None})
+        elif t == "loyalty_check":
+            # SMOKE-002: A revealed Treachery card (1.4.1) owes a Loyalty Check; resolving it
+            # through the handler is what advances the Command sequence
+            # (h_resolve_loyalty -> _after_card). Silently dropping it strands the
+            # Treachery card as active_card with no legal moves -> false stall.
+            s.apply({"type": "resolve_loyalty", "target": p["targets"][0]})
+        elif t == "basil_response":
+            s.apply({"type": "basil_response", "play": False})
         else:
             s.gs.meta.pending.remove(p)
         return True
