@@ -70,3 +70,35 @@ set). Marked `SMOKE-002`. `tests/test_phase5b_selfplay.py` now parametrizes
 regression test (`test_self_play_resolves_loyalty_check`).
 **No engine change:** `src/seljuk/` is untouched; the harness already resolves
 Treachery/Loyalty correctly via the consumer interface.
+
+### R-playtest — SMOKE-003: skip_first_levy scenarios re-draw Capabilities on their first played Levy
+
+**Pattern:** lifecycle/flag initialization gap (a setup step that stands in for
+a skipped phase must also set the phase's "done" flag) — surfaces as a silent
+rules divergence, not a crash or invariant violation.
+**Found by:** a purposeful solo playthrough of `manzikert` (the structural
+sweeps/fuzzers never flagged it: drawing Capabilities instead of Events keeps
+all invariants valid and the enumerator/handler in sync, so only rules-aware
+play notices). At the box-11 (Summer) Levy, three `deploy_capability` pendings
+(S21, R22, R18) appeared and lingered through the rest of the turn.
+**Symptom:** `manzikert` and `year_of_treacherous_ambition` set
+`skip_first_levy=True` and start mid-campaign in `campaign.plan` with their
+Capabilities pre-placed by setup (`board_edge_capabilities` + per-Lord). The
+loader left `notes["first_aow_done"]` unset, so the first PLAYED Levy's Arts of
+War (`actions.resolve_arts_of_war`) computed `first = not first_aow_done = True`
+and performed a First-Levy Capability deploy (A.1.2 / 3.1.2) instead of the
+required later-Levy Event draw (A.1.3 / 3.1.3) — deploying Capabilities a second
+time on top of the pre-placed ones.
+**Consultation (BRIEF chain):** Sequence of Play reference A.1.2 vs A.1.3 (first
+Levy = Capabilities, second-or-later = Events). Decisive check: the scenario
+JSON pre-places Capabilities, so a first-Levy draw at the first played Levy
+double-deploys them — unambiguously wrong. No external sources consulted.
+**Fix:** `scenarios.py::load_scenario` now sets
+`notes["first_aow_done"] = bool(skip_first_levy)`. A skip_first_levy scenario's
+setup pre-placement IS its First Levy Arts of War, so its first played Levy
+correctly draws Events. Non-skip scenarios are unchanged (flag False at load;
+`start_new`'s opening Arts of War sets it). Verified: `manzikert` box-11 Levy now
+classifies draws as Events (held/this-campaign/immediate), no `deploy_capability`
+pendings. Marked `SMOKE-003` in `src/seljuk/scenarios.py`. Tests:
+`tests/test_phase2_aow_cta_loyalty.py::test_skip_first_levy_treats_setup_as_first_aow_smoke003`
+and `::test_load_scenario_first_aow_done_matches_skip_first_levy_smoke003`.

@@ -144,3 +144,32 @@ def test_switch_side_flips_allegiance_and_removes_from_map_142():
     _switch_side(gs, arisighi)
     assert arisighi.side == "roman"
     assert not arisighi.mustered
+
+
+@pytest.mark.parametrize("scenario", ["manzikert", "year_of_treacherous_ambition"])
+def test_skip_first_levy_treats_setup_as_first_aow_smoke003(scenario):
+    """SMOKE-003: a skip_first_levy scenario starts mid-campaign with its
+    Capabilities already deployed by setup (board_edge_capabilities + per-Lord).
+    That pre-placement IS the scenario's First Levy Arts of War (A.1.2 / 3.1.2),
+    so its first PLAYED Levy must draw Events (A.1.3 / 3.1.3) rather than deploy
+    Capabilities a second time. Regression: previously first_aow_done was left
+    unset for these scenarios, so the first Levy re-ran the capability draw
+    (double-deploying Capabilities and stranding deploy_capability pendings)."""
+    gs = S.load_scenario(scenario, seed=7)
+    assert gs.meta.notes.get("first_aow_done") is True
+    caps_before = {s: list(gs.side_decks(s).capabilities_in_play) for s in ("seljuk", "roman")}
+    engine.start_levy(gs)  # runs the Arts of War step of the first played Levy
+    # The first played Levy is a "later Levy": Events, never a Capability deploy.
+    assert not any(p["type"] == "deploy_capability" for p in gs.meta.pending)
+    for s in ("seljuk", "roman"):
+        assert gs.side_decks(s).capabilities_in_play == caps_before[s], \
+            f"{scenario}: {s} Capabilities changed during a later-Levy Arts of War"
+
+
+def test_load_scenario_first_aow_done_matches_skip_first_levy_smoke003():
+    """SMOKE-003: load_scenario marks first_aow_done iff the first Levy is
+    skipped (Capabilities pre-placed at setup). Non-skip scenarios leave it
+    False so start_new's opening Arts of War performs the First Levy draw."""
+    for scenario in S.SCENARIOS:
+        gs = S.load_scenario(scenario, seed=1)
+        assert gs.meta.notes.get("first_aow_done") is bool(gs.meta.skip_first_levy), scenario

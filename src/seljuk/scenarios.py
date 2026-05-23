@@ -127,6 +127,14 @@ def load_scenario(name: str, seed: int = 1) -> GameState:
             "first_turn_plan_size": s.get("first_turn_plan_size"),
             "nomisma_debased_used": s.get("nomisma_debased_used", False),
             "strategic_objectives_removed_from_play": s.get("strategic_objectives_removed_from_play", 0),
+            # SMOKE-003: a skip_first_levy scenario starts mid-campaign with its
+            # Capabilities already deployed by setup (board_edge_capabilities +
+            # per-Lord). That pre-placement IS the scenario's First Levy Arts of
+            # War (A.1.2 / 3.1.2), so the first PLAYED Levy must draw Events
+            # (A.1.3 / 3.1.3), not deploy Capabilities again. Mark it done here;
+            # non-skip scenarios run the opening Arts of War at start_new, which
+            # sets this flag itself.
+            "first_aow_done": bool(s.get("skip_first_levy", False)),
         },
     )
 
