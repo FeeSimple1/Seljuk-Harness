@@ -212,3 +212,21 @@ def test_besieged_flag_cleared_when_besiegers_leave_smoke007():
     engine.apply_action(gs, {"type": "cmd_march", "lord": "alp_arslan", "to": "larisa", "way_type": "road"})
     assert gs.locales["melitene"].siege_markers == 0
     assert not d.besieged, "inside defender left Besieged after besiegers departed"
+
+
+def test_besieged_lord_menu_only_sally_pass_end_421():
+    """Negative-enumerator guard (cross-harness over-enumeration class): a
+    Besieged active Lord may only Sally / Pass / Forage (4.2.1) -- the command
+    menu must NOT offer March/Tax/Supply/Ravage to him (cf. a sibling harness
+    that offered cmd_march to a besieged Lord). command_menu gates every
+    non-Sally option behind `not lord.besieged`."""
+    gs = S.load_scenario("emperor_and_the_lion")
+    lord = gs.lords["alp_arslan"]
+    lord.cylinder = "melitene"; lord.besieged = True; lord.forces = {"turkic_horse": 3}
+    gs.meta.phase = "campaign"; gs.meta.subphase = "campaign.command"
+    gs.meta.active_player = "seljuk"; gs.meta.active_lord = "alp_arslan"
+    gs.meta.actions_remaining = 4
+    types = {m["type"] for m in engine.legal_moves(gs)}
+    assert "cmd_march" not in types and "cmd_tax" not in types and "cmd_supply" not in types
+    assert "cmd_forage" not in types and "cmd_ravage" not in types
+    assert "cmd_sally" in types  # the one combat action a Besieged Lord may take

@@ -60,9 +60,9 @@ def start_campaign(gs: GameState) -> None:
     _capability_discard(gs)
     # 5.2: a side with no Mustered Lords during Campaign loses immediately.
     if not any(l.mustered and l.side == "seljuk" for l in gs.lords.values()):
-        _set_game_over(gs, "roman"); return
+        _set_game_over(gs, "roman", "5.2: seljuk has no Mustered Lords during Campaign"); return
     if not any(l.mustered and l.side == "roman" for l in gs.lords.values()):
-        _set_game_over(gs, "seljuk"); return
+        _set_game_over(gs, "seljuk", "5.2: roman has no Mustered Lords during Campaign"); return
     gs.meta.subphase = "campaign.plan"
     gs.meta.plan_submitted = {}
     gs.meta.active_player = "seljuk"
@@ -231,9 +231,9 @@ def _after_card(gs: GameState) -> None:
     gs.meta.actions_remaining = 0
     # 5.2: a side with no Mustered Lords during Campaign loses immediately.
     if not any(l.mustered and l.side == "seljuk" for l in gs.lords.values()):
-        _set_game_over(gs, "roman"); return
+        _set_game_over(gs, "roman", "5.2: seljuk has no Mustered Lords during Campaign"); return
     if not any(l.mustered and l.side == "roman" for l in gs.lords.values()):
-        _set_game_over(gs, "seljuk"); return
+        _set_game_over(gs, "seljuk", "5.2: roman has no Mustered Lords during Campaign"); return
     gs.meta.active_player = _other(gs.meta.active_player)
     _reveal_next(gs)
 
@@ -325,10 +325,11 @@ def _share_food(gs: GameState, hungry: LordState, side: str, need: int) -> int:
 
 # --- End Campaign (4.7) and Winter (4.7.6) ----------------------------------
 
-def _set_game_over(gs: GameState, winner: str) -> None:
+def _set_game_over(gs: GameState, winner: str, reason: str = "") -> None:
     gs.meta.phase = "game_over"
     gs.meta.subphase = "game_over"
     gs.meta.notes["winner"] = winner
+    gs.meta.notes["win_reason"] = reason
 
 
 def _end_campaign(gs: GameState) -> None:
@@ -360,7 +361,7 @@ def _finalize_winter(gs: GameState) -> None:
     winner = _winter(gs)
     gs.meta.vp = scenarios.score(gs)
     if winner:
-        _set_game_over(gs, winner)
+        _set_game_over(gs, winner, "5.2/4.7.6: Seljuk Aleppo Independence auto-victory")
         return
     _advance_or_end(gs)
 
@@ -368,7 +369,8 @@ def _finalize_winter(gs: GameState) -> None:
 def _advance_or_end(gs: GameState) -> None:
     box = gs.meta.calendar_box
     if box >= gs.meta.final_box:        # 4.7.1 Game End
-        _set_game_over(gs, scenarios.end_of_scenario_winner(gs))
+        w = scenarios.end_of_scenario_winner(gs)
+        _set_game_over(gs, w, "5.3: " + ("most VP at end of final Turn" if w != "draw" else "VP tied at end of final Turn"))
         return
     gs.meta.calendar_box = box + 1      # advance to next Turn's Levy (4.7.5)
     gs.meta.phase = "levy"
