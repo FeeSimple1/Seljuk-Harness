@@ -137,3 +137,24 @@ def test_non_commander_cannot_levy_themata_345():
     ch.cylinder = "kaisareia"
     with pytest.raises(IllegalAction):
         engine.apply_action(gs, {"type": "levy_themata", "lord": "chatatourios", "thema": "Charsianon"})
+
+
+def test_enumerator_offers_no_levy_for_lordship_exhausted_lord_341():
+    """Negative-enumerator guard (cross-harness over-enumeration class): once a
+    Lord has spent all his Lordship this Levy (3.4), the Muster menu must offer
+    him NO levy_* action. enumerate_muster filters actors by _can_act_in_muster,
+    the same predicate h_levy_* enforces, so the menu can't drift from the
+    handler (cf. a sibling harness that offered levy_capability after
+    lordship_exhausted)."""
+    from seljuk.actions import _can_act_in_muster
+    gs = _to_muster()
+    actors = [lid for lid, l in gs.lords.items() if _can_act_in_muster(gs, l)]
+    assert actors, "need at least one Lord with Lordship to exercise the gate"
+    lid = actors[0]
+    lord = gs.lords[lid]
+    rating = sd.lord(lid)["ratings"]["lordship"] + int(lord.flags.get("lordship_bonus", 0))
+    lord.flags["lordship_spent"] = rating  # exhaust his Lordship
+    assert lordship_remaining(gs, lord) == 0 and not _can_act_in_muster(gs, lord)
+    offered = [m for m in engine.legal_moves(gs)
+               if m.get("levyer") == lid or m.get("lord") == lid]
+    assert offered == [], f"menu over-enumerated for a Lordship-exhausted Lord: {offered}"
