@@ -102,7 +102,12 @@ def show():
     print(f"\nLEGAL ACTIONS ({len(moves)}):")
     for i, m in enumerate(moves):
         params = {k: v for k, v in m.items() if not k.startswith("_") and k != "type"}
-        tag = "  <template: build with nv.apply({...})>" if m.get("_unvalidated") else ""
+        if m.get("type") == "build_plan":
+            tag = "  <template: nv.plan([...]) -- see nv.plan_help()>"
+        elif m.get("_unvalidated"):
+            tag = "  <template: build with nv.apply({...})>"
+        else:
+            tag = ""
         hint = m.get("_desc", "")
         print(f"  [{i}] {m.get('type','?')}  {json.dumps(params, default=str)}{tag}"
               + (f"   // {hint}" if hint else ""))
@@ -189,6 +194,95 @@ def findings_report():
     if not notable:
         print("  (none -- no engine anomalies on this trajectory)")
     return _S["findings"]
+
+
+# --- detail lookups & a build_plan helper (ease-of-use; no game effect) ------
+
+def state(side=None):
+    """Structured, hidden-information-filtered state for `side` (default: the
+    side currently to act). Opponent deck/hand/unrevealed Plan are masked."""
+    st = _S["session"].state(side or _active_side())
+    print(json.dumps(st, default=str, indent=2)[:4000])
+    return st
+
+
+def pending():
+    """The sub-decisions owed right now (resolve these before normal moves)."""
+    p = list(_S["session"].gs.meta.pending)
+    print(json.dumps(p, default=str, indent=2) if p else "no pending sub-decisions")
+    return p
+
+
+def lookup_card(card_id):
+    """Full text/data for an Arts of War card (e.g. 'S1', 'R14')."""
+    d = _S["session"].lookup_card(card_id)
+    print(json.dumps(d, default=str, indent=2)[:2500])
+    return d
+
+
+def lookup_lord(lord_id):
+    """Full stats for a Lord (ratings, seats, starting Forces/Assets, etc.)."""
+    d = _S["session"].lookup_lord(lord_id)
+    print(json.dumps(d, default=str, indent=2)[:2500])
+    return d
+
+
+def map(locale=None):  # noqa: A001 -- intentional nv.map() convenience name
+    """Adjacency peek for routing Marches: ways_from(locale) (each {to,type,...}),
+    or every Locale's neighbor list when called with no argument."""
+    from seljuk import map as gmap, static_data as sd
+    out = gmap.ways_from(locale) if locale is not None else {lid: gmap.neighbors(lid)
+                                                             for lid in sd.all_locale_ids()}
+    print(json.dumps(out, default=str, indent=2)[:3500])
+    return out
+
+
+def plan_help():
+    """Show what the current Campaign Plan requires (size, available Lords, caps)."""
+    t = next((m for m in engine.legal_moves(_S["session"].gs) if m["type"] == "build_plan"), None)
+    if not t:
+        print("No Campaign Plan is owed right now -- call nv.show().")
+        return None
+    treach = ("exactly one 'treachery' REQUIRED" if t["_treachery_required"]
+              else "'treachery' NOT allowed this turn")
+    print(f"Build a {t['_plan_size']}-card ordered Plan for {t['side']} (play order):")
+    print(f"  - Lord ids (<=4 cards each): {t['_available_lords']}")
+    print(f"  - 'no_command' (<=5);  {treach}")
+    print(f"  Then: nv.plan([...])   # {t['_plan_size']} entries")
+    return t
+
+
+def plan(cards):
+    """Build & apply the current Campaign Plan from an ordered list of entries
+    (Lord ids / 'no_command' / 'treachery'). Pre-validates the common mistakes
+    (size, unknown Lord, >4 per Lord, the treachery rule) with a clear message,
+    so a planning slip is not mistaken for an engine bug."""
+    from collections import Counter
+    t = next((m for m in engine.legal_moves(_S["session"].gs) if m["type"] == "build_plan"), None)
+    if not t:
+        print("No build_plan is owed right now -- call nv.show().")
+        return show()
+    cards = list(cards)
+    need, avail = t["_plan_size"], set(t["_available_lords"])
+    errs = []
+    if len(cards) != need:
+        errs.append(f"need exactly {need} cards, got {len(cards)}")
+    c = Counter(cards)
+    if t["_treachery_required"] and c.get("treachery", 0) != 1:
+        errs.append("exactly one 'treachery' is required this turn")
+    if not t["_treachery_required"] and c.get("treachery", 0):
+        errs.append("'treachery' is not allowed this turn")
+    for k, n in c.items():
+        if k in ("no_command", "treachery"):
+            continue
+        if k not in avail:
+            errs.append(f"{k!r} is not an available Lord (choose from {sorted(avail)})")
+        elif n > 4:
+            errs.append(f"at most 4 cards per Lord ({n} given for {k})")
+    if errs:
+        print("Plan invalid: " + "; ".join(errs))
+        return plan_help()
+    return apply({"type": "build_plan", "side": t["side"], "cards": cards})
 
 
 def save(path="chatgpt_game.json"):

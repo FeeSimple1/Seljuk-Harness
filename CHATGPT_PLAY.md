@@ -50,6 +50,23 @@ has. Runtime essentials in the zip: the `src/` package + `scripts/` (for
 > is the goal of the exercise. `nv.save("game.json")` checkpoints (the sandbox is
 > ephemeral; re-run the setup cell if it resets).
 
+## Inspecting state & building the Plan (helpers)
+
+Beyond the per-turn briefing, the helper exposes on-demand detail and a Plan
+builder so you don't hand-assemble the trickiest action:
+
+- `nv.state()` / `nv.state("roman")` — structured, hidden-info-filtered state
+  for the side to act (or a named side).
+- `nv.pending()` — sub-decisions owed right now (resolve these first).
+- `nv.lookup_card("S1")` / `nv.lookup_lord("alp_arslan")` — full card text / Lord stats.
+- `nv.map("ani")` — Ways out of a Locale (each `{to, type, ...}`) for routing a
+  March; `nv.map()` lists every Locale's neighbors.
+- `nv.plan_help()` — what the current Campaign Plan needs (size, available Lords, caps).
+- `nv.plan(["alp_arslan","alp_arslan","no_command","no_command"])` — build & apply
+  the Plan from an ordered list (Lord ids ≤4× each, `"no_command"` ≤5, exactly one
+  `"treachery"` iff required); it pre-checks size/caps and explains any mistake
+  instead of failing as a "finding".
+
 ## Scenarios
 
 `manzikert` (3 turns, shortest — start here), `specter_of_norman_betrayal` (3),

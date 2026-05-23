@@ -69,3 +69,35 @@ def test_helper_captures_over_enumeration(monkeypatch):
     assert all(not (m["type"] == "cmd_march" and m.get("to") == "ani") for m in menu)
     over = [f for f in nv._S["findings"] if f["kind"] == "over_enum_filtered"]
     assert len(over) == 1 and over[0]["code"] == "no_way"
+
+
+def test_plan_helper_validates_and_applies():
+    """nv.plan() pre-validates the common Plan mistakes with a clear message and
+    applies a valid Plan (so a planning slip isn't logged as an engine finding)."""
+    import io
+    import contextlib
+    with contextlib.redirect_stdout(io.StringIO()):
+        nv.start("manzikert", 1)
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            nv.plan(["alp_arslan"])              # wrong size -> rejected locally
+        bad = out.getvalue()
+    assert "need exactly 4 cards" in bad
+    before = len(nv._S["findings"])
+    with contextlib.redirect_stdout(io.StringIO()):
+        nv.plan(["alp_arslan", "sav_tekin", "no_command", "no_command"])  # valid
+    assert nv._S["session"].gs.side_decks("seljuk").command_plan  # plan submitted
+    assert len(nv._S["findings"]) == before  # no false finding from the rejected plan
+
+
+def test_lookups_and_map_helpers():
+    import io
+    import contextlib
+    with contextlib.redirect_stdout(io.StringIO()):
+        nv.start("manzikert", 1)
+        lord = nv.lookup_lord("alp_arslan")
+        ways = nv.map("ani")
+        st = nv.state("seljuk")
+    assert lord["id"] == "alp_arslan" and "ratings" in lord
+    assert {w["to"] for w in ways} == {"ararat", "mempet"}
+    assert "lords" in st and "meta" in st
