@@ -25,6 +25,15 @@ from self_play import _build_plan_action  # type: ignore
 _TEMPLATE = {"build_plan", "resolve_event"}
 
 
+def _rand_decisions(rng):
+    """Random in-battle decision script (§5 cold-path coverage): typed entries
+    are consumed only at the matching choice, so a list of random ("concede",
+    bool) entries makes the resolver Concede/early-terminate at random offers --
+    the only way to reach the "loser survives -> Retreat" branch a first-legal
+    fallback never walks. Also randomize the rare reserve/retreat picks."""
+    return [("concede", rng.choice([True, False])) for _ in range(8)]
+
+
 def _rand_plan(s, move, rng):
     """Build a random-but-legal Plan of the required size."""
     side = move["side"]; need = move["_plan_size"]; avail = list(move["_available_lords"])
@@ -61,7 +70,8 @@ def _rand_resolve_pending(s, rng, findings, tag):
             for d in p["defenders"]:
                 choices[d] = {"action": rng.choice(["stand", "stand", "withdraw"])}
             try:
-                s.apply({"type": "respond_approach", "choices": choices})
+                s.apply({"type": "respond_approach", "choices": choices,
+                         "battle_decisions": _rand_decisions(rng)})
             except IllegalAction:
                 # SMOKE-004: "withdraw" is only legal into a Friendly Stronghold at
                 # the Locale; when there is none the engine (correctly) rejects it.
@@ -70,7 +80,8 @@ def _rand_resolve_pending(s, rng, findings, tag):
                 # co-location invariant now flags). Resolve validly instead: Stand
                 # always triggers a Battle and clears the Approach.
                 s.apply({"type": "respond_approach",
-                         "choices": {d: {"action": "stand"} for d in p["defenders"]}})
+                         "choices": {d: {"action": "stand"} for d in p["defenders"]},
+                         "battle_decisions": _rand_decisions(rng)})
         elif t == "besiege_or_bypass":
             s.apply({"type": "besiege_bypass", "choice": rng.choice(["besiege", "bypass"])})
         elif t == "assign_themata_defenders":
@@ -136,7 +147,12 @@ def fuzz_game(scenario, seed, rng, max_steps=3000):
                 else:
                     concrete = [m for m in moves if m["type"] not in _TEMPLATE]
                     m = rng.choice(concrete) if concrete else moves[0]
-                    s.apply({k: w for k, w in m.items() if not k.startswith("_")})
+                    act = {k: w for k, w in m.items() if not k.startswith("_")}
+                    if act["type"] == "cmd_storm":
+                        act["storm_decisions"] = _rand_decisions(rng)
+                    elif act["type"] == "cmd_sally":
+                        act["battle_decisions"] = _rand_decisions(rng)
+                    s.apply(act)
             iv = check_invariants(s.gs)
             if iv:
                 findings.append(f"{scenario}#{seed} @step{steps} ({s.gs.meta.subphase}): invariant {iv[0]}")

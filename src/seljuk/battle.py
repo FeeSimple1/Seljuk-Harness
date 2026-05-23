@@ -90,6 +90,8 @@ class DecisionContext:
             else:
                 self.scripted.pop(0)
                 choice = head
+        if choice is not None and choice not in options:
+            choice = None  # scripted value not offered here -> deterministic fallback
         if choice is None:
             choice = options[0]
         self.trace.append({"type": dtype, "choice": choice, "options": options})
