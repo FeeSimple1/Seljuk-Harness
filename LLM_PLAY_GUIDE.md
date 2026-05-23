@@ -59,6 +59,17 @@ python -m seljuk.cli do --file game.json \
   --action '{"type": "cmd_march", "lord": "alp_arslan", "to": "ani", "way_type": "road"}'
 ```
 
+### Validated palette (optional, recommended for agents)
+
+`legal-moves --validate` returns the same palette but first probes every concrete
+candidate on a throwaway copy of the game and **drops any move the rules engine
+would reject**, printing each drop as an over-enumeration diagnostic on stderr.
+So an agent that plays only from the validated palette never submits an illegal
+move. (Templated moves — `build_plan`, `resolve_event`, `respond_approach`,
+`assign_themata_defenders` — can't be probed blind and are returned marked
+`"_unvalidated": true`.) It is slower (a probe per candidate) so it is for the
+interactive/agent path, not bulk sweeps.
+
 If you submit an illegal action, `do` prints `IllegalAction: <reason>` and exits
 non-zero **without changing the game** — pick a different move. Every move
 `legal-moves` offers is guaranteed applicable.

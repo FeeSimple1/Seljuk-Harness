@@ -18,6 +18,8 @@ from . import view, briefing as _briefing, tools
 class LLMSession:
     def __init__(self, gs: GameState) -> None:
         self.gs = gs
+        # over-enumeration diagnostics from the last validated legal_actions() call
+        self.palette_diagnostics: list[dict[str, Any]] = []
 
     @classmethod
     def start_new(cls, scenario: str, seed: int = 1) -> "LLMSession":
@@ -43,8 +45,14 @@ class LLMSession:
     def briefing(self) -> str:
         return _briefing.briefing(self.gs)
 
-    def legal_actions(self) -> list[dict[str, Any]]:
-        return engine.legal_moves(self.gs)
+    def legal_actions(self, validated: bool = False) -> list[dict[str, Any]]:
+        """Legal-move palette. With ``validated=True`` (the agent-facing path),
+        probe-and-drop handler-rejected moves and record any drops on
+        ``self.palette_diagnostics`` (Nevsky advisory §2)."""
+        if not validated:
+            return engine.legal_moves(self.gs)
+        moves, self.palette_diagnostics = engine.validated_legal_moves(self.gs)
+        return moves
 
     def pending(self) -> list[dict[str, Any]]:
         return list(self.gs.meta.pending)

@@ -109,6 +109,41 @@ def apply_action(gs: GameState, action: dict[str, Any]) -> dict[str, Any]:
     return result
 
 
+# Moves the consumer must parameterise before they can be applied (they carry
+# only `_`-prefixed hints, not a ready action), so they cannot be probed as-is
+# and are kept marked unvalidated (Nevsky advisory §2).
+_PALETTE_TEMPLATES = {"build_plan", "resolve_event", "respond_approach",
+                      "assign_themata_defenders"}
+
+
+def validated_legal_moves(gs: GameState) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Agent-facing palette (Nevsky advisory §2): probe every concrete enumerated
+    move on a discarded deep copy and DROP any the handler rejects, so an agent
+    never sees an over-enumerated (illegal) move. Each drop is returned as a
+    structured diagnostic (the root menu bug still gets found). Templated moves
+    are kept and flagged ``_unvalidated``. Safe because the RNG lives in the
+    state: probing advances only the copy's rng_state, never the real game's.
+    This is the slow, correct path for the interactive/LLM menu; hot loops
+    (sweeps, fuzzers) should keep calling ``legal_moves``.
+    """
+    kept: list[dict[str, Any]] = []
+    dropped: list[dict[str, Any]] = []
+    for mv in legal_moves(gs):
+        if mv.get("type") in _PALETTE_TEMPLATES:
+            kept.append({**mv, "_unvalidated": True})
+            continue
+        concrete = {k: v for k, v in mv.items() if not k.startswith("_")}
+        probe = GameState.from_json(gs.to_json())
+        try:
+            apply_action(probe, concrete)
+        except IllegalAction as e:
+            dropped.append({"action": concrete, "code": e.code, "reason": e.message,
+                            "subphase": gs.meta.subphase, "active": gs.meta.active_player})
+        else:
+            kept.append(mv)
+    return kept, dropped
+
+
 def legal_moves(gs: GameState) -> list[dict[str, Any]]:
     if gs.meta.phase in ("campaign", "winter"):
         return campaign.legal_moves_campaign(gs)

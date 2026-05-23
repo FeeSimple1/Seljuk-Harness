@@ -51,6 +51,8 @@ def build_parser() -> argparse.ArgumentParser:
 
     p_legal = sub.add_parser("legal-moves", help="Enumerate the active side's legal actions (JSON).")
     p_legal.add_argument("--file", type=str, default="game.state.json")
+    p_legal.add_argument("--validate", action="store_true",
+                         help="Probe each candidate and drop handler-rejected moves (Nevsky advisory §2)")
 
     p_do = sub.add_parser("do", help="Apply a submitted action and save the result.")
     p_do.add_argument("--file", type=str, default="game.state.json")
@@ -127,6 +129,17 @@ def main(argv: list[str] | None = None) -> int:
 
         if args.command == "legal-moves":
             s = _load_session(file)
+            if getattr(args, "validate", False):
+                moves = s.legal_actions(validated=True)
+                print(json.dumps(moves, indent=2))
+                note = f"{len(moves)} legal action(s)"
+                if s.palette_diagnostics:
+                    note += f"; dropped {len(s.palette_diagnostics)} over-enumerated"
+                    print("DROPPED (over-enumeration diagnostics):", file=sys.stderr)
+                    for d in s.palette_diagnostics:
+                        print(f"  {d['action']} -> {d['code']}: {d['reason']}", file=sys.stderr)
+                print(f"\n{note}.  {_terminal_line(s)}", file=sys.stderr)
+                return 0
             moves = s.legal_actions()
             print(json.dumps(moves, indent=2))
             print(f"\n{len(moves)} legal action(s).  {_terminal_line(s)}", file=sys.stderr)
