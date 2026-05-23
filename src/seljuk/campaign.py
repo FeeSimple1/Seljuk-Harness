@@ -1195,6 +1195,12 @@ def _refresh_invest(gs: GameState, locale: str) -> None:
         return
     st.siege_markers = 0
     st.bypass = False
+    # The Stronghold is no longer invested: any Lord who Withdrew inside is now
+    # free (SMOKE-007 / Inferno advisory #2 Door B: a stale `besieged` flag would
+    # otherwise persist and corrupt Sally/March/Feed legality forever).
+    for l in gs.lords.values():
+        if l.mustered and l.cylinder == locale and l.besieged:
+            l.besieged = False
     for marker in st.themata_defending:
         home = marker.home_thema
         if home and home in gs.themata:

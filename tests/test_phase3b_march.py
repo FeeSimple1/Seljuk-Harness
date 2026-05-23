@@ -192,3 +192,23 @@ def test_bypass_marker_cleared_when_bypasser_leaves_smoke005():
     engine.apply_action(gs, {"type": "cmd_march", "lord": "alp_arslan", "to": "larisa", "way_type": "road"})
     assert not gs.locales["melitene"].bypass, "stale Bypass marker not cleared on departure"
     assert not aa.bypassed, "stale bypassed flag not cleared on departure"
+
+
+def test_besieged_flag_cleared_when_besiegers_leave_smoke007():
+    """SMOKE-007 (Inferno advisory #2 Door B): when the besiegers March away and
+    the Stronghold becomes free of enemy Lords, a Lord who Withdrew inside is no
+    longer Besieged. A stale `besieged` flag would otherwise persist forever and
+    corrupt Sally/March/Feed legality."""
+    gs = S.load_scenario("emperor_and_the_lion")
+    aa = gs.lords["alp_arslan"]; aa.cylinder = "larisa"
+    d = gs.lords["chatatourios"]; d.cylinder = "melitene"; d.besieged = True; d.forces = {"infantry": 2}
+    _activate(gs, "alp_arslan")
+    engine.apply_action(gs, {"type": "cmd_march", "lord": "alp_arslan", "to": "melitene", "way_type": "road"})
+    r = engine.apply_action(gs, {"type": "besiege_bypass", "choice": "besiege"})
+    if r.get("pending") == "assign_themata_defenders":
+        engine.apply_action(gs, {"type": "assign_themata_defenders", "markers": []})
+    assert gs.locales["melitene"].siege_markers == 1 and d.besieged
+    _activate(gs, "alp_arslan")
+    engine.apply_action(gs, {"type": "cmd_march", "lord": "alp_arslan", "to": "larisa", "way_type": "road"})
+    assert gs.locales["melitene"].siege_markers == 0
+    assert not d.besieged, "inside defender left Besieged after besiegers departed"

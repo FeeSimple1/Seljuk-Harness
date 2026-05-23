@@ -198,3 +198,41 @@ replaced. Tests in `test_phase3b_battle.py`
 (`test_retreat_blocked_by_unbesieged_enemy_stronghold_483`,
 `test_marching_attacker_retreats_to_approach_origin_483`,
 `test_defender_cannot_retreat_along_approach_way_483`).
+
+### SMOKE-007 — inside defender left Besieged forever after besiegers depart (Door B #2)
+
+**Pattern:** marker/flag lifecycle leak (Inferno cross-project advisory #2,
+Door B — second harm). Companion to SMOKE-005.
+**Symptom:** SMOKE-005 cleared a Locale's Siege/Bypass markers when it became
+free of enemy Lords, but `_refresh_invest` did not clear the `besieged` flag of
+a Lord who had Withdrawn inside. Reproduced: a Roman Lord inside Melitene
+(besieged) + a Seljuk besieger; the besieger Marches away; siege markers cleared
+but the Roman stayed `besieged=True` permanently, which would corrupt
+Sally/March/Feed legality (a besieged Lord may only Sally/Pass/Forage).
+**Rule:** RoP 4.3.5/4.4.1 — when a Besieged/Bypassed Stronghold becomes free of
+enemy Lords, the investment ends (the inside Lord is no longer besieged).
+**Fix:** `campaign._refresh_invest` now also clears `besieged` on any Lord at
+the freed Locale. Covered on every departure path: March-out (direct call) and
+Disband / post-combat Removal (the all-Locales sweep in `feed_pay_disband`,
+which runs via `_after_card` after every command incl. Battle/Storm/Sally).
+Test `test_phase3b_march::test_besieged_flag_cleared_when_besiegers_leave_smoke007`.
+
+### Door C (placement onto a contested Locale) — AUDITED, ABSENT
+
+Advisory #2 Door C: on-board placement paths must reject placing an ordinary
+Lord onto an enemy-occupied / Conquered Locale and, on a named exception, place
+inside (besieged) honoring Size. Audited every Seljuk placement/relocation path
+(`grep` of `mustered=True` / `cylinder =`):
+- Muster (`_muster_lord_onto_map`) and Treachery re-entry route through
+  `_seat_is_free` (3.4.1: no enemy Lord, no enemy Conquered marker; Bypassed /
+  Ravaged are allowed, matching the rule).
+- Winter Quarters returns each Lord to its own (side-specific) Seat or, if that
+  Seat is Enemy Conquered, its Allied Holding Box (4.7.6) — opposing Lords never
+  resolve to the same Locale, so no co-location.
+- Battle Withdraw sets the inside flag; Battle/Sally Retreat and Approach Avoid
+  use enemy-excluding destinations; March triggers Approach/Besiege; setup is
+  exempt.
+Seljuk has no "Muster while Besieged -> come up inside" exception (3.4.1 always
+requires a free Seat), so there is nothing of the Inferno Podesta shape to
+mishandle. The SMOKE-004 co-location invariant holds throughout the
+property-fuzz suite (all scenarios incl. emperor_and_the_lion's Winters).
