@@ -33,6 +33,13 @@ def check_invariants(gs: GameState) -> list[str]:
         if v < 0:
             bad.append(f"holding_box {name} negative: {v}")
 
+    # VP is never negative (advisory §3: cheap always-on bound). It is a derived
+    # sum of non-negative contributions; a negative value signals corruption.
+    for side in ("roman", "seljuk"):
+        v = gs.meta.vp.get(side, 0)
+        if v < 0:
+            bad.append(f"vp[{side}] negative: {v}")
+
     # Seljuk Unity targets never go negative.
     for box, val in gs.meta.seljuk_unity_targets.items():
         if val < 0:
@@ -68,8 +75,8 @@ def check_invariants(gs: GameState) -> list[str]:
 
     # Per-Locale invariants.
     for locid, st in gs.locales.items():
-        if st.siege_markers < 0:
-            bad.append(f"{locid}.siege_markers negative: {st.siege_markers}")
+        if not (0 <= st.siege_markers <= 4):
+            bad.append(f"{locid}.siege_markers out of 0..4: {st.siege_markers}")
         if st.conquered_count < 0:
             bad.append(f"{locid}.conquered_count negative: {st.conquered_count}")
 

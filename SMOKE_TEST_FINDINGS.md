@@ -236,3 +236,30 @@ Seljuk has no "Muster while Besieged -> come up inside" exception (3.4.1 always
 requires a free Seat), so there is nothing of the Inferno Podesta shape to
 mishandle. The SMOKE-004 co-location invariant holds throughout the
 property-fuzz suite (all scenarios incl. emperor_and_the_lion's Winters).
+
+### Nevsky cross-harness advisory (consolidated §10 checklist) — audit
+
+Worked the Nevsky advisory's self-check against Seljuk. Status:
+- §1/§2 enumerator/handler drift: guarded in CI by the roundtrip sweep (probes
+  every enumerated move through apply across all scenarios×seeds; currently clean
+  to 60 seeds). A runtime validated agent-facing palette (probe-and-drop with
+  structured diagnostics) is NOT yet wired — RNG-in-state makes it feasible;
+  noted as a possible enhancement, no current over-enumeration to fix.
+- §3 invariants: co-location already added (SMOKE-004). Added VP>=0 and
+  per-Locale siege_markers in 0..4 (RoP cap) as cheap always-on bounds.
+- §4 Doors A/B/C: A absent; B fixed (SMOKE-005/007) incl. the empty/undefended-
+  Stronghold case (verified: besieger takes an undefended Stronghold then leaves
+  -> markers cleared); C audited absent.
+- §5 cold paths: smoke fuzzer now injects random Concede into Battle/Storm/Sally
+  (8 Battles / 5 conceders / 17 Storms measured over 45 games) -> the
+  loser-survives-Retreat branch is fuzz-exercised with all invariants active.
+- §6 rotate deciders: greedy self-play + aggressive random fuzz + a full
+  Claude-driven Manzikert playthrough have all been run; a second model remains
+  an option.
+- §7 clause-by-clause audit: RULES_AUDIT.md + ERRATA_AUDIT.md exist.
+- §8 reference conflicts: tracked via RULES_DECISIONS.md / RULES_QUESTIONS.md.
+- §9 negative-enumerator discipline: the roundtrip sweep is the standing
+  enumerator-vs-handler guard; per-fix negative menu tests added where the bug
+  was an over-enumeration.
+- §10 dev deps: the `dev` extra (pytest) installs everything the full suite
+  needs; no hidden/property-test dependency is silently disabling coverage.
