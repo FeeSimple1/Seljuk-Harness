@@ -291,12 +291,22 @@ def _ev_consolidates_power(gs, args, roller):    # S20 (lower Seljuk Unity by # 
 
 
 def _ev_massacre(gs, args, roller):              # S22 (a Seljuk Lord at an Enemy Locale +1 Loot)
-    lord = gs.lords[args["lord"]]
     from . import actions
-    if actions.current_allegiance(gs, lord.cylinder) == "seljuk":
-        raise IllegalAction("not_enemy", "Lord must be at an Enemy Locale (S22)")
-    lord.assets.loot = min(8, lord.assets.loot + 1)
-    return {"loot_added": lord.id}
+    # "no valid target" is a no-op, not an error the consumer must hand-skip
+    # (matches R11/R16/S11/R14). Eligible: a Mustered Seljuk Lord on the map at a
+    # Locale not Friendly to Seljuk -- counts even if Besieged (card text).
+    eligible = [lid for lid, l in gs.lords.items()
+                if l.side == "seljuk" and l.mustered and l.cylinder in gs.locales
+                and actions.current_allegiance(gs, l.cylinder) != "seljuk"]
+    if not eligible:
+        return {"no_op": True, "reason": "no Seljuk Lord at an Enemy Locale (S22)"}
+    lid = args.get("lord")
+    if lid is None:
+        raise IllegalAction("need_target", f"S22: choose a Seljuk Lord at an Enemy Locale {eligible}")
+    if lid not in eligible:
+        raise IllegalAction("not_enemy", f"S22: {lid} is not a Seljuk Lord at an Enemy Locale")
+    gs.lords[lid].assets.loot = min(8, gs.lords[lid].assets.loot + 1)
+    return {"loot_added": lid}
 
 
 _RESOLVERS = {

@@ -87,7 +87,13 @@ def test_s15_thematic_desert_no_op_when_not_in_thema():
 
 
 def test_s22_massacre_requires_enemy_locale():
-    gs = _gs(); aa = gs.lords["alp_arslan"]; aa.cylinder = "ani"  # Seljuk-controlled
+    from seljuk import actions
+    gs = _gs()
+    # An eligible Seljuk Lord IS at an Enemy Locale (so this is not a no-op)...
+    loc = next(lid for lid in gs.locales if actions.current_allegiance(gs, lid) == "roman")
+    st = gs.lords["sav_tekin"]; st.mustered = True; st.cylinder = loc
+    # ...but the CHOSEN Lord sits at a Seljuk-controlled Locale -> rejected (S22).
+    aa = gs.lords["alp_arslan"]; aa.mustered = True; aa.cylinder = "ani"
     with pytest.raises(IllegalAction):
         E._ev_massacre(gs, {"lord": "alp_arslan"}, _r())
 
@@ -253,3 +259,22 @@ def test_wastage_discards_capability_when_no_excess_asset():
     aa.capabilities = ["S1", "S4"]
     assert E._wastage_once(gs, aa) is True
     assert len(aa.capabilities) == 1
+
+
+def test_s22_massacre_no_op_when_no_seljuk_lord_at_enemy_locale():
+    """S22 (Massacre): with no Seljuk Lord at an Enemy Locale the Event is a
+    clean no-op, not an error the consumer must hand-skip (ChatGPT report)."""
+    from seljuk import actions
+    gs = _gs()
+    for l in gs.lords.values():           # clear all Seljuk Lords off the map
+        if l.side == "seljuk":
+            l.mustered = False; l.cylinder = "calendar"
+    out = E._ev_massacre(gs, {}, _r())
+    assert out.get("no_op") is True
+    # with a Seljuk Lord at an Enemy (Roman) Locale, it adds Loot to the chosen Lord
+    loc = next(lid for lid in gs.locales if actions.current_allegiance(gs, lid) == "roman")
+    aa = gs.lords["alp_arslan"]; aa.mustered = True; aa.cylinder = loc; aa.assets.loot = 0
+    with pytest.raises(IllegalAction):    # target exists but none chosen
+        E._ev_massacre(gs, {}, _r())
+    out2 = E._ev_massacre(gs, {"lord": "alp_arslan"}, _r())
+    assert out2.get("loot_added") == "alp_arslan" and aa.assets.loot == 1
