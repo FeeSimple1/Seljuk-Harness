@@ -21,7 +21,9 @@ logs Seljuk's own findings in detail). "Absent" = audited and not present;
 | 9 | Nevsky Adv §5 | Cold paths (Concede / loser-survives) never exercised by first-legal auto-play | **Fixed** | smoke_fuzz injects random Concede into Battle/Storm/Sally (8 Battles/5 conceders/17 Storms per 45 games) (commit `6831a1b`) |
 | 10 | Nevsky Adv §2 | No validated agent-facing palette (over-enum reaches the player) | **Added** | `engine.validated_legal_moves` (probe-and-drop, RNG-in-state safe); `legal-moves --validate`; `LLMSession.legal_actions(validated=True)` (commit `00d0dbc`) |
 | 11 | Nevsky Adv §6 | Single decision-maker; rotate deciders | **Done** | greedy self-play + aggressive concede-fuzz + Claude Manzikert playthrough + ChatGPT emperor_and_the_lion run (0 anomalies) |
-| 12 | Nevsky Adv §8 | Feed/starvation spiral (Lord that only Tax/Supply forced to Feed) | **Absent** | Tax/Forage/Supply/Recruit/Ravage do NOT set `moved_fought`; only March/Avoid/Siege/Storm/Battle do (verified during ChatGPT-report triage, commit `844f341`) |
+| 12 | Nevsky Adv §8 | Feed/starvation spiral (only-Tax/Supply forced to Feed) | **Absent** (starvation direction) | Tax/Forage/Supply/Recruit don't set `moved_fought` (`844f341`) |
+| 12b | Nevsky Adv §8 (re-audit) | Feed scope wrong on OTHER set-sites | **Fixed (SMOKE-009)** | Re-auditing the asserted "Feed N/A" (Inferno's lesson) found Siege over-marked all Lords (4.5.1 marks only the besieger) and Ravage under-marked (4.5.5 marks both sides). Fixed `h_cmd_siege`/`h_cmd_ravage` (commit `9d5b50e`) |
+| 17 | Nevsky Adv §1/§2 / Inferno SMOKE-095 | Under-enumeration: a working handler with no menu entry | **Fixed (SMOKE-008)** | Handler-coverage cross-check (over-enum sweep can't catch this): Levy menu didn't surface `deploy_capability`/`resolve_event` AoW pendings. Fixed `engine.legal_moves`; `play_hold_event`/R14 deferred (commit `5e4f212`) |
 | 13 | Plantagenet ChatGPT run | Over-enum: `levy_capability` offered after `lordship_exhausted` | **Absent** | `enumerate_muster` filters actors by `_can_act_in_muster` (= the handler's gate, incl. `lordship_remaining<=0`). Test `test_enumerator_offers_no_levy_for_lordship_exhausted_lord_341` (commit `56fbcbc`) |
 | 14 | Nevsky ChatGPT run | Over-enum: `cmd_march` offered to a Besieged Lord | **Absent** | `command_menu` gates March/Tax/Forage/Supply/Ravage behind `not lord.besieged`; besieged menu = {sally,pass,end}. Test `test_besieged_lord_menu_only_sally_pass_end_421` (commit `844f341`) |
 | 15 | Nevsky ChatGPT run | Over-enum: `withdraw` offered into a non-Friendly Stronghold | **N/A (template)** | Seljuk's `respond_approach` is consumer-parameterised; Withdraw legality is handler-validated (`_validate_withdraw`) → clean IllegalAction, not a menu offer |
@@ -39,3 +41,17 @@ logs Seljuk's own findings in detail). "Absent" = audited and not present;
   guarded three ways in Seljuk: the round-trip sweep (every enumerated move
   probed through `apply`, clean to 60 seeds), the runtime validated palette
   (`--validate`), and per-finding negative-enumerator tests.
+
+## Corrections (audit pass following the Nevsky advisory)
+
+Two rows above were originally recorded as "Absent"/"N/A" by assertion; holding
+them to the advisory's "an asserted N/A deserves the same audit as a suspected
+bug" standard, the proper audits proved both wrong and found real bugs:
+- **Under-enumeration (item 17, SMOKE-008):** the over-enum round-trip sweep is
+  silent on under-enum; a handler-coverage cross-check found the Levy AoW pendings
+  unsurfaced.
+- **Feed scope (item 12b, SMOKE-009):** checking only Forage/Tax/Supply missed
+  that Siege/Ravage mark `moved_fought` wrongly.
+The other asserted-N/As (parallel Ways, overlays, off-edge calendar, cap/floor
+uniformity, capability data-scope, no-op unconditional side-effects) were
+re-audited and **verified** N/A.
