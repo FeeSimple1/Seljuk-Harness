@@ -173,3 +173,22 @@ def test_load_scenario_first_aow_done_matches_skip_first_levy_smoke003():
     for scenario in S.SCENARIOS:
         gs = S.load_scenario(scenario, seed=1)
         assert gs.meta.notes.get("first_aow_done") is bool(gs.meta.skip_first_levy), scenario
+
+
+def test_levy_menu_surfaces_owed_aow_pendings_smoke008():
+    """SMOKE-008 (under-enumeration): an owed Arts-of-War sub-decision must be
+    surfaced in the Levy menu so a menu-driven agent can resolve it (the campaign
+    enumerator already surfaces its pendings; the Levy one didn't, stranding
+    first-Levy Capability deploys / immediate Events)."""
+    from seljuk.llm import LLMSession
+    gs = LLMSession.start_new("emperor_and_the_lion", seed=1).gs  # setup AoW leaves owed deploy_capability
+    types = {m["type"] for m in engine.legal_moves(gs)}
+    assert types == {"deploy_capability"}, types
+    # one concrete option per eligible Lord
+    dc = next(p for p in gs.meta.pending if p["type"] == "deploy_capability")
+    offered = [m for m in engine.legal_moves(gs) if m["type"] == "deploy_capability"]
+    assert {m["lord"] for m in offered} == set(dc["eligible"])
+    # an owed immediate Event surfaces resolve_event (a template)
+    gs.meta.pending = [{"type": "event_pending_resolution", "side": "seljuk", "card": "S22"}]
+    ev = [m for m in engine.legal_moves(gs) if m["type"] == "resolve_event"]
+    assert len(ev) == 1 and ev[0]["card"] == "S22"

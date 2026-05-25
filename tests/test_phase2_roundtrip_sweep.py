@@ -24,14 +24,26 @@ def test_levy_enumerator_handler_roundtrip(scenario):
     while gs.meta.subphase != "levy.complete" and guard < 60:
         guard += 1
         moves = engine.legal_moves(gs)
-        # Every emitted move must apply cleanly on a fresh snapshot.
+        # Every emitted move must apply cleanly on a fresh snapshot. resolve_event
+        # is a TEMPLATE (the consumer supplies per-card args), so it is not
+        # blind-probeable -- skip it here, like the main round-trip sweep.
         for mv in moves:
+            if mv["type"] == "resolve_event":
+                continue
             snap = GameState.from_json(gs.to_json())
             try:
                 engine.apply_action(snap, {k: v for k, v in mv.items() if not k.startswith("_")})
             except IllegalAction as e:  # pragma: no cover
                 pytest.fail(f"{scenario}: enumerator emitted inapplicable {mv.get('type')}: {e}")
-        # Advance the real game: prefer a concrete action, else pass the step.
+        # Advance the real game: resolve an owed Event (args={} for no-choice),
+        # else prefer a concrete action, else pass the step.
+        if len(moves) == 1 and moves[0]["type"] == "resolve_event":
+            try:
+                engine.apply_action(gs, {"type": "resolve_event", "card": moves[0]["card"], "args": {}})
+            except IllegalAction:
+                gs.meta.pending = [p for p in gs.meta.pending
+                                   if p.get("type") != "event_pending_resolution"]
+            continue
         concrete = [m for m in moves if m["type"] != "pass_step"]
         chosen = concrete[0] if concrete else {"type": "pass_step"}
         engine.apply_action(gs, {k: v for k, v in chosen.items() if not k.startswith("_")})

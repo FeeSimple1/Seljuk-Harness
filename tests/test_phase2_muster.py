@@ -12,6 +12,10 @@ def _to_muster(scenario="emperor_and_the_lion", seed=1):
     engine.apply_action(gs, {"type": "pass_step"})  # Seljuk done Pay
     engine.apply_action(gs, {"type": "pass_step"})  # Roman done Pay -> Disband -> Muster
     assert gs.meta.subphase == "levy.muster"
+    # Drop any owed first-Levy Capability deployments so the Muster menu (not the
+    # AoW pending) is what legal_moves surfaces (SMOKE-008) -- this helper tests
+    # Muster, so we discard rather than deploy to keep a clean capability slate.
+    gs.meta.pending = [p for p in gs.meta.pending if p["type"] != "deploy_capability"]
     return gs
 
 

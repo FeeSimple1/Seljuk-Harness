@@ -134,13 +134,25 @@ def apply(choice):
                   f"{json.dumps({k: v for k, v in m.items() if k.startswith('_') and k != '_desc'}, default=str)}")
             return moves
         action = _strip(m)
+        raw_dict = False
     elif isinstance(choice, dict):
         action = dict(choice)
+        raw_dict = True
     else:
         raise TypeError("choice must be an int index or a flat action dict")
     try:
         result = s.apply(action)
     except IllegalAction as e:
+        # A rejected raw-dict build of a TEMPLATE action (build_plan / resolve_event
+        # / respond_approach / assign_themata_defenders) is the consumer supplying
+        # wrong/insufficient params -- a player build mistake, NOT an engine
+        # over-enumeration. Classify it non-notable so it doesn't pollute the
+        # findings triage (cross-harness "classify the helper's rejections").
+        if raw_dict and action.get("type") in engine._PALETTE_TEMPLATES:
+            _S["findings"].append({"kind": "template_build_rejected", "turn": _S["turn"], "side": side,
+                                   "action": action, "code": e.code, "reason": e.message[:160]})
+            print(f"!! template build rejected ({e.code}): supply valid args; not an engine bug")
+            return show()
         _S["findings"].append({"kind": "illegal_action", "turn": _S["turn"], "side": side,
                                "action": action, "code": e.code, "reason": e.message[:160]})
         print(f"!! ILLEGAL (recorded): {e.code}: {e.message[:160]}")

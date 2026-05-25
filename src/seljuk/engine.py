@@ -149,6 +149,19 @@ def legal_moves(gs: GameState) -> list[dict[str, Any]]:
         return campaign.legal_moves_campaign(gs)
     if gs.meta.phase != "levy":
         return []
+    # SMOKE-008: surface owed Arts-of-War sub-decisions in the Levy menu, the way
+    # legal_moves_campaign surfaces campaign pendings. Without this a menu-driven
+    # agent at levy.pay sees only pay/pass_step and CANNOT resolve an owed
+    # deploy_capability / immediate Event, stranding it (under-enumeration).
+    dc = next((p for p in gs.meta.pending if p["type"] == "deploy_capability"), None)
+    if dc is not None:
+        return [{"type": "deploy_capability", "card": dc["card"], "lord": lid,
+                 "_desc": f"Deploy first-Levy Capability {dc['card']} to {lid} (3.1.2)"}
+                for lid in dc["eligible"]]
+    ev = next((p for p in gs.meta.pending if p["type"] == "event_pending_resolution"), None)
+    if ev is not None:
+        return [{"type": "resolve_event", "card": ev["card"], "_args_per_card": True,
+                 "_desc": f"Resolve immediate Event {ev['card']} (3.1.3); args per card text"}]
     step = gs.meta.subphase
     if step == "levy.pay":
         moves = actions.enumerate_pay(gs)

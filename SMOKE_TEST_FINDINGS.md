@@ -263,3 +263,36 @@ Worked the Nevsky advisory's self-check against Seljuk. Status:
   was an over-enumeration.
 - §10 dev deps: the `dev` extra (pytest) installs everything the full suite
   needs; no hidden/property-test dependency is silently disabling coverage.
+
+### SMOKE-008 — under-enumeration: Levy menu didn't surface owed Arts-of-War sub-decisions
+
+**Pattern:** enumerator/handler asymmetry, *under*-enumeration (Inferno guide
+Part II §1; Pattern 1). Found by the **handler-coverage cross-check** (every
+`_HANDLERS`/`_CAMPAIGN_HANDLERS` key vs. what the menu can emit), NOT by the
+over-enum round-trip sweep — which says nothing about under-enum. My earlier
+contribution claimed Part II §1 "clean both directions"; the cross-check proved
+that wrong (the Inferno "audit both directions" lesson).
+**Symptom:** `legal_moves_campaign` surfaces campaign pendings (approach /
+besiege / loyalty / themata / ravage / basil), but the **Levy** enumerator
+surfaced none of its Arts-of-War pendings. `deploy_capability` (first-Levy
+Capability deploy, 3.1.2) and `resolve_event` (immediate Event, 3.1.3) had
+working handlers but no menu entry, so a menu-driven agent at `levy.pay` saw only
+`pay`/`pass_step` and could not resolve them — they stranded (emperor seed 1 has
+owed `deploy_capability` from turn 0).
+**Fix:** `engine.legal_moves` now surfaces an owed `deploy_capability` (one
+concrete entry per eligible Lord) or `resolve_event` (a template) BEFORE the
+step's normal moves, mirroring the campaign enumerator. Test
+`test_levy_menu_surfaces_owed_aow_pendings_smoke008`. Also classified rejected
+template builds in the ChatGPT helper as non-notable `template_build_rejected`
+(a consumer supplying wrong/insufficient args to build_plan/resolve_event/etc. is
+a player mistake, not an engine over-enum — Part IV "classify the helper's
+rejections").
+**OPEN follow-up (optional/reactive plays):** `play_hold_event` (the 9
+self-contained Hold Events — R6/S10 muster, R3/S4 & R23 reactive, R21/S24/S21
+proactive) and `discard_imperial_coffers` (R14) are reachable via the documented
+`do`/`apply` action but are not yet surfaced in the menu. Their windows are
+per-card and two are out-of-turn reactions (like Inferno's Ambush window), so —
+mirroring Inferno's decision to defer broad Held-Event enumeration with a safe
+guard — full menu enumeration is tracked as a follow-up rather than rushed (a
+wrong window would be over-enum). A menu-only agent currently can't proactively
+play an optional Hold; the game still completes (these are optional).

@@ -42,6 +42,17 @@ def _drive_to_terminal(scenario, seed, max_turns=600):
                               "choices": {d: {"action": "stand"} for d in t["_defenders"]}})
                 elif t["type"] == "assign_themata_defenders":
                     nv.apply({"type": "assign_themata_defenders", "markers": []})
+                elif t["type"] == "resolve_event":
+                    card = t["card"]
+                    with contextlib.redirect_stdout(io.StringIO()):
+                        nv.apply({"type": "resolve_event", "card": card, "args": {}})
+                    # nv.apply swallows IllegalAction; if a choice-Event is still
+                    # owed (needed args this stand-in can't supply), discard it.
+                    if any(pp.get("type") == "event_pending_resolution" and pp.get("card") == card
+                           for pp in s.gs.meta.pending):
+                        s.gs.meta.pending = [pp for pp in s.gs.meta.pending
+                                             if not (pp.get("type") == "event_pending_resolution"
+                                                     and pp.get("card") == card)]
                 else:
                     break
     return s
@@ -51,7 +62,10 @@ def test_clean_greedy_drive_records_no_anomalies():
     with contextlib.redirect_stdout(io.StringIO()):
         s = _drive_to_terminal("manzikert", 3)
     assert s.is_over()
-    notable = [f for f in nv._S["findings"] if f["kind"] != "no_legal_moves"]
+    # template_build_rejected = the greedy stand-in couldn't supply a choice-Event's
+    # args (a driver limitation, not an engine bug); no_legal_moves only at terminal.
+    notable = [f for f in nv._S["findings"]
+               if f["kind"] not in ("no_legal_moves", "template_build_rejected")]
     assert notable == [], notable
 
 
