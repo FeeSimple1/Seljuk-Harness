@@ -230,3 +230,39 @@ def test_besieged_lord_menu_only_sally_pass_end_421():
     assert "cmd_march" not in types and "cmd_tax" not in types and "cmd_supply" not in types
     assert "cmd_forage" not in types and "cmd_ravage" not in types
     assert "cmd_sally" in types  # the one combat action a Besieged Lord may take
+
+
+def test_siege_marks_only_besieging_lord_451():
+    """4.5.1: a Siege marks the besieging (Encamping) Lord Moved/Fought, "but not
+    any other Lords there" -- so a Besieged defender inside is NOT forced to Feed."""
+    gs = S.load_scenario("emperor_and_the_lion")
+    aa = gs.lords["alp_arslan"]; aa.cylinder = "larisa"; aa.assets.provender = 2
+    d = gs.lords["chatatourios"]; d.cylinder = "melitene"; d.besieged = True
+    d.forces = {"infantry": 2}; d.assets.provender = 1; d.assets.loot = 0
+    _activate(gs, "alp_arslan")
+    engine.apply_action(gs, {"type": "cmd_march", "lord": "alp_arslan", "to": "melitene", "way_type": "road"})
+    r = engine.apply_action(gs, {"type": "besiege_bypass", "choice": "besiege"})
+    if r.get("pending") == "assign_themata_defenders":
+        engine.apply_action(gs, {"type": "assign_themata_defenders", "markers": []})
+    d.assets.provender = 1  # reset after any setup Feed
+    _activate(gs, "alp_arslan")
+    engine.apply_action(gs, {"type": "cmd_siege", "lord": "alp_arslan"})
+    # The besieged defender was not marked Moved/Fought -> not Fed -> keeps his Provender.
+    assert d.assets.provender == 1, "besieged defender wrongly Fed by the besieger's Siege"
+
+
+def test_ravage_marks_lords_moved_fought_455():
+    """4.5.5: Ravage marks all Lords of both sides at the Locale Moved/Fought
+    (so the ravaging Lord must Feed) -- it was previously left unmarked."""
+    from seljuk import actions
+    gs = S.load_scenario("emperor_and_the_lion")
+    sav = gs.lords["sav_tekin"]; sav.mustered = True
+    loc = next(lid for lid in gs.locales
+               if actions.current_allegiance(gs, lid) == "roman"
+               and not gs.locales[lid].ravaged_side and gs.locales[lid].siege_markers == 0)
+    sav.cylinder = loc
+    for l in gs.lords.values():
+        l.moved_fought = False
+    _activate(gs, "sav_tekin", actions=4)  # 2-action Ravage leaves actions -> no end-of-card clear
+    engine.apply_action(gs, {"type": "cmd_ravage", "lord": "sav_tekin", "actions": 2})
+    assert sav.moved_fought is True, "ravaging Lord left unmarked (would skip Feed)"

@@ -296,3 +296,28 @@ mirroring Inferno's decision to defer broad Held-Event enumeration with a safe
 guard — full menu enumeration is tracked as a follow-up rather than rushed (a
 wrong window would be over-enum). A menu-only agent currently can't proactively
 play an optional Hold; the game still completes (these are optional).
+
+### SMOKE-009 — Feed scope: Siege over-marked, Ravage under-marked Moved/Fought
+
+**Pattern:** card/rule-text fidelity (guide Pattern 7) + Feed-scope (Nevsky §8 /
+Inferno SMOKE-099 family). Found by re-auditing an asserted "N/A": my earlier
+contribution claimed the Feed scope clean after checking only that
+Forage/Tax/Supply/Recruit don't mark Moved/Fought. Auditing ALL `moved_fought`
+set-sites against the Rules of Play (4.5.1, 4.5.5) surfaced two real errors — the
+"an asserted N/A deserves the same skeptical audit as a suspected bug" lesson.
+**Symptom:**
+- **Siege over-marked (4.5.1).** RoP: "Mark the Encamping Lord (the one who used
+  the March action) Moved/Fought, **but not any other Lords there**."
+  `h_cmd_siege` marked ALL Lords at the Locale (all three branches: normal,
+  Honors-of-War R25, Basil R7), so a Besieged defender inside (and any co-located
+  Lord) was wrongly forced to Feed.
+- **Ravage under-marked (4.5.5).** RoP: a Ravage marks "all Lords of both sides
+  there as Moved/Fought." `h_cmd_ravage` marked none, so a ravaging Lord wrongly
+  escaped Feed.
+**Fix:** `h_cmd_siege` marks only the besieging `lord`; `h_cmd_ravage` marks all
+Lords of both sides at the Locale (after validation, covering the roman,
+seljuk-success, and Roman-defends-with-Themata paths). Forage/Tax/Supply/Recruit
+correctly remain unmarked (no movement/fight), so there is no starvation spiral.
+Tests `test_siege_marks_only_besieging_lord_451` (defender not Fed) and
+`test_ravage_marks_lords_moved_fought_455`. Verified at Feed time: only the
+besieger is marked after a Siege.
