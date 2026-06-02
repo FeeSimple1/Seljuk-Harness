@@ -336,7 +336,18 @@ def campaign_victory(gs: GameState) -> str | None:
 
 
 def end_of_scenario_winner(gs: GameState) -> str:
-    """Final victory (5.3): higher VP wins; equal = draw."""
+    """Final victory (5.3): higher VP wins; equal = draw.
+
+    Manzikert has no Winter Phase, so its end-of-Autumn-1071 special conditions
+    are evaluated here: Aleppo Seljuk-Conquered -> Seljuks; else Manzikert AND
+    Khliat both Roman-Conquered (and Aleppo not Seljuk) -> Romans."""
+    if gs.meta.scenario == "manzikert":
+        aleppo_seljuk = gs.locales["aleppo"].conquered_side == "seljuk"
+        if aleppo_seljuk:
+            return "seljuk"
+        if (gs.locales["manzikert"].conquered_side == "roman"
+                and gs.locales["khliat"].conquered_side == "roman"):
+            return "roman"
     vp = score(gs)
     if vp["roman"] > vp["seljuk"]:
         return "roman"

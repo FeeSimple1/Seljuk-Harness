@@ -658,7 +658,7 @@ def _end_battle(gs: GameState, att_ids: list[str], def_ids: list[str], loser: st
     for lid in att_ids + def_ids:
         lord = gs.lords[lid]
         fate = next((e["fate"] for e in events["retreat"] if e["lord"] == lid), None)
-        harsh = (lid in losing_ids and loser_role == "attacker" and fate == "retreat" and not conceded)
+        harsh = (lid in losing_ids and fate == "retreat" and not conceded)  # 4.8.4: any non-conceding retreating loser
         _resolve_losses(gs, lord, harsh, roller, events)
 
     # Spoils (4.8.3) + removal of Lords with no Forces (4.8.5).
@@ -996,6 +996,10 @@ def resolve_storm(gs: GameState, attacker_ids: list[str], locale: str,
         # Attacker loses: no Retreat, no Spoils; Siege continues (4.9.1).
         result = {"winner": "defender", "siege_continues": True}
         _storm_losses(gs, attacker_ids, defender_ids, defender_won=True, roller=roller, ctx=ctx, log=result)
+        from . import actions as _a4
+        for lid in attacker_ids + defender_ids:  # 4.8.5: remove any Lord with no Forces
+            if lid in gs.lords and gs.lords[lid].mustered and _is_routed(gs.lords[lid]):
+                _a4._disband_beyond(gs, gs.lords[lid])
     for lid in attacker_ids + defender_ids:  # Moved/Fought, even Reserve (4.9.1)
         if lid in gs.lords and gs.lords[lid].mustered:
             gs.lords[lid].moved_fought = True
@@ -1220,9 +1224,13 @@ def _sack(gs: GameState, attacker_ids, defender_ids, locale, a_side, ctx, roller
     # Losses first (both sides), then remove losing Lords with no Forces (4.8.5).
     _storm_losses(gs, attacker_ids, defender_ids, defender_won=False, roller=roller, ctx=ctx, log=out)
     out["removed"] = []
-    for lid in defender_ids:
+    from . import actions
+    for lid in defender_ids:  # losing Defenders are removed on a Sack
         if lid in gs.lords and gs.lords[lid].mustered:
-            from . import actions
+            actions._disband_beyond(gs, gs.lords[lid])
+            out["removed"].append(lid)
+    for lid in attacker_ids:  # 4.8.5: a winning Attacker reduced to no Forces is also removed
+        if lid in gs.lords and gs.lords[lid].mustered and _is_routed(gs.lords[lid]):
             actions._disband_beyond(gs, gs.lords[lid])
             out["removed"].append(lid)
     return out
@@ -1372,10 +1380,12 @@ def resolve_sally(gs: GameState, sallying_ids: list[str], besieger_ids: list[str
         for lid in sallying_ids:
             gs.lords[lid].besieged = True
         gs.locales[locale].siege_markers = 1  # Raid: remove all but one Siege marker (4.9.2)
-    # Losses for both sides.
+    # Losses for both sides. Harsh for losing Besiegers who Retreat without having
+    # Conceded (4.8.4 via 4.9.2); Sallying Lords Withdraw, so never Harsh.
     for lid in sallying_ids + besieger_ids:
         if lid in gs.lords:
-            _loss_roll(gs, gs.lords[lid], harsh=False, roller=roller)
+            harsh = (lid in besieger_ids and winner == "sally" and conceder != "defender")
+            _loss_roll(gs, gs.lords[lid], harsh=harsh, roller=roller)
     for lid in sallying_ids + besieger_ids:
         if lid in gs.lords and gs.lords[lid].mustered and _is_routed(gs.lords[lid]):
             from . import actions

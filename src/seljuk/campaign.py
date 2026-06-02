@@ -260,8 +260,22 @@ def _after_card(gs: GameState) -> None:
     _after_card_finish(gs)
 
 
+def _permanently_disbanded(gs: GameState, lid: str) -> bool:
+    l = gs.lords.get(lid)
+    return bool(l and l.cylinder == "removed" and not l.flags.get("setup_removed"))
+
+
 def _campaign_5_2_over(gs: GameState) -> bool:
-    """5.2: a side with no Mustered Lords during Campaign loses immediately."""
+    """5.2 immediate victory: a permanently Disbanded Alp Arslan -> Romans win
+    (in every scenario; a 'removed' Lord was necessarily in play, satisfying the
+    Specter 'until he comes into play' caveat). Manzikert: a permanently
+    Disbanded Romanos IV -> Seljuks win. Then the no-Mustered-Lords loss (5.2)."""
+    if _permanently_disbanded(gs, "alp_arslan"):
+        _set_game_over(gs, "roman", "5.2: Alp Arslan permanently Disbanded")
+        return True
+    if gs.meta.scenario == "manzikert" and _permanently_disbanded(gs, "romanos_diogenes"):
+        _set_game_over(gs, "seljuk", "5.2: Romanos IV permanently Disbanded (Manzikert)")
+        return True
     if not any(l.mustered and l.side == "seljuk" for l in gs.lords.values()):
         _set_game_over(gs, "roman", "5.2: seljuk has no Mustered Lords during Campaign")
         return True
@@ -1480,13 +1494,21 @@ def h_respond_approach(gs: GameState, action: dict[str, Any], roller: DiceRoller
             gs.side_decks(att_side).draw_deck.append("R18")
     standers, avoided, withdrew = [], [], []
     approach_origin = pend.get("from")  # SMOKE-006: Locale the Attackers Approached from
+    # 4.3.4: Withdraw is limited to the Stronghold's Size (incl. Lords already inside).
+    inside = sum(1 for l in gs.lords.values()
+                 if l.mustered and l.cylinder == to and l.besieged and l.side == side)
+    n_withdraw = sum(1 for did in pend["defenders"]
+                     if choices.get(did, {}).get("action") == "withdraw")
+    if inside + n_withdraw > _stronghold_size(gs, to):
+        raise IllegalAction("stronghold_full",
+                            f"Stronghold Size {_stronghold_size(gs, to)} cannot hold {inside + n_withdraw} Lords (4.3.4)")
     for did in pend["defenders"]:
         ch = choices.get(did, {"action": "stand"})
         kind = ch.get("action", "stand")
         lord = gs.lords[did]
         if kind == "avoid":
             dest = ch.get("to")
-            _validate_avoid(gs, lord, to, dest, side)
+            _validate_avoid(gs, lord, to, dest, side, approach_origin)
             lord.cylinder = dest
             lord.moved_fought = True
             avoided.append(did)
@@ -1535,9 +1557,12 @@ def h_respond_approach(gs: GameState, action: dict[str, Any], roller: DiceRoller
             "withdrew": withdrew, "standers": standers, **arrival}
 
 
-def _validate_avoid(gs: GameState, lord: LordState, battle_loc: str, dest: str, side: str) -> None:
+def _validate_avoid(gs: GameState, lord: LordState, battle_loc: str, dest: str, side: str,
+                    approach_origin: str | None = None) -> None:
     if dest not in gs.locales or not gmap.is_adjacent(battle_loc, dest):
         raise IllegalAction("bad_avoid", "Avoid Battle moves to an adjacent Locale (4.3.4)")
+    if approach_origin is not None and dest == approach_origin:
+        raise IllegalAction("avoid_across_approach", "may not Avoid across the Way the Enemy Approached on (4.3.4)")
     if _passes_blocked(gs) and all(w["type"] == "pass" for w in gmap.ways_between(battle_loc, dest)):
         raise IllegalAction("passes_blocked", "Passes cannot be used to Avoid Battle (Unpredictable Weather)")
     if _enemy_lord_ids_at(gs, dest, side):
@@ -1595,6 +1620,14 @@ def h_besiege_bypass(gs: GameState, action: dict[str, Any], roller: DiceRoller) 
 
 
 # === Siege (4.5.1) and Themata-defender assignment (4.3.5) ==================
+
+def _stronghold_size(gs: GameState, loc: str) -> int:
+    """Stronghold Size / Lord capacity: fort=1, town=2, city=3 (R1 Fort = 1)."""
+    info = sd.locale(loc)
+    if info.get("is_stronghold") and not gs.locales[loc].ruins:
+        return {"fort": 1, "town": 2, "city": 3}.get(info["type"], 0)
+    return 1 if gs.locales[loc].fort_marker else 0
+
 
 def _is_stronghold(gs: GameState, loc: str) -> bool:
     """A Locale defended as a Stronghold: its printed Stronghold (un-Ruined) OR a
