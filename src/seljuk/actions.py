@@ -25,9 +25,9 @@ def is_commander(gs: GameState, lord_id: str) -> bool:
     c = sd.lord(lord_id).get("commander")
     if c == "always":
         return True
-    if c == "conditional":  # Manuel Komnenos: Commander only if Romanos is off the map
+    if c == "conditional":  # Manuel Komnenos: Commander only if Romanos is not on the map (1.5.1)
         rom = gs.lords.get("romanos_diogenes")
-        return not (rom and rom.mustered)
+        return not (rom is not None and _on_map(rom))
     return False
 
 
@@ -42,6 +42,8 @@ def current_allegiance(gs: GameState, locale_id: str) -> str:
 
 
 def is_friendly_locale(gs: GameState, locale_id: str, side: str) -> bool:
+    if locale_id == "aleppo" and gs.meta.notes.get("aleppo_friendly_both"):
+        return True  # R14 Aleppo Independence: Friendly to both sides
     return current_allegiance(gs, locale_id) == side
 
 

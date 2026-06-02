@@ -944,6 +944,12 @@ def command_menu(gs: GameState) -> list[dict[str, Any]]:
             if cost is not None and cost <= _available_carts(gs, lord):
                 out.append({"type": "cmd_supply", "lord": lid, "_desc": "Supply Provender via a Route (4.4)"})
         # Siege/Storm (4.5.1-.2): a Besieging Lord may advance the Siege or Storm.
+        if lord.bypassed and st.bypass:  # 4.3.6 ENCAMP
+            out.append({"type": "cmd_encamp", "lord": lid, "_desc": "Encamp: convert Bypass to Siege (4.3.6)"})
+        if (not lord.bypassed and st.bypass and actions.current_allegiance(gs, loc_id) == lord.side
+                and any(o.mustered and o.cylinder == loc_id and o.side == _enemy(lord.side) and o.bypassed
+                        for o in gs.lords.values())):  # 4.3.6 SORTIE
+            out.append({"type": "cmd_sortie", "lord": lid, "_desc": "Sortie: Approach the Bypassing Enemy (4.3.6)"})
         if _besieging(gs, lord) and _peace_can_pay(gs, lord):
             out.append({"type": "cmd_siege", "lord": lid, "_desc": "Siege: roll Surrender / add Siegeworks (4.5.1)"})
             out.append({"type": "cmd_storm", "lord": lid, "_desc": "Storm the Stronghold (4.5.2)"})
@@ -1820,6 +1826,54 @@ def _besieging_lords_at(gs: GameState, locale: str, side: str) -> list[str]:
     others = [lid for lid, l in gs.lords.items()
               if l.mustered and l.cylinder == locale and l.side == side and not l.besieged and lid != active]
     return ([active] if active else []) + others
+
+
+def h_cmd_encamp(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
+    """4.3.6 ENCAMP: a Bypassing Lord uses one March action (regardless of Laden)
+    to replace the Bypass marker with one Siege marker, then ends the card."""
+    lord = _require(action.get("lord"), gs)
+    loc = lord.cylinder
+    if not (lord.bypassed and gs.locales[loc].bypass):
+        raise IllegalAction("not_bypassing", "only a Bypassing Lord may Encamp (4.3.6)")
+    if gs.meta.actions_remaining < 1:
+        raise IllegalAction("insufficient_actions", "Encamp uses one March action (4.3.6)")
+    gs.locales[loc].bypass = False
+    gs.locales[loc].siege_markers = max(1, gs.locales[loc].siege_markers)
+    for l in gs.lords.values():
+        if l.mustered and l.cylinder == loc and l.side == lord.side and l.bypassed:
+            l.bypassed = False
+    lord.moved_fought = True
+    gs.meta.actions_remaining = 0  # Encamp ends the card (4.3.6)
+    if _needs_themata_assignment(gs, loc, lord.side):
+        gs.meta.pending.append({"type": "assign_themata_defenders", "locale": loc, "_owed_by": "roman"})
+        return {"ok": True, "action": "cmd_encamp", "locale": loc, "pending": "assign_themata_defenders"}
+    _after_card(gs)
+    return {"ok": True, "action": "cmd_encamp", "locale": loc}
+
+
+def h_cmd_sortie(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
+    """4.3.6 SORTIE: a Lord (group) inside a Bypassed Friendly Stronghold uses one
+    March action to Approach the Bypassing Enemy. On loss they Withdraw/Retreat
+    keeping the Bypass marker (the marker persists while the bypasser remains)."""
+    lord = _require(action.get("lord"), gs)
+    loc = lord.cylinder
+    if not gs.locales[loc].bypass or actions.current_allegiance(gs, loc) != lord.side:
+        raise IllegalAction("not_bypassed_friendly", "Sortie requires a Bypassed Friendly Stronghold (4.3.6)")
+    if lord.bypassed:
+        raise IllegalAction("bypasser_cannot_sortie", "the Bypassing side cannot Sortie (4.3.6)")
+    enemy = [lid for lid, l in gs.lords.items()
+             if l.mustered and l.cylinder == loc and l.side == _enemy(lord.side) and l.bypassed]
+    if not enemy:
+        raise IllegalAction("no_bypasser", "no Bypassing Enemy to Sortie against (4.3.6)")
+    from . import battle
+    sortie = [lord.id] + [lid for lid, l in gs.lords.items()
+                          if lid != lord.id and l.mustered and l.cylinder == loc and l.side == lord.side]
+    res = battle.begin_battle(gs, sortie, enemy, loc,
+                              scripted=action.get("battle_decisions"),
+                              events=action.get("battle_events"))
+    gs.meta.actions_remaining = 0
+    _after_card(gs)  # _refresh_invest clears the Bypass marker only if the bypasser is gone
+    return {"ok": True, "action": "cmd_sortie", "locale": loc, "battle": res}
 
 
 def h_cmd_storm(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
