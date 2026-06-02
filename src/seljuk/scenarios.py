@@ -197,6 +197,7 @@ def load_scenario(name: str, seed: int = 1) -> GameState:
         elif lord_id in removed:
             gs.lords[lord_id] = LordState(
                 id=lord_id, side=info["side"], mustered=False, cylinder="removed",
+                flags={"setup_removed": True},
             )
         else:  # pragma: no cover - validated at data-build time
             raise ValueError(f"{name}: lord {lord_id} not accounted for")
@@ -257,7 +258,57 @@ def score(gs: GameState) -> dict[str, float]:
         # Seljuk Conquered markers are worth 0 VP.
     roman += float(gs.holding_boxes.constantinople_roman_vp_markers)
     seljuk += float(gs.holding_boxes.mosul_baghdad_loot)
+    sr, ss = _scenario_special_vp(gs)
+    roman += sr
+    seljuk += ss
     return {"roman": round(roman, 1), "seljuk": round(seljuk, 1)}
+
+
+def _locale_control(gs: GameState, locale_id: str) -> str:
+    """Side a Locale is currently Friendly to (Conquered flips it; Fatimid ->
+    Roman). Inlined to avoid importing actions (circular)."""
+    loc = gs.locales[locale_id]
+    if loc.conquered_side:
+        return loc.conquered_side
+    return "seljuk" if sd.locale(locale_id)["allegiance"] == "seljuk" else "roman"
+
+
+def _scenario_special_vp(gs: GameState) -> tuple[float, float]:
+    """Scenario-setup VP rules beyond the standard marker VPs (transcribed in
+    each scenario's `special_vp_rules`), keyed on the scenario id."""
+    roman = 0.0
+    seljuk = 0.0
+    scen = gs.meta.scenario
+    if scen == "manzikert":
+        # "Both sides score 1 VP for each permanently Disbanded enemy Lord."
+        for lid, l in gs.lords.items():
+            if l.cylinder == "removed" and not l.flags.get("setup_removed"):
+                if sd.lord(lid)["side"] == "seljuk":
+                    roman += 1.0   # a permanently Disbanded Seljuk Lord -> Roman scores
+                else:
+                    seljuk += 1.0
+    elif scen == "year_of_treacherous_ambition":
+        # "Romans +1 VP if Arisighi switches sides" (he starts Seljuk).
+        ar = gs.lords.get("arisighi")
+        if ar is not None and ar.side == "roman":
+            roman += 1.0
+        # "Seljuks +1 VP each for reaching Ikonion and/or Western Anatolia with a
+        # Lord" (latched in campaign.h_cmd_march when a Seljuk Lord arrives).
+        if gs.meta.notes.get("reached_ikonion"):
+            seljuk += 1.0
+        if gs.meta.notes.get("reached_western_anatolia"):
+            seljuk += 1.0
+        # "End of Winter 1070: both sides +1 VP each for control of Manbij,
+        # Edessa, Khliat, and Manzikert." Scored once the scenario reaches its
+        # final turn (Autumn 1070 -> Winter 1070 is the conclusion).
+        if gs.meta.calendar_box >= gs.meta.final_box:
+            for locid in ("manbij", "edessa", "khliat", "manzikert"):
+                ctrl = _locale_control(gs, locid)
+                if ctrl == "roman":
+                    roman += 1.0
+                elif ctrl == "seljuk":
+                    seljuk += 1.0
+    return roman, seljuk
 
 
 def mustered_lords(gs: GameState, side: str) -> list[str]:

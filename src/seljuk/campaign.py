@@ -529,7 +529,7 @@ def _bounty(gs: GameState) -> None:
             continue
         seats = list(sd.lord(lid).get("seats", []))
         if lid == "artuk_beg" and capabilities.lord_has(gs, "artuk_beg", "Artukid Legacy"):
-            seats += ["to_mosul_and_baghdad", "amid"]
+            seats += ["amid", "mayyafariqin"]  # S10: Mayyafariqin AND Amid (base Seat already included)
         # BFS over bounty-traversable Locales from the Lord to one of his Seats.
         from collections import deque
         seen = {lord.cylinder}
@@ -1008,7 +1008,7 @@ def _min_supply_cost(gs: GameState, lord: LordState) -> int | None:
     any of his own un-Ruined Seats, avoiding blocked Locales. None if no route."""
     seats = [s for s in sd.lord(lord.id).get("seats", []) if not gs.locales[s].ruins]
     if lord.id == "artuk_beg" and capabilities.lord_has(gs, "artuk_beg", "Artukid Legacy"):
-        seats += [s for s in ("to_mosul_and_baghdad", "amid") if not gs.locales[s].ruins]
+        seats += [s for s in ("amid", "mayyafariqin") if not gs.locales[s].ruins]  # S10: Mayyafariqin AND Amid
     if not seats:
         return None
     origin = lord.cylinder
@@ -1183,6 +1183,13 @@ def h_cmd_march(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> di
         g.cylinder = to
         g.moved_fought = True
         g.bypassed = False  # SMOKE-005: leaving a Locale ends any Bypass there
+    # Year of Treacherous Ambition objective: latch when a Seljuk Lord reaches
+    # Ikonion / Western Anatolia (scored at end; see scenarios._scenario_special_vp).
+    if gs.meta.scenario == "year_of_treacherous_ambition" and lord.side == "seljuk":
+        if to == "ikonion":
+            gs.meta.notes["reached_ikonion"] = True
+        elif to == "western_anatolia":
+            gs.meta.notes["reached_western_anatolia"] = True
     for origin in origins:
         if origin != to:
             _refresh_invest(gs, origin)  # clear stale Siege/Bypass if besiegers left
