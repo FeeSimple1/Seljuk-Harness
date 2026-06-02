@@ -52,6 +52,7 @@ _HANDLERS: dict[str, Callable[[GameState, dict, DiceRoller], dict]] = {
     "levy_capability": actions.h_levy_capability,
     "levy_vassal": actions.h_levy_vassal,
     "levy_themata": actions.h_levy_themata,
+    "muster_restore": actions.h_muster_restore,
     "deploy_capability": actions.h_deploy_capability,
     "cta_loot": actions.h_cta_loot,
     "cta_strategic_objective": actions.h_cta_strategic_objective,

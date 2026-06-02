@@ -80,6 +80,7 @@ class LordState(_Model):
 
     forces: dict[str, int] = Field(default_factory=dict)
     routed: dict[str, int] = Field(default_factory=dict)
+    lost: dict[str, int] = Field(default_factory=dict)  # units permanently Lost in combat (S5/S19 may restore)
     assets: Assets = Field(default_factory=Assets)
     vassals: list[VassalSlot] = Field(default_factory=list)
     capabilities: list[str] = Field(default_factory=list)  # "This Lord" card ids (max 2)

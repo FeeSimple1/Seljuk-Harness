@@ -239,6 +239,7 @@ def reset_muster_segment(gs: GameState) -> None:
         lord.flags.pop("lordship_spent", None)
         lord.flags.pop("mustered_this_segment", None)
         lord.flags.pop("lordship_bonus", None)
+        lord.flags.pop("restored_this_muster", None)
 
 
 def lordship_remaining(gs: GameState, lord: LordState) -> int:
@@ -505,6 +506,22 @@ def enumerate_muster(gs: GameState) -> list[dict[str, Any]]:
             if thema and gs.themata.get(thema):
                 out.append({"type": "levy_themata", "lord": lid, "thema": thema,
                             "_desc": f"{sd.lord(lid)['name']} Levies Themata in {thema} (3.4.5)"})
+    # S5 Forced Conscription / S19 Baghdad Reinforcements: a Lord with the
+    # Capability, at an Unbesieged Friendly Locale, may restore 1 of his Lost
+    # units (free, once per Muster phase).
+    for lid, lord in gs.lords.items():
+        if lord.side != side or not _on_map(lord) or lord.besieged:
+            continue
+        if not (capabilities.lord_has(gs, lid, "Forced Conscription")
+                or capabilities.lord_has(gs, lid, "Baghdad Reinforcements")):
+            continue
+        if not is_friendly_locale(gs, lord.cylinder, side) or lord.flags.get("restored_this_muster"):
+            continue
+        for unit, n in lord.lost.items():
+            if n > 0:
+                out.append({"type": "muster_restore", "lord": lid, "unit": unit,
+                            "_desc": f"{sd.lord(lid)['name']} restores a Lost {unit} (S5/S19)"})
+
     return out
 
 
@@ -787,6 +804,31 @@ def h_cta_deep_raids(gs: GameState, action: dict[str, Any], roller: DiceRoller) 
     gs.meta.vp = scenarios.score(gs)
     _cta_done(gs)
     return {"ok": True, "action": "cta_deep_raids", "lord": lid, "loot": loot}
+
+
+def h_muster_restore(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
+    """S5 Forced Conscription / S19 Baghdad Reinforcements: restore 1 Lost unit
+    for free during Muster (once per Muster phase)."""
+    if gs.meta.subphase != "levy.muster":
+        raise IllegalAction("wrong_step", "restore is a Muster action (3.4)")
+    lid = action.get("lord")
+    lord = gs.lords.get(lid)
+    if lord is None or lord.side != gs.meta.active_player:
+        raise IllegalAction("bad_lord", "not an active-side Lord")
+    if not (capabilities.lord_has(gs, lid, "Forced Conscription")
+            or capabilities.lord_has(gs, lid, "Baghdad Reinforcements")):
+        raise IllegalAction("no_restore_capability", f"{lid} cannot restore Lost units (S5/S19)")
+    if not _on_map(lord) or lord.besieged or not is_friendly_locale(gs, lord.cylinder, lord.side):
+        raise IllegalAction("bad_location", "must be at an Unbesieged Friendly Locale (S5/S19)")
+    if lord.flags.get("restored_this_muster"):
+        raise IllegalAction("already_restored", "already restored a unit this Muster phase (S5/S19)")
+    unit = action.get("unit")
+    if lord.lost.get(unit, 0) <= 0:
+        raise IllegalAction("no_lost_unit", f"{lid} has no Lost {unit} to restore")
+    lord.lost[unit] -= 1
+    lord.forces[unit] = lord.forces.get(unit, 0) + 1
+    lord.flags["restored_this_muster"] = True
+    return {"ok": True, "action": "muster_restore", "lord": lid, "unit": unit}
 
 
 # --- Loyalty Check (1.4) ----------------------------------------------------

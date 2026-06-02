@@ -731,6 +731,8 @@ def _resolve_losses(gs: GameState, lord: LordState, harsh: bool, roller: DiceRol
                 lost[unit] = lost.get(unit, 0) + 1
         lord.routed[unit] = 0
     lord.routed = {u: n for u, n in lord.routed.items() if n > 0}
+    for u, n in lost.items():
+        lord.lost[u] = lord.lost.get(u, 0) + n
     if recovered or lost:
         events["losses"].append({"lord": lord.id, "recovered": recovered, "lost": lost, "harsh": harsh})
 
@@ -1214,6 +1216,8 @@ def _loss_roll(gs: GameState, lord: LordState, harsh: bool, roller: DiceRoller):
                 lost[unit] = lost.get(unit, 0) + 1
         lord.routed[unit] = 0
     lord.routed = {u: n for u, n in lord.routed.items() if n > 0}
+    for u, n in lost.items():
+        lord.lost[u] = lord.lost.get(u, 0) + n
     return {"lord": lord.id, "recovered": recovered, "lost": lost, "harsh": harsh} if (recovered or lost) else None
 
 
