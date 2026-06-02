@@ -441,6 +441,7 @@ def _lord_step_hits_caps(gs, lid, step, round_no):
     units = _unrouted_units(lord)
     normal = 0.0
     anti = 0.0
+    select = 0.0  # S16 Parthian Shot: striker-selected (Turkic Horse Missiles)
     if step == "missile":
         for u, n in units.items():
             normal += _MISSILE.get(u, 0.0) * n
@@ -448,6 +449,10 @@ def _lord_step_hits_caps(gs, lid, step, round_no):
             normal += units.get("infantry", 0) * 1.0
         if "Alakatia" in names and units.get("infantry", 0) >= 2:  # R23: +1 anti-armor Missile Hit
             anti += 1.0
+        if "Parthian Shot" in names:                  # S16: Turkic Horse Missiles select targets (Battle only)
+            tk = _MISSILE.get("turkic_horse", 1.0) * units.get("turkic_horse", 0)
+            normal -= tk
+            select += tk
     elif step == "horse_melee":
         for u, n in units.items():
             if _category(u) == "horse":
@@ -464,7 +469,7 @@ def _lord_step_hits_caps(gs, lid, step, round_no):
         for u, n in units.items():
             if _category(u) == "foot":
                 normal += table.get(u, 0.0) * n
-    return max(0.0, normal), anti
+    return max(0.0, normal), anti, max(0.0, select)
 
 
 def _front_set(side: _Side) -> set:
@@ -551,39 +556,48 @@ def _resolve_step(gs, step, striking: _Side, target_side: _Side, role, pursuit, 
         target = _target_of(slot, target_side, ctx, row=target_row)
         if not target:
             continue
-        normal, anti = _lord_step_hits_caps(gs, lid, step, round_no)
-        cur = by.setdefault(target, [0.0, 0.0])
+        normal, anti, select = _lord_step_hits_caps(gs, lid, step, round_no)
+        cur = by.setdefault(target, [0.0, 0.0, 0.0])
         cur[0] += normal
         cur[1] += anti
+        cur[2] += select
 
-    def _emit(target, n_raw, a_raw, walls):
+    def _emit(target, n_raw, a_raw, s_raw, walls):
         if pursuit.get(role):  # Pursuit halving (4.8.2)
             n_raw /= 2.0
             a_raw /= 2.0
+            s_raw /= 2.0
         n_hits = int(n_raw + 0.999)
         a_hits = int(a_raw + 0.999)
+        s_hits = int(s_raw + 0.999)
         if step == "missile" and round_no == 1 and target_side.mountain_ambush:
             n_hits = _roll_walls(roller, n_hits, (1, 3))  # Mountain Ambush (R2/S2)
             a_hits = _roll_walls(roller, a_hits, (1, 3))
+            s_hits = _roll_walls(roller, s_hits, (1, 3))
         if walls > 0:  # Siegeworks vs Sallying strikes (Relief Sally, 4.8.1)
             n_hits = _roll_walls(roller, n_hits, (1, walls))
             a_hits = _roll_walls(roller, a_hits, (1, walls))
+            s_hits = _roll_walls(roller, s_hits, (1, walls))
+        vs_horse = (step == "horse_melee" and round_no == 1)  # R3 Steeled Resolve scope
         applied = []
         if n_hits:
-            applied += _apply_hits(gs, target, n_hits, hit_type, ctx, roller)
+            applied += _apply_hits(gs, target, n_hits, hit_type, ctx, roller, vs_horse=vs_horse)
         if a_hits:
-            applied += _apply_hits(gs, target, a_hits, hit_type, ctx, roller, anti_armor=True)
-        if n_hits or a_hits:
+            applied += _apply_hits(gs, target, a_hits, hit_type, ctx, roller, anti_armor=True, vs_horse=vs_horse)
+        if s_hits:  # S16 Parthian Shot: the striker selects which unit absorbs
+            applied += _apply_hits(gs, target, s_hits, hit_type, ctx, roller, vs_horse=vs_horse, select_target=True)
+        if n_hits or a_hits or s_hits:
             log.append({"round": round_no, "step": step, "by": role, "target": target,
-                        "hits": n_hits + a_hits, "routed_units": applied,
+                        "hits": n_hits + a_hits + s_hits, "routed_units": applied,
                         **({"sallying": True} if striker_row == "sally" else {})})
 
-    for target, (n, a) in by.items():
-        _emit(target, n, a, step_walls)
+    for target, (n, a, sel) in by.items():
+        _emit(target, n, a, sel, step_walls)
 
 
 def _apply_hits(gs: GameState, target_id: str, hits: int, hit_type: str,
-                ctx: DecisionContext, roller: DiceRoller, anti_armor: bool = False) -> list[str]:
+                ctx: DecisionContext, roller: DiceRoller, anti_armor: bool = False, vs_horse: bool = False,
+                select_target: bool = False) -> list[str]:
     lord = gs.lords[target_id]
     routed_units: list[str] = []
     reroll_used = False
@@ -592,8 +606,11 @@ def _apply_hits(gs: GameState, target_id: str, hits: int, hit_type: str,
         avail = [u for u, n in lord.forces.items() if n > 0]
         if not avail:
             break
-        unit = ctx.decide("hit_absorption", avail, {"lord": target_id, "hit_type": hit_type})
-        lo, hi = capabilities.protection_range(gs, target_id, unit, hit_type, storm=False)
+        if select_target:  # S16 Parthian Shot: striker targets the unit most likely to Rout
+            unit = min(avail, key=lambda u: capabilities.protection_range(gs, target_id, u, hit_type, vs_horse=vs_horse)[1])
+        else:
+            unit = ctx.decide("hit_absorption", avail, {"lord": target_id, "hit_type": hit_type})
+        lo, hi = capabilities.protection_range(gs, target_id, unit, hit_type, storm=False, vs_horse=vs_horse)
         if anti_armor and unit not in ("turkic_horse", "militia"):
             hi = max(lo, hi - 1)  # -1 to target Armor (Bardoukia/Alakatia)
         roll = roller.d6()
@@ -1232,8 +1249,8 @@ def _side_step_caps(gs, side: _Side, step: str, round_no: int) -> tuple[float, f
     applying Battle Capabilities (Javelins/Alakatia/Shock Tactics/Bardoukia)."""
     n = a = 0.0
     for lid in side.front_lords():
-        sn, sa = _lord_step_hits_caps(gs, lid, step, round_no)
-        n += sn
+        sn, sa, ssel = _lord_step_hits_caps(gs, lid, step, round_no)
+        n += sn + ssel
         a += sa
     return n, a
 

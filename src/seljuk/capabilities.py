@@ -95,7 +95,7 @@ def lamellar_active(gs, lord_id: str) -> bool:
     return int(gs.lords[lord_id].flags.get("turkic_routed_battle", 0)) < 3
 
 
-def protection_range(gs, lord_id: str, unit: str, hit_type: str, storm: bool = False) -> tuple[int, int]:
+def protection_range(gs, lord_id: str, unit: str, hit_type: str, storm: bool = False, vs_horse: bool = False) -> tuple[int, int]:
     """Protection range that NEGATES a Hit (4.8.2), including Capabilities.
 
     Turkic Horse: Lamellar Armor -> Armor 1-3; else Unarmored vs Missiles and
@@ -114,7 +114,8 @@ def protection_range(gs, lord_id: str, unit: str, hit_type: str, storm: bool = F
     if unit == "tagmata":
         return (1, 4) if "Klibanophoroi" in names else (1, 3)
     if unit == "infantry":
-        return (1, 4) if "Steeled Resolve" in names else (1, 3)
+        # R3 Steeled Resolve: Armor 1-4, but only vs Horse strikes (1 Round, Battle).
+        return (1, 4) if (vs_horse and "Steeled Resolve" in names) else (1, 3)
     return _ARMORED.get(unit, (1, 1))  # unknown unit -> Unarmored, never KeyError
 
 

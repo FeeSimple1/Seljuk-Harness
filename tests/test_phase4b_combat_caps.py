@@ -27,7 +27,9 @@ def test_syndosis_militia_armor_1_2_r13():
 def test_steeled_resolve_infantry_armor_1_4_r3():
     gs = S.load_scenario("emperor_and_the_lion")
     _setup(gs, "chatatourios", ["R3"], {"infantry": 1})
-    assert C.protection_range(gs, "chatatourios", "infantry", "missile") == (1, 4)
+    # Steeled Resolve gives Infantry Armor 1-4, but only vs Horse (else base 1-3).
+    assert C.protection_range(gs, "chatatourios", "infantry", "missile", vs_horse=True) == (1, 4)
+    assert C.protection_range(gs, "chatatourios", "infantry", "missile", vs_horse=False) == (1, 3)
 
 
 def test_lamellar_armor_turkic_1_3_until_three_rout_s1():
@@ -50,32 +52,32 @@ def test_turkic_evade_vs_melee_unarmored_vs_missile_default():
 def test_javelins_adds_infantry_missiles_s11():
     gs = S.load_scenario("emperor_and_the_lion")
     _setup(gs, "sav_tekin", ["S11"], {"infantry": 2})
-    normal, anti = _lord_step_hits_caps(gs, "sav_tekin", "missile", 1)
+    normal, anti, _ = _lord_step_hits_caps(gs, "sav_tekin", "missile", 1)
     assert normal == 2.0  # 2 Infantry x1 Missile
 
 
 def test_shock_tactics_grants_turkic_melee_s4_q002():
     gs = S.load_scenario("emperor_and_the_lion")
     _setup(gs, "alp_arslan", ["S4"], {"turkic_horse": 3})
-    normal, _ = _lord_step_hits_caps(gs, "alp_arslan", "horse_melee", 1)
+    normal, _, _ = _lord_step_hits_caps(gs, "alp_arslan", "horse_melee", 1)
     assert normal == 1.0  # ceil(3/2)=2 units x0.5 = 1 (errata example)
     # Without Shock Tactics, Turkic base Melee is 0 (Q-002).
     _setup(gs, "alp_arslan", [], {"turkic_horse": 3})
-    n2, _ = _lord_step_hits_caps(gs, "alp_arslan", "horse_melee", 1)
+    n2, _, _ = _lord_step_hits_caps(gs, "alp_arslan", "horse_melee", 1)
     assert n2 == 0.0
 
 
 def test_bardoukia_makes_tagmata_melee_anti_armor_r21():
     gs = S.load_scenario("emperor_and_the_lion")
     _setup(gs, "chatatourios", ["R21"], {"tagmata": 2})
-    normal, anti = _lord_step_hits_caps(gs, "chatatourios", "horse_melee", 1)
+    normal, anti, _ = _lord_step_hits_caps(gs, "chatatourios", "horse_melee", 1)
     assert anti == 2.0 and normal == 0.0  # 2 Tagmata melee moved to anti-armor
 
 
 def test_alakatia_extra_anti_armor_missile_with_two_infantry_r23():
     gs = S.load_scenario("emperor_and_the_lion")
     _setup(gs, "chatatourios", ["R23"], {"infantry": 2})
-    normal, anti = _lord_step_hits_caps(gs, "chatatourios", "missile", 1)
+    normal, anti, _ = _lord_step_hits_caps(gs, "chatatourios", "missile", 1)
     assert anti == 1.0  # +1 anti-armor Missile Hit (>=2 Infantry)
 
 

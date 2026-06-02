@@ -46,7 +46,7 @@ def _seljuk_lord(gs, lid, forces, caps):
 def test_p14_shock_tactics_two_hits_total():
     gs = S.load_scenario("emperor_and_the_lion", seed=1)
     _seljuk_lord(gs, "alp_arslan", {"turkic_horse": 3, "ghulam_cavalry": 1}, ["S4"])  # S4 = Shock Tactics
-    normal, anti = _lord_step_hits_caps(gs, "alp_arslan", "horse_melee", 1)
+    normal, anti, _ = _lord_step_hits_caps(gs, "alp_arslan", "horse_melee", 1)
     # ceil(3/2)=2 Turkic x0.5 = 1.0, plus 1 Ghulam x1.0 = 1.0  -> 2.0 total
     assert normal == 2.0 and anti == 0.0
     n_hits = int(normal + 0.999)
@@ -127,5 +127,5 @@ def test_storm_example_shock_tactics_with_two_turkic_one_ghulam_errata():
     # ORIGINAL 3 Turkic: ceil(3/2)=2 x1/2 = x1, + x1 Ghulam = 2 Hits.
     gs = S.load_scenario("emperor_and_the_lion", seed=1)
     _seljuk_lord(gs, "alp_arslan", {"turkic_horse": 3, "ghulam_cavalry": 1}, ["S4"])
-    normal, _ = _lord_step_hits_caps(gs, "alp_arslan", "horse_melee", 1)
+    normal, _, _ = _lord_step_hits_caps(gs, "alp_arslan", "horse_melee", 1)
     assert normal == 2.0   # errata: x1 (Shock Tactics) + x1 (Ghulam)
