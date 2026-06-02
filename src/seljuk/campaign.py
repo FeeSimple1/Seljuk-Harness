@@ -1706,7 +1706,14 @@ def h_cmd_storm(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> di
     from . import battle
     attackers = _besieging_lords_at(gs, lord.cylinder, lord.side)
     ctx = battle.DecisionContext(action.get("storm_decisions"))
-    res = battle.resolve_storm(gs, attackers, lord.cylinder, ctx, roller)
+    # R4 Sultan's Horse Is Killed: the Roman defender may play it during a Storm
+    # by Alp Arslan at a Locale with >1 Siege marker to reduce the Rounds by 1.
+    rounds_reduction = 0
+    if (action.get("play_sultans_horse") and "R4" in gs.roman.held_events
+            and "alp_arslan" in attackers and gs.locales[lord.cylinder].siege_markers > 1):
+        gs.roman.held_events.remove("R4"); gs.roman.draw_deck.append("R4")
+        rounds_reduction = 1
+    res = battle.resolve_storm(gs, attackers, lord.cylinder, ctx, roller, rounds_reduction=rounds_reduction)
     gs.meta.actions_remaining = 0  # Storm ends the card (4.5.2)
     _after_card(gs)
     return {"ok": True, "action": "cmd_storm", "storm": res}

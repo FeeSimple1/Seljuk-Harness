@@ -916,7 +916,7 @@ def _build_garrison(gs: GameState, locale: str, attacker_side: str = "seljuk") -
 
 
 def resolve_storm(gs: GameState, attacker_ids: list[str], locale: str,
-                  ctx: DecisionContext, roller: DiceRoller) -> dict[str, Any]:
+                  ctx: DecisionContext, roller: DiceRoller, rounds_reduction: int = 0) -> dict[str, Any]:
     a_side = gs.lords[attacker_ids[0]].side
     d_side = "roman" if a_side == "seljuk" else "seljuk"
     size = _value(locale)
@@ -940,7 +940,8 @@ def resolve_storm(gs: GameState, attacker_ids: list[str], locale: str,
     log = []
     attacker_conceded = False
     round_no = 0
-    while round_no < siege:
+    max_rounds = max(0, siege - rounds_reduction)  # R4 may reduce Rounds by 1
+    while round_no < max_rounds:
         round_no += 1
         if round_no > 1:
             if ctx.decide("concede", [False, True], {"role": "attacker"}):  # Attacker only (4.9.1)
