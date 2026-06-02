@@ -330,10 +330,23 @@ def resolve_treachery_reentry(gs: GameState) -> list[dict[str, Any]]:
         seats = _muster_seats(gs, lid, lord.side)
         if not seats:
             continue  # no free Seat yet; retry next season
-        _muster_lord_onto_map(gs, lord, seats[0])
+        seat = seats[0]
+        _muster_lord_onto_map(gs, lord, seat)
+        # 1.4.2: place the new side's Conquered markers on the Seat Stronghold (or
+        # remove the previous side's if the Lord returns to his original allegiance).
+        info = sd.locale(seat)
+        if info.get("is_stronghold"):
+            loc = gs.locales[seat]
+            if info["allegiance"] == lord.side:
+                loc.conquered_side = None
+                loc.conquered_count = 0
+            else:
+                loc.conquered_side = lord.side
+                loc.conquered_count = {"fort": 1, "town": 2, "city": 3}.get(info["type"], 0)
+            gs.meta.vp = scenarios.score(gs)
         lord.flags.pop("treachery_reentry_box", None)
         lord.flags.pop("mustered_this_segment", None)
-        placed.append({"lord": lid, "seat": seats[0], "side": lord.side})
+        placed.append({"lord": lid, "seat": seat, "side": lord.side})
     return placed
 
 

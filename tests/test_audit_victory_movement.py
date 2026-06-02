@@ -61,3 +61,21 @@ def test_withdraw_capacity_enforced():
     with pytest.raises(IllegalAction):   # 3 Lords into a Size-2 Town
         campaign.h_respond_approach(gs, {"choices": {d: {"action": "withdraw"} for d in defs}}, DiceRoller(1))
     assert campaign._stronghold_size(gs, loc) == 2
+
+
+def test_treachery_reentry_conquers_enemy_seat():
+    from seljuk import actions
+    gs = S.load_scenario("emperor_and_the_lion")
+    af = gs.lords["afsin_beg"]
+    af.side = "roman"                 # switched to Roman via a failed Loyalty Check
+    af.mustered = False; af.cylinder = "offboard"
+    af.flags["treachery_reentry_box"] = 1
+    gs.meta.calendar_box = 3
+    for lid, l in gs.lords.items():   # free up Ani (his Seat)
+        if l.side == "seljuk" and lid != "afsin_beg":
+            l.mustered = False; l.cylinder = "calendar"
+    placed = actions.resolve_treachery_reentry(gs)
+    seat = next((p["seat"] for p in placed if p["lord"] == "afsin_beg"), None)
+    assert seat == "ani"                                  # his (Seljuk-printed) Seat
+    assert gs.locales["ani"].conquered_side == "roman"    # 1.4.2: new side's Conquered markers
+    assert gs.locales["ani"].conquered_count >= 1
