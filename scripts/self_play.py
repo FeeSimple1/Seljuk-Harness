@@ -75,6 +75,8 @@ def _build_plan_action(s: LLMSession, move: dict) -> dict:
             cards.append("no_command")
         else:
             cards.append(avail[i % len(avail)]); i += 1
+    if move.get("_no_command_required") and "no_command" not in cards:
+        cards[-1] = "no_command"  # Unpredictable Weather: enemy must use 1 No Command
     return {"type": "build_plan", "side": side, "cards": cards}
 
 

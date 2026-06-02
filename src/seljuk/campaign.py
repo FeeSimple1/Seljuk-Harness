@@ -37,6 +37,8 @@ def plan_size(gs: GameState, side: str | None = None) -> int:
         base = int(override)
     else:
         base = [7, 8, 7][season_index(gs.meta.calendar_box)]
+        if gs.meta.notes.get("weather_plan9") and season_index(gs.meta.calendar_box) == 1:
+            base = 9  # R17/S17 Unpredictable Weather (Summer)
     if side:
         if gs.meta.notes.get("treachery_side") == side:
             base += 1  # the Treachery card
@@ -102,6 +104,8 @@ def build_plan(gs: GameState, side: str, cards: list[str], lieutenants: list[dic
     nc_cap = 5 + (1 if gs.meta.notes.get("treachery_no_command_side") == side else 0)
     if gs.meta.notes.get("treachery_side") == side and counts.get("treachery", 0) != 1:
         raise IllegalAction("treachery_required", f"{side} must include exactly one Treachery card (1.4)")
+    if gs.meta.notes.get("weather_no_command_side") == side and counts.get("no_command", 0) < 1:
+        raise IllegalAction("weather_no_command", f"{side} must include 1 No Command this turn (Unpredictable Weather)")
     for c, n in counts.items():
         if c == "treachery":
             if gs.meta.notes.get("treachery_side") != side:
@@ -593,6 +597,8 @@ def _reset(gs: GameState) -> None:
         gs.side_decks(side).this_campaign_events = []
     gs.meta.notes.pop("moustache_campaign", None)
     gs.meta.notes.pop("peace_offering_season", None)
+    for _wk in ("weather_pass_block", "weather_plan9", "weather_no_command_side"):
+        gs.meta.notes.pop(_wk, None)
 
 
 def _winter(gs: GameState) -> str | None:
@@ -810,6 +816,7 @@ def legal_moves_campaign(gs: GameState) -> list[dict[str, Any]]:
         return [{"type": "build_plan", "side": side, "_plan_size": need,
                  "_available_lords": avail, "_no_command": "no_command",
                  "_treachery_required": treachery_required, "_treachery": "treachery",
+                 "_no_command_required": gs.meta.notes.get("weather_no_command_side") == side,
                  "_desc": f"Build the {side} Campaign Plan: {need} ordered cards (4.1)"
                           + (" incl. one Treachery card" if treachery_required else "")}]
     if step == "campaign.fpd_pay":
@@ -847,6 +854,8 @@ def command_menu(gs: GameState) -> list[dict[str, Any]]:
                     dest_info = sd.locale(to)
                     if dest_info["type"] == "holding_box" and dest_info["allegiance"] != lord.side:
                         continue  # no Lord may enter an Enemy Holding Box (1.3.1)
+                    if edge["type"] == "pass" and _passes_blocked(gs):
+                        continue  # Unpredictable Weather: no Pass March
                     way = _way_between(loc_id, to, edge["type"])
                     if way is None:
                         continue
@@ -1164,6 +1173,8 @@ def _min_supply_cost(gs: GameState, lord: LordState) -> int | None:
             continue
         for edge in gmap.ways_from(loc):
             nxt = edge["to"]
+            if edge["type"] == "pass" and _passes_blocked(gs):
+                continue  # Unpredictable Weather: no Pass Supply
             if _blocks_supply(gs, nxt, lord.side, origin):
                 continue
             step = 2 if edge["type"] == "pass" else 1
@@ -1242,6 +1253,11 @@ def _over_laden(gs: GameState, lords: list[LordState]) -> bool:
     return prov > 2 * carts  # 4.3.2: more than two Provender per Cart cannot move
 
 
+def _passes_blocked(gs: GameState) -> bool:
+    """R17/S17 Unpredictable Weather: Passes blocked for Supply/March/Avoid/Retreat."""
+    return bool(gs.meta.notes.get("weather_pass_block"))
+
+
 def _way_between(origin: str, to: str, way_type: str | None):
     cands = gmap.ways_between(origin, to)
     if not cands:
@@ -1304,6 +1320,8 @@ def h_cmd_march(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> di
     way = _way_between(lord.cylinder, to, action.get("way_type"))
     if way is None:
         raise IllegalAction("no_way", f"no Way from {lord.cylinder} to {to}")
+    if way["type"] == "pass" and _passes_blocked(gs):
+        raise IllegalAction("passes_blocked", "Passes cannot be used to March (Unpredictable Weather)")
     group = _marching_group(gs, lord, action.get("group", []))
     if _over_laden(gs, group):
         raise IllegalAction("over_laden", "group carries more than two Provender per Cart (discard to March, 4.3.2)")
@@ -1486,6 +1504,8 @@ def h_respond_approach(gs: GameState, action: dict[str, Any], roller: DiceRoller
 def _validate_avoid(gs: GameState, lord: LordState, battle_loc: str, dest: str, side: str) -> None:
     if dest not in gs.locales or not gmap.is_adjacent(battle_loc, dest):
         raise IllegalAction("bad_avoid", "Avoid Battle moves to an adjacent Locale (4.3.4)")
+    if _passes_blocked(gs) and all(w["type"] == "pass" for w in gmap.ways_between(battle_loc, dest)):
+        raise IllegalAction("passes_blocked", "Passes cannot be used to Avoid Battle (Unpredictable Weather)")
     if _enemy_lord_ids_at(gs, dest, side):
         raise IllegalAction("avoid_into_enemy", "may not Avoid into a Locale with an Unbesieged Enemy Lord (4.3.4)")
     if group_laden(gs, [lord]):

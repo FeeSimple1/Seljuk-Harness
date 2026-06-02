@@ -324,7 +324,29 @@ def _ev_massacre(gs, args, roller):              # S22 (a Seljuk Lord at an Enem
     return {"loot_added": lid}
 
 
+def _ev_unpredictable_weather(gs, playing_side: str) -> dict:
+    """R17/S17 (This Campaign): Spring/Autumn -> Passes blocked for Supply/March/
+    Avoid/Retreat; Summer -> Plan stack 9 and the enemy must use 1 No Command."""
+    season = (gs.meta.calendar_box - 1) % 3  # 0 Spring, 1 Summer, 2 Autumn
+    if season == 1:
+        enemy = "seljuk" if playing_side == "roman" else "roman"
+        gs.meta.notes["weather_plan9"] = True
+        gs.meta.notes["weather_no_command_side"] = enemy
+        return {"weather": "summer", "plan_stack": 9, "enemy_no_command": enemy}
+    gs.meta.notes["weather_pass_block"] = True
+    return {"weather": "spring_autumn", "passes_blocked": True}
+
+
+def _ev_weather_roman(gs, args, roller):          # R17
+    return _ev_unpredictable_weather(gs, "roman")
+
+
+def _ev_weather_seljuk(gs, args, roller):         # S17
+    return _ev_unpredictable_weather(gs, "seljuk")
+
+
 _RESOLVERS = {
+    "R17": _ev_weather_roman, "S17": _ev_weather_seljuk,
     "R5": _ev_shift_seljuk, "R10": _ev_afsin_murders, "R12": _ev_afsin_recalled,
     "R13": _ev_thrakion, "R14": _ev_aleppo_independence, "R19": _ev_resilient_agriculture,
     "R20": _ev_armenian_resistance,

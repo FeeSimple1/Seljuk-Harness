@@ -682,7 +682,10 @@ def _lord_fate(gs: GameState, lord: LordState, loser_role: str, locale: str,
     # enemy Strongholds (4.8.3 A).
     from . import map as gmap
     retreat_opts = []
+    _pass_block = bool(gs.meta.notes.get("weather_pass_block"))  # R17/S17 Weather
     for edge in gmap.ways_from(locale):
+        if edge["type"] == "pass" and _pass_block:
+            continue
         dst = edge["to"]
         if _retreat_blocked(gs, dst, lord.side):
             continue
