@@ -547,6 +547,12 @@ def _bounty(gs: GameState) -> None:
         cap = carts + (1 if capabilities.lord_has(gs, lid, "Prisoners") else 0)  # S24
         scored = min(lord.assets.loot, cap)
         lord.assets.loot -= scored
+        # B.5.3: positive Bounty VPs first remove Roman Conquered 1 VP markers
+        # placed in the Constantinople Holding Box by a prior Seljuk Unity shortfall.
+        if gs.holding_boxes.constantinople_roman_vp_markers > 0 and scored > 0:
+            cancel = min(scored, gs.holding_boxes.constantinople_roman_vp_markers)
+            gs.holding_boxes.constantinople_roman_vp_markers -= cancel
+            scored -= cancel
         gs.holding_boxes.mosul_baghdad_loot += scored
 
 

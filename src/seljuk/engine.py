@@ -183,6 +183,10 @@ def legal_moves(gs: GameState) -> list[dict[str, Any]]:
 def start_levy(gs: GameState) -> None:
     """Enter the Levy phase at its first step, resolving automatic steps."""
     gs.meta.phase = "levy"
+    # Clear any persistent per-Lord Lordship deltas from a prior turn's immediate
+    # Events (R1 -1 / S5 +1); the current turn's Events will set them afresh.
+    for lord in gs.lords.values():
+        lord.flags.pop("lordship_persist", None)
     _enter_step(gs, LEVY_STEPS[0])
 
 

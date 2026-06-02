@@ -242,7 +242,12 @@ def reset_muster_segment(gs: GameState) -> None:
 
 
 def lordship_remaining(gs: GameState, lord: LordState) -> int:
-    rating = capabilities.lordship_rating(gs, lord.id) + int(lord.flags.get("lordship_bonus", 0))
+    # lordship_persist is a signed delta from immediate Events (R1 -1, S5 +1)
+    # that must survive reset_muster_segment; it is cleared when a new Levy
+    # phase begins (engine.start_levy).
+    rating = (capabilities.lordship_rating(gs, lord.id)
+              + int(lord.flags.get("lordship_bonus", 0))
+              + int(lord.flags.get("lordship_persist", 0)))
     return rating - int(lord.flags.get("lordship_spent", 0))
 
 
@@ -624,7 +629,9 @@ def enumerate_call_to_arms(gs: GameState) -> list[dict[str, Any]]:
                                     "_desc": f"Place a Strategic Objective on {sd.lord(tid)['name']} (3.5.3)"})
                 for locid in sd.all_locale_ids():
                     loc = sd.locale(locid)
-                    if loc["allegiance"] == "seljuk" and loc.get("is_stronghold") and not gs.locales[locid].strategic_objective:
+                    if (loc["allegiance"] == "seljuk" and loc.get("is_stronghold")
+                            and not gs.locales[locid].strategic_objective
+                            and current_allegiance(gs, locid) == "seljuk"):
                         out.append({"type": "cta_strategic_objective", "mode": "place", "target": locid,
                                     "_desc": f"Place a Strategic Objective at {loc['name']} (3.5.3)"})
     return out
@@ -680,6 +687,8 @@ def h_cta_strategic_objective(gs: GameState, action: dict[str, Any], roller: Dic
                 raise IllegalAction("bad_so_target", "Stronghold target must be an Enemy Stronghold in the Sultanate (3.5.3)")
             if not sd.locale(target).get("is_stronghold"):
                 raise IllegalAction("bad_so_target", "target must be a Stronghold (3.5.3)")
+            if current_allegiance(gs, target) != "seljuk":
+                raise IllegalAction("bad_so_target", "Stronghold is not currently Seljuk-controlled (3.5.3 errata)")
             gs.locales[target].strategic_objective = True
             placed_on = {"locale": target}
         else:

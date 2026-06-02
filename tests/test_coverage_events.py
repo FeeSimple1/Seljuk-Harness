@@ -112,10 +112,32 @@ def test_r20_bad_locale_and_s7_bad_thema():
 
 
 def test_r1_flooded_river_already_marked_applies_lordship_penalty():
+    # The repeat (already-marked) effect is a -1 Lordship penalty for THIS Muster.
+    # It must be stored as a persistent delta that survives the muster-segment
+    # reset, not as `lordship_spent` (which reset_muster_segment wipes before
+    # Muster begins -- the original latent bug).
+    from seljuk import actions as A
     gs = _gs(); gs.meta.asterisks_used.append("R1")
     out = E._ev_flooded_river(gs, {"lord": "alp_arslan"}, _r())
     assert out.get("already_marked") is True
-    assert gs.lords["alp_arslan"].flags.get("lordship_spent") == 1
+    aa = gs.lords["alp_arslan"]
+    assert aa.flags.get("lordship_persist") == -1
+    # Survives the muster reset and actually reduces remaining Lordship.
+    base = A.capabilities.lordship_rating(gs, "alp_arslan")
+    A.reset_muster_segment(gs)
+    assert aa.flags.get("lordship_persist") == -1
+    assert A.lordship_remaining(gs, aa) == base - 1
+
+
+def test_r1_flooded_river_persist_cleared_on_new_levy():
+    # The persistent penalty is cleared when a new Levy phase starts so it does
+    # not bleed into a later turn's Muster.
+    from seljuk import engine as ENG
+    gs = _gs(); gs.meta.asterisks_used.append("R1")
+    E._ev_flooded_river(gs, {"lord": "alp_arslan"}, _r())
+    assert gs.lords["alp_arslan"].flags.get("lordship_persist") == -1
+    ENG.start_levy(gs)
+    assert gs.lords["alp_arslan"].flags.get("lordship_persist") is None
 
 
 def test_s8_merchant_financing_both_directions():

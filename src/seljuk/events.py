@@ -59,7 +59,8 @@ def _wastage_once(gs, lord) -> bool:
         setattr(lord.assets, top, assets[top] - 1)
         return True
     if len(lord.capabilities) > 1:
-        lord.capabilities.pop()
+        card = lord.capabilities.pop()
+        gs.side_decks(lord.side).draw_deck.append(card)  # 4.7.4/3.4.4: discarded Capability returns to that side's deck
         return True
     return False
 
@@ -116,7 +117,9 @@ def _ev_flooded_river(gs, args, roller):          # R1*
     if "R1" in gs.meta.asterisks_used:
         lid = args.get("lord")
         if lid in gs.lords:
-            gs.lords[lid].flags["lordship_spent"] = int(gs.lords[lid].flags.get("lordship_spent", 0)) + 1
+            # -1 Lordship this Muster. Use a persistent flag that survives the
+            # muster-segment reset (set here during Arts of War, applied at Muster).
+            gs.lords[lid].flags["lordship_persist"] = int(gs.lords[lid].flags.get("lordship_persist", 0)) - 1
         return {"already_marked": True, "lordship_penalty": lid}
     aa = gs.lords["alp_arslan"]
     n = sum(1 for _ in range(3) if _wastage_once(gs, aa))
@@ -147,7 +150,8 @@ def _ev_assassination(gs, args, roller):          # R22
     if ik.mustered:
         from . import actions
         actions._disband_beyond(gs, ik)
-    return {"disbanded": "ibn_khan"}
+        return {"disbanded": "ibn_khan"}
+    return {"no_op": True, "reason": "Ibn Khan not Mustered (R22)"}
 
 
 def _ev_norman_scheming(gs, args, roller):        # S11
@@ -235,6 +239,9 @@ def _ev_armenian_resistance(gs, args, roller):   # R20
     loc = args["locale"]
     if loc not in ("khliat", "manzikert", "arkesh"):
         raise IllegalAction("bad_locale", "choose Khliat, Manzikert, or Arkesh (R20)")
+    from . import actions
+    if actions.current_allegiance(gs, loc) != "seljuk":
+        return {"no_op": True, "reason": f"{loc} is not Seljuk friendly (R20)"}
     gs.locales[loc].conquered_side = "roman"
     gs.locales[loc].conquered_count = {"fort": 1, "town": 2, "city": 3}[sd.locale(loc)["type"]]
     gs.meta.vp = scenarios.score(gs)
@@ -257,6 +264,15 @@ def _ev_thematic_desert(gs, args, roller):       # S15 (Alp Arslan in a Thema re
 
 
 def _ev_siege_of_bari(gs, args, roller):         # S5* (remove up to 2 Unlevied Themata)
+    if "S5" in gs.meta.asterisks_used:
+        # Already marked: instead, 1 Seljuk Lord gains +1 Lordship this Muster.
+        lid = args.get("lord")
+        l = gs.lords.get(lid)
+        if l is None or l.side != "seljuk":
+            return {"already_marked": True, "no_op": True,
+                    "reason": "need a Seljuk Lord for the +1 Lordship effect"}
+        l.flags["lordship_persist"] = int(l.flags.get("lordship_persist", 0)) + 1
+        return {"already_marked": True, "lordship_bonus": lid}
     removed = []
     for thema in args.get("themata", []):
         try:
@@ -265,8 +281,7 @@ def _ev_siege_of_bari(gs, args, roller):         # S5* (remove up to 2 Unlevied 
             pass
         if len(removed) >= 2:
             break
-    if "S5" not in gs.meta.asterisks_used:
-        gs.meta.asterisks_used.append("S5")
+    gs.meta.asterisks_used.append("S5")
     return {"removed": removed}
 
 

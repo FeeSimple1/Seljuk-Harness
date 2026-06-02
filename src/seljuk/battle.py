@@ -992,9 +992,17 @@ def _storm_reposition(gs: GameState, att: _Side, deff: _Side, size: int, ctx: De
 def _storm_strike(gs, att, deff, garrison, garrison_routed, walls, siege, round_no, ctx, roller, log):
     # Defending side (Garrison + Lords) strikes first, then Attacker.
     # Missiles, then all Defending Melee, then all Attacking Melee.
-    # 1) Defending Missiles (Garrison 0.5 each foot, -1 Armor; + defending Lord missiles)
-    d_missile = _garrison_missile_hits(garrison) + _lord_step_hits(gs, deff, "missile", round_no)
-    _hit_attacker(gs, att, _round_up(d_missile), "missile", siege, anti_armor=True, roller=roller, ctx=ctx, log=log, step="def_missile", round_no=round_no)
+    # 1) Defending Missiles, resolved as two separate batches because they roll
+    #    against different Armor: Garrison Missiles are -1 Armor (anti_armor),
+    #    a Defending Lord's own Missiles are normal. (Battle/Storm ref: "Roll
+    #    Hits that differ from others (such as -2 Armor) separately"; GARRISON
+    #    MISSILES are the only ones reduced by -1.)
+    d_missile_gar = _garrison_missile_hits(garrison)
+    if d_missile_gar:
+        _hit_attacker(gs, att, _round_up(d_missile_gar), "missile", siege, anti_armor=True, roller=roller, ctx=ctx, log=log, step="def_missile_garrison", round_no=round_no)
+    d_missile_lord = _lord_step_hits(gs, deff, "missile", round_no)
+    if d_missile_lord:
+        _hit_attacker(gs, att, _round_up(d_missile_lord), "missile", siege, anti_armor=False, roller=roller, ctx=ctx, log=log, step="def_missile_lord", round_no=round_no)
     # 2) Attacking Missiles -> garrison/defender Lord, Walls cancel
     a_missile = _lord_step_hits(gs, att, "missile", round_no)
     eff_walls = _effective_walls(gs, att, walls)
