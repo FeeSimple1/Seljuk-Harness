@@ -216,7 +216,10 @@ def load_scenario(name: str, seed: int = 1) -> GameState:
     for side in ("roman", "seljuk"):
         deck = [c for c in sd.card_ids_for_side(side) if c not in levied]
         board_edge = list(s["board_edge_capabilities"].get(side, []))
-        gs_side = SideDecks(draw_deck=deck, capabilities_in_play=board_edge)
+        cap_coins = {cid: int(n) for cid, n in s.get("capability_coins", {}).items()
+                     if cid in sd.card_ids_for_side(side)}
+        gs_side = SideDecks(draw_deck=deck, capabilities_in_play=board_edge,
+                            capability_coins=cap_coins)
         if side == "roman":
             gs.roman = gs_side
         else:

@@ -502,6 +502,7 @@ def _winter(gs: GameState) -> str | None:
     _seljuk_unity(gs)
     _winter_quarters(gs)
     _aleppo_diplomacy(gs)
+    gs.meta.notes.pop("marwanid_seats", None)  # 3.5.1.1: deactivate at end of Winter Phase
     return None
 
 
@@ -530,6 +531,7 @@ def _bounty(gs: GameState) -> None:
         seats = list(sd.lord(lid).get("seats", []))
         if lid == "artuk_beg" and capabilities.lord_has(gs, "artuk_beg", "Artukid Legacy"):
             seats += ["amid", "mayyafariqin"]  # S10: Mayyafariqin AND Amid (base Seat already included)
+        seats += [s for s in gs.meta.notes.get("marwanid_seats", []) if s not in seats]  # Marwanid Alliance (S8) activated Seats
         # BFS over bounty-traversable Locales from the Lord to one of his Seats.
         from collections import deque
         seen = {lord.cylinder}
@@ -825,6 +827,8 @@ def h_cmd_tax(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict
     if lord.besieged:
         raise IllegalAction("besieged", "a Besieged Lord may not Tax (4.5.6)")
     loc_id = lord.cylinder
+    if loc_id in gs.meta.notes.get("marwanid_seats", []):
+        raise IllegalAction("marwanid_no_tax", "Lords may not Tax an activated Marwanid Locale (3.5.1.1)")
     info = sd.lord(lord.id)
     at_own_seat = loc_id in info.get("seats", [])
     commander_empire_tax = False
@@ -1009,6 +1013,9 @@ def _min_supply_cost(gs: GameState, lord: LordState) -> int | None:
     seats = [s for s in sd.lord(lord.id).get("seats", []) if not gs.locales[s].ruins]
     if lord.id == "artuk_beg" and capabilities.lord_has(gs, "artuk_beg", "Artukid Legacy"):
         seats += [s for s in ("amid", "mayyafariqin") if not gs.locales[s].ruins]  # S10: Mayyafariqin AND Amid
+    if lord.side == "seljuk":
+        seats += [s for s in gs.meta.notes.get("marwanid_seats", [])
+                  if not gs.locales[s].ruins and s not in seats]  # Marwanid Alliance (S8) activated Seats
     if not seats:
         return None
     origin = lord.cylinder

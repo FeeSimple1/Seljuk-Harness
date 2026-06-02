@@ -607,6 +607,14 @@ def enumerate_call_to_arms(gs: GameState) -> list[dict[str, Any]]:
             if l.side == "seljuk" and l.cylinder == "calendar":
                 out.append({"type": "cta_loot", "lord": lid, "direction": "left",
                             "_desc": "Spend 1 Loot to shift a Ready Seljuk Lord's cylinder 1 box (3.5.2)"})
+    if side == "seljuk" and capabilities.side_has(gs, "seljuk", "Marwanid Alliance"):
+        active = set(gs.meta.notes.get("marwanid_seats", []))
+        for loc in ("amid", "mayyafariqin"):
+            if loc in active or gs.locales[loc].ruins:
+                continue
+            for src in _marwanid_coin_sources(gs):
+                out.append({"type": "cta_marwanid", "locale": loc, "coin_source": src,
+                            "_desc": f"Spend 1 Coin ({src}) to activate {loc} as a Seljuk Seat until end of next Winter (3.5.1.1)"})
     if side == "roman":
         rom = gs.lords.get("romanos_diogenes")
         man = gs.lords.get("manuel_komnenos")
@@ -697,6 +705,53 @@ def h_cta_strategic_objective(gs: GameState, action: dict[str, Any], roller: Dic
         _cta_done(gs)
         return {"ok": True, "action": "cta_strategic_objective", "mode": "place", **placed_on}
     raise IllegalAction("bad_mode", "Strategic Objective mode must be 'take' or 'place'")
+
+
+def _marwanid_coin_sources(gs: GameState) -> list[str]:
+    """Coin sources for a Marwanid activation: the Capability card itself, and/or
+    Alp Arslan's mat (Map Reference / 3.5.1.1)."""
+    srcs: list[str] = []
+    if gs.seljuk.capability_coins.get("S8", 0) > 0:
+        srcs.append("card")
+    aa = gs.lords.get("alp_arslan")
+    if aa is not None and aa.assets.coin > 0:
+        srcs.append("alp_arslan")
+    return srcs
+
+
+def h_cta_marwanid(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
+    """3.5.1.1: with Marwanid Alliance (S8) in play, the Seljuk player may spend
+    a Coin (from the Capability card or from Alp Arslan) during Call to Arms to
+    activate Amid or Mayyafariqin as a Seat for all Seljuk Lords until the end of
+    the next Winter Phase."""
+    if gs.meta.subphase != "levy.call_to_arms" or gs.meta.active_player != "seljuk":
+        raise IllegalAction("wrong_step", "Marwanid activation is a Seljuk Call to Arms action (3.5.1.1)")
+    if not capabilities.side_has(gs, "seljuk", "Marwanid Alliance"):
+        raise IllegalAction("no_marwanid", "Marwanid Alliance (S8) is not in play")
+    loc = action.get("locale")
+    if loc not in ("amid", "mayyafariqin"):
+        raise IllegalAction("bad_locale", "Marwanid activates Amid or Mayyafariqin (3.5.1.1)")
+    active = gs.meta.notes.setdefault("marwanid_seats", [])
+    if loc in active:
+        raise IllegalAction("already_active", f"{loc} is already an activated Marwanid Seat")
+    if gs.locales[loc].ruins:
+        raise IllegalAction("ruined", f"{loc} is Ruined and cannot be activated as a Seat")
+    source = action.get("coin_source")
+    if source == "card":
+        if gs.seljuk.capability_coins.get("S8", 0) <= 0:
+            raise IllegalAction("no_coin", "no Coin on the Marwanid Alliance card")
+        gs.seljuk.capability_coins["S8"] -= 1
+    elif source == "alp_arslan":
+        aa = gs.lords.get("alp_arslan")
+        if aa is None or aa.assets.coin <= 0:
+            raise IllegalAction("no_coin", "Alp Arslan has no Coin to spend")
+        aa.assets.coin -= 1
+    else:
+        raise IllegalAction("bad_coin_source", "coin_source must be 'card' or 'alp_arslan'")
+    active.append(loc)
+    _cta_done(gs)
+    return {"ok": True, "action": "cta_marwanid", "locale": loc, "coin_source": source,
+            "active_seats": list(active)}
 
 
 # --- Loyalty Check (1.4) ----------------------------------------------------
