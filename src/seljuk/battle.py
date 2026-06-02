@@ -1228,6 +1228,11 @@ def resolve_sally(gs: GameState, sallying_ids: list[str], besieger_ids: list[str
     siege = gs.locales[locale].siege_markers
     for _lid in sallying_ids + besieger_ids:
         gs.lords[_lid].flags["turkic_routed_battle"] = 0
+    # 4.8.2 Pursuit exception snapshot: a single Conceding Lord whose Forces are
+    # ONLY Turkic Horse at the start, facing a single opposing Lord, halves BOTH.
+    _turkic_only_start = {lid: (set(u for u, n in gs.lords[lid].forces.items() if n > 0) == {"turkic_horse"})
+                          for lid in sallying_ids + besieger_ids}
+    _solo = len(sallying_ids) == 1 and len(besieger_ids) == 1
     att = _Side(gs, list(sallying_ids), "attacker")   # Sallying side attacks
     deff = _Side(gs, list(besieger_ids), "defender")  # Besiegers defend
     if att.reserve:
@@ -1236,43 +1241,52 @@ def resolve_sally(gs: GameState, sallying_ids: list[str], besieger_ids: list[str
         deff.front["center"] = deff.reserve.pop(0)
     size = _value(locale)
     log = []
-    conceded = False
+    pursuit = {"attacker": False, "defender": False}
+    conceder = None
     round_no = 0
     while round_no < 30:
         round_no += 1
-        pursuit = False  # Sallying (Attacker) Concede -> halve its Hits this final Round
+        # Concede? 4.9.2 follows Battle rules (4.8.3): Attacker (Sallying) then
+        # Defender (Besiegers) may declare; the Conceding side halves its Hits
+        # this final Round (Pursuit, 4.8.3-.4) and ends the Sally as the loser --
+        # it does NOT skip the final exchange the way a Storm Concede does (4.9.1).
         if round_no > 1:
-            if ctx.decide("concede", [False, True], {"role": "attacker"}):
-                # 4.9.2 follows Battle rules (Concede is not excepted): the
-                # Conceding (Sallying) side still resolves THIS Round with its
-                # Hits halved (Pursuit, 4.8.3-.4), then the Sally ends with that
-                # side as the loser -- it does NOT skip the final exchange the way
-                # a Storm Concede does (4.9.1).
-                conceded = True
-                pursuit = True
+            for role, side, ids in (("attacker", att, sallying_ids), ("defender", deff, besieger_ids)):
+                if conceder is None and _offer_concede(gs, side, ctx, role):
+                    conceder = role
+                    pursuit[role] = True
+                    if _solo and _turkic_only_start.get(ids[0]):  # 4.8.2 -> both halve
+                        pursuit["attacker"] = True
+                        pursuit["defender"] = True
             _storm_reposition(gs, att, deff, size, ctx)
         # Sally Strike order follows Storm (Defending then Attacking); Besiegers
         # benefit from Siegeworks (Walls = Siege count); Sallying side has none.
         d_missile = _lord_step_hits(gs, deff, "missile", round_no)
+        if pursuit["defender"]:
+            d_missile /= 2.0
         _absorb_simple(gs, att, _round_up(d_missile), "missile", 0, roller, ctx, log, "def_missile", round_no)
         a_missile = _lord_step_hits(gs, att, "missile", round_no)
-        if pursuit:
-            a_missile /= 2.0  # round up within the step (below)
+        if pursuit["attacker"]:
+            a_missile /= 2.0
         _absorb_simple(gs, deff, _round_up(a_missile), "missile", siege, roller, ctx, log, "att_missile", round_no)
         d_melee = _lord_melee_capped(gs, deff, round_no)
+        if pursuit["defender"]:
+            d_melee /= 2.0
         _absorb_simple(gs, att, _round_up(d_melee), "melee", 0, roller, ctx, log, "def_melee", round_no)
         a_melee = _lord_melee_capped(gs, att, round_no)
-        if pursuit:
+        if pursuit["attacker"]:
             a_melee /= 2.0
         _absorb_simple(gs, deff, _round_up(a_melee), "melee", siege, roller, ctx, log, "att_melee", round_no)
-        if conceded:
+        if conceder is not None:
             break  # Sally ends after this (halved) final Round
         if _all_routed(gs, deff) or _all_routed(gs, att):
             break
         _purge_routed(att); _purge_routed(deff)
 
-    besiegers_routed = _all_routed(gs, deff)
-    if besiegers_routed and not conceded:
+    # Besiegers lose (Sally succeeds) if they Concede, or are all Routed while the
+    # Sallying side did not Concede.
+    besiegers_lose = (conceder == "defender") or (_all_routed(gs, deff) and conceder != "attacker")
+    if besiegers_lose:
         # Losing Besiegers Retreat; the Siege ends.
         winner = "sally"
         _end_sally_besiegers_lose(gs, besieger_ids, locale, ctx, roller)
@@ -1300,7 +1314,7 @@ def resolve_sally(gs: GameState, sallying_ids: list[str], besieger_ids: list[str
             gs.lords[lid].moved_fought = True
     gs.meta.vp = scenarios.score(gs)
     return {"ok": True, "action": "sally", "locale": locale, "winner": winner,
-            "rounds": round_no, "strikes": log, "decisions": ctx.trace}
+            "conceder": conceder, "rounds": round_no, "strikes": log, "decisions": ctx.trace}
 
 
 def _end_sally_besiegers_lose(gs: GameState, besieger_ids, locale, ctx, roller) -> None:
