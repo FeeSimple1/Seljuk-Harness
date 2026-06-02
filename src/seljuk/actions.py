@@ -529,7 +529,7 @@ def resolve_arts_of_war(gs: GameState, roller: DiceRoller) -> dict[str, Any]:
             if first:
                 _deploy_first_levy_capability(gs, side, cid)
             else:
-                _classify_drawn_event(gs, side, cid)
+                _classify_drawn_event(gs, side, cid, roller)
     gs.meta.notes["first_aow_done"] = True
     return {"step": "arts_of_war", "first_levy": first, "drawn": drawn_log}
 
@@ -562,13 +562,19 @@ def _deploy_first_levy_capability(gs: GameState, side: str, card_id: str) -> Non
     gs.meta.pending.append({"type": "deploy_capability", "side": side, "card": card_id, "eligible": eligible})
 
 
-def _classify_drawn_event(gs: GameState, side: str, card_id: str) -> None:
+def _classify_drawn_event(gs: GameState, side: str, card_id: str, roller: DiceRoller | None = None) -> None:
     tags = sd.card(card_id)["event"]["tags"]
     decks = gs.side_decks(side)
     if "hold" in tags:
         decks.held_events.append(card_id)
     elif "this_campaign" in tags:
+        # File the card for end-of-Campaign discard (4.7.5) AND establish its
+        # This-Campaign effect now (3.1.3) -- e.g. S9 Moustache sets the
+        # Forage -2 flag that h_cmd_forage reads.
         decks.this_campaign_events.append(card_id)
+        from . import events as _events
+        if card_id in _events._RESOLVERS:
+            _events._RESOLVERS[card_id](gs, {}, roller)
     else:
         # immediate / treachery / asterisk: effect resolution is Phase 4.
         gs.meta.pending.append({"type": "event_pending_resolution", "side": side, "card": card_id, "tags": tags})

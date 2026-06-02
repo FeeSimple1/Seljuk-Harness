@@ -24,9 +24,10 @@ def test_storm_strike_norman_and_varangian_use_storm_value():
     side.front["center"] = lid
     storm = battle._lord_melee_capped(gs, side, round_no=1, storm=True)
     battle_val = battle._lord_melee_capped(gs, side, round_no=1, storm=False)
-    # Storm: 2 norman x1 + 2 varangian x1 = 4. Battle: 2x2 + 2x3 = 10 (capped 6).
+    # Storm: 2 norman x1 + 2 varangian x1 = 4. Non-storm (Battle/Sally): 2x2 + 2x3
+    # = 10, UNCAPPED (the 6-Hit Melee cap is Storm-only, 4.9.1).
     assert storm == 4.0
-    assert battle_val == 6.0  # Battle value is higher and hits the 6-Hit cap
+    assert battle_val == 10.0
 
 
 def test_storm_strike_other_units_unchanged():

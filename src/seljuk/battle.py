@@ -1087,7 +1087,7 @@ def _lord_melee_capped(gs: GameState, side: _Side, round_no: int, storm: bool = 
         h += sum(foot.get(u, 0.0) * n for u, n in units.items() if _category(u) == "foot")
         if "Shock Tactics" in capabilities.lord_capability_names(gs, lid):  # S4/S6
             h += _math.ceil(units.get("turkic_horse", 0) / 2) * 0.5
-        total += min(h, 6.0)  # 6-Hit Melee cap per Lord (4.9.1)
+        total += (min(h, 6.0) if storm else h)  # 6-Hit Melee cap is Storm-only (4.9.1); Sally (4.9.2) is uncapped
     return total
 
 
