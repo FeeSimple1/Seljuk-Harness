@@ -64,7 +64,10 @@ def test_no_command_card_auto_passes_423():
                              "cards": ["no_command", "no_command", "no_command", "no_command", "no_command", "alp_arslan"]})
     engine.apply_action(gs, {"type": "build_plan", "side": "roman",
                              "cards": ["manuel_komnenos", "no_command", "no_command", "no_command", "no_command", "no_command"]})
-    # Seljuk's first card is No Command -> auto-passes to Roman's Manuel.
+    # Seljuk's first card is No Command -> Feed/Pay/Disband (4.6), then auto-passes
+    # to Roman's Manuel. Drive through the (empty) FPD Pay step.
+    while gs.meta.subphase == "campaign.fpd_pay":
+        engine.apply_action(gs, {"type": "fpd_done"})
     assert gs.meta.active_lord == "manuel_komnenos"
 
 
@@ -87,8 +90,11 @@ def test_lieutenant_designation_and_lower_lord_card_passes_413():
     # so Roussel never activates, while his Lieutenant Chatatourios does.
     activated = []
     guard = 0
-    while gs.meta.subphase == "campaign.command" and guard < 50:
+    while gs.meta.subphase in ("campaign.command", "campaign.fpd_pay") and guard < 90:
         guard += 1
+        if gs.meta.subphase == "campaign.fpd_pay":
+            engine.apply_action(gs, {"type": "fpd_done"})  # 4.6.2 Pay step (decline)
+            continue
         if gs.meta.active_lord is not None:
             activated.append(gs.meta.active_lord)
         engine.apply_action(gs, {"type": "end_activation"})

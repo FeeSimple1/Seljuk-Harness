@@ -43,7 +43,7 @@ def test_campaign_drives_to_turn_end_with_roundtrip_sweep(scenario):
     assert gs.meta.subphase == "campaign.command"
 
     guard = 0
-    while gs.meta.phase == "campaign" and gs.meta.subphase == "campaign.command" and guard < 200:
+    while gs.meta.phase == "campaign" and gs.meta.subphase in ("campaign.command", "campaign.fpd_pay") and guard < 400:
         guard += 1
         moves = engine.legal_moves(gs)
         # Every emitted move must apply cleanly on a fresh snapshot.
@@ -53,9 +53,15 @@ def test_campaign_drives_to_turn_end_with_roundtrip_sweep(scenario):
                 engine.apply_action(snap, {k: v for k, v in mv.items() if not k.startswith("_")})
             except IllegalAction as e:  # pragma: no cover
                 pytest.fail(f"{scenario}: enumerator emitted inapplicable {mv.get('type')}: {e}")
-        # Advance the real game deterministically: resolve any pending, else end the card.
+        # Advance the real game deterministically: resolve any pending, finish the
+        # FPD Pay step if in it, else end the card.
         pend = [m for m in moves if m["type"] == "resolve_ravage_defence"]
-        chosen = pend[0] if pend else {"type": "end_activation"}
+        if gs.meta.subphase == "campaign.fpd_pay":
+            chosen = {"type": "fpd_done"}
+        elif pend:
+            chosen = pend[0]
+        else:
+            chosen = {"type": "end_activation"}
         engine.apply_action(gs, {k: v for k, v in chosen.items() if not k.startswith("_")})
 
     # The Campaign ends either at game over or by advancing to the next Levy.
@@ -76,8 +82,11 @@ def test_full_turn_levy_then_campaign_for_emperor():
     campaign.start_campaign(gs)
     _build_simple_plans(gs)
     guard = 0
-    while gs.meta.phase == "campaign" and gs.meta.subphase == "campaign.command" and guard < 200:
+    while gs.meta.phase == "campaign" and gs.meta.subphase in ("campaign.command", "campaign.fpd_pay") and guard < 400:
         guard += 1
+        if gs.meta.subphase == "campaign.fpd_pay":
+            engine.apply_action(gs, {"type": "fpd_done"})  # 4.6.2 Pay step (decline)
+            continue
         engine.apply_action(gs, {"type": "end_activation"})
     assert gs.meta.phase in ("levy", "game_over")
     if gs.meta.phase == "levy":

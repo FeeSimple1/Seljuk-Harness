@@ -66,6 +66,8 @@ _CAMPAIGN_HANDLERS: dict[str, Callable[[GameState, dict, DiceRoller], dict]] = {
     "build_plan": campaign.h_build_plan,
     "cmd_pass": campaign.h_cmd_pass,
     "end_activation": campaign.h_end_activation,
+    "pay": actions.h_pay,                 # 4.6.2 campaign Feed/Pay/Disband Pay
+    "fpd_done": campaign.h_fpd_done,
     "cmd_tax": campaign.h_cmd_tax,
     "cmd_forage": campaign.h_cmd_forage,
     "cmd_ravage": campaign.h_cmd_ravage,

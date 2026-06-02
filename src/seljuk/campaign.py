@@ -215,26 +215,92 @@ def end_activation(gs: GameState) -> None:
     _after_card(gs)
 
 
-def _after_card(gs: GameState) -> None:
-    if gs.meta.phase == "winter":
-        _winter_end_activation(gs)
-        return
+def _load_fpd_roller(gs: GameState) -> DiceRoller:
     roller = DiceRoller(seed=gs.meta.seed)
     if gs.meta.rng_state is not None:
         st = gs.meta.rng_state
         roller.set_state((st[0], tuple(st[1]), st[2]))
-    feed_pay_disband(gs, roller)
-    s = roller.get_state()
-    gs.meta.rng_state = [s[0], list(s[1]), s[2]]
+    return roller
+
+
+def _store_fpd_roller(gs: GameState, roller: DiceRoller) -> None:
+    st = roller.get_state()
+    gs.meta.rng_state = [st[0], list(st[1]), st[2]]
+
+
+def _after_card(gs: GameState) -> None:
+    if gs.meta.phase == "winter":
+        _winter_end_activation(gs)
+        return
+    roller = _load_fpd_roller(gs)
+    _fpd_feed(gs)                       # 4.6.1 Feed (Seljuk then Roman)
+    _store_fpd_roller(gs, roller)
+    # The Command card is over once Feed/Pay/Disband begins.
+    card_player = gs.meta.active_player
     gs.meta.active_card = None
     gs.meta.active_lord = None
     gs.meta.actions_remaining = 0
-    # 5.2: a side with no Mustered Lords during Campaign loses immediately.
+    # 5.2: a side may already have no Mustered Lords (e.g. all lost in the Battle
+    # that ended this card) -> game ends immediately, before any Pay/Disband.
+    if _campaign_5_2_over(gs):
+        return
+    # 4.6.2: any Seljuk then Roman Lords may receive Pay BEFORE Disband. Pause for
+    # it when a Pay is available, else go straight to Disband.
+    gs.meta.notes["fpd_card_player"] = card_player
+    gs.meta.notes["fpd_passed"] = {}
+    gs.meta.subphase = "campaign.fpd_pay"
+    if _fpd_advance(gs):
+        return                          # pause: the active side may Pay (4.6.2)
+    _after_card_finish(gs)
+
+
+def _campaign_5_2_over(gs: GameState) -> bool:
+    """5.2: a side with no Mustered Lords during Campaign loses immediately."""
     if not any(l.mustered and l.side == "seljuk" for l in gs.lords.values()):
-        _set_game_over(gs, "roman", "5.2: seljuk has no Mustered Lords during Campaign"); return
+        _set_game_over(gs, "roman", "5.2: seljuk has no Mustered Lords during Campaign")
+        return True
     if not any(l.mustered and l.side == "roman" for l in gs.lords.values()):
-        _set_game_over(gs, "seljuk", "5.2: roman has no Mustered Lords during Campaign"); return
-    gs.meta.active_player = _other(gs.meta.active_player)
+        _set_game_over(gs, "seljuk", "5.2: roman has no Mustered Lords during Campaign")
+        return True
+    return False
+
+
+def _fpd_advance(gs: GameState) -> bool:
+    """Give the FPD Pay turn to the next side (Seljuk then Roman) that has not
+    finished and still has a legal Pay (4.6.2). Returns False when both are done."""
+    passed = gs.meta.notes.get("fpd_passed", {})
+    for side in SIDES:
+        if passed.get(side):
+            continue
+        gs.meta.active_player = side
+        if actions.enumerate_pay(gs):
+            return True
+    return False
+
+
+def h_fpd_done(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
+    """4.6.2: the active side finishes its Pay; when both sides are done, Disband
+    and continue to the next Command card."""
+    if gs.meta.subphase != "campaign.fpd_pay":
+        raise IllegalAction("wrong_step", "not in the Feed/Pay/Disband Pay step (4.6.2)")
+    done_side = gs.meta.active_player
+    gs.meta.notes.setdefault("fpd_passed", {})[done_side] = True
+    if not _fpd_advance(gs):
+        _after_card_finish(gs)
+    return {"ok": True, "action": "fpd_done", "side": done_side}
+
+
+def _after_card_finish(gs: GameState) -> None:
+    roller = _load_fpd_roller(gs)
+    _fpd_disband(gs, roller)            # 4.6.2 Disband + 4.6.3 remove Moved/Fought
+    _store_fpd_roller(gs, roller)
+    card_player = gs.meta.notes.pop("fpd_card_player", gs.meta.active_player)
+    gs.meta.notes.pop("fpd_passed", None)
+    gs.meta.subphase = "campaign.command"
+    # 5.2: Disband may have removed a side's last Mustered Lord.
+    if _campaign_5_2_over(gs):
+        return
+    gs.meta.active_player = _other(card_player)
     _reveal_next(gs)
 
 
@@ -258,23 +324,34 @@ def _feed_requirement(units: int) -> int:
     return 4
 
 
-def feed_pay_disband(gs: GameState, roller: DiceRoller) -> dict:
-    """4.6: Lords who Moved/Fought Feed; then Disband per Service (Pay between
-    is a player option handled via the Pay action set, omitted here)."""
+def _fpd_feed(gs: GameState) -> dict:
+    """4.6.1 Feed: each Lord who Moved/Fought Feeds (Seljuk then Roman)."""
     result = {"feed": [], "disband": []}
-    for side in SIDES:  # Seljuk then Roman (4.6.1)
+    for side in SIDES:
         _feed_side(gs, side, result)
-    from . import actions
+    return result
+
+
+def _fpd_disband(gs: GameState, roller: DiceRoller) -> dict:
+    """4.6.2 Disband (after Pay) + 4.6.3 remove Moved/Fought markers."""
+    result = {"disband": []}
     for side in SIDES:
         result["disband"].extend(actions.resolve_disband(gs, side))
     # SMOKE-005 (4.3.5/4.4.1): a Besieged/Bypassed Stronghold whose besiegers all
     # Disbanded becomes free of Enemy Lords -> drop its Siege/Bypass markers.
     for _loc in gs.locales:
         _refresh_invest(gs, _loc)
-    # Remove Moved/Fought markers (4.6.3)
     for l in gs.lords.values():
         l.moved_fought = False
     gs.meta.vp = scenarios.score(gs)
+    return result
+
+
+def feed_pay_disband(gs: GameState, roller: DiceRoller) -> dict:
+    """Non-interactive Feed + Disband (4.6) for direct/test use. During play the
+    interactive Pay (4.6.2) between Feed and Disband is surfaced by _after_card."""
+    result = _fpd_feed(gs)
+    result["disband"] = _fpd_disband(gs, roller)["disband"]
     return result
 
 
@@ -709,6 +786,10 @@ def legal_moves_campaign(gs: GameState) -> list[dict[str, Any]]:
                  "_treachery_required": treachery_required, "_treachery": "treachery",
                  "_desc": f"Build the {side} Campaign Plan: {need} ordered cards (4.1)"
                           + (" incl. one Treachery card" if treachery_required else "")}]
+    if step == "campaign.fpd_pay":
+        moves = actions.enumerate_pay(gs)  # 4.6.2: Pay as per Levy (3.2)
+        moves.append({"type": "fpd_done", "_desc": "Finish Pay for this side, then Disband (4.6.2)"})
+        return moves
     if step == "campaign.command" and gs.meta.active_lord is not None:
         moves = command_menu(gs)  # defined in the commands module (increment 2)
         moves.append({"type": "cmd_pass", "_desc": "Pass: the active Lord does nothing (4.5.8)"})

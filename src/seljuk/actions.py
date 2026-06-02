@@ -107,8 +107,8 @@ def enumerate_pay(gs: GameState) -> list[dict[str, Any]]:
 
 
 def h_pay(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
-    if gs.meta.subphase != "levy.pay":
-        raise IllegalAction("wrong_step", "Pay is only legal in the Levy Pay step (3.2)")
+    if gs.meta.subphase not in ("levy.pay", "campaign.fpd_pay"):
+        raise IllegalAction("wrong_step", "Pay is legal in the Levy Pay step (3.2) or campaign Feed/Pay/Disband (4.6.2)")
     pid = action.get("payer")
     tid = action.get("target")
     asset = action.get("asset", "coin")
