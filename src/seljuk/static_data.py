@@ -112,4 +112,5 @@ def stronghold_profile(locale_id: str) -> dict[str, Any] | None:
             }
         )
         return base
-    return sh["types"][loc["type"]]
+    # Return a copy so callers cannot mutate the lru_cached static data.
+    return dict(sh["types"][loc["type"]])

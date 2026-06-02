@@ -115,7 +115,7 @@ def protection_range(gs, lord_id: str, unit: str, hit_type: str, storm: bool = F
         return (1, 4) if "Klibanophoroi" in names else (1, 3)
     if unit == "infantry":
         return (1, 4) if "Steeled Resolve" in names else (1, 3)
-    return _ARMORED[unit]
+    return _ARMORED.get(unit, (1, 1))  # unknown unit -> Unarmored, never KeyError
 
 
 def fealty_rating(gs, lord_id: str) -> int:

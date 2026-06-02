@@ -1008,10 +1008,10 @@ def _storm_strike(gs, att, deff, garrison, garrison_routed, walls, siege, round_
     eff_walls = _effective_walls(gs, att, walls)
     _hit_defender(gs, deff, garrison, garrison_routed, _round_up(a_missile), "missile", eff_walls, roller, ctx, log, "att_missile", round_no)
     # 3) Defending Melee (Horse then Foot), capped 6/Lord; Garrison foot melee
-    d_melee = _garrison_melee_hits(garrison) + _lord_melee_capped(gs, deff, round_no)
+    d_melee = _garrison_melee_hits(garrison) + _lord_melee_capped(gs, deff, round_no, storm=True)
     _hit_attacker(gs, att, _round_up(d_melee), "melee", siege, anti_armor=False, roller=roller, ctx=ctx, log=log, step="def_melee", round_no=round_no)
     # 4) Attacking Melee -> garrison/defender Lord
-    a_melee = _lord_melee_capped(gs, att, round_no)
+    a_melee = _lord_melee_capped(gs, att, round_no, storm=True)
     _hit_defender(gs, deff, garrison, garrison_routed, _round_up(a_melee), "melee", _effective_walls(gs, att, walls), roller, ctx, log, "att_melee", round_no)
 
 
@@ -1063,12 +1063,27 @@ def _lord_step_hits(gs: GameState, side: _Side, step: str, round_no: int) -> flo
     return total
 
 
-def _lord_melee_capped(gs: GameState, side: _Side, round_no: int) -> float:
+# Storm uses each unit's separate STORM strike value where the Forces table
+# defines one: Norman Knights and Varangian Guard strike at x1 in Storm (vs x2
+# and x3 in Battle). Per the Forces reference, units_with_storm_strike =
+# {norman_knights, varangian_guard}; every other unit's Battle melee value is
+# unchanged in Storm. (Sally is NOT a Storm -- it keeps Battle melee values.)
+_STORM_HORSE_MELEE = {**_HORSE_MELEE, "norman_knights": 1.0}
+_STORM_FOOT_MELEE = {"varangian_guard": 1.0, "infantry": 1.0, "militia": 0.5}
+
+
+def _lord_melee_capped(gs: GameState, side: _Side, round_no: int, storm: bool = False) -> float:
+    horse_tbl = _STORM_HORSE_MELEE if storm else _HORSE_MELEE
     total = 0.0
     for lid in side.front_lords():
         units = _unrouted_units(gs.lords[lid])
-        h = sum(_HORSE_MELEE.get(u, 0.0) * n for u, n in units.items() if _category(u) == "horse")
-        foot = _strike_table("foot_melee", round_no)
+        h = sum(horse_tbl.get(u, 0.0) * n for u, n in units.items() if _category(u) == "horse")
+        if storm:
+            foot = dict(_STORM_FOOT_MELEE)
+            if round_no > 1:
+                foot["varangian_guard"] = 0.0  # preserve existing first-Round-only handling
+        else:
+            foot = _strike_table("foot_melee", round_no)
         h += sum(foot.get(u, 0.0) * n for u, n in units.items() if _category(u) == "foot")
         if "Shock Tactics" in capabilities.lord_capability_names(gs, lid):  # S4/S6
             h += _math.ceil(units.get("turkic_horse", 0) / 2) * 0.5

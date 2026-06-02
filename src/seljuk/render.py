@@ -13,7 +13,9 @@ from .state import GameState
 _SEASON = {1: "Spring", 2: "Summer", 0: "Autumn"}
 
 
-def _box_label(box: int) -> str:
+def _box_label(box: int | None) -> str:
+    if box is None:
+        return "off-calendar"
     if box < 1 or box > 12:
         return f"box{box}(off-calendar)"
     year = 1068 + (box - 1) // 3
@@ -48,7 +50,7 @@ def summary(gs: GameState) -> str:
                 continue
             if l.mustered:
                 loc = sd.locale(l.cylinder)["name"]
-                status = f"@ {loc} (Service {_box_label(l.service_box) if l.service_box else '?'})"
+                status = f"@ {loc} (Service {_box_label(l.service_box) if l.service_box is not None else '?'})"
                 extra = []
                 if l.forces:
                     extra.append(_forces_str(l.forces))
@@ -104,7 +106,7 @@ def lord_view(gs: GameState, lord_id: str) -> str:
         f"  Fealty {r['fealty']}  Service {r['service']}  Lordship {r['lordship']}  Command {r['command']}",
         f"  Status: {'Mustered' if l.mustered else l.cylinder}"
         + (f" @ {sd.locale(l.cylinder)['name']}" if l.mustered else "")
-        + (f"  (Service {_box_label(l.service_box)})" if l.service_box else ""),
+        + (f"  (Service {_box_label(l.service_box)})" if l.service_box is not None else ""),
         f"  Forces: {_forces_str(l.forces)}",
         f"  Routed: {_forces_str(l.routed)}",
         f"  Assets: {_assets_str(l.assets)}",

@@ -286,11 +286,19 @@ def _feed_side(gs: GameState, side: str, result: dict) -> None:
     # Each Lord Feeds his own Forces first (4.6.1); Sharing among co-located
     # Lords then covers shortfalls.
     movers = [l for l in gs.lords.values() if l.side == side and on_map(l) and l.moved_fought]
+    # B.3.1: ALL Lords Feed their own Forces from their own mats FIRST; only then
+    # do co-located Lords Share to cover remaining shortfalls. Doing this in one
+    # interleaved pass would let an early mover drain a later (not-yet-fed)
+    # mover's Provender and penalise the wrong Lord.
+    fed = []  # [lord, need, paid]
     for lord in movers:
         need = _feed_requirement(_unit_count(lord))
-        paid = _consume_food(lord, need)
+        fed.append([lord, need, _consume_food(lord, need)])
+    for entry in fed:
+        lord, need, paid = entry
         if paid < need:
-            paid += _share_food(gs, lord, side, need - paid)
+            entry[2] = paid + _share_food(gs, lord, side, need - paid)
+    for lord, need, paid in fed:
         if paid < need:
             # Unfed: shift Service Marker left one box (4.6.1)
             if lord.service_box is not None:
@@ -591,9 +599,11 @@ def _winter_quarters(gs: GameState) -> None:
         if dest is None:
             dest = "to_mosul_and_baghdad" if lord.side == "seljuk" else "to_constantinople"
         lord.cylinder = dest
-        lord.assets.loot = 0  # Unladen
-        lord.assets.carts = -(-lord.assets.carts // 2)  # halve, round up
+        lord.assets.loot = 0  # Unladen: discard Loot
+        # Unladen also requires Provender <= Carts; this is checked against the
+        # Lord's CURRENT Carts and only THEN are Carts halved (B.5.4 order).
         lord.assets.provender = min(lord.assets.provender, lord.assets.carts)
+        lord.assets.carts = -(-lord.assets.carts // 2)  # halve, round up
         lord.besieged = False
         lord.bypassed = False
 
