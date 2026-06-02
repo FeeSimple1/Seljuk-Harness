@@ -1240,21 +1240,33 @@ def resolve_sally(gs: GameState, sallying_ids: list[str], besieger_ids: list[str
     round_no = 0
     while round_no < 30:
         round_no += 1
+        pursuit = False  # Sallying (Attacker) Concede -> halve its Hits this final Round
         if round_no > 1:
             if ctx.decide("concede", [False, True], {"role": "attacker"}):
+                # 4.9.2 follows Battle rules (Concede is not excepted): the
+                # Conceding (Sallying) side still resolves THIS Round with its
+                # Hits halved (Pursuit, 4.8.3-.4), then the Sally ends with that
+                # side as the loser -- it does NOT skip the final exchange the way
+                # a Storm Concede does (4.9.1).
                 conceded = True
-                break
+                pursuit = True
             _storm_reposition(gs, att, deff, size, ctx)
         # Sally Strike order follows Storm (Defending then Attacking); Besiegers
         # benefit from Siegeworks (Walls = Siege count); Sallying side has none.
         d_missile = _lord_step_hits(gs, deff, "missile", round_no)
         _absorb_simple(gs, att, _round_up(d_missile), "missile", 0, roller, ctx, log, "def_missile", round_no)
         a_missile = _lord_step_hits(gs, att, "missile", round_no)
+        if pursuit:
+            a_missile /= 2.0  # round up within the step (below)
         _absorb_simple(gs, deff, _round_up(a_missile), "missile", siege, roller, ctx, log, "att_missile", round_no)
         d_melee = _lord_melee_capped(gs, deff, round_no)
         _absorb_simple(gs, att, _round_up(d_melee), "melee", 0, roller, ctx, log, "def_melee", round_no)
         a_melee = _lord_melee_capped(gs, att, round_no)
+        if pursuit:
+            a_melee /= 2.0
         _absorb_simple(gs, deff, _round_up(a_melee), "melee", siege, roller, ctx, log, "att_melee", round_no)
+        if conceded:
+            break  # Sally ends after this (halved) final Round
         if _all_routed(gs, deff) or _all_routed(gs, att):
             break
         _purge_routed(att); _purge_routed(deff)
