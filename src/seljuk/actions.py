@@ -657,6 +657,24 @@ def enumerate_call_to_arms(gs: GameState) -> list[dict[str, Any]]:
                 loot = 2 if l.cylinder == "ikonion" else 3
                 out.append({"type": "cta_deep_raids", "lord": lid,
                             "_desc": f"Deep Raids: Disband {lid} at {l.cylinder} for {loot} Loot/VP (S17)"})
+    if side == "roman" and capabilities.side_has(gs, "roman", "Empress Eudokia Makrembolitissa"):
+        token = gs.meta.notes.get("empress_token", "card")
+        if token != "card":
+            out.append({"type": "cta_empress", "mode": "place_on_card",
+                        "_desc": "Place the Empress token back on the card (3.5.1.2)"})
+        else:
+            for lid, l in gs.lords.items():
+                if l.side == "roman" and l.cylinder == "calendar" and l.cylinder_calendar_box is not None:
+                    out.append({"type": "cta_empress", "mode": "use", "effect": "shift_cylinder",
+                                "lord": lid, "direction": "left",
+                                "_desc": f"Empress: shift {lid}'s cylinder 1 box (3.5.1.2)"})
+            rom = gs.lords.get("romanos_diogenes")
+            if rom is not None and rom.service_box is not None:
+                for lid in ("manuel_komnenos", "andronikos_doukas", "joseph_tarchaneiotes", "nikephoros_bryennios"):
+                    l = gs.lords.get(lid)
+                    if l is not None and l.service_box is not None and l.service_box > 0:
+                        out.append({"type": "cta_empress", "mode": "use", "effect": "transfer_service",
+                                    "lord": lid, "_desc": f"Empress: move 1 Service from {lid} to Romanos (3.5.1.2)"})
     if side == "roman":
         rom = gs.lords.get("romanos_diogenes")
         man = gs.lords.get("manuel_komnenos")
@@ -836,6 +854,51 @@ def h_muster_restore(gs: GameState, action: dict[str, Any], roller: DiceRoller) 
     lord.forces[unit] = lord.forces.get(unit, 0) + 1
     lord.flags["restored_this_muster"] = True
     return {"ok": True, "action": "muster_restore", "lord": lid, "unit": unit}
+
+
+_CONSTANTINOPLE_SEAT = {"romanos_diogenes", "manuel_komnenos", "andronikos_doukas",
+                        "joseph_tarchaneiotes", "nikephoros_bryennios"}
+
+
+def h_cta_empress(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
+    """3.5.1.2 Empress Eudokia (R12): in Call to Arms the Roman player may either
+    PLACE the Empress token on the card (ready it) or, if it is on the card, MOVE
+    it to Constantinople and choose one effect: shift a Roman Lord's cylinder 1
+    box, or move 1 Service from a Constantinople-Seat Lord to Romanos."""
+    if gs.meta.subphase != "levy.call_to_arms" or gs.meta.active_player != "roman":
+        raise IllegalAction("wrong_step", "Empress Eudokia is a Roman Call to Arms action (3.5.1.2)")
+    if not capabilities.side_has(gs, "roman", "Empress Eudokia Makrembolitissa"):
+        raise IllegalAction("no_empress", "Empress Eudokia (R12) is not in play")
+    token = gs.meta.notes.get("empress_token", "card")
+    mode = action.get("mode")
+    if mode == "place_on_card":
+        gs.meta.notes["empress_token"] = "card"
+        _cta_done(gs)
+        return {"ok": True, "action": "cta_empress", "mode": "place_on_card"}
+    if mode == "use":
+        if token != "card":
+            raise IllegalAction("token_not_on_card", "the Empress token is not on the card (3.5.1.2)")
+        effect = action.get("effect")
+        if effect == "shift_cylinder":
+            l = gs.lords.get(action.get("lord"))
+            if l is None or l.side != "roman" or l.cylinder != "calendar" or l.cylinder_calendar_box is None:
+                raise IllegalAction("bad_lord", "shift a Ready Roman Lord's cylinder (3.5.1.2)")
+            delta = -1 if action.get("direction", "left") == "left" else 1
+            l.cylinder_calendar_box = max(0, min(l.cylinder_calendar_box + delta, OFF_RIGHT))
+        elif effect == "transfer_service":
+            l = gs.lords.get(action.get("lord"))
+            rom = gs.lords.get("romanos_diogenes")
+            if (l is None or action.get("lord") not in _CONSTANTINOPLE_SEAT or action.get("lord") == "romanos_diogenes"
+                    or l.service_box is None or rom is None or rom.service_box is None):
+                raise IllegalAction("bad_lord", "decrease a Constantinople-Seat Lord's Service to raise Romanos (3.5.1.2)")
+            l.service_box = max(0, l.service_box - 1)
+            rom.service_box = min(rom.service_box + 1, OFF_RIGHT)
+        else:
+            raise IllegalAction("bad_effect", "Empress effect must be 'shift_cylinder' or 'transfer_service'")
+        gs.meta.notes["empress_token"] = "constantinople"
+        _cta_done(gs)
+        return {"ok": True, "action": "cta_empress", "mode": "use", "effect": effect}
+    raise IllegalAction("bad_mode", "Empress mode must be 'place_on_card' or 'use'")
 
 
 # --- Loyalty Check (1.4) ----------------------------------------------------
