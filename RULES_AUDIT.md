@@ -165,3 +165,59 @@ The combination of this static clause-by-clause audit with the dynamic gates
 (round-trip + invariant sweep, 20 randomized smoke rounds, the Playbook oracle)
 covers the rules from both directions: every clause is implemented and tested,
 and every reachable state stays rule-consistent.
+
+---
+
+## Full Rules Audit — Pass 2 (clause-by-clause, June 2026)
+
+A second full pass: six parallel section audits (1.x; 2-3 Levy; 4.0-4.5; 4.6-4.7;
+4.8-4.9; 5/scenarios/errata/cards) against `source/Seljuk_Rules.pdf` text, with
+each finding verified and the confirmed bugs fixed + pinned by tests (suite 560
+green at the end of the pass).
+
+### Fixed this pass
+
+- **5.2 immediate victory by permanent Disband** — a permanently Disbanded Alp
+  Arslan ends the game for Rome (every scenario; "removed" implies he was in
+  play, covering the Specter caveat); Manzikert: a permanently Disbanded Romanos
+  ends it for the Seljuks. `_campaign_5_2_over`.
+- **Manzikert end-of-Autumn-1071 conditions** (no Winter phase): Aleppo Seljuk-
+  Conquered → Seljuks; else Manzikert AND Khliat both Roman-Conquered (Aleppo not
+  Seljuk) → Romans. `scenarios.end_of_scenario_winner`.
+- **4.8.4 Harsh Losses** now apply to ANY non-conceding loser who Retreats (was
+  restricted to the attacker) — Battle and Sally (losing Besiegers).
+- **4.8.5** Storm now removes any Lord reduced to no Forces on either side (was
+  missed in the attacker-loses branch and for a winning Attacker on a Sack).
+- **4.3.4** Avoid may not cross the Way the enemy Approached on; Withdraw is
+  capped at the Stronghold's Size (covers the Lieutenant-into-Fort note).
+- **4.3.6** ENCAMP (Bypass→Siege) and SORTIE (defenders Approach the bypasser)
+  implemented (`cmd_encamp`, `cmd_sortie`).
+- **1.5.1** Manuel is Commander only if Romanos is not ON THE MAP (was `mustered`).
+- **1.3.1/R14** Aleppo is Friendly to BOTH sides after Independence.
+- **3.5.1.1 Marwanid** Coin model corrected: transfer Alp Arslan Coin → card
+  (`cta_marwanid_bank`) vs spend card Coin to activate (one option may activate
+  both Locales).
+- **3.5.1.2 Empress Eudokia (R12)** implemented (`cta_empress`).
+- **1.4.1 Loyalty Check** Coin DRMs deducted from valid sources + bounded; owner
+  may not resist for a Besieged target.
+- **4.2.1/4.5.4 Forage** while Besieged: allowed when inadequately Besieged;
+  blocked at ≥ Size (handler + menu), except friendly Gardens Town/City.
+- **4.8.2/4.9.1** Storm melee resolved as separate Horse/Foot steps (each rounded).
+- **1.4.2** treachery re-entry places/clears the Seat's Conquered markers.
+
+### Known remaining items (low impact / edge / documented simplifications)
+
+- S9 Imperial Rivalry: the *mandatory* Andronikos Muster attempt is not forced
+  (offered as optional).
+- Marwanid "only one Supply Source per Command card" when BOTH Seats are active
+  (the supply pathfinder already routes each Lord to one cheapest Seat per action).
+- Storm Garrison Missiles "select target" (armored-first is enforced; striker's
+  pick among armored units is not).
+- Supply drawing >1 Provender/action via disjoint Cart-funded routes (4.4.2 edge).
+- Avoid: discard-to-Unladen + award discarded Assets to the attacker as Spoils
+  (current model rejects a Laden Avoid outright — stricter).
+- Feed Sharing uses greedy allocation (minimises but doesn't optimise Unfed).
+- Flanking "absorb / choose target Lord" optional choice (deterministic target).
+- Unit component pool is not a hard Muster limit; `treachery_available` field is
+  unused; mid-Winter VP display can include the Year end-control bonus one step
+  early. Optional rules 6.1-6.4 remain out of scope (BRIEF.md Phase 5).
