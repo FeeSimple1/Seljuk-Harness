@@ -634,12 +634,22 @@ def enumerate_call_to_arms(gs: GameState) -> list[dict[str, Any]]:
                             "_desc": "Spend 1 Loot to shift a Ready Seljuk Lord's cylinder 1 box (3.5.2)"})
     if side == "seljuk" and capabilities.side_has(gs, "seljuk", "Marwanid Alliance"):
         active = set(gs.meta.notes.get("marwanid_seats", []))
-        for loc in ("amid", "mayyafariqin"):
-            if loc in active or gs.locales[loc].ruins:
-                continue
-            for src in _marwanid_coin_sources(gs):
-                out.append({"type": "cta_marwanid", "locale": loc, "coin_source": src,
-                            "_desc": f"Spend 1 Coin ({src}) to activate {loc} as a Seljuk Seat until end of next Winter (3.5.1.1)"})
+        card_coins = gs.seljuk.capability_coins.get("S8", 0)
+        aa = gs.lords.get("alp_arslan")
+        # Transfer 1 Coin from Alp Arslan onto the card (3.5.1.1).
+        if aa is not None and aa.assets.coin > 0:
+            out.append({"type": "cta_marwanid_bank",
+                        "_desc": "Transfer 1 Coin from Alp Arslan onto the Marwanid Alliance card (3.5.1.1)"})
+        # Spend Coin from the card to activate Amid and/or Mayyafariqin (one option,
+        # any number of card Coins).
+        avail = [loc for loc in ("amid", "mayyafariqin") if loc not in active and not gs.locales[loc].ruins]
+        if card_coins >= 1 and avail:
+            out.append({"type": "cta_marwanid", "locales": avail[:card_coins],
+                        "_desc": f"Spend Card Coin to activate {avail[:card_coins]} as Seljuk Seats (3.5.1.1)"})
+            if card_coins >= 1:
+                for loc in avail:  # also offer activating just one
+                    out.append({"type": "cta_marwanid", "locales": [loc],
+                                "_desc": f"Spend 1 Card Coin to activate {loc} as a Seljuk Seat (3.5.1.1)"})
     if side == "seljuk":
         for lid, l in gs.lords.items():
             if (l.side == "seljuk" and l.mustered and l.cylinder in ("ikonion", "western_anatolia")
@@ -739,51 +749,46 @@ def h_cta_strategic_objective(gs: GameState, action: dict[str, Any], roller: Dic
     raise IllegalAction("bad_mode", "Strategic Objective mode must be 'take' or 'place'")
 
 
-def _marwanid_coin_sources(gs: GameState) -> list[str]:
-    """Coin sources for a Marwanid activation: the Capability card itself, and/or
-    Alp Arslan's mat (Map Reference / 3.5.1.1)."""
-    srcs: list[str] = []
-    if gs.seljuk.capability_coins.get("S8", 0) > 0:
-        srcs.append("card")
+def _marwanid_in_play(gs: GameState) -> None:
+    if gs.meta.subphase != "levy.call_to_arms" or gs.meta.active_player != "seljuk":
+        raise IllegalAction("wrong_step", "Marwanid actions are Seljuk Call to Arms actions (3.5.1.1)")
+    if not capabilities.side_has(gs, "seljuk", "Marwanid Alliance"):
+        raise IllegalAction("no_marwanid", "Marwanid Alliance (S8) is not in play")
+
+
+def h_cta_marwanid_bank(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
+    """3.5.1.1: transfer 1 Coin from Alp Arslan's Assets onto the Marwanid card."""
+    _marwanid_in_play(gs)
     aa = gs.lords.get("alp_arslan")
-    if aa is not None and aa.assets.coin > 0:
-        srcs.append("alp_arslan")
-    return srcs
+    if aa is None or aa.assets.coin <= 0:
+        raise IllegalAction("no_coin", "Alp Arslan has no Coin to transfer")
+    aa.assets.coin -= 1
+    gs.seljuk.capability_coins["S8"] = gs.seljuk.capability_coins.get("S8", 0) + 1
+    _cta_done(gs)
+    return {"ok": True, "action": "cta_marwanid_bank", "card_coins": gs.seljuk.capability_coins["S8"]}
 
 
 def h_cta_marwanid(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
-    """3.5.1.1: with Marwanid Alliance (S8) in play, the Seljuk player may spend
-    a Coin (from the Capability card or from Alp Arslan) during Call to Arms to
-    activate Amid or Mayyafariqin as a Seat for all Seljuk Lords until the end of
-    the next Winter Phase."""
-    if gs.meta.subphase != "levy.call_to_arms" or gs.meta.active_player != "seljuk":
-        raise IllegalAction("wrong_step", "Marwanid activation is a Seljuk Call to Arms action (3.5.1.1)")
-    if not capabilities.side_has(gs, "seljuk", "Marwanid Alliance"):
-        raise IllegalAction("no_marwanid", "Marwanid Alliance (S8) is not in play")
-    loc = action.get("locale")
-    if loc not in ("amid", "mayyafariqin"):
-        raise IllegalAction("bad_locale", "Marwanid activates Amid or Mayyafariqin (3.5.1.1)")
+    """3.5.1.1: spend Coin FROM THE CARD (1 per Locale) to activate Amid and/or
+    Mayyafariqin as Seats for all Seljuk Lords until the end of the next Winter."""
+    _marwanid_in_play(gs)
+    locales = action.get("locales") or ([action["locale"]] if action.get("locale") else [])
     active = gs.meta.notes.setdefault("marwanid_seats", [])
-    if loc in active:
-        raise IllegalAction("already_active", f"{loc} is already an activated Marwanid Seat")
-    if gs.locales[loc].ruins:
-        raise IllegalAction("ruined", f"{loc} is Ruined and cannot be activated as a Seat")
-    source = action.get("coin_source")
-    if source == "card":
-        if gs.seljuk.capability_coins.get("S8", 0) <= 0:
-            raise IllegalAction("no_coin", "no Coin on the Marwanid Alliance card")
-        gs.seljuk.capability_coins["S8"] -= 1
-    elif source == "alp_arslan":
-        aa = gs.lords.get("alp_arslan")
-        if aa is None or aa.assets.coin <= 0:
-            raise IllegalAction("no_coin", "Alp Arslan has no Coin to spend")
-        aa.assets.coin -= 1
-    else:
-        raise IllegalAction("bad_coin_source", "coin_source must be 'card' or 'alp_arslan'")
-    active.append(loc)
+    for loc in locales:
+        if loc not in ("amid", "mayyafariqin"):
+            raise IllegalAction("bad_locale", "Marwanid activates Amid or Mayyafariqin (3.5.1.1)")
+        if loc in active:
+            raise IllegalAction("already_active", f"{loc} is already an activated Marwanid Seat")
+        if gs.locales[loc].ruins:
+            raise IllegalAction("ruined", f"{loc} is Ruined and cannot be activated as a Seat")
+    if not locales:
+        raise IllegalAction("no_locale", "name the Locale(s) to activate")
+    if gs.seljuk.capability_coins.get("S8", 0) < len(locales):
+        raise IllegalAction("no_coin", "not enough Coin on the Marwanid Alliance card (Coin must be banked first)")
+    gs.seljuk.capability_coins["S8"] -= len(locales)
+    active.extend(locales)
     _cta_done(gs)
-    return {"ok": True, "action": "cta_marwanid", "locale": loc, "coin_source": source,
-            "active_seats": list(active)}
+    return {"ok": True, "action": "cta_marwanid", "locales": locales, "active_seats": list(active)}
 
 
 def h_cta_deep_raids(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
@@ -835,6 +840,26 @@ def h_muster_restore(gs: GameState, action: dict[str, Any], roller: DiceRoller) 
 
 # --- Loyalty Check (1.4) ----------------------------------------------------
 
+def _spend_loyalty_coins(gs: GameState, side: str, target_id: str, n: int) -> None:
+    """Spend n Coin for a Loyalty Check from the side's Commander and/or its
+    Lords co-located with the target (Unbesieged) (1.4.1)."""
+    if n <= 0:
+        return
+    target = gs.lords[target_id]
+    sources = [l for lid, l in gs.lords.items()
+               if l.side == side and _on_map(l) and not l.besieged
+               and (is_commander(gs, lid) or l.cylinder == target.cylinder)]
+    if sum(s.assets.coin for s in sources) < n:
+        raise IllegalAction("insufficient_coin",
+                            f"{side} lacks {n} Coin from its Commander / co-located Lords (1.4.1)")
+    for srcl in sources:
+        if n <= 0:
+            break
+        take = min(srcl.assets.coin, n)
+        srcl.assets.coin -= take
+        n -= take
+
+
 def resolve_loyalty_check(gs: GameState, target_id: str, revealing_side: str,
                           roller: DiceRoller, coins_for: int = 0, coins_against: int = 0) -> dict[str, Any]:
     """1.4.1: roll d6 + (coins_for - coins_against). Natural 1 always fails,
@@ -842,6 +867,11 @@ def resolve_loyalty_check(gs: GameState, target_id: str, revealing_side: str,
     target Lord's Fealty, he switches sides (1.4.2)."""
     if target_id not in gs.lords:
         raise IllegalAction("bad_lord", f"no such Lord {target_id}")
+    target = gs.lords[target_id]
+    if coins_against and target.besieged:
+        raise IllegalAction("besieged_no_resist", "the owner may not spend Coin to resist for a Besieged Lord (1.4.1)")
+    _spend_loyalty_coins(gs, revealing_side, target_id, coins_for)   # checking side spends +1 each
+    _spend_loyalty_coins(gs, target.side, target_id, coins_against)  # owner spends -1 each to resist
     fealty = capabilities.fealty_rating(gs, target_id)
     nat = roller.d6()
     modified = nat + coins_for - coins_against

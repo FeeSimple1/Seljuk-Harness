@@ -904,9 +904,14 @@ def command_menu(gs: GameState) -> list[dict[str, Any]]:
                             continue
                     out.append({"type": "cmd_march", "lord": lid, "to": to, "way_type": edge["type"],
                                 "_desc": f"March to {sd.locale(to)['name']} via {edge['type']} (4.3)"})
-        # Forage (4.5.4): available unless the Locale is Ravaged.
-        if st.ravaged_side is None and not lord.besieged:
-            out.append({"type": "cmd_forage", "lord": lid, "_desc": "Forage for Provender (4.5.4)"})
+        # Forage (4.5.4): available unless Ravaged, or Besieged by >= Size (a Lord
+        # Besieged by fewer, or at a friendly Gardens Town/City, may still Forage).
+        if st.ravaged_side is None:
+            _g = info.get("gardens") and info["type"] in ("town", "city") and actions.is_friendly_locale(gs, loc_id, lord.side)
+            _sz = {"fort": 1, "town": 2, "city": 3}.get(info["type"], 0)
+            _heavy = info.get("is_stronghold") and not st.ruins and _enemy_lords_at(gs, loc_id, lord.side) >= _sz and _sz > 0
+            if not _heavy or _g:
+                out.append({"type": "cmd_forage", "lord": lid, "_desc": "Forage for Provender (4.5.4)"})
         # Tax (4.5.6): own Seat, or Roman Commander Friendly Empire Stronghold.
         if not lord.besieged:
             at_seat = loc_id in sd.lord(lid).get("seats", [])
@@ -1047,6 +1052,8 @@ def h_cmd_forage(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> d
     # Besieged by >= Size enemy Lords blocks Forage (4.5.4), except Gardens.
     size = {"fort": 1, "town": 2, "city": 3}.get(info["type"], 0)
     heavily_besieged = is_sh and _enemy_lords_at(gs, loc_id, lord.side) >= size and size > 0
+    if heavily_besieged and not (friendly and gardens):
+        raise IllegalAction("forage_besieged", "a Lord Besieged by >= the Stronghold's Size may not Forage (4.5.4)")
     auto = False
     if friendly and gardens:
         auto = True  # Gardens: auto even if Besieged (4.5.4)

@@ -228,8 +228,10 @@ def test_besieged_lord_menu_only_sally_pass_end_421():
     gs.meta.actions_remaining = 4
     types = {m["type"] for m in engine.legal_moves(gs)}
     assert "cmd_march" not in types and "cmd_tax" not in types and "cmd_supply" not in types
-    assert "cmd_forage" not in types and "cmd_ravage" not in types
-    assert "cmd_sally" in types  # the one combat action a Besieged Lord may take
+    assert "cmd_ravage" not in types
+    assert "cmd_sally" in types     # the combat action a Besieged Lord may take
+    # 4.2.1/4.5.4: an inadequately-Besieged Lord (here, 0 besiegers) MAY Forage.
+    assert "cmd_forage" in types
 
 
 def test_siege_marks_only_besieging_lord_451():
