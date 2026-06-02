@@ -174,11 +174,13 @@ def _ev_mercenary_discipline(gs, args, roller):   # S25
     return {"roman_wastage": n}
 
 
-def _ev_peace_offering(gs, args, roller):         # S13 (This Season; coin-gate is a noted partial)
+def _ev_peace_offering(gs, args, roller):         # S13
     gs.meta.notes["peace_offering_season"] = True
     if "S13" not in gs.seljuk.capabilities_in_play:
         gs.seljuk.capabilities_in_play.append("S13")  # Gifts Exchanged enters play
-    return {"this_season": "peace_offering", "note": "Approach/Storm/Siege coin-gate is a documented partial"}
+    gs.meta.notes["gifts_coins"] = 4                   # 4 Coin on the card
+    gs.meta.notes["gifts_taken"] = {"seljuk": 0, "roman": 0}
+    return {"this_season": "peace_offering", "gifts_coins": 4}
 
 
 def _ev_shift_seljuk(gs, args, roller):          # R5 Fatimid Conflict

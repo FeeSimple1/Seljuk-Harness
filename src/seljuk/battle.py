@@ -820,6 +820,21 @@ def _value(locale: str) -> int:
     return {"fort": 1, "town": 2, "city": 3}.get(sd.locale(locale)["type"], 0)
 
 
+def _eff_value(gs: GameState, locale: str) -> int:
+    """Stronghold Size: printed value, or 1 for an R1 Fort marker."""
+    if sd.locale(locale).get("is_stronghold") and not gs.locales[locale].ruins:
+        return _value(locale)
+    return 1 if gs.locales[locale].fort_marker else 0
+
+
+def _eff_profile(gs: GameState, locale: str) -> dict | None:
+    """Stronghold profile: the printed one, or the Fort profile for an R1 Fort."""
+    prof = sd.stronghold_profile(locale)
+    if prof is None and gs.locales[locale].fort_marker:
+        prof = dict(sd.strongholds()["types"]["fort"])
+    return prof
+
+
 def conquer(gs: GameState, locale: str, by_side: str) -> dict[str, Any]:
     """Set a Stronghold to ``by_side``'s control (1.3.1, 4.5.1/4.9.1)."""
     loc = gs.locales[locale]
@@ -839,7 +854,8 @@ def conquer(gs: GameState, locale: str, by_side: str) -> dict[str, Any]:
         loc.conquered_count = 0
     else:
         loc.conquered_side = by_side
-        loc.conquered_count = _value(locale)
+        loc.conquered_count = _eff_value(gs, locale)
+        loc.fort_marker = False  # an R1 Fort is captured on Conquer
         placed = by_side
     # Re-conquering a Friendly Stronghold flips a same-color Ravaged marker (4.9.1 play note)
     if loc.ravaged_side == by_side and printed == by_side:
@@ -909,7 +925,7 @@ def _build_garrison(gs: GameState, locale: str, attacker_side: str = "seljuk") -
     defender wins and are removed on a Sack. Capabilities: Armenian Garrisons
     (R16) adds both columns; Fortified Garrisons (S23) swaps a Garrison Militia
     for Infantry on a Roman Storm."""
-    prof = sd.stronghold_profile(locale)
+    prof = _eff_profile(gs, locale)
     info = sd.locale(locale)
     col = _garrison_column(gs, locale)
     defender_side = "roman" if attacker_side == "seljuk" else "seljuk"
@@ -936,8 +952,8 @@ def resolve_storm(gs: GameState, attacker_ids: list[str], locale: str,
                   ctx: DecisionContext, roller: DiceRoller, rounds_reduction: int = 0) -> dict[str, Any]:
     a_side = gs.lords[attacker_ids[0]].side
     d_side = "roman" if a_side == "seljuk" else "seljuk"
-    size = _value(locale)
-    walls = sd.stronghold_profile(locale)["walls"]            # defender Walls range
+    size = _eff_value(gs, locale)
+    walls = _eff_profile(gs, locale)["walls"]            # defender Walls range
     siege = gs.locales[locale].siege_markers                  # = Siegeworks Walls value for attacker
     defender_ids = [lid for lid, l in gs.lords.items()
                     if l.mustered and l.cylinder == locale and l.besieged and l.side == d_side]
@@ -1301,7 +1317,7 @@ def resolve_sally(gs: GameState, sallying_ids: list[str], besieger_ids: list[str
         att.front["center"] = att.reserve.pop(0)
     if deff.reserve:
         deff.front["center"] = deff.reserve.pop(0)
-    size = _value(locale)
+    size = _eff_value(gs, locale)
     log = []
     pursuit = {"attacker": False, "defender": False}
     conceder = None

@@ -196,6 +196,8 @@ def _reveal_next(gs: GameState) -> None:
         _s = _r.get_state(); gs.meta.rng_state = [_s[0], list(_s[1]), _s[2]]
         lord.flags.pop("first_march_used", None)
         lord.flags.pop("mules_used_this_card", None)
+        lord.flags.pop("unstoppable_used_this_card", None)
+        lord.flags.pop("peace_paid_this_card", None)
         return
 
 
@@ -614,6 +616,8 @@ def _reset(gs: GameState) -> None:
         gs.side_decks(side).this_campaign_events = []
     gs.meta.notes.pop("moustache_campaign", None)
     gs.meta.notes.pop("peace_offering_season", None)
+    gs.meta.notes.pop("gifts_coins", None)
+    gs.meta.notes.pop("gifts_taken", None)
     for _wk in ("weather_pass_block", "weather_plan9", "weather_no_command_side"):
         gs.meta.notes.pop(_wk, None)
 
@@ -926,9 +930,12 @@ def command_menu(gs: GameState) -> list[dict[str, Any]]:
             if cost is not None and cost <= _available_carts(gs, lord):
                 out.append({"type": "cmd_supply", "lord": lid, "_desc": "Supply Provender via a Route (4.4)"})
         # Siege/Storm (4.5.1-.2): a Besieging Lord may advance the Siege or Storm.
-        if _besieging(gs, lord):
+        if _besieging(gs, lord) and _peace_can_pay(gs, lord):
             out.append({"type": "cmd_siege", "lord": lid, "_desc": "Siege: roll Surrender / add Siegeworks (4.5.1)"})
             out.append({"type": "cmd_storm", "lord": lid, "_desc": "Storm the Stronghold (4.5.2)"})
+        if (gs.meta.notes.get("gifts_coins", 0) > 0 and not lord.besieged
+                and gs.meta.notes.get("gifts_taken", {}).get(lord.side, 0) < 2):
+            out.append({"type": "cmd_take_gift_coin", "lord": lid, "_desc": "Take 1 Coin from Gifts Exchanged (S13)"})
         # Sally (4.5.3): a Besieged Lord may Attack the Besiegers.
         if lord.besieged:
             out.append({"type": "cmd_sally", "lord": lid, "_desc": "Sally against the Besiegers (4.5.3)"})
@@ -1334,6 +1341,8 @@ def h_cmd_march(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> di
     to = action.get("to")
     if to not in gs.locales:
         raise IllegalAction("bad_destination", "unknown destination Locale")
+    if _enemy_lord_ids_at(gs, to, lord.side) and not gs.locales[to].bypass:
+        _peace_gate(gs, lord)  # S13: an Approach this Season requires 1 Coin
     way = _way_between(lord.cylinder, to, action.get("way_type"))
     if way is None:
         raise IllegalAction("no_way", f"no Way from {lord.cylinder} to {to}")
@@ -1377,7 +1386,7 @@ def h_cmd_march(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> di
     gs.meta.actions_remaining -= cost
     res = {"ok": True, "action": "cmd_march", "lord": lord.id, "to": to,
            "way": way["type"], "cost": cost, "group": [g.id for g in group]}
-    arrival = _resolve_arrival(gs, group, to, from_locale=march_from)
+    arrival = _resolve_arrival(gs, group, to, from_locale=march_from, unstoppable=action.get("unstoppable", False))
     res.update(arrival)
     if not arrival.get("pending") and gs.meta.actions_remaining <= 0:
         _after_card(gs)
@@ -1418,7 +1427,7 @@ def _refresh_invest(gs: GameState, locale: str) -> None:
 
 
 def _resolve_arrival(gs: GameState, group: list[LordState], to: str,
-                     from_locale: str | None = None) -> dict[str, Any]:
+                     from_locale: str | None = None, unstoppable: bool = False) -> dict[str, Any]:
     """After a March: Approach (enemy Lords present) or Besiege/Bypass (enemy
     Stronghold, no enemy Lords outside) — both as pending sub-decisions."""
     side = group[0].side
@@ -1431,10 +1440,18 @@ def _resolve_arrival(gs: GameState, group: list[LordState], to: str,
             "defenders": enemy_lords, "_owed_by": _enemy(side), "from": from_locale,
         })
         return {"pending": "approach_response", "defenders": enemy_lords}
-    info = sd.locale(to)
-    enemy_sh = info.get("is_stronghold") and not gs.locales[to].ruins \
-        and actions.current_allegiance(gs, to) == _enemy(side)
+    enemy_sh = _is_stronghold(gs, to) and actions.current_allegiance(gs, to) == _enemy(side)
     if enemy_sh and not gs.locales[to].bypass and gs.locales[to].siege_markers == 0:
+        lead = group[0]
+        # S18 Unstoppable Turkmen: Bypass without stopping (no Besiege/Bypass
+        # decision) -- place the Bypass marker and continue, once per Command.
+        if (unstoppable and capabilities.lord_has(gs, lead.id, "Unstoppable Turkmen")
+                and not lead.flags.get("unstoppable_used_this_card")):
+            gs.locales[to].bypass = True
+            for g in group:
+                g.bypassed = True
+            lead.flags["unstoppable_used_this_card"] = True
+            return {"bypassed_without_stopping": to}
         gs.meta.pending.append({
             "type": "besiege_or_bypass", "locale": to, "lords": [g.id for g in group], "_owed_by": side,
         })
@@ -1579,6 +1596,80 @@ def h_besiege_bypass(gs: GameState, action: dict[str, Any], roller: DiceRoller) 
 
 # === Siege (4.5.1) and Themata-defender assignment (4.3.5) ==================
 
+def _is_stronghold(gs: GameState, loc: str) -> bool:
+    """A Locale defended as a Stronghold: its printed Stronghold (un-Ruined) OR a
+    Fort marker from R1 Imperial Fortress Construction."""
+    info = sd.locale(loc)
+    st = gs.locales[loc]
+    return bool((info.get("is_stronghold") and not st.ruins) or st.fort_marker)
+
+
+def h_cmd_fort(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
+    """R1 Imperial Fortress Construction: a Command action -- place a Fort marker
+    on an unfortified Locale (including Ruined) in the Roman Empire (max 2)."""
+    lord = _require(action.get("lord"), gs)
+    if lord.side != "roman" or not capabilities.lord_has(gs, lord.id, "Imperial Fortress Construction"):
+        raise IllegalAction("no_fort_capability", "only a Lord with Imperial Fortress Construction may build a Fort (R1)")
+    target = action.get("target")
+    if target not in gs.locales:
+        raise IllegalAction("bad_locale", "unknown Fort target")
+    if sum(1 for l in gs.locales.values() if l.fort_marker) >= 2:
+        raise IllegalAction("no_fort_markers", "both Fort markers are already on the map (R1)")
+    info = sd.locale(target)
+    st = gs.locales[target]
+    if info["allegiance"] != "roman":
+        raise IllegalAction("not_roman_empire", "a Fort is built in the Roman Empire (R1)")
+    if (info.get("is_stronghold") and not st.ruins) or st.fort_marker:
+        raise IllegalAction("already_fortified", "Locale is already fortified (R1)")
+    st.fort_marker = True
+    if st.ruins and (st.ruins_color or "seljuk") == "seljuk":
+        st.ruins = False
+        st.ruins_color = None  # a Seljuk Ruins marker is removed when a Fort is placed
+    gs.meta.vp = scenarios.score(gs)
+    spend_actions(gs, 1)
+    return {"ok": True, "action": "cmd_fort", "locale": target}
+
+
+def h_cmd_take_gift_coin(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
+    """S13 Gifts Exchanged: during a Lord's Command, take 1 Coin from the card
+    onto an Unbesieged Lord (each side at most 2 of the 4 Coins). Free action."""
+    lord = _require(action.get("lord"), gs)
+    if gs.meta.notes.get("gifts_coins", 0) <= 0:
+        raise IllegalAction("no_gift_coins", "no Coins left on Gifts Exchanged (S13)")
+    if lord.besieged:
+        raise IllegalAction("besieged", "the Gifts Coin goes on an Unbesieged Lord (S13)")
+    taken = gs.meta.notes.setdefault("gifts_taken", {"seljuk": 0, "roman": 0})
+    if taken.get(lord.side, 0) >= 2:
+        raise IllegalAction("gift_limit", "each side may take at most 2 Coins (S13)")
+    lord.assets.coin = min(8, lord.assets.coin + 1)
+    gs.meta.notes["gifts_coins"] -= 1
+    taken[lord.side] = taken.get(lord.side, 0) + 1
+    return {"ok": True, "action": "cmd_take_gift_coin", "lord": lord.id,
+            "gifts_coins": gs.meta.notes["gifts_coins"]}
+
+
+def _peace_gate(gs: GameState, lord: LordState) -> None:
+    """S13 Peace Offering: this Season a Lord may not Approach/Storm/Siege unless
+    he pays 1 Coin that Command card (from himself, or Alp Arslan if Unbesieged)."""
+    if not gs.meta.notes.get("peace_offering_season") or lord.flags.get("peace_paid_this_card"):
+        return
+    aa = gs.lords.get("alp_arslan")
+    if lord.assets.coin > 0:
+        lord.assets.coin -= 1
+    elif aa is not None and on_map(aa) and not aa.besieged and aa.assets.coin > 0:
+        aa.assets.coin -= 1
+    else:
+        raise IllegalAction("peace_offering_coin", "must pay 1 Coin to Approach/Storm/Siege this Season (S13)")
+    lord.flags["peace_paid_this_card"] = True
+
+
+def _peace_can_pay(gs: GameState, lord: LordState) -> bool:
+    if not gs.meta.notes.get("peace_offering_season") or lord.flags.get("peace_paid_this_card"):
+        return True
+    aa = gs.lords.get("alp_arslan")
+    return lord.assets.coin > 0 or (aa is not None and on_map(aa) and not aa.besieged and aa.assets.coin > 0)
+
+
 def _besieging(gs: GameState, lord: LordState) -> bool:
     return on_map(lord) and not lord.besieged and gs.locales[lord.cylinder].siege_markers > 0
 
@@ -1594,6 +1685,7 @@ def h_cmd_siege(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> di
     lord = _require(action.get("lord"), gs)
     if not _besieging(gs, lord):
         raise IllegalAction("not_besieging", "only a Besieging Lord may Siege (4.5.1)")
+    _peace_gate(gs, lord)  # S13 Peace Offering coin-gate
     loc_id = lord.cylinder
     from . import battle
     info = sd.locale(loc_id)
