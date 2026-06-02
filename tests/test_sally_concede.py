@@ -55,3 +55,26 @@ def test_sally_no_concede_runs_normally():
     r = battle.resolve_sally(gs, [sal], [bes], loc, ctx, DiceRoller(1))
     assert r["conceder"] is None
     assert r["winner"] in ("besiegers", "sally")
+
+
+# --- Sally uses Battle strike order + Battle capabilities (4.9.2) ------------
+
+def test_sally_horse_foot_split_and_capabilities():
+    gs = S.load_scenario("emperor_and_the_lion")
+    side = battle._Side(gs, [], "attacker")
+    lid = "alp_arslan"
+    L = gs.lords[lid]; L.mustered = True
+    L.forces = {"ghulam_cavalry": 2, "infantry": 2}
+    side.front["center"] = lid
+    # Battle order splits melee: horse-melee step counts only Horse, foot only Foot.
+    assert battle._side_step_caps(gs, side, "horse_melee", 1) == (2.0, 0.0)
+    assert battle._side_step_caps(gs, side, "foot_melee", 1) == (2.0, 0.0)
+    # Bardoukia (R21): Tagmata Melee becomes anti-armor -- a Battle Capability that
+    # must apply in a Sally (a Sally is a Battle).
+    L.forces = {"tagmata": 2}; L.capabilities = ["R21"]
+    assert battle._side_step_caps(gs, side, "horse_melee", 1) == (0.0, 2.0)
+    # Javelins (S11): Infantry gain x1 Missiles in a Battle (none without it).
+    L.forces = {"infantry": 3}; L.capabilities = []
+    assert battle._side_step_caps(gs, side, "missile", 1)[0] == 0.0
+    L.capabilities = ["S11"]
+    assert battle._side_step_caps(gs, side, "missile", 1)[0] == 3.0

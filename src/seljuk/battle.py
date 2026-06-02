@@ -1219,6 +1219,43 @@ def _loss_roll(gs: GameState, lord: LordState, harsh: bool, roller: DiceRoller):
 
 # === Sally (4.9.2) ==========================================================
 
+def _side_step_caps(gs, side: _Side, step: str, round_no: int) -> tuple[float, float]:
+    """(normal, anti-armor) Hits for a side's Front Lords in a Strike step,
+    applying Battle Capabilities (Javelins/Alakatia/Shock Tactics/Bardoukia)."""
+    n = a = 0.0
+    for lid in side.front_lords():
+        sn, sa = _lord_step_hits_caps(gs, lid, step, round_no)
+        n += sn
+        a += sa
+    return n, a
+
+
+def _sally_emit(gs, target_side: _Side, n_raw: float, a_raw: float, walls: int, hit_type: str,
+                step: str, round_no: int, halve: bool, roller, ctx, log) -> None:
+    """Apply a Sally strike step to the target side's Front Lord: Pursuit halving,
+    Siegeworks Walls (Sallying strikes only), then normal + anti-armor Hits."""
+    if halve:  # Conceding side halves its Hits this final Round (Pursuit, 4.8.3-.4)
+        n_raw /= 2.0
+        a_raw /= 2.0
+    n_hits = _round_up(n_raw)
+    a_hits = _round_up(a_raw)
+    front = target_side.front_lords()
+    if not front:
+        return
+    tid = front[0]
+    if walls > 0:  # Siegeworks protect Besiegers against Sallying strikes (4.9.2)
+        n_hits = _roll_walls(roller, n_hits, (1, walls))
+        a_hits = _roll_walls(roller, a_hits, (1, walls))
+    applied = []
+    if n_hits:
+        applied += _apply_hits(gs, tid, n_hits, hit_type, ctx, roller)
+    if a_hits:
+        applied += _apply_hits(gs, tid, a_hits, hit_type, ctx, roller, anti_armor=True)
+    if n_hits or a_hits:
+        log.append({"round": round_no, "step": step, "target": tid,
+                    "hits": n_hits + a_hits, "routed": applied})
+
+
 def resolve_sally(gs: GameState, sallying_ids: list[str], besieger_ids: list[str], locale: str,
                   ctx: DecisionContext, roller: DiceRoller) -> dict[str, Any]:
     """A Besieged Lord Attacks the Besiegers (4.9.2). Battle rules, but the
@@ -1259,24 +1296,17 @@ def resolve_sally(gs: GameState, sallying_ids: list[str], besieger_ids: list[str
                         pursuit["attacker"] = True
                         pursuit["defender"] = True
             _storm_reposition(gs, att, deff, size, ctx)
-        # Sally Strike order follows Storm (Defending then Attacking); Besiegers
-        # benefit from Siegeworks (Walls = Siege count); Sallying side has none.
-        d_missile = _lord_step_hits(gs, deff, "missile", round_no)
-        if pursuit["defender"]:
-            d_missile /= 2.0
-        _absorb_simple(gs, att, _round_up(d_missile), "missile", 0, roller, ctx, log, "def_missile", round_no)
-        a_missile = _lord_step_hits(gs, att, "missile", round_no)
-        if pursuit["attacker"]:
-            a_missile /= 2.0
-        _absorb_simple(gs, deff, _round_up(a_missile), "missile", siege, roller, ctx, log, "att_missile", round_no)
-        d_melee = _lord_melee_capped(gs, deff, round_no)
-        if pursuit["defender"]:
-            d_melee /= 2.0
-        _absorb_simple(gs, att, _round_up(d_melee), "melee", 0, roller, ctx, log, "def_melee", round_no)
-        a_melee = _lord_melee_capped(gs, att, round_no)
-        if pursuit["attacker"]:
-            a_melee /= 2.0
-        _absorb_simple(gs, deff, _round_up(a_melee), "melee", siege, roller, ctx, log, "att_melee", round_no)
+        # Sally follows BATTLE rules (4.9.2): Defender then Attacker within each
+        # step, and Missile -> Horse Melee -> Foot Melee (NOT the Storm "all
+        # Defending melee then all Attacking melee" order). Capabilities apply
+        # (Sally is a Battle). Besiegers (Defenders) get Siegeworks (Walls = Siege
+        # count) against the Sallying Attackers' strikes only; the Sallying side
+        # gets no Walls. No 6-Hit Melee cap (Storm-only).
+        for step, hit_type in (("missile", "missile"), ("horse_melee", "melee"), ("foot_melee", "melee")):
+            dn, da = _side_step_caps(gs, deff, step, round_no)          # Defenders (Besiegers) strike
+            _sally_emit(gs, att, dn, da, 0, hit_type, f"def_{step}", round_no, pursuit["defender"], roller, ctx, log)
+            an, aa = _side_step_caps(gs, att, step, round_no)           # Attackers (Sallying) strike
+            _sally_emit(gs, deff, an, aa, siege, hit_type, f"att_{step}", round_no, pursuit["attacker"], roller, ctx, log)
         if conceder is not None:
             break  # Sally ends after this (halved) final Round
         if _all_routed(gs, deff) or _all_routed(gs, att):
@@ -1330,28 +1360,3 @@ def _end_sally_besiegers_lose(gs: GameState, besieger_ids, locale, ctx, roller) 
         if opts:
             lord.cylinder = ctx.decide("retreat", opts, {"lord": lid})
 
-
-def _absorb_simple(gs, side: _Side, hits, hit_type, walls_value, roller, ctx, log, step, round_no):
-    """Battle-style Hit absorption for Sally, with optional Siegeworks Walls."""
-    if hits <= 0:
-        return
-    front = side.front_lords()
-    if not front:
-        return
-    target = gs.lords[front[0]]
-    if walls_value > 0:
-        hits = _roll_walls(roller, hits, (1, walls_value))
-    routed = []
-    for _ in range(hits):
-        avail = [u for u, n in target.forces.items() if n > 0]
-        if not avail:
-            break
-        unit = ctx.decide("hit_absorption", avail, {"lord": target.id})
-        lo, hi = capabilities.protection_range(gs, target.id, unit, hit_type, storm=False)
-        if not (lo <= roller.d6() <= hi):
-            target.forces[unit] -= 1
-            target.routed[unit] = target.routed.get(unit, 0) + 1
-            routed.append(unit)
-            if unit == "turkic_horse":
-                target.flags["turkic_routed_battle"] = int(target.flags.get("turkic_routed_battle", 0)) + 1
-    log.append({"round": round_no, "step": step, "target": target.id, "hits": hits, "routed": routed})
