@@ -1050,12 +1050,17 @@ def _storm_strike(gs, att, deff, garrison, garrison_routed, walls, siege, round_
     a_missile = _lord_step_hits(gs, att, "missile", round_no)
     eff_walls = _effective_walls(gs, att, walls)
     _hit_defender(gs, deff, garrison, garrison_routed, _round_up(a_missile), "missile", eff_walls, roller, ctx, log, "att_missile", round_no)
-    # 3) Defending Melee (Horse then Foot), capped 6/Lord; Garrison foot melee
-    d_melee = _garrison_melee_hits(garrison) + _lord_melee_capped(gs, deff, round_no, storm=True)
-    _hit_attacker(gs, att, _round_up(d_melee), "melee", siege, anti_armor=False, roller=roller, ctx=ctx, log=log, step="def_melee", round_no=round_no)
-    # 4) Attacking Melee -> garrison/defender Lord
-    a_melee = _lord_melee_capped(gs, att, round_no, storm=True)
-    _hit_defender(gs, deff, garrison, garrison_routed, _round_up(a_melee), "melee", _effective_walls(gs, att, walls), roller, ctx, log, "att_melee", round_no)
+    # 3) Defending Horse Melee, then 3b) Defending Foot Melee -- separate steps,
+    #    each rounded up (4.8.2). Garrison Horse joins the Horse step, Garrison
+    #    Foot the Foot step.
+    d_horse, d_foot = _lord_melee_split_storm(gs, deff, round_no)
+    _hit_attacker(gs, att, _round_up(_garrison_horse_melee(garrison) + d_horse), "melee", siege, anti_armor=False, roller=roller, ctx=ctx, log=log, step="def_horse_melee", round_no=round_no)
+    _hit_attacker(gs, att, _round_up(_garrison_foot_melee(garrison) + d_foot), "melee", siege, anti_armor=False, roller=roller, ctx=ctx, log=log, step="def_foot_melee", round_no=round_no)
+    # 4) Attacking Horse Melee, then 4b) Attacking Foot Melee (no Garrison).
+    a_horse, a_foot = _lord_melee_split_storm(gs, att, round_no)
+    ew = _effective_walls(gs, att, walls)
+    _hit_defender(gs, deff, garrison, garrison_routed, _round_up(a_horse), "melee", ew, roller, ctx, log, "att_horse_melee", round_no)
+    _hit_defender(gs, deff, garrison, garrison_routed, _round_up(a_foot), "melee", ew, roller, ctx, log, "att_foot_melee", round_no)
 
 
 def _effective_walls(gs, att: _Side, walls: tuple) -> tuple:
@@ -1085,6 +1090,34 @@ def _garrison_missile_hits(garrison: dict[str, int]) -> float:
             m = 0.5 if _category(u) == "foot" else 0.0  # foot Garrison units gain x1/2
         total += m * n
     return total
+
+
+def _garrison_horse_melee(garrison: dict[str, int]) -> float:
+    return sum(_HORSE_MELEE.get(u, 0.0) * n for u, n in garrison.items() if _category(u) != "foot")
+
+
+def _garrison_foot_melee(garrison: dict[str, int]) -> float:
+    return sum({"infantry": 1.0, "militia": 0.5, "varangian_guard": 3.0}.get(u, 0.0) * n
+               for u, n in garrison.items() if _category(u) == "foot")
+
+
+def _lord_melee_split_storm(gs: GameState, side: _Side, round_no: int) -> tuple[float, float]:
+    """(horse, foot) Storm Melee summed over a side's Front Lords, with the per-
+    Lord 6-Hit Melee cap applied to the total (Horse resolves first, 4.9.1)."""
+    horse_sum = foot_sum = 0.0
+    for lid in side.front_lords():
+        units = _unrouted_units(gs.lords[lid])
+        h = sum(_STORM_HORSE_MELEE.get(u, 0.0) * n for u, n in units.items() if _category(u) == "horse")
+        if "Shock Tactics" in capabilities.lord_capability_names(gs, lid):
+            h += _math.ceil(units.get("turkic_horse", 0) / 2) * 0.5
+        foot_tbl = dict(_STORM_FOOT_MELEE)
+        if round_no > 1:
+            foot_tbl["varangian_guard"] = 0.0
+        f = sum(foot_tbl.get(u, 0.0) * n for u, n in units.items() if _category(u) == "foot")
+        h_cap = min(h, 6.0)
+        horse_sum += h_cap
+        foot_sum += min(f, max(0.0, 6.0 - h_cap))
+    return horse_sum, foot_sum
 
 
 def _garrison_melee_hits(garrison: dict[str, int]) -> float:
