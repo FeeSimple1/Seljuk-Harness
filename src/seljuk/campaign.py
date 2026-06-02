@@ -855,6 +855,19 @@ def command_menu(gs: GameState) -> list[dict[str, Any]]:
                     out.append({"type": "cmd_ravage", "lord": lid, "actions": 2, "_desc": "Ravage (Seljuk, 2 actions, auto) (4.5.5)"})
                 if gs.meta.actions_remaining >= 1:
                     out.append({"type": "cmd_ravage", "lord": lid, "actions": 1, "_desc": "Ravage (Seljuk, 1 action; Roman may defend with Themata) (4.5.5)"})
+        # S3 Steppe Raiders: Ravage an adjacent enemy Locale with no enemy Lord.
+        if (not lord.besieged and lord.forces.get("turkic_horse", 0) > 0
+                and capabilities.lord_has(gs, lid, "Steppe Raiders")):
+            for _adj in gmap.neighbors(loc_id):
+                ast = gs.locales[_adj]
+                if (ast.ravaged_side is None and actions.current_allegiance(gs, _adj) == _enemy(lord.side)
+                        and not any(o.mustered and o.cylinder == _adj and o.side != lord.side for o in gs.lords.values())):
+                    if lord.side == "roman":
+                        out.append({"type": "cmd_ravage", "lord": lid, "target": _adj,
+                                    "_desc": f"Steppe Raid (Ravage adjacent {_adj}) (S3)"})
+                    elif gs.meta.actions_remaining >= 1:
+                        out.append({"type": "cmd_ravage", "lord": lid, "target": _adj, "actions": 2,
+                                    "_desc": f"Steppe Raid (Ravage adjacent {_adj}) (S3)"})
         # Supply (4.4): a Route to an un-Ruined Seat within Cart budget.
         if not lord.besieged:
             cost = _min_supply_cost(gs, lord)
@@ -994,12 +1007,24 @@ def h_cmd_ravage(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> d
     lord = _require(action.get("lord"), gs)
     if lord.besieged:
         raise IllegalAction("besieged", "a Besieged Lord may not Ravage (4.5.5)")
-    loc_id = lord.cylinder
+    loc_id = action.get("target", lord.cylinder)
+    if loc_id not in gs.locales:
+        raise IllegalAction("bad_locale", "unknown Ravage target")
+    if loc_id != lord.cylinder:
+        # S3 Steppe Raiders: Ravage an ADJACENT Locale (incl. across a Pass) with
+        # no enemy Lord, if this Lord has the Capability and Turkic Horse.
+        if not (capabilities.lord_has(gs, lord.id, "Steppe Raiders") and lord.forces.get("turkic_horse", 0) > 0):
+            raise IllegalAction("not_steppe_raider", "only a Steppe Raider with Turkic Horse may Ravage an adjacent Locale (S3)")
+        if not gmap.is_adjacent(lord.cylinder, loc_id):
+            raise IllegalAction("not_adjacent", "Steppe Raiders Ravage targets an adjacent Locale (S3)")
+        if any(_l.mustered and _l.cylinder == loc_id and _l.side != lord.side for _l in gs.lords.values()):
+            raise IllegalAction("enemy_lord_present", "cannot Steppe-Raid a Locale containing an enemy Lord (S3)")
     st = gs.locales[loc_id]
     if actions.current_allegiance(gs, loc_id) == lord.side:
         raise IllegalAction("not_enemy", "Ravage targets an Enemy Locale (4.5.5)")
     if st.ravaged_side is not None:
         raise IllegalAction("already_ravaged", "Locale is already Ravaged (4.5.5)")
+    lord.moved_fought = True  # the Ravaging Lord acted
     for _l in gs.lords.values():  # 4.5.5: mark all Lords of both sides at the Locale Moved/Fought
         if _l.mustered and _l.cylinder == loc_id:
             _l.moved_fought = True
@@ -1223,8 +1248,14 @@ def _marching_group(gs: GameState, lord: LordState, co_marchers: list[str]) -> l
     if lord.lower_lord and lord.lower_lord in gs.lords:
         group.append(gs.lords[lord.lower_lord])
     if co_marchers:
-        if not actions.is_commander(gs, lord.id):
+        # S7 Trusted Commander: a non-Commander Lord may March with 1 (only) other
+        # Seljuk Lord (for March only; no Commander status).
+        trusted = capabilities.lord_has(gs, lord.id, "Trusted Commander")
+        if not actions.is_commander(gs, lord.id) and not trusted:
             raise IllegalAction("not_commander_group", "only a Commander may lead a Group March (4.3.1)")
+        if trusted and not actions.is_commander(gs, lord.id) and len(co_marchers) > 1:
+            raise IllegalAction("trusted_commander_one_only",
+                                "Trusted Commander may March with 1 (only) other Seljuk Lord (S7)")
         for cid in co_marchers:
             other = gs.lords.get(cid)
             if other is None or other.side != lord.side or not on_map(other) or other.cylinder != lord.cylinder:

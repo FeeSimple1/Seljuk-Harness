@@ -56,6 +56,7 @@ _HANDLERS: dict[str, Callable[[GameState, dict, DiceRoller], dict]] = {
     "cta_loot": actions.h_cta_loot,
     "cta_strategic_objective": actions.h_cta_strategic_objective,
     "cta_marwanid": actions.h_cta_marwanid,
+    "cta_deep_raids": actions.h_cta_deep_raids,
     "pass_step": actions.h_pass_step,
     "resolve_event": actions.h_resolve_event,
     "discard_imperial_coffers": campaign.h_discard_imperial_coffers,

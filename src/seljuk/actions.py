@@ -621,6 +621,13 @@ def enumerate_call_to_arms(gs: GameState) -> list[dict[str, Any]]:
             for src in _marwanid_coin_sources(gs):
                 out.append({"type": "cta_marwanid", "locale": loc, "coin_source": src,
                             "_desc": f"Spend 1 Coin ({src}) to activate {loc} as a Seljuk Seat until end of next Winter (3.5.1.1)"})
+    if side == "seljuk":
+        for lid, l in gs.lords.items():
+            if (l.side == "seljuk" and l.mustered and l.cylinder in ("ikonion", "western_anatolia")
+                    and capabilities.lord_has(gs, lid, "Deep Raids")):
+                loot = 2 if l.cylinder == "ikonion" else 3
+                out.append({"type": "cta_deep_raids", "lord": lid,
+                            "_desc": f"Deep Raids: Disband {lid} at {l.cylinder} for {loot} Loot/VP (S17)"})
     if side == "roman":
         rom = gs.lords.get("romanos_diogenes")
         man = gs.lords.get("manuel_komnenos")
@@ -758,6 +765,28 @@ def h_cta_marwanid(gs: GameState, action: dict[str, Any], roller: DiceRoller) ->
     _cta_done(gs)
     return {"ok": True, "action": "cta_marwanid", "locale": loc, "coin_source": source,
             "active_seats": list(active)}
+
+
+def h_cta_deep_raids(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
+    """S17 Deep Raids: in Call to Arms, Disband a Seljuk Lord (with the
+    Capability) in Ikonion for 2 VP or Western Anatolia for 3 VP, placing that
+    much Loot in the Mosul & Baghdad Holding Box."""
+    if gs.meta.subphase != "levy.call_to_arms" or gs.meta.active_player != "seljuk":
+        raise IllegalAction("wrong_step", "Deep Raids is a Seljuk Call to Arms action (S17)")
+    lid = action.get("lord")
+    lord = gs.lords.get(lid)
+    if lord is None or lord.side != "seljuk" or not lord.mustered:
+        raise IllegalAction("bad_lord", "Deep Raids needs a Mustered Seljuk Lord")
+    if not capabilities.lord_has(gs, lid, "Deep Raids"):
+        raise IllegalAction("no_deep_raids", f"{lid} does not have Deep Raids (S17)")
+    loot = {"ikonion": 2, "western_anatolia": 3}.get(lord.cylinder)
+    if loot is None:
+        raise IllegalAction("bad_locale", "Deep Raids Disbands at Ikonion (2) or Western Anatolia (3) (S17)")
+    gs.holding_boxes.mosul_baghdad_loot += loot
+    _disband_at_limit(gs, lord)
+    gs.meta.vp = scenarios.score(gs)
+    _cta_done(gs)
+    return {"ok": True, "action": "cta_deep_raids", "lord": lid, "loot": loot}
 
 
 # --- Loyalty Check (1.4) ----------------------------------------------------
