@@ -584,13 +584,30 @@ def _reset(gs: GameState) -> None:
     """4.7.5 (non-advance parts): return unpaid Themata, unstack Lieutenants,
     discard This-Campaign Events. (Auto-returns Themata; pay-to-retain is a
     player choice surfaced in a later phase.)"""
+    # R4 Pressed Levy Service: the Romans may keep 1 Unpaid Thema's Levied
+    # Themata. Auto-choice: retain the Thema with the most Levied markers.
+    keep_thema = None
+    if capabilities.side_has(gs, "roman", "Pressed Levy Service"):
+        from collections import Counter
+        counts: Counter = Counter()
+        for l in gs.lords.values():
+            if l.side == "roman":
+                for m in l.themata_on_mat:
+                    if m.home_thema:
+                        counts[m.home_thema] += 1
+        if counts:
+            keep_thema = counts.most_common(1)[0][0]
     for l in gs.lords.values():
+        kept = []
         for marker in l.themata_on_mat:
             home = marker.home_thema
+            if keep_thema is not None and l.side == "roman" and home == keep_thema:
+                kept.append(marker)  # Pressed Levy: retain this Thema's Levied markers
+                continue
             if home and home in gs.themata:
                 marker.home_thema = None
                 gs.themata[home].append(marker)
-        l.themata_on_mat = []
+        l.themata_on_mat = kept
         l.lieutenant_of = None
         l.lower_lord = None
     for side in SIDES:
