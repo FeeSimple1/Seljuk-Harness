@@ -533,21 +533,47 @@ def _repair(gs: GameState) -> None:
             l.siege_markers -= 1
 
 
+def _do_one_wastage(gs: GameState, l: LordState) -> bool:
+    """Discard one excess Asset (or a This-Lord Capability) from a Lord (4.7.4).
+    Returns False if the Lord did not qualify (<=1 of each, <=1 Capability)."""
+    assets = {"carts": l.assets.carts, "provender": l.assets.provender,
+              "coin": l.assets.coin, "loot": l.assets.loot}
+    top = max(assets, key=lambda k: assets[k])
+    if assets[top] > 1:
+        setattr(l.assets, top, assets[top] - 1)
+        return True
+    if len(l.capabilities) > 1:
+        gs.side_decks(l.side).draw_deck.append(l.capabilities.pop())
+        return True
+    return False
+
+
 def _wastage(gs: GameState) -> None:
     """4.7.4: each Lord with more than one of any Asset type, or more than one
-    This-Lord Capability, discards one such item (Seljuk then Roman)."""
+    This-Lord Capability, discards one such item (Seljuk then Roman). R22/S22
+    raiders then force one adjacent enemy Lord to undergo Wastage a second time."""
     for side in SIDES:
         for l in gs.lords.values():
-            if l.side != side or not l.mustered:
-                continue
-            assets = {"carts": l.assets.carts, "provender": l.assets.provender,
-                      "coin": l.assets.coin, "loot": l.assets.loot}
-            top = max(assets, key=lambda k: assets[k])
-            if assets[top] > 1:
-                setattr(l.assets, top, assets[top] - 1)
-            elif len(l.capabilities) > 1:
-                card = l.capabilities.pop()
-                gs.side_decks(side).draw_deck.append(card)
+            if l.side == side and l.mustered:
+                _do_one_wastage(gs, l)
+    # R22 Cavalry Supply Line Raiders / S22 Turkmen Skirmishers: each such Lord
+    # forces ONE adjacent enemy Lord to Waste again (owner's choice -> nearest by
+    # map order). Targets are gathered first, then re-Wasted.
+    targets: list[LordState] = []
+    for l in gs.lords.values():
+        if not (l.mustered and l.cylinder in gs.locales):
+            continue
+        if not (capabilities.lord_has(gs, l.id, "Cavalry Supply Line Raiders")
+                or capabilities.lord_has(gs, l.id, "Turkmen Skirmishers")):
+            continue
+        for adj in gmap.neighbors(l.cylinder):
+            enemy = next((o for o in gs.lords.values()
+                          if o.mustered and o.cylinder == adj and o.side != l.side), None)
+            if enemy is not None:
+                targets.append(enemy)
+                break
+    for enemy in targets:
+        _do_one_wastage(gs, enemy)
 
 
 def _reset(gs: GameState) -> None:
