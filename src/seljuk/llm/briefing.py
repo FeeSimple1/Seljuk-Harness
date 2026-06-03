@@ -13,6 +13,10 @@ from ..state import GameState
 def briefing(gs: GameState) -> str:
     lines = [render.summary(gs)]
     lines.append(f"\nPhase: {gs.meta.phase}" + (f" / {gs.meta.subphase}" if gs.meta.subphase else ""))
+    from .. import options as _options
+    _opts = _options.describe(gs.meta.options)
+    if _opts:
+        lines.append("Optional Rules: " + ", ".join(_opts))
     if gs.meta.pending:
         owed = ", ".join(f"{p['type']}" + (f"(owed by {p.get('_owed_by')})" if p.get('_owed_by') else "")
                          for p in gs.meta.pending)

@@ -257,9 +257,33 @@ are now implemented + tested:
   under-supplied any Lord positioned to fund disjoint Routes to two Seats
   (`_supply_plan`).
 
-### Still deliberately out of scope
+### Optional Rules 6.0 (player-selectable, June 2026)
 
-- **Optional rules 6.1-6.4** — out of scope (BRIEF.md Phase 5).
+All four optional rules are now implemented as per-game toggles (off by default --
+the designer notes they are "not the 'real' way to play"). They live in
+`gs.meta.options`, are selected via `load_scenario(options=...)` /
+`LLMSession.start_new(options=...)`, and are catalogued in `options.py`
+(`OPTIONAL_RULES`) so a driver can present them at the outset; a driver that
+isn't told which rules to use should ask before starting. Active rules show in
+the LLM briefing.
+
+- **6.1 Hidden Mats** — `llm/view.py` redacts the enemy's Mustered Lord mats
+  (Forces, Assets, Vassals, This-Lord Capabilities) from the viewing side; the
+  Locale, Service marker and Besieged/Bypassed status stay public.
+- **6.2 Vassal Service** — a Mustering Vassal's Service Marker is placed on the
+  Calendar by its Service Rating, shifts with its Lord's Marker through every
+  Service-shift channel (Pay, Harsh Losses, Unfed, Events, Empress), is Unready
+  (may not Muster) after Disbanding this Levy and flips up after Muster, and
+  Disbands at its Service limit -- returning its Forces to the pool (1.6), and
+  Disbanding a Lord left without Forces.
+- **6.3 Simultaneous Horse Combat** — three-way player choice (off / melee /
+  missiles / both). In Battle (not Storm), the chosen Horse-unit Strikes of both
+  sides resolve simultaneously (pools computed before any application), removing
+  the fire-first advantage (`_compute_pools` / `_apply_pools`).
+- **6.4 Deadlier Seljuk Missiles** — in Battle, Seljuk Missiles always Strike
+  first regardless of Attacker/Defender (missile sub-phase ordered Seljuk-first).
+
+Nothing in 6.0 remains out of scope.
 
 ### Pass 2 known items (now resolved above)
 

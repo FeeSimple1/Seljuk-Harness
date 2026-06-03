@@ -10,7 +10,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Optional
 
-from .. import engine, campaign, scenarios
+from .. import engine, campaign, scenarios, options as _options
 from ..state import GameState
 from . import view, briefing as _briefing, tools
 
@@ -22,10 +22,25 @@ class LLMSession:
         self.palette_diagnostics: list[dict[str, Any]] = []
 
     @classmethod
-    def start_new(cls, scenario: str, seed: int = 1) -> "LLMSession":
-        s = cls(scenarios.load_scenario(scenario, seed))
+    def start_new(cls, scenario: str, seed: int = 1,
+                  options: dict[str, Any] | None = None) -> "LLMSession":
+        """Begin a scenario. ``options`` selects Optional Rules (6.0); if omitted,
+        standard rules apply. A driver should present :meth:`optional_rules` to
+        the player at the outset and pass back their choices here."""
+        s = cls(scenarios.load_scenario(scenario, seed, options=options))
         s.ensure_phase_started()
         return s
+
+    @staticmethod
+    def optional_rules() -> list[dict[str, Any]]:
+        """The Optional Rules (6.0) a player may enable at the outset, for a
+        chooser UI. Pass selections to :meth:`start_new` as ``options=``."""
+        return _options.OPTIONAL_RULES
+
+    def active_options(self) -> list[str]:
+        """Human-readable list of Optional Rules currently in effect (empty =
+        standard rules)."""
+        return _options.describe(self.gs.meta.options)
 
     def ensure_phase_started(self) -> None:
         """Begin the current phase's step machine if it hasn't started, and roll
