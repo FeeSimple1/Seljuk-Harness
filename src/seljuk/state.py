@@ -121,7 +121,6 @@ class SideDecks(_Model):
     this_campaign_events: list[str] = Field(default_factory=list)
     command_plan: list[str] = Field(default_factory=list)     # face-down Plan stack (Campaign): lord ids / "no_command"
     plan_pointer: int = 0                                     # how many Plan cards revealed
-    treachery_available: bool = True
     capability_coins: dict[str, int] = Field(default_factory=dict)  # Coins resting on a Capability card (card_id -> count), e.g. Marwanid Alliance S8
 
 

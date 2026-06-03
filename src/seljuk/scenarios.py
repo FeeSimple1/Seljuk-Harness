@@ -304,7 +304,8 @@ def _scenario_special_vp(gs: GameState) -> tuple[float, float]:
         # "End of Winter 1070: both sides +1 VP each for control of Manbij,
         # Edessa, Khliat, and Manzikert." Scored once the scenario reaches its
         # final turn (Autumn 1070 -> Winter 1070 is the conclusion).
-        if gs.meta.calendar_box >= gs.meta.final_box:
+        if (gs.meta.calendar_box >= gs.meta.final_box
+                and (gs.meta.subphase == "campaign.end" or gs.meta.phase in ("winter", "game_over"))):
             for locid in ("manbij", "edessa", "khliat", "manzikert"):
                 ctrl = _locale_control(gs, locid)
                 if ctrl == "roman":

@@ -62,6 +62,7 @@ def test_year_end_winter_control_only_scores_at_final_turn():
     # Advance to the final turn; the 4 objective Locales each grant +1 to their
     # current controller. Compute the expected split dynamically.
     gs.meta.calendar_box = gs.meta.final_box
+    gs.meta.subphase = "campaign.end"   # end-of-turn: control bonus now applies
     exp_r = sum(1.0 for o in objectives if S._locale_control(gs, o) == "roman")
     exp_s = sum(1.0 for o in objectives if S._locale_control(gs, o) == "seljuk")
     assert exp_r + exp_s == 4.0
@@ -76,6 +77,7 @@ def test_year_control_bonus_absent_before_final_turn():
     # that moving to the final turn changes the score (the bonus kicks in).
     pre = S.score(gs)
     gs.meta.calendar_box = gs.meta.final_box
+    gs.meta.subphase = "campaign.end"
     post = S.score(gs)
     assert post != pre  # the end-of-Winter control bonus is now included
 
