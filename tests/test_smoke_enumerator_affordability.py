@@ -78,3 +78,32 @@ def test_affordable_road_march_still_offered():
     moves = C.command_menu(gs)
     assert any(m["type"] == "cmd_march" and m["way_type"] == "road" for m in moves)
     assert _all_enumerated_moves_apply(gs) == []
+
+
+def test_s3_steppe_raid_not_offered_with_one_action():
+    """S3 Steppe Raid Ravages an adjacent enemy Locale at a fixed cost of 2
+    Command actions. The menu must not offer it when only 1 action remains
+    (the enumerator/handler divergence fixed in campaign.py)."""
+    gs = S.load_scenario("emperor_and_the_lion", seed=1)
+    lid, adj = "sav_tekin", "artah"   # manbij (Seljuk) is adjacent to artah (Roman)
+    lord = gs.lords[lid]
+    lord.cylinder = "manbij"; lord.forces = {"turkic_horse": 2}; lord.capabilities = ["S3"]
+    _active_campaign(gs, lid, actions=1)
+    raids = [m for m in C.command_menu(gs)
+             if m["type"] == "cmd_ravage" and m.get("target") == adj]
+    assert raids == []                      # 2-action Steppe Raid not offered
+    assert _all_enumerated_moves_apply(gs) == []
+
+
+def test_s3_steppe_raid_offered_with_two_actions():
+    """Guard against over-correction: with 2 actions the Steppe Raid is offered
+    and round-trips through the handler cleanly."""
+    gs = S.load_scenario("emperor_and_the_lion", seed=1)
+    lid, adj = "sav_tekin", "artah"
+    lord = gs.lords[lid]
+    lord.cylinder = "manbij"; lord.forces = {"turkic_horse": 2}; lord.capabilities = ["S3"]
+    _active_campaign(gs, lid, actions=2)
+    raids = [m for m in C.command_menu(gs)
+             if m["type"] == "cmd_ravage" and m.get("target") == adj]
+    assert any(m.get("actions") == 2 for m in raids)
+    assert _all_enumerated_moves_apply(gs) == []
