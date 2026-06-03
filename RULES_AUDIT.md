@@ -231,16 +231,34 @@ Implemented the tractable edge items left after Pass 2, each pinned by tests:
   end-of-campaign / Winter subphase; the actual winner determination is
   unchanged).
 
-### Deliberately not implemented (rationale)
+### Follow-up pass (June 2026) — the three "deferred" items, now implemented
 
-- **Flanking "absorb / choose target Lord"** — the rule text is genuinely
-  ambiguous about which Lord may redirect Hits; the current deterministic target
-  selection (with an equidistant-tie ctx choice) is a defensible reading, and a
-  wrong guess would be worse. Left as a documented simplification.
-- **Unit component pool as a hard Muster cap** — rarely binds and would require
-  tracking every component across Muster/loss/Disband; disproportionate to value.
-- **Supply drawing >1 Provender/action via disjoint Cart-funded routes** — a rare
-  4.4.2 edge; the pathfinder routes each Lord to one cheapest Seat per action.
+A second LLM review correctly argued these were resolvable from the rules text
+(verified against `source/Seljuk_Rules.pdf`), not genuine ambiguities. All three
+are now implemented + tested:
+
+- **4.8.2 Flanking absorb / receiving-Lord choice** — when the target Lord D is
+  Struck only by the Lord directly opposite him (no Enemy Flanks D) and the
+  receiving side has a Flanking Lord F whose Flank-Strike falls on that same
+  opposing Lord, the receiving Player may route the pooled Hits onto F instead of
+  D, resolved before unit Select Target (`_absorb_target` in `_resolve_step`).
+  The earlier "deterministic, tie-prompt only" model was wrong: the choice is
+  live whenever the gate (no enemy Flanks the target) holds.
+- **1.6 unit-component pool as a hard Muster cap** — Muster (3.4.1), Levy Vassal
+  (3.4.2) and Restore (S5/S19) now clamp added units to the pieces remaining in
+  the pool (manifest: Ghulam 6, Scholai 2, Varangian 2, Norman Knights 5, Turkic
+  Horse 47, Tagmata 25, Infantry 52, Militia 11). `_units_in_play` tallies an
+  exact lower bound of in-play pieces (Forces + Routed + Themata) so the cap never
+  wrongly blocks a legal Muster.
+- **4.4.2 multi-Provender Supply** — a Lord now draws one Provender per Stronghold
+  Seat used in a single Supply action, each Seat funded by its own Carts along its
+  Route (Carts not shared across Routes, per the 4.4.1 Important box), bounded by
+  the Cart budget and the 8-Provender cap. The old single-cheapest-Seat router
+  under-supplied any Lord positioned to fund disjoint Routes to two Seats
+  (`_supply_plan`).
+
+### Still deliberately out of scope
+
 - **Optional rules 6.1-6.4** — out of scope (BRIEF.md Phase 5).
 
 ### Pass 2 known items (now resolved above)
