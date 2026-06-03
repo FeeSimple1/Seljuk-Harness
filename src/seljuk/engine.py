@@ -63,6 +63,7 @@ _HANDLERS: dict[str, Callable[[GameState, dict, DiceRoller], dict]] = {
     "pass_step": actions.h_pass_step,
     "resolve_event": actions.h_resolve_event,
     "discard_imperial_coffers": campaign.h_discard_imperial_coffers,
+    "pass_imperial_coffers": campaign.h_pass_imperial_coffers,
     "play_hold_event": actions.h_play_hold_event,
 }
 
@@ -173,6 +174,15 @@ def legal_moves(gs: GameState) -> list[dict[str, Any]]:
     if ev is not None:
         return [{"type": "resolve_event", "card": ev["card"], "_args_per_card": True,
                  "_desc": f"Resolve immediate Event {ev['card']} (3.1.3); args per card text"}]
+    ic = next((p for p in gs.meta.pending if p["type"] == "imperial_coffers"), None)
+    if ic is not None:
+        # R14 discard window: after both sides resolved Events, before Pay.
+        moves = [{"type": "discard_imperial_coffers", "target": t,
+                  "_desc": f"Discard Imperial Coffers (R14): Loyalty Check vs {t} (1.4.1)"}
+                 for t in campaign.imperial_coffers_targets(gs)]
+        moves.append({"type": "pass_imperial_coffers",
+                      "_desc": "Decline to discard Imperial Coffers (R14)"})
+        return moves
     step = gs.meta.subphase
     if step == "levy.pay":
         moves = actions.enumerate_pay(gs)

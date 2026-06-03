@@ -2073,23 +2073,48 @@ def h_resolve_loyalty(gs: GameState, action: dict[str, Any], roller: DiceRoller)
     return {"ok": True, "action": "resolve_loyalty", "loyalty": res}
 
 
+def imperial_coffers_targets(gs: GameState) -> list[str]:
+    """R14 Imperial Coffers discard targets: a Mustered Seljuk-allied Robert or
+    Roussel adjacent to at least one Mustered Roman Lord (card text + 1.4.1)."""
+    out = []
+    for tid in ("robert_crepin", "roussel_de_bailleul"):
+        tl = gs.lords.get(tid)
+        if tl is None or tl.side != "seljuk" or not tl.mustered:
+            continue
+        if any(l.side == "roman" and l.mustered and gmap.is_adjacent(l.cylinder, tl.cylinder)
+               for l in gs.lords.values()):
+            out.append(tid)
+    return out
+
+
+def _clear_imperial_coffers_pending(gs: GameState) -> None:
+    pend = next((p for p in gs.meta.pending if p["type"] == "imperial_coffers"), None)
+    if pend is not None:
+        gs.meta.pending.remove(pend)
+
+
+def h_pass_imperial_coffers(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
+    """Decline the optional R14 Imperial Coffers discard offered during Arts of War."""
+    if not any(p["type"] == "imperial_coffers" for p in gs.meta.pending):
+        raise IllegalAction("no_pending", "no Imperial Coffers decision owed")
+    _clear_imperial_coffers_pending(gs)
+    return {"ok": True, "action": "pass_imperial_coffers", "declined": True}
+
+
 def h_discard_imperial_coffers(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
     """R14 Imperial Coffers: discard during Arts of War to make a Loyalty Check
     against a Seljuk-allied Robert/Roussel adjacent to a Roman Lord (1.4.1)."""
     if "R14" not in gs.roman.capabilities_in_play:
         raise IllegalAction("no_imperial_coffers", "Imperial Coffers is not in play")
     target = action.get("target")
-    tl = gs.lords.get(target)
-    if target not in ("robert_crepin", "roussel_de_bailleul") or tl is None or tl.side != "seljuk" or not tl.mustered:
-        raise IllegalAction("bad_target", "target must be a Mustered Seljuk-allied Robert/Roussel")
-    if not any(l.side == "roman" and l.mustered and gmap.is_adjacent(l.cylinder, tl.cylinder)
-               for l in gs.lords.values()):
-        raise IllegalAction("no_adjacent_roman", "no Roman Lord adjacent to the target (R14)")
+    if target not in imperial_coffers_targets(gs):
+        raise IllegalAction("bad_target", "target must be a Mustered Seljuk-allied Robert/Roussel adjacent to a Roman Lord")
     gs.roman.capabilities_in_play.remove("R14")
     gs.roman.draw_deck.append("R14")
     res = actions.resolve_loyalty_check(gs, target, "roman", roller,
                                         coins_for=int(action.get("coins_for", 0)),
                                         coins_against=int(action.get("coins_against", 0)))
+    _clear_imperial_coffers_pending(gs)
     return {"ok": True, "action": "discard_imperial_coffers", "loyalty": res}
 
 

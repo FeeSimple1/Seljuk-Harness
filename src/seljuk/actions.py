@@ -667,6 +667,14 @@ def resolve_arts_of_war(gs: GameState, roller: DiceRoller) -> dict[str, Any]:
             else:
                 _classify_drawn_event(gs, side, cid, roller)
     gs.meta.notes["first_aow_done"] = True
+    # R14 Imperial Coffers: after both sides draw/resolve Events, the Roman player
+    # may discard the deployed Capability for a Loyalty Check (card clarification:
+    # "after both players have resolved their Events"). Offer only when usable;
+    # the menu re-checks targets, and the decision blocks before the Pay step.
+    if not first and "R14" in gs.roman.capabilities_in_play:
+        from . import campaign
+        if campaign.imperial_coffers_targets(gs):
+            gs.meta.pending.append({"type": "imperial_coffers", "side": "roman"})
     return {"step": "arts_of_war", "first_levy": first, "drawn": drawn_log}
 
 
