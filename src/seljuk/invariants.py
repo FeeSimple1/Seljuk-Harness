@@ -96,6 +96,11 @@ def check_invariants(gs: GameState) -> list[str]:
     #     until the defender Avoids/Withdraws/Stands.
     contact_pending = {p.get("locale") for p in gs.meta.pending
                        if p.get("type") == "approach_response"}
+    # A Kleisourai (R23) reaction is owed right after a Seljuk group Marched
+    # across a Pass into the Locale; the Approach has not yet been created, so
+    # this is the same momentary co-location as approach_response (excluded).
+    contact_pending |= {p.get("to") for p in gs.meta.pending
+                        if p.get("type") == "kleisourai"}
     open_sides: dict[str, set[str]] = {}
     for lid, l in gs.lords.items():
         if not l.mustered or l.cylinder in _SPECIAL_CYL or l.besieged or l.bypassed:

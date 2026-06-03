@@ -826,6 +826,12 @@ def legal_moves_campaign(gs: GameState) -> list[dict[str, Any]]:
                     "_desc": f"Winter Campaign/March: activate {lid} (R9/S18)"}
                    for lid, l in gs.lords.items() if l.mustered and l.side == side] + out
         return out
+    kl = next((p for p in gs.meta.pending if p["type"] == "kleisourai"), None)
+    if kl is not None:
+        return [{"type": "play_kleisourai",
+                 "_desc": "Kleisourai (R23): 1 Hit on each Seljuk Lord crossing the Pass"},
+                {"type": "decline_kleisourai",
+                 "_desc": "Decline Kleisourai (the crossing Lords take no Hit)"}]
     sh = next((p for p in gs.meta.pending if p["type"] == "summer_heat"), None)
     if sh is not None:
         return [{"type": "play_hold_event", "card": sh["card"],
@@ -1539,11 +1545,31 @@ def h_cmd_march(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> di
     gs.meta.actions_remaining -= cost
     res = {"ok": True, "action": "cmd_march", "lord": lord.id, "to": to,
            "way": way["type"], "cost": cost, "group": [g.id for g in group]}
-    arrival = _resolve_arrival(gs, group, to, from_locale=march_from, unstoppable=action.get("unstoppable", False))
-    res.update(arrival)
+    # R23 Kleisourai: a Seljuk Lord Marching across a Pass may be hit by the
+    # Roman holder before the arrival is resolved (card text). Offer the reaction
+    # as a blocking decision; the arrival (Approach/Besiege) resumes after it.
+    if (way["type"] == "pass" and lord.side == "seljuk"
+            and "R23" in gs.roman.held_events
+            and not any(p["type"] == "kleisourai" for p in gs.meta.pending)):
+        gs.meta.pending.append({
+            "type": "kleisourai", "reactor": "roman", "movers": [g.id for g in group],
+            "to": to, "from": march_from, "unstoppable": bool(action.get("unstoppable", False)),
+        })
+        res["pending"] = "kleisourai"
+        return res
+    res.update(_finish_march_arrival(gs, group, to, march_from, bool(action.get("unstoppable", False))))
+    return res
+
+
+def _finish_march_arrival(gs: GameState, group: list[LordState], to: str,
+                          march_from: str | None, unstoppable: bool) -> dict[str, Any]:
+    """Resolve a completed March's arrival (Approach/Besiege) and end the card if
+    no decision is pending and the Lord is out of actions. Shared by h_cmd_march
+    and the deferred resume after a Kleisourai (R23) reaction."""
+    arrival = _resolve_arrival(gs, group, to, from_locale=march_from, unstoppable=unstoppable)
     if not arrival.get("pending") and gs.meta.actions_remaining <= 0:
         _after_card(gs)
-    return res
+    return arrival
 
 
 def _refresh_invest(gs: GameState, locale: str) -> None:
@@ -2130,6 +2156,36 @@ def h_discard_imperial_coffers(gs: GameState, action: dict[str, Any], roller: Di
                                         coins_against=int(action.get("coins_against", 0)))
     _clear_imperial_coffers_pending(gs)
     return {"ok": True, "action": "discard_imperial_coffers", "loyalty": res}
+
+
+def h_play_kleisourai(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
+    """Play R23 Kleisourai: each crossing Seljuk Lord takes 1 Battle Hit, then the
+    deferred March arrival resumes."""
+    from . import events
+    pend = next((p for p in gs.meta.pending if p["type"] == "kleisourai"), None)
+    if pend is None:
+        raise IllegalAction("no_pending", "no Kleisourai reaction owed")
+    if "R23" not in gs.roman.held_events:
+        raise IllegalAction("not_held", "Roman does not hold Kleisourai (R23)")
+    gs.roman.held_events.remove("R23")
+    gs.roman.draw_deck.append("R23")
+    hits = [events.kleisourai_hit(gs, gs.lords[mid], roller)
+            for mid in pend["movers"] if mid in gs.lords]
+    gs.meta.pending.remove(pend)
+    group = [gs.lords[mid] for mid in pend["movers"] if mid in gs.lords]
+    arrival = _finish_march_arrival(gs, group, pend["to"], pend.get("from"), bool(pend.get("unstoppable")))
+    return {"ok": True, "action": "play_kleisourai", "hits": hits, **arrival}
+
+
+def h_decline_kleisourai(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
+    """Decline the optional R23 Kleisourai reaction; resume the March arrival."""
+    pend = next((p for p in gs.meta.pending if p["type"] == "kleisourai"), None)
+    if pend is None:
+        raise IllegalAction("no_pending", "no Kleisourai reaction owed")
+    gs.meta.pending.remove(pend)
+    group = [gs.lords[mid] for mid in pend["movers"] if mid in gs.lords]
+    arrival = _finish_march_arrival(gs, group, pend["to"], pend.get("from"), bool(pend.get("unstoppable")))
+    return {"ok": True, "action": "decline_kleisourai", "declined": True, **arrival}
 
 
 def _clear_summer_heat_pending(gs: GameState) -> None:

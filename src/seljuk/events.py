@@ -464,21 +464,30 @@ def _hold_summer_heat(gs, args, roller):            # R3/S4 (enemy Command 1 aft
     return {"command_1": gs.meta.active_lord}
 
 
-def _hold_kleisourai(gs, args, roller):             # R23 (1 Hit on a moving Seljuk Lord crossing a Pass)
+def kleisourai_hit(gs, lord, roller, unit=None):
+    """Apply Kleisourai's 1 Battle Hit to a moving Seljuk Lord (R23): roll
+    Protection for the assigned unit; on failure the unit is eliminated with no
+    recovery (clarification). Shared by the standalone resolver and the
+    pass-crossing reaction window."""
     from . import capabilities
-    lord = gs.lords[args["lord"]]
-    if lord.side != "seljuk":
-        raise IllegalAction("bad_target", "Kleisourai hits a moving Seljuk Lord (R23)")
     avail = [u for u, n in lord.forces.items() if n > 0]
     if not avail:
-        return {"no_op": True}
-    unit = args.get("unit", avail[0])
+        return {"lord": lord.id, "no_op": True}
+    unit = unit or avail[0]
     lo, hi = capabilities.protection_range(gs, lord.id, unit, "melee", storm=False)  # treated as a Battle Hit
     roll = roller.d6()
     if not (lo <= roll <= hi):
         lord.forces[unit] -= 1  # eliminated, no recovery (clarification)
-        return {"eliminated": unit, "roll": roll}
-    return {"protected": unit, "roll": roll}
+        return {"lord": lord.id, "eliminated": unit, "roll": roll}
+    return {"lord": lord.id, "protected": unit, "roll": roll}
+
+
+def _hold_kleisourai(gs, args, roller):             # R23 (1 Hit on a moving Seljuk Lord crossing a Pass)
+    lord = gs.lords[args["lord"]]
+    if lord.side != "seljuk":
+        raise IllegalAction("bad_target", "Kleisourai hits a moving Seljuk Lord (R23)")
+    res = kleisourai_hit(gs, lord, roller, args.get("unit"))
+    return {k: v for k, v in res.items() if k != "lord"}
 
 
 _HOLD_RESOLVERS = {
