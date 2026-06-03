@@ -855,8 +855,14 @@ def legal_moves_campaign(gs: GameState) -> list[dict[str, Any]]:
                  "_desc": "Assign up to Size available Themata to defend the Stronghold (4.3.5)"}]
     ap = next((p for p in gs.meta.pending if p["type"] == "approach_response"), None)
     if ap is not None:
+        from . import battle
+        att_side = gs.lords[ap["attackers"][0]].side
+        holds = {"attacker": sorted(set(gs.side_decks(att_side).held_events) & battle._BATTLE_HOLDS),
+                 "defender": sorted(set(gs.side_decks(_enemy(att_side)).held_events) & battle._BATTLE_HOLDS)}
         return [{"type": "respond_approach", "_defenders": ap["defenders"], "_locale": ap["locale"],
-                 "_desc": "Each defending Lord: Avoid Battle / Withdraw / Stand (4.3.4)"}]
+                 "_battle_holds_available": holds,
+                 "_desc": "Each defending Lord: Avoid Battle / Withdraw / Stand (4.3.4); "
+                          "either side may pass in-Battle Held Events via battle_events"}]
     bb = next((p for p in gs.meta.pending if p["type"] == "besiege_or_bypass"), None)
     if bb is not None:
         return [{"type": "besiege_bypass", "choice": "besiege", "_desc": "Besiege the Stronghold (4.3.5)"},
@@ -988,7 +994,9 @@ def command_menu(gs: GameState) -> list[dict[str, Any]]:
             out.append({"type": "cmd_sortie", "lord": lid, "_desc": "Sortie: Approach the Bypassing Enemy (4.3.6)"})
         if _besieging(gs, lord) and _peace_can_pay(gs, lord):
             out.append({"type": "cmd_siege", "lord": lid, "_desc": "Siege: roll Surrender / add Siegeworks (4.5.1)"})
-            out.append({"type": "cmd_storm", "lord": lid, "_desc": "Storm the Stronghold (4.5.2)"})
+            _storm_holds = sorted(set(gs.side_decks(lord.side).held_events) & {"R21", "S21"})
+            out.append({"type": "cmd_storm", "lord": lid, "_desc": "Storm the Stronghold (4.5.2)",
+                        **({"_storm_events_available": _storm_holds} if _storm_holds else {})})
         if (gs.meta.notes.get("gifts_coins", 0) > 0 and not lord.besieged
                 and gs.meta.notes.get("gifts_taken", {}).get(lord.side, 0) < 2):
             out.append({"type": "cmd_take_gift_coin", "lord": lid, "_desc": "Take 1 Coin from Gifts Exchanged (S13)"})
@@ -2062,6 +2070,10 @@ def h_cmd_storm(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> di
     from . import battle
     attackers = _besieging_lords_at(gs, lord.cylinder, lord.side)
     ctx = battle.DecisionContext(action.get("storm_decisions"))
+    # R21/S21 ("in Storm"): remove up to 2 Turkic Horse at the Locale before the
+    # Storm resolves. Storm honors only these Turkic-removal holds.
+    battle._consume_battle_events(gs, action.get("battle_events"),
+                                  locale=lord.cylinder, allow={"R21", "S21"})
     # R4 Sultan's Horse Is Killed: the Roman defender may play it during a Storm
     # by Alp Arslan at a Locale with >1 Siege marker to reduce the Rounds by 1.
     rounds_reduction = 0

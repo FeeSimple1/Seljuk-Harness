@@ -141,7 +141,7 @@ def begin_battle(gs: GameState, attackers: list[str], defenders: list[str], loca
     """Entry point from the Approach 'Stand' path (4.3.4 -> 4.8). ``events`` maps
     a side to the Held Battle Events it plays; ``sallying``/``siegeworks`` carry
     a Relief Sally (besieged Lords + the Defenders' Siegeworks Walls vs them)."""
-    played, cc, charge = _consume_battle_events(gs, events)
+    played, cc, charge = _consume_battle_events(gs, events, locale=locale)
     ctx = DecisionContext(scripted)
     roller = _roller(gs)
     result = resolve_battle(gs, attackers, defenders, locale, ctx, roller, played, cc, charge,
@@ -152,27 +152,50 @@ def begin_battle(gs: GameState, attackers: list[str], defenders: list[str], loca
     return result
 
 
-_BATTLE_HOLDS = {"R2", "S2", "S3", "R24", "S6"}  # Mountain Ambush, Betrayal, Cavalry Charge, Command Confusion
+_BATTLE_HOLDS = {"R2", "S2", "S3", "R24", "S6",  # Mountain Ambush, Betrayal, Cavalry Charge, Command Confusion
+                 "R21", "S21"}                    # Nomadic Tribes / Common Cultural Cause (remove Turkic)
+# Holds whose window is "before/in Battle or Storm" and whose effect is the
+# immediate removal of up to 2 Turkic Horse at the Active Lord's Locale.
+_TURKIC_REMOVAL_HOLDS = {"R21", "S21"}
 
 
-def _consume_battle_events(gs: GameState, events: Optional[dict]):
-    """Validate/consume played Battle Hold Events. Returns (played, cc, charge):
-    played[side] = simple cards (R2/S2/S3); cc = Roman Lords under Command
-    Confusion (S6, played by Seljuk); charge = Roman Lords with Cavalry Charge
-    (R24, played by Roman)."""
+def _remove_turkic_at(gs: GameState, locale: str, count: int) -> int:
+    removed = 0
+    for l in gs.lords.values():
+        if removed >= count:
+            break
+        if l.mustered and l.cylinder == locale:
+            while removed < count and l.forces.get("turkic_horse", 0) > 0:
+                l.forces["turkic_horse"] -= 1
+                removed += 1
+    return removed
+
+
+def _consume_battle_events(gs: GameState, events: Optional[dict],
+                           locale: Optional[str] = None, allow: Optional[set] = None):
+    """Validate/consume played Battle/Storm Hold Events. ``allow`` restricts the
+    eligible card set (Storm honors only the Turkic-removal holds). Returns
+    (played, cc, charge): played[side] = simple cards (R2/S2/S3); cc = Roman
+    Lords under Command Confusion (S6); charge = Roman Lords with Cavalry Charge
+    (R24). R21/S21 apply their Turkic removal immediately at ``locale``."""
     played = {"seljuk": [], "roman": []}
     cc: set = set()
     charge: set = set()
     if not events:
         return played, cc, charge
+    eligible = (_BATTLE_HOLDS & allow) if allow is not None else _BATTLE_HOLDS
     for side in ("seljuk", "roman"):
         for entry in events.get(side, []):
             cid = entry["card"] if isinstance(entry, dict) else entry
-            if cid not in _BATTLE_HOLDS or cid not in gs.side_decks(side).held_events:
+            if cid not in eligible or cid not in gs.side_decks(side).held_events:
                 continue
             gs.side_decks(side).held_events.remove(cid)
             gs.side_decks(side).draw_deck.append(cid)
-            if cid == "S6" and isinstance(entry, dict):       # Command Confusion -> a Roman Lord
+            if cid in _TURKIC_REMOVAL_HOLDS:                  # R21/S21 -> remove up to 2 Turkic here
+                if locale is not None:
+                    _remove_turkic_at(gs, locale, 2)
+                played[side].append(cid)
+            elif cid == "S6" and isinstance(entry, dict):     # Command Confusion -> a Roman Lord
                 cc.add(entry["lord"])
             elif cid == "R24" and isinstance(entry, dict):    # Cavalry Charge -> a Roman Lord
                 charge.add(entry["lord"])
