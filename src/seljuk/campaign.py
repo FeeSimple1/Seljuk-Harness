@@ -203,6 +203,14 @@ def _reveal_next(gs: GameState) -> None:
         lord.flags.pop("unstoppable_used_this_card", None)
         lord.flags.pop("peace_paid_this_card", None)
         gs.meta.notes.pop("marwanid_supply_lock", None)
+        # Summer Heat (R3 Roman / S4 Seljuk): in Summer, the *enemy* of the
+        # revealed Lord may immediately make that Lord Command 1 (card text).
+        # Offer the reaction before any Command action; the holder plays/declines.
+        if season_index(gs.meta.calendar_box) == 1:
+            reactor = _other(side)
+            sh_card = "R3" if reactor == "roman" else "S4"
+            if sh_card in gs.side_decks(reactor).held_events:
+                gs.meta.pending.append({"type": "summer_heat", "reactor": reactor, "card": sh_card})
         return
 
 
@@ -818,6 +826,12 @@ def legal_moves_campaign(gs: GameState) -> list[dict[str, Any]]:
                     "_desc": f"Winter Campaign/March: activate {lid} (R9/S18)"}
                    for lid, l in gs.lords.items() if l.mustered and l.side == side] + out
         return out
+    sh = next((p for p in gs.meta.pending if p["type"] == "summer_heat"), None)
+    if sh is not None:
+        return [{"type": "play_hold_event", "card": sh["card"],
+                 "_desc": f"Summer Heat {sh['card']}: make the revealed Lord Command 1 (R3/S4)"},
+                {"type": "decline_summer_heat",
+                 "_desc": "Decline Summer Heat (the revealed Lord keeps full Command)"}]
     br = next((p for p in gs.meta.pending if p["type"] == "basil_response"), None)
     if br is not None:
         return [{"type": "basil_response", "play": True, "_desc": "Play Basil: Surrender -> Bypass (R7)"},
@@ -2116,6 +2130,18 @@ def h_discard_imperial_coffers(gs: GameState, action: dict[str, Any], roller: Di
                                         coins_against=int(action.get("coins_against", 0)))
     _clear_imperial_coffers_pending(gs)
     return {"ok": True, "action": "discard_imperial_coffers", "loyalty": res}
+
+
+def _clear_summer_heat_pending(gs: GameState) -> None:
+    gs.meta.pending[:] = [p for p in gs.meta.pending if p["type"] != "summer_heat"]
+
+
+def h_decline_summer_heat(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
+    """Decline the optional Summer Heat (R3/S4) reaction offered after a reveal."""
+    if not any(p["type"] == "summer_heat" for p in gs.meta.pending):
+        raise IllegalAction("no_pending", "no Summer Heat reaction owed")
+    _clear_summer_heat_pending(gs)
+    return {"ok": True, "action": "decline_summer_heat", "declined": True}
 
 
 def h_basil_response(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:

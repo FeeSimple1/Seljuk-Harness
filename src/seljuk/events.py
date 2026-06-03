@@ -460,6 +460,7 @@ def _hold_summer_heat(gs, args, roller):            # R3/S4 (enemy Command 1 aft
     if campaign.season_index(gs.meta.calendar_box) != 1:
         raise IllegalAction("not_summer", "Summer Heat is played in Summer (R3/S4)")
     gs.meta.actions_remaining = min(gs.meta.actions_remaining, 1)  # that Lord is Command 1
+    gs.meta.pending[:] = [p for p in gs.meta.pending if p["type"] != "summer_heat"]
     return {"command_1": gs.meta.active_lord}
 
 
