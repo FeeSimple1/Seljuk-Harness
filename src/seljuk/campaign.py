@@ -949,7 +949,7 @@ def command_menu(gs: GameState) -> list[dict[str, Any]]:
         # Supply (4.4): a Route to an un-Ruined Seat within Cart budget.
         if not lord.besieged:
             cost = _min_supply_cost(gs, lord)
-            if cost is not None and cost <= _available_carts(gs, lord):
+            if cost is not None and cost <= _available_carts(gs, lord) and lord.assets.provender < 8:
                 out.append({"type": "cmd_supply", "lord": lid, "_desc": "Supply Provender via a Route (4.4)"})
         # Siege/Storm (4.5.1-.2): a Besieging Lord may advance the Siege or Storm.
         if lord.bypassed and st.bypass:  # 4.3.6 ENCAMP
@@ -1205,6 +1205,82 @@ def _blocks_supply(gs: GameState, locale_id: str, side: str, origin: str) -> boo
 _MARWANID_LOCALES = ("amid", "mayyafariqin")
 
 
+def _supply_seats(gs: GameState, lord: LordState) -> list[str]:
+    """Every un-Ruined Stronghold Seat this Lord may use as a Supply Source,
+    respecting the one-Marwanid-Seat-per-Command-card lock (3.5.1.1)."""
+    seats = [s for s in sd.lord(lord.id).get("seats", []) if not gs.locales[s].ruins]
+    if lord.id == "artuk_beg" and capabilities.lord_has(gs, "artuk_beg", "Artukid Legacy"):
+        for s in _MARWANID_LOCALES:                                          # S10
+            if not gs.locales[s].ruins and s not in seats:
+                seats.append(s)
+    if lord.side == "seljuk":
+        lock = gs.meta.notes.get("marwanid_supply_lock")
+        for s in gs.meta.notes.get("marwanid_seats", []):
+            if gs.locales[s].ruins or s in seats:
+                continue
+            if lock is not None and s in _MARWANID_LOCALES and s != lock:
+                continue  # another Marwanid Seat is already this card's Supply Source
+            seats.append(s)
+    return seats
+
+
+def _supply_route_costs(gs: GameState, lord: LordState) -> dict[str, int]:
+    """Cheapest Cart cost (Road 1, Pass 2) from the Lord to EACH of his available
+    Seats (4.4.1). A Seat he occupies costs 0."""
+    seats = _supply_seats(gs, lord)
+    if not seats:
+        return {}
+    import heapq
+    origin = lord.cylinder
+    best = {origin: 0}
+    pq = [(0, origin)]
+    while pq:
+        cost, loc = heapq.heappop(pq)
+        if cost > best.get(loc, 1 << 30):
+            continue
+        for edge in gmap.ways_from(loc):
+            nxt = edge["to"]
+            if edge["type"] == "pass" and _passes_blocked(gs):
+                continue  # Unpredictable Weather: no Pass Supply
+            if _blocks_supply(gs, nxt, lord.side, origin):
+                continue
+            step = 2 if edge["type"] == "pass" else 1
+            nc = cost + step
+            if nc < best.get(nxt, 1 << 30):
+                best[nxt] = nc
+                heapq.heappush(pq, (nc, nxt))
+    return {s: best[s] for s in seats if s in best}
+
+
+def _supply_plan(gs: GameState, lord: LordState) -> tuple[int, list[str], int]:
+    """Maximum-Provender Supply plan for one Command action (4.4.2 + the 4.4.1
+    Important box): draw one Provender per Stronghold Seat used, each Seat funded
+    by its OWN Carts along its Route ("each Cart is committed to a single Way per
+    action" -- Carts are NOT shared across Routes). Pick the most Seats fundable
+    within the Lord's Cart budget and his 8-Provender room; at most one Marwanid
+    Seat per card (3.5.1.1). Returns (provender_gain, seats_used, total_cart_cost).
+    """
+    costs = _supply_route_costs(gs, lord)
+    if not costs:
+        return 0, [], 0
+    budget = _available_carts(gs, lord)
+    room = max(0, 8 - lord.assets.provender)
+    marwanid = gs.meta.notes.get("marwanid_supply_lock")
+    used: list[str] = []
+    total = 0
+    for seat, c in sorted(costs.items(), key=lambda kv: kv[1]):  # cheapest first
+        if len(used) >= room or c > budget:
+            break  # ascending cost: nothing cheaper remains affordable
+        if seat in _MARWANID_LOCALES and marwanid not in (None, seat):
+            continue  # one Marwanid Seat per card already chosen
+        used.append(seat)
+        budget -= c
+        total += c
+        if seat in _MARWANID_LOCALES:
+            marwanid = seat
+    return len(used), used, total
+
+
 def _min_supply_route(gs: GameState, lord: LordState) -> tuple[int | None, str | None]:
     """Cheapest Cart-cost Route (Road 1, Pass 2) from the Lord to any of his
     un-Ruined Seats, with the chosen Seat. 3.5.1.1: only one Marwanid Seat may be
@@ -1261,17 +1337,21 @@ def h_cmd_supply(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> d
     lord = _require(action.get("lord"), gs)
     if lord.besieged:
         raise IllegalAction("besieged", "a Besieged Lord may not Supply (4.4)")
-    cost, seat = _min_supply_route(gs, lord)
-    if cost is None:
-        raise IllegalAction("no_supply_route", "no Route to an un-Ruined Seat (4.4.1)")
-    if cost > _available_carts(gs, lord):
-        raise IllegalAction("insufficient_carts", f"need {cost} Carts for the Route (4.4.1)")
-    lord.assets.provender = min(lord.assets.provender + 1, 8)
-    if seat in _MARWANID_LOCALES:
-        gs.meta.notes["marwanid_supply_lock"] = seat  # 3.5.1.1: one Marwanid Supply Source per card
+    gain, seats, total = _supply_plan(gs, lord)
+    if not seats:
+        if not _supply_route_costs(gs, lord):
+            raise IllegalAction("no_supply_route", "no Route to an un-Ruined Seat (4.4.1)")
+        if lord.assets.provender >= 8:
+            raise IllegalAction("provender_full", "already at the 8-Provender cap (1.7.3)")
+        raise IllegalAction("insufficient_carts", "no Cart budget for any Route (4.4.1)")
+    lord.assets.provender = min(8, lord.assets.provender + gain)
+    for s in seats:
+        if s in _MARWANID_LOCALES:
+            gs.meta.notes["marwanid_supply_lock"] = s  # 3.5.1.1: one Marwanid Source per card
     spend_actions(gs, 1)
-    return {"ok": True, "action": "cmd_supply", "lord": lord.id, "route_cost": cost,
-            "seat": seat, "provender": lord.assets.provender}
+    return {"ok": True, "action": "cmd_supply", "lord": lord.id, "route_cost": total,
+            "seats": seats, "seat": seats[0], "provender_gained": gain,
+            "provender": lord.assets.provender}
 
 
 # --- Recruit (4.5.7) --------------------------------------------------------
