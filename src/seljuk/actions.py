@@ -306,6 +306,59 @@ def _muster_seats(gs: GameState, lord_id: str, side: str) -> list[str]:
     return []
 
 
+# Unit component pool (Rules 1.6 manifest): "85 Horse unit wedges (5 Norman
+# Knights, 47 Turkic Horse, 25 Tagmata, 6 Ghulam, 2 Scholai/Hetaireia); 65 Foot
+# unit bars (52 Infantry, 11 Militia, 2 Varangian Guard)." The pool is a hard
+# limit on play (Muster 3.4.1-.2): if too few pieces remain, the Lord does not
+# receive those units.
+_UNIT_POOL = {
+    "norman_knights": 5, "turkic_horse": 47, "tagmata": 25, "ghulam_cavalry": 6,
+    "scholai_hetaireia": 2, "infantry": 52, "militia": 11, "varangian_guard": 2,
+}
+
+
+def _units_in_play(gs: GameState) -> dict[str, int]:
+    """Count every unit piece currently on the board: Lords' Forces and Routed
+    units, plus Themata markers on mats, defending, and in Thema boxes. (Garrison
+    units exist only transiently during a Storm, never at Muster time, so they
+    are not counted.) This is an exact tally of components NOT in the pool, so the
+    derived availability never over-counts and so never wrongly blocks a Muster."""
+    c: dict[str, int] = {}
+    def _add(u, n):
+        c[u] = c.get(u, 0) + n
+    for l in gs.lords.values():
+        for u, n in l.forces.items():
+            _add(u, n)
+        for u, n in l.routed.items():
+            _add(u, n)
+        for tm in l.themata_on_mat:
+            _add(tm.unit, tm.symbols)
+    for loc in gs.locales.values():
+        for tm in loc.themata_defending:
+            _add(tm.unit, tm.symbols)
+    for box in gs.themata.values():
+        for tm in box:
+            _add(tm.unit, tm.symbols)
+    return c
+
+
+def _pool_remaining(gs: GameState, unit: str) -> int:
+    return _UNIT_POOL.get(unit, 1 << 30) - _units_in_play(gs).get(unit, 0)
+
+
+def _alloc_from_pool(gs: GameState, want: dict[str, int]) -> dict[str, int]:
+    """Clamp a desired {unit: count} to what the component pool can still supply
+    (1.6); units with no pieces left are simply not received."""
+    inplay = _units_in_play(gs)
+    out: dict[str, int] = {}
+    for u, n in want.items():
+        avail = _UNIT_POOL.get(u, 1 << 30) - inplay.get(u, 0)
+        got = max(0, min(n, avail))
+        if got > 0:
+            out[u] = got
+    return out
+
+
 def _muster_lord_onto_map(gs: GameState, lord: LordState, seat: str) -> None:
     info = sd.lord(lord.id)
     from .state import Assets
@@ -313,7 +366,7 @@ def _muster_lord_onto_map(gs: GameState, lord: LordState, seat: str) -> None:
     lord.mustered = True
     lord.cylinder = seat
     lord.cylinder_calendar_box = None
-    lord.forces = dict(info["starting_forces"])
+    lord.forces = _alloc_from_pool(gs, info["starting_forces"])  # 1.6 pool cap
     lord.routed = {}
     a = info["starting_assets"]
     lord.assets = Assets(**{k: a.get(k, 0) for k in ("carts", "provender", "coin", "loot")})
@@ -474,9 +527,10 @@ def h_levy_vassal(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> 
     _spend_lordship(lord, 1)
     v = lord.vassals[int(idx)]
     v.levied = True
-    for u, n in v.forces.items():
+    added = _alloc_from_pool(gs, v.forces)  # 1.6 pool cap: unavailable pieces are not added
+    for u, n in added.items():
         lord.forces[u] = lord.forces.get(u, 0) + n
-    return {"ok": True, "action": "levy_vassal", "lord": lord.id, "vassal_index": int(idx), "forces_added": v.forces}
+    return {"ok": True, "action": "levy_vassal", "lord": lord.id, "vassal_index": int(idx), "forces_added": added}
 
 
 def h_levy_themata(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
@@ -873,6 +927,8 @@ def h_muster_restore(gs: GameState, action: dict[str, Any], roller: DiceRoller) 
     unit = action.get("unit")
     if lord.lost.get(unit, 0) <= 0:
         raise IllegalAction("no_lost_unit", f"{lid} has no Lost {unit} to restore")
+    if _pool_remaining(gs, unit) <= 0:
+        raise IllegalAction("pool_empty", f"no {unit} pieces remain in the pool to restore (1.6)")
     lord.lost[unit] -= 1
     lord.forces[unit] = lord.forces.get(unit, 0) + 1
     lord.flags["restored_this_muster"] = True
