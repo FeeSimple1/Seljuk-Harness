@@ -501,3 +501,64 @@ def play_hold_event(gs: GameState, card_id: str, args: dict, roller: DiceRoller)
     gs.side_decks(side).held_events.remove(card_id)
     gs.side_decks(side).draw_deck.append(card_id)
     return {"ok": True, "action": "play_hold_event", "card": card_id, **result}
+
+
+# --- Hold Event menu enumeration (SMOKE-008 follow-up) -----------------------
+# Surface the self-contained Hold Events whose play window coincides with a
+# decision point the engine actually reaches AND where the card's owner is the
+# active player. Each predicate is at least as strict as the resolver's own
+# validation, so every offered entry round-trips through play_hold_event.
+#
+# Representable now (active-player menu point in-window):
+#   R6  Michael Attaleiates  - Roman Muster, on Romanos (Lordship +1)
+#   S10 Eastern Rebellions    - Seljuk Muster, on Alp Arslan (Lordship +1)
+#   S24 Bad Omens             - on a freshly-revealed Seljuk Command card,
+#                               before any Command action (reorder Roman Plan)
+#   R4  Sultan's Horse        - Roman Command turn, Alp Arslan Besieging a
+#                               Locale with >1 Siege marker (remove 1 Siege)
+#
+# Deferred (no decision window modelled yet -> would be over-enumeration):
+#   R3/S4 Summer Heat, R23 Kleisourai  - out-of-turn reactions to the enemy
+#   R21/S21 Turkic removal             - Battle/Storm "play events" step
+#   R14 Imperial Coffers (discard)     - Arts of War (auto-resolved) step
+# These remain reachable via the documented do/apply action; the negative
+# enumerator tests assert they never appear in the normal menu.
+
+def _holds(gs: GameState, side: str) -> set[str]:
+    return set(gs.side_decks(side).held_events)
+
+
+def held_event_menu(gs: GameState) -> list[dict[str, Any]]:
+    """Playable Hold Events at the current decision point, for the active side."""
+    out: list[dict[str, Any]] = []
+    meta = gs.meta
+    side = meta.active_player
+
+    # --- Muster window (R6 Roman, S10 Seljuk) ---------------------------------
+    if meta.subphase == "levy.muster":
+        held = _holds(gs, side)
+        if side == "roman" and "R6" in held and gs.lords["romanos_diogenes"].mustered:
+            out.append({"type": "play_hold_event", "card": "R6",
+                        "_desc": "Hold Event R6 Michael Attaleiates: Romanos Lordship +1 (Muster)"})
+        if side == "seljuk" and "S10" in held and gs.lords["alp_arslan"].mustered:
+            out.append({"type": "play_hold_event", "card": "S10",
+                        "_desc": "Hold Event S10 Eastern Rebellions: Alp Arslan Lordship +1 (Muster)"})
+
+    # --- Command window (S24 Seljuk before acting, R4 Roman turn) -------------
+    if meta.subphase == "campaign.command" and meta.active_lord is not None:
+        held = _holds(gs, side)
+        if side == "seljuk" and "S24" in held:
+            # "immediately after revealing a Seljuk Command card, before taking
+            # any Command actions" -> no action spent yet, and >=2 unrevealed
+            # Roman Plan cards remain to reorder (else it is a pure no-op).
+            no_action_yet = meta.actions_remaining == meta.notes.get("card_full_actions")
+            roman_unrevealed = len(gs.roman.command_plan) - gs.roman.plan_pointer
+            if no_action_yet and roman_unrevealed >= 2:
+                out.append({"type": "play_hold_event", "card": "S24",
+                            "_desc": "Hold Event S24 Bad Omens: inspect/reorder top 2 Roman Plan cards"})
+        if side == "roman" and "R4" in held:
+            aa = gs.lords["alp_arslan"]
+            if aa.mustered and gs.locales[aa.cylinder].siege_markers > 1:
+                out.append({"type": "play_hold_event", "card": "R4",
+                            "_desc": f"Hold Event R4 Sultan's Horse: remove 1 Siege at {aa.cylinder}"})
+    return out

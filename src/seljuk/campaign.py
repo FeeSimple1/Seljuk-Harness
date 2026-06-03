@@ -193,6 +193,10 @@ def _reveal_next(gs: GameState) -> None:
             _st = gs.meta.rng_state
             _r.set_state((_st[0], tuple(_st[1]), _st[2]))
         gs.meta.actions_remaining = capabilities.command_rating(gs, card, _r)
+        # Record the freshly-revealed card's full action budget so the menu can
+        # detect the "before any Command action" window for Hold Events such as
+        # S24 Bad Omens (played immediately after reveal). Cleared in _after_card.
+        gs.meta.notes["card_full_actions"] = gs.meta.actions_remaining
         _s = _r.get_state(); gs.meta.rng_state = [_s[0], list(_s[1]), _s[2]]
         lord.flags.pop("first_march_used", None)
         lord.flags.pop("mules_used_this_card", None)
@@ -247,6 +251,7 @@ def _after_card(gs: GameState) -> None:
     gs.meta.active_card = None
     gs.meta.active_lord = None
     gs.meta.actions_remaining = 0
+    gs.meta.notes.pop("card_full_actions", None)  # window marker is per-card
     # 5.2: a side may already have no Mustered Lords (e.g. all lost in the Battle
     # that ended this card) -> game ends immediately, before any Pay/Disband.
     if _campaign_5_2_over(gs):
@@ -864,7 +869,8 @@ def legal_moves_campaign(gs: GameState) -> list[dict[str, Any]]:
         moves.append({"type": "fpd_done", "_desc": "Finish Pay for this side, then Disband (4.6.2)"})
         return moves
     if step == "campaign.command" and gs.meta.active_lord is not None:
-        moves = command_menu(gs)  # defined in the commands module (increment 2)
+        from . import events
+        moves = events.held_event_menu(gs) + command_menu(gs)
         moves.append({"type": "cmd_pass", "_desc": "Pass: the active Lord does nothing (4.5.8)"})
         moves.append({"type": "end_activation", "_desc": "End this Lord's card"})
         return moves

@@ -17,7 +17,7 @@ from __future__ import annotations
 
 from typing import Any, Callable
 
-from . import actions, campaign
+from . import actions, campaign, events
 from .rng import DiceRoller
 from .state import GameState, IllegalAction
 
@@ -179,7 +179,7 @@ def legal_moves(gs: GameState) -> list[dict[str, Any]]:
         moves.append({"type": "pass_step", "_desc": "Finish Pay for this side (3.2)"})
         return moves
     if step == "levy.muster":
-        moves = actions.enumerate_muster(gs)
+        moves = events.held_event_menu(gs) + actions.enumerate_muster(gs)
         moves.append({"type": "pass_step", "_desc": "Finish Muster for this side (3.4)"})
         return moves
     if step == "levy.call_to_arms":

@@ -287,15 +287,34 @@ template builds in the ChatGPT helper as non-notable `template_build_rejected`
 (a consumer supplying wrong/insufficient args to build_plan/resolve_event/etc. is
 a player mistake, not an engine over-enum — Part IV "classify the helper's
 rejections").
-**OPEN follow-up (optional/reactive plays):** `play_hold_event` (the 9
-self-contained Hold Events — R6/S10 muster, R3/S4 & R23 reactive, R21/S24/S21
-proactive) and `discard_imperial_coffers` (R14) are reachable via the documented
-`do`/`apply` action but are not yet surfaced in the menu. Their windows are
-per-card and two are out-of-turn reactions (like Inferno's Ambush window), so —
-mirroring Inferno's decision to defer broad Held-Event enumeration with a safe
-guard — full menu enumeration is tracked as a follow-up rather than rushed (a
-wrong window would be over-enum). A menu-only agent currently can't proactively
-play an optional Hold; the game still completes (these are optional).
+**Follow-up (PARTIALLY RESOLVED) — per-card Hold Event enumeration:** the
+self-contained Hold Events were reachable via the documented `do`/`apply`
+action but not surfaced in the menu. Now surfaced, in-window, for the four whose
+play window coincides with an active-player decision point the engine actually
+reaches (`events.held_event_menu`, wired into `engine.legal_moves` at
+`levy.muster` and `campaign.legal_moves_campaign` at `campaign.command`):
+- **R6** Michael Attaleiates — Roman Muster, Romanos Mustered (Lordship +1).
+- **S10** Eastern Rebellions — Seljuk Muster, Alp Arslan Mustered (Lordship +1).
+- **S24** Bad Omens — on a freshly-revealed Seljuk Command card, before any
+  Command action (a new per-card `meta.notes["card_full_actions"]` marker, set
+  in `_reveal_next`, detects the window) and only when ≥2 unrevealed Roman Plan
+  cards remain to reorder.
+- **R4** Sultan's Horse (first effect) — Roman Command turn, Alp Arslan
+  Besieging a Locale with >1 Siege marker (remove 1 Siege).
+Each predicate is at least as strict as the resolver's own validation, so every
+offered entry round-trips through `play_hold_event`. Positive + negative
+enumerator tests in `tests/test_hold_event_menu.py`.
+
+**Still deferred (no modelled decision window — surfacing would be over-enum):**
+`R3`/`S4` Summer Heat and `R23` Kleisourai are out-of-turn reactions to the
+*enemy*'s reveal / Pass-crossing (like Inferno's Ambush window); `R21`/`S21`
+Turkic-removal are played in a Battle/Storm "play events" step; `R14` Imperial
+Coffers is discarded during the auto-resolved Arts of War step. The engine has
+no decision point in any of these windows, so — mirroring Inferno's decision to
+defer broad Held-Event enumeration with a safe guard — they remain reachable
+only via `do`/`apply`, and the negative tests assert the normal menu never
+offers them. Adding them needs a sequence-of-play change (opponent reaction
+windows / Battle-Storm event step / AoW discard prompt), tracked separately.
 
 ### SMOKE-009 — Feed scope: Siege over-marked, Ravage under-marked Moved/Fought
 
