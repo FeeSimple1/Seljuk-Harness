@@ -392,10 +392,12 @@ def _feed_side(gs: GameState, side: str, result: dict) -> None:
     for lord in movers:
         need = _feed_requirement(_unit_count(lord))
         fed.append([lord, need, _consume_food(lord, need)])
-    for entry in fed:
+    # Share to cover shortfalls, smallest remaining shortfall FIRST -- this
+    # maximises the number of fully-fed Lords (minimising Unfed Service shifts,
+    # B.3.1), instead of letting one big-need Lord drain the shared Provender.
+    for entry in sorted((e for e in fed if e[2] < e[1]), key=lambda e: e[1] - e[2]):
         lord, need, paid = entry
-        if paid < need:
-            entry[2] = paid + _share_food(gs, lord, side, need - paid)
+        entry[2] = paid + _share_food(gs, lord, side, need - paid)
     for lord, need, paid in fed:
         if paid < need:
             # Unfed: shift Service Marker left one box (4.6.1)
