@@ -143,6 +143,13 @@ def h_pay(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str
 def h_pass_step(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
     from . import engine  # local import to avoid a cycle
     side = gs.meta.active_player
+    if (gs.meta.subphase == "levy.muster" and side == "roman"
+            and capabilities.side_has(gs, "roman", "Imperial Rivalry")
+            and not gs.meta.notes.get("imperial_rivalry_attempted")
+            and any(m.get("type") == "levy_lord" and m.get("target") == "andronikos_doukas"
+                    for m in enumerate_muster(gs))):
+        raise IllegalAction("imperial_rivalry",
+                            "Romans must attempt to Muster Andronikos Doukas this Levy (S9)")
     engine.note_pass(gs)
     return {"ok": True, "passed": side, "now": {"subphase": gs.meta.subphase, "active": gs.meta.active_player}}
 
@@ -237,6 +244,7 @@ def _disband_at_limit(gs: GameState, lord: LordState) -> dict[str, Any]:
 # not themselves Levy until Call to Arms (3.4).
 
 def reset_muster_segment(gs: GameState) -> None:
+    gs.meta.notes.pop("imperial_rivalry_attempted", None)  # S9: re-arm the obligation each Levy
     for lord in gs.lords.values():
         lord.flags.pop("lordship_spent", None)
         lord.flags.pop("mustered_this_segment", None)
@@ -373,6 +381,8 @@ def h_levy_lord(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> di
             raise IllegalAction("no_free_seat", f"{target.id} has no free Seat (3.4.1)")
         seat = seats[0]
     _spend_lordship(levyer, 1)
+    if target.id == "andronikos_doukas" and levyer.side == "roman":
+        gs.meta.notes["imperial_rivalry_attempted"] = True  # S9 obligation satisfied
     fealty = capabilities.fealty_rating(gs, target.id)
     roll = roller.d6()
     success = roll <= fealty
