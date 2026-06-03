@@ -1486,6 +1486,19 @@ def _resolve_arrival(gs: GameState, group: list[LordState], to: str,
     return {}
 
 
+def _award_avoid_spoils(gs: GameState, attacker_ids: list[str], loot: int, prov: int) -> None:
+    """4.3.4/4.8.3: the Approaching Lords receive and divide Assets a Lord
+    discarded to Avoid Battle (round-robin, 8-cap)."""
+    atts = [gs.lords[a] for a in attacker_ids if a in gs.lords and gs.lords[a].mustered]
+    if not atts:
+        return
+    i = 0
+    for _ in range(loot):
+        atts[i % len(atts)].assets.loot = min(8, atts[i % len(atts)].assets.loot + 1); i += 1
+    for _ in range(prov):
+        atts[i % len(atts)].assets.provender = min(8, atts[i % len(atts)].assets.provender + 1); i += 1
+
+
 def h_respond_approach(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
     """4.3.4: each Inactive (defending) Lord chooses Avoid Battle, Withdraw, or
     Stand. ``choices`` maps lord_id -> {"action": "avoid"|"withdraw"|"stand",
@@ -1522,6 +1535,13 @@ def h_respond_approach(gs: GameState, action: dict[str, Any], roller: DiceRoller
         if kind == "avoid":
             dest = ch.get("to")
             _validate_avoid(gs, lord, to, dest, side, approach_origin)
+            # 4.3.4: discard Loot and excess Provender to become Unladen; the
+            # Approaching Enemy Lords receive and divide the discarded Assets.
+            disc_loot = lord.assets.loot
+            disc_prov = max(0, lord.assets.provender - lord.assets.carts)
+            lord.assets.loot = 0
+            lord.assets.provender = min(lord.assets.provender, lord.assets.carts)
+            _award_avoid_spoils(gs, pend["attackers"], disc_loot, disc_prov)
             lord.cylinder = dest
             lord.moved_fought = True
             avoided.append(did)
@@ -1580,8 +1600,6 @@ def _validate_avoid(gs: GameState, lord: LordState, battle_loc: str, dest: str, 
         raise IllegalAction("passes_blocked", "Passes cannot be used to Avoid Battle (Unpredictable Weather)")
     if _enemy_lord_ids_at(gs, dest, side):
         raise IllegalAction("avoid_into_enemy", "may not Avoid into a Locale with an Unbesieged Enemy Lord (4.3.4)")
-    if group_laden(gs, [lord]):
-        raise IllegalAction("avoid_laden", "Lords may only Avoid Battle Unladen (4.3.4)")
 
 
 def _validate_withdraw(gs: GameState, lord: LordState, battle_loc: str) -> None:

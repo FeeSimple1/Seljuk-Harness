@@ -165,15 +165,17 @@ def test_group_march_moves_commander_and_co_located_431():
     assert aa.cylinder == "mempet" and ar.cylinder == "mempet"
 
 
-def test_avoid_blocked_when_laden_434():
+def test_avoid_laden_discards_to_unladen_434():
     gs = S.load_scenario("emperor_and_the_lion")
-    aa = gs.lords["alp_arslan"]; aa.cylinder = "larisa"
+    aa = gs.lords["alp_arslan"]; aa.cylinder = "larisa"; aa.assets.loot = 0
     ch = gs.lords["chatatourios"]; ch.cylinder = "melitene"
-    ch.assets.loot = 2  # Laden -> cannot Avoid
+    ch.assets.loot = 2  # Laden -> may discard to become Unladen and Avoid (4.3.4)
     _activate(gs, "alp_arslan")
     engine.apply_action(gs, {"type": "cmd_march", "lord": "alp_arslan", "to": "melitene", "way_type": "road"})
-    with pytest.raises(IllegalAction):
-        engine.apply_action(gs, {"type": "respond_approach", "choices": {"chatatourios": {"action": "avoid", "to": "germanikeia"}}})
+    engine.apply_action(gs, {"type": "respond_approach",
+                             "choices": {"chatatourios": {"action": "avoid", "to": "germanikeia"}}})
+    assert ch.cylinder == "germanikeia" and ch.assets.loot == 0   # discarded to Avoid
+    assert aa.assets.loot == 2                                    # Approaching Lord receives the Spoils
 
 
 def test_bypass_marker_cleared_when_bypasser_leaves_smoke005():

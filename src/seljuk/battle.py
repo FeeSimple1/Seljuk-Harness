@@ -1042,7 +1042,7 @@ def _storm_strike(gs, att, deff, garrison, garrison_routed, walls, siege, round_
     #    MISSILES are the only ones reduced by -1.)
     d_missile_gar = _garrison_missile_hits(garrison)
     if d_missile_gar:
-        _hit_attacker(gs, att, _round_up(d_missile_gar), "missile", siege, anti_armor=True, roller=roller, ctx=ctx, log=log, step="def_missile_garrison", round_no=round_no)
+        _hit_attacker(gs, att, _round_up(d_missile_gar), "missile", siege, anti_armor=True, roller=roller, ctx=ctx, log=log, step="def_missile_garrison", round_no=round_no, select_target=True)
     d_missile_lord = _lord_step_hits(gs, deff, "missile", round_no)
     if d_missile_lord:
         _hit_attacker(gs, att, _round_up(d_missile_lord), "missile", siege, anti_armor=False, roller=roller, ctx=ctx, log=log, step="def_missile_lord", round_no=round_no)
@@ -1167,7 +1167,7 @@ def _lord_melee_capped(gs: GameState, side: _Side, round_no: int, storm: bool = 
     return total
 
 
-def _hit_attacker(gs, att: _Side, hits, hit_type, siege, anti_armor, roller, ctx, log, step, round_no):
+def _hit_attacker(gs, att: _Side, hits, hit_type, siege, anti_armor, roller, ctx, log, step, round_no, select_target=False):
     """Hits onto the attacker: Siegeworks (Walls=Siege count) cancel, then assign
     Armored-first (4.9.1), Protection (no Evade)."""
     if hits <= 0:
@@ -1177,7 +1177,7 @@ def _hit_attacker(gs, att: _Side, hits, hit_type, siege, anti_armor, roller, ctx
         return
     target = gs.lords[front[0]]
     hits = _roll_walls(roller, hits, (1, siege)) if siege > 0 else hits
-    routed = _absorb_storm(gs, target, hits, anti_armor, armored_first=True, ctx=ctx, roller=roller)
+    routed = _absorb_storm(gs, target, hits, anti_armor, armored_first=True, ctx=ctx, roller=roller, select_target=select_target)
     log.append({"round": round_no, "step": step, "target": target.id, "hits": hits, "routed": routed})
 
 
@@ -1213,17 +1213,23 @@ def _roll_walls(roller: DiceRoller, hits: int, wrange: tuple[int, int]) -> int:
 
 
 def _absorb_storm(gs: GameState, lord: LordState, hits: int, anti_armor: bool, armored_first: bool,
-                  ctx: DecisionContext, roller: DiceRoller) -> list[str]:
+                  ctx: DecisionContext, roller: DiceRoller, select_target: bool = False) -> list[str]:
     routed = []
     reroll_used = False
     norman = capabilities.lord_has(gs, lord.id, "Norman Heavy Cavalry")
+    htype = "missile" if anti_armor else "melee"
+    def _eff_hi(u):
+        lo, hi = capabilities.protection_range(gs, lord.id, u, htype, storm=True)
+        return max(lo, hi - 1) if (anti_armor and u not in ("turkic_horse", "militia")) else hi
     for _ in range(hits):
         avail = [u for u, n in lord.forces.items() if n > 0]
         if not avail:
             break
         if armored_first:  # Storm: Hits vs the attacker hit Armored before Unarmored (4.9.1)
             armored = [u for u in avail if u not in ("turkic_horse", "militia")]
-            unit = armored[0] if armored else avail[0]
+            pool = armored if armored else avail
+            # Garrison Missiles "select target": the striker picks the most rout-prone unit.
+            unit = min(pool, key=_eff_hi) if select_target else pool[0]
         else:
             unit = ctx.decide("hit_absorption", avail, {"lord": lord.id})
         lo, hi = capabilities.protection_range(gs, lord.id, unit, "missile" if anti_armor else "melee", storm=True)
