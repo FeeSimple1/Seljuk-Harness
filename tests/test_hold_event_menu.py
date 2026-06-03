@@ -136,9 +136,10 @@ def test_r4_not_offered_with_one_siege_marker():
 
 
 # --------------------------------------------------------------------------- #
-# Deferred Hold Events: no modelled decision window -> never in the normal menu
+# Other windows: these holds must never appear as plain muster/command items
+# (they are surfaced in their own windows, covered by dedicated test files).
 # --------------------------------------------------------------------------- #
-def test_summer_heat_never_offered_in_menu():
+def test_summer_heat_not_a_plain_command_menu_item():
     gs = _gs(); gs.roman.held_events.append("R3"); gs.seljuk.held_events.append("S4")
     gs.meta.calendar_box = 4            # a Summer box
     _command(gs, "seljuk", "alp_arslan")
@@ -147,7 +148,7 @@ def test_summer_heat_never_offered_in_menu():
     assert "R3" not in _cards(gs) and "S4" not in _cards(gs)
 
 
-def test_kleisourai_never_offered_in_menu():
+def test_kleisourai_not_a_plain_command_menu_item():
     gs = _gs(); gs.roman.held_events.append("R23")
     _command(gs, "roman", "romanos_diogenes")
     assert "R23" not in _cards(gs)
@@ -155,7 +156,7 @@ def test_kleisourai_never_offered_in_menu():
     assert "R23" not in _cards(gs)
 
 
-def test_battle_storm_turkic_holds_never_offered_in_menu():
+def test_battle_storm_turkic_holds_not_a_plain_command_menu_item():
     gs = _gs(); gs.roman.held_events.append("R21"); gs.seljuk.held_events.append("S21")
     _command(gs, "roman", "romanos_diogenes")
     assert "R21" not in _cards(gs)
@@ -163,7 +164,7 @@ def test_battle_storm_turkic_holds_never_offered_in_menu():
     assert "S21" not in _cards(gs)
 
 
-def test_imperial_coffers_never_offered_in_menu():
+def test_imperial_coffers_not_a_plain_command_menu_item():
     gs = _gs(); gs.roman.held_events.append("R14")
     _muster(gs, "roman")
     assert "R14" not in _cards(gs)

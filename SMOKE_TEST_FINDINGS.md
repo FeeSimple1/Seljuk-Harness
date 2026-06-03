@@ -287,7 +287,7 @@ template builds in the ChatGPT helper as non-notable `template_build_rejected`
 (a consumer supplying wrong/insufficient args to build_plan/resolve_event/etc. is
 a player mistake, not an engine over-enum — Part IV "classify the helper's
 rejections").
-**Follow-up (PARTIALLY RESOLVED) — per-card Hold Event enumeration:** the
+**Follow-up (RESOLVED) — per-card Hold Event enumeration:** the
 self-contained Hold Events were reachable via the documented `do`/`apply`
 action but not surfaced in the menu. Now surfaced, in-window, for the four whose
 play window coincides with an active-player decision point the engine actually
@@ -305,16 +305,27 @@ Each predicate is at least as strict as the resolver's own validation, so every
 offered entry round-trips through `play_hold_event`. Positive + negative
 enumerator tests in `tests/test_hold_event_menu.py`.
 
-**Still deferred (no modelled decision window — surfacing would be over-enum):**
-`R3`/`S4` Summer Heat and `R23` Kleisourai are out-of-turn reactions to the
-*enemy*'s reveal / Pass-crossing (like Inferno's Ambush window); `R21`/`S21`
-Turkic-removal are played in a Battle/Storm "play events" step; `R14` Imperial
-Coffers is discarded during the auto-resolved Arts of War step. The engine has
-no decision point in any of these windows, so — mirroring Inferno's decision to
-defer broad Held-Event enumeration with a safe guard — they remain reachable
-only via `do`/`apply`, and the negative tests assert the normal menu never
-offers them. Adding them needs a sequence-of-play change (opponent reaction
-windows / Battle-Storm event step / AoW discard prompt), tracked separately.
+**RESOLVED — the remaining windows now have decision points.** The sequence-of-
+play changes that were tracked separately are implemented:
+- **R14 Imperial Coffers** — `resolve_arts_of_war` raises an `imperial_coffers`
+  pending (non-first Levy, R14 deployed, valid target); `engine.legal_moves`
+  offers discard-per-target + decline after Events resolve, before Pay.
+- **R3/S4 Summer Heat** — `_reveal_next` raises a `summer_heat` pending in
+  Summer right after the enemy reveals a Lord's card; `legal_moves_campaign`
+  offers play (-> that Lord is Command 1) / decline before any Command action.
+- **R23 Kleisourai** — a Seljuk March across a Pass raises a `kleisourai`
+  pending; the Roman holder plays (1 Hit per crossing Lord) or declines, then
+  the deferred March arrival resumes (`_finish_march_arrival`). The co-location
+  invariant excludes the kleisourai Locale as a momentary contact. (The card's
+  Avoid-Battle / Retreat across-Pass sub-triggers, which live inside battle
+  resolution, remain a narrow documented follow-up.)
+- **R21/S21** — recognized by `_consume_battle_events` and applied at the battle
+  locale, played via the `battle_events` parameter like the other in-Battle
+  holds (R2/S2/S3/R24/S6); Storm consumes them with an allow-filter. The
+  approach/Storm menu entries advertise the available holds.
+Tests: `tests/test_imperial_coffers_window.py`, `tests/test_summer_heat_window.py`,
+`tests/test_kleisourai_window.py`, `tests/test_battle_storm_events_window.py`,
+plus the in-window/out-of-window guards in `tests/test_hold_event_menu.py`.
 
 ### SMOKE-009 — Feed scope: Siege over-marked, Ravage under-marked Moved/Fought
 
