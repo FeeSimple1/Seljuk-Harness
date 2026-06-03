@@ -205,6 +205,46 @@ green at the end of the pass).
 - **4.8.2/4.9.1** Storm melee resolved as separate Horse/Foot steps (each rounded).
 - **1.4.2** treachery re-entry places/clears the Seat's Conquered markers.
 
+### Final tidy pass — "little things" (June 2026)
+
+Implemented the tractable edge items left after Pass 2, each pinned by tests:
+
+- **S9 Imperial Rivalry** — the Andronikos Doukas Muster attempt is now *forced*
+  during Roman Muster while the Capability is in play and an enumerable
+  levy_lord targets him (`h_pass_step` gate; latch reset each muster segment).
+- **3.5.1.1 Marwanid one Supply Source per Command card** — when BOTH Amid and
+  Mayyafariqin are active Seats, the first Supply that routes via one locks it
+  for the rest of that card; the other Seat is excluded until the next card
+  (`_min_supply_route` + `marwanid_supply_lock`, cleared in `_reveal_next`).
+- **Storm Garrison Missiles "select target"** — the striker now picks the
+  highest-effective armored unit among the target Lord's armored Forces, rather
+  than the first in the pool (`_absorb_storm(select_target=True)`).
+- **4.3.x Avoid while Laden** — a Laden Lord may now Avoid by discarding to
+  Unladen (drop Loot + Provender over Carts); the discarded Assets are awarded
+  to the Approaching attackers as Spoils (round-robin, 8-cap) instead of the
+  Avoid being rejected outright (`_award_avoid_spoils`).
+- **4.6 Feed Sharing** — Sharing now covers the *smallest* remaining shortfalls
+  first, maximising fully-fed Lords and so minimising Unfed Service shifts
+  (B.3.1), rather than letting one big-need Lord drain the shared Provender.
+- **Housekeeping** — removed the unused `treachery_available` field; the Year
+  end-of-Winter control VP bonus no longer displays one step early (gated to the
+  end-of-campaign / Winter subphase; the actual winner determination is
+  unchanged).
+
+### Deliberately not implemented (rationale)
+
+- **Flanking "absorb / choose target Lord"** — the rule text is genuinely
+  ambiguous about which Lord may redirect Hits; the current deterministic target
+  selection (with an equidistant-tie ctx choice) is a defensible reading, and a
+  wrong guess would be worse. Left as a documented simplification.
+- **Unit component pool as a hard Muster cap** — rarely binds and would require
+  tracking every component across Muster/loss/Disband; disproportionate to value.
+- **Supply drawing >1 Provender/action via disjoint Cart-funded routes** — a rare
+  4.4.2 edge; the pathfinder routes each Lord to one cheapest Seat per action.
+- **Optional rules 6.1-6.4** — out of scope (BRIEF.md Phase 5).
+
+### Pass 2 known items (now resolved above)
+
 ### Known remaining items (low impact / edge / documented simplifications)
 
 - S9 Imperial Rivalry: the *mandatory* Andronikos Muster attempt is not forced
