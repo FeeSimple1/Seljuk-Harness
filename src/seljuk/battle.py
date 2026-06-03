@@ -433,9 +433,11 @@ def _target_of(striker_slot: str, enemy: _Side, ctx: DecisionContext,
 import math as _math
 
 
-def _lord_step_hits_caps(gs, lid, step, round_no):
-    """(normal_hits, anti_armor_hits) for one Lord in a Strike step, applying
-    Capabilities (Javelins, Alakatia, Shock Tactics, Bardoukia)."""
+def _lord_step_hits_caps(gs, lid, step, round_no, cat=None):
+    """(normal_hits, anti_armor_hits, select_hits) for one Lord in a Strike step,
+    applying Capabilities (Javelins, Alakatia, Shock Tactics, Bardoukia). ``cat``
+    optionally restricts a Missile step to "horse"- or "foot"-category units
+    (used by Simultaneous Horse Combat, 6.3)."""
     lord = gs.lords[lid]
     names = capabilities.lord_capability_names(gs, lid)
     units = _unrouted_units(lord)
@@ -444,12 +446,15 @@ def _lord_step_hits_caps(gs, lid, step, round_no):
     select = 0.0  # S16 Parthian Shot: striker-selected (Turkic Horse Missiles)
     if step == "missile":
         for u, n in units.items():
+            if cat is not None and _category(u) != cat:
+                continue
             normal += _MISSILE.get(u, 0.0) * n
-        if "Javelins" in names:                       # S11: Infantry Missiles x1
-            normal += units.get("infantry", 0) * 1.0
-        if "Alakatia" in names and units.get("infantry", 0) >= 2:  # R23: +1 anti-armor Missile Hit
-            anti += 1.0
-        if "Parthian Shot" in names:                  # S16: Turkic Horse Missiles select targets (Battle only)
+        if cat in (None, "foot"):
+            if "Javelins" in names:                   # S11: Infantry Missiles x1 (foot)
+                normal += units.get("infantry", 0) * 1.0
+            if "Alakatia" in names and units.get("infantry", 0) >= 2:  # R23 (foot)
+                anti += 1.0
+        if cat in (None, "horse") and "Parthian Shot" in names:  # S16 (Turkic Horse)
             tk = _MISSILE.get("turkic_horse", 1.0) * units.get("turkic_horse", 0)
             normal -= tk
             select += tk
@@ -484,6 +489,23 @@ def _strike_phase(gs: GameState, att: _Side, deff: _Side, pursuit: dict, round_n
     charge = charge or set()
     sides = ((deff, att, "defender"), (att, deff, "attacker"))
 
+    # Optional Rules 6.3 / 6.4 (Battle only -- Storm uses _storm_strike).
+    opt = gs.meta.options or {}
+    _sim = opt.get("simultaneous_horse", "off")
+    sim_missile = _sim in ("missiles", "both")
+    sim_melee = _sim in ("melee", "both")
+    deadlier = bool(opt.get("deadlier_seljuk_missiles", False))
+
+    def _faction(side_obj):
+        ls = side_obj.all_lords()
+        return gs.lords[ls[0]].side if ls else None
+
+    def _missile_sides():
+        # 6.4: Seljuk Missiles always Strike first, regardless of Attacker/Defender.
+        if deadlier:
+            return tuple(sorted(sides, key=lambda t: 0 if _faction(t[0]) == "seljuk" else 1))
+        return sides
+
     def _secondary(striking, target_side, role, step):
         """Relief Sally rows (4.8.1) Strike in their normal sub-step. Sallying
         Attackers Strike the Rearguard row (or Flank the Front Defenders if no
@@ -510,13 +532,31 @@ def _strike_phase(gs: GameState, att: _Side, deff: _Side, pursuit: dict, round_n
                               ctx, roller, log, restrict=ids)
                 charged |= ids
     cc_eff = cc - charge  # Cavalry Charge takes precedence over Command Confusion
+    msides = _missile_sides()
     # Missiles: non-Command-Confusion Front Lords plus the Relief-Sally rows
     # first, then the CC Lords (who strike second).
-    for striking, target_side, role in sides:
-        _resolve_step(gs, "missile", striking, target_side, role, pursuit, round_no, ctx, roller, log,
-                      restrict=_front_set(striking) - cc_eff)
-        _secondary(striking, target_side, role, "missile")
-    for striking, target_side, role in sides:
+    if sim_missile:
+        # 6.3: Horse-unit Missiles of BOTH sides resolve simultaneously -- compute
+        # all pools from the pre-Strike state, then apply. Foot Missiles follow
+        # normally (in 6.4 order).
+        pooled = []
+        for striking, target_side, role in msides:
+            by, ctb = _compute_pools(gs, "missile", striking, target_side, round_no, ctx,
+                                     _front_set(striking) - cc_eff, None, "front", "front", cat="horse")
+            pooled.append((by, ctb, striking, target_side, role))
+        for by, ctb, striking, target_side, role in pooled:
+            _apply_pools(gs, "missile", by, ctb, striking, target_side, role, pursuit,
+                         round_no, ctx, roller, log, "front", "front", 0)
+        for striking, target_side, role in msides:
+            _resolve_step(gs, "missile", striking, target_side, role, pursuit, round_no, ctx, roller, log,
+                          restrict=_front_set(striking) - cc_eff, cat="foot")
+            _secondary(striking, target_side, role, "missile")
+    else:
+        for striking, target_side, role in msides:
+            _resolve_step(gs, "missile", striking, target_side, role, pursuit, round_no, ctx, roller, log,
+                          restrict=_front_set(striking) - cc_eff)
+            _secondary(striking, target_side, role, "missile")
+    for striking, target_side, role in msides:
         ids = _front_set(striking) & cc_eff
         if ids:
             _resolve_step(gs, "missile", striking, target_side, role, pursuit, round_no, ctx, roller, log,
@@ -524,10 +564,23 @@ def _strike_phase(gs: GameState, att: _Side, deff: _Side, pursuit: dict, round_n
     # Melee (Horse then Foot, Defending then Attacking): non-CC Front Lords plus
     # the Relief-Sally rows first.
     for mstep in ("horse_melee", "foot_melee"):
-        for striking, target_side, role in sides:
-            _resolve_step(gs, mstep, striking, target_side, role, pursuit, round_no, ctx, roller, log,
-                          restrict=_front_set(striking) - cc_eff, skip_charge=charged)
-            _secondary(striking, target_side, role, mstep)
+        if mstep == "horse_melee" and sim_melee:
+            # 6.3: both sides' Horse Melee resolves simultaneously.
+            pooled = []
+            for striking, target_side, role in sides:
+                by, ctb = _compute_pools(gs, "horse_melee", striking, target_side, round_no, ctx,
+                                         _front_set(striking) - cc_eff, charged, "front", "front")
+                pooled.append((by, ctb, striking, target_side, role))
+            for by, ctb, striking, target_side, role in pooled:
+                _apply_pools(gs, "horse_melee", by, ctb, striking, target_side, role, pursuit,
+                             round_no, ctx, roller, log, "front", "front", 0)
+            for striking, target_side, role in sides:
+                _secondary(striking, target_side, role, "horse_melee")
+        else:
+            for striking, target_side, role in sides:
+                _resolve_step(gs, mstep, striking, target_side, role, pursuit, round_no, ctx, roller, log,
+                              restrict=_front_set(striking) - cc_eff, skip_charge=charged)
+                _secondary(striking, target_side, role, mstep)
     # Then the CC Lords' Melee (strike second).
     for mstep in ("horse_melee", "foot_melee"):
         for striking, target_side, role in sides:
@@ -537,11 +590,11 @@ def _strike_phase(gs: GameState, att: _Side, deff: _Side, pursuit: dict, round_n
                               restrict=ids, skip_charge=charged)
 
 
-def _resolve_step(gs, step, striking: _Side, target_side: _Side, role, pursuit, round_no,
-                  ctx: DecisionContext, roller: DiceRoller, log: list,
-                  restrict=None, skip_charge=None, striker_row: str = "front",
-                  target_row: str = "front", step_walls: int = 0) -> None:
-    hit_type = "missile" if step == "missile" else "melee"
+def _compute_pools(gs, step, striking: _Side, target_side: _Side, round_no, ctx,
+                   restrict, skip_charge, striker_row, target_row, cat=None):
+    """Read-only: tally each target Lord's incoming Hit pools (normal, anti-armor,
+    select) for one striking row in one Strike step. Splitting this from
+    application lets Horse Strikes resolve simultaneously (6.3)."""
     skip_charge = skip_charge or set()
     srow = getattr(striking, striker_row)
     by = {}        # target -> [normal, anti, select]
@@ -557,28 +610,36 @@ def _resolve_step(gs, step, striking: _Side, target_side: _Side, role, pursuit, 
         target = _target_of(slot, target_side, ctx, row=target_row)
         if not target:
             continue
-        normal, anti, select = _lord_step_hits_caps(gs, lid, step, round_no)
+        normal, anti, select = _lord_step_hits_caps(gs, lid, step, round_no, cat=cat)
         cur = by.setdefault(target, [0.0, 0.0, 0.0])
         cur[0] += normal
         cur[1] += anti
         cur[2] += select
         contrib.setdefault(target, set()).add(slot)
+    return by, contrib
+
+
+def _apply_pools(gs, step, by, contrib, striking: _Side, target_side: _Side, role,
+                 pursuit, round_no, ctx: DecisionContext, roller: DiceRoller, log: list,
+                 striker_row, target_row, step_walls):
+    """Apply previously-computed Hit pools (see _compute_pools) to the target
+    Lords, including the Flank-absorb choice (4.8.2), Pursuit halving, Mountain
+    Ambush / Siegeworks Walls, and Parthian-Shot Select Target."""
+    hit_type = "missile" if step == "missile" else "melee"
+    srow = getattr(striking, striker_row)
 
     def _absorb_target(target_id):
         """4.8.2 APPLY HITS TO LORDS: Hits land on the opposed, Flanked, or
         Flanking Enemy Lord. When the target D is Struck only by the Lord
         directly opposite him (no Enemy is Flanking D) and the receiving side has
         a Flanking Lord F whose own Flank-Strike falls on that same opposing Lord,
-        the receiving Player may choose to route the Hits onto F instead of D
-        ("A Flanking Lord may absorb Hits from a Lord he Flanks if no enemies
-        Flank the target Lord")."""
+        the receiving Player may choose to route the Hits onto F instead of D."""
         trow = getattr(target_side, target_row)
         d = next((sl for sl in SLOTS if trow[sl] == target_id), None)
         if d is None:
             return target_id
-        # An Enemy Flanks D if any contributing striker is not directly opposite D.
         if any(sl != d for sl in contrib.get(target_id, ())):
-            return target_id
+            return target_id  # an Enemy Flanks D -> no choice
         z = srow[d]  # the directly-opposed striker whose Hits these are
         if not z:
             return target_id
@@ -635,6 +696,16 @@ def _resolve_step(gs, step, striking: _Side, target_side: _Side, role, pursuit, 
 
     for target, (n, a, sel) in by.items():
         _emit(target, n, a, sel, step_walls)
+
+
+def _resolve_step(gs, step, striking: _Side, target_side: _Side, role, pursuit, round_no,
+                  ctx: DecisionContext, roller: DiceRoller, log: list,
+                  restrict=None, skip_charge=None, striker_row: str = "front",
+                  target_row: str = "front", step_walls: int = 0, cat=None) -> None:
+    by, contrib = _compute_pools(gs, step, striking, target_side, round_no, ctx,
+                                 restrict, skip_charge, striker_row, target_row, cat)
+    _apply_pools(gs, step, by, contrib, striking, target_side, role, pursuit, round_no,
+                 ctx, roller, log, striker_row, target_row, step_walls)
 
 
 def _apply_hits(gs: GameState, target_id: str, hits: int, hit_type: str,

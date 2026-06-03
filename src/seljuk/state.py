@@ -153,6 +153,8 @@ class Meta(_Model):
     active_lord: Optional[str] = None                                # Lord activated by the current card
     actions_remaining: int = 0                                       # Command actions left this card (4.2.1)
     notes: dict[str, Any] = Field(default_factory=dict)
+    options: dict[str, Any] = Field(default_factory=dict)  # Optional Rules 6.0 (see options.py)
+
 
 
 class GameState(_Model):

@@ -13,6 +13,7 @@ from typing import Any
 
 from . import static_data as sd
 from .rng import DiceRoller
+from . import options as _options
 from .state import (
     Assets,
     GameState,
@@ -105,7 +106,7 @@ def _build_vassals(lord_id: str, levied_forces: list[dict[str, int]]) -> tuple[l
     return slots, extra
 
 
-def load_scenario(name: str, seed: int = 1) -> GameState:
+def load_scenario(name: str, seed: int = 1, options: dict | None = None) -> GameState:
     s = _scenario_data(name)
     roller = DiceRoller(seed=seed)
 
@@ -122,6 +123,7 @@ def load_scenario(name: str, seed: int = 1) -> GameState:
         aleppo_independence_played=bool(s.get("aleppo_independence_played", False)),
         skip_first_levy=bool(s.get("skip_first_levy", False)),
         special_vp_rules=list(s.get("special_vp_rules", [])),
+        options=_options.normalize(options),
         notes={
             "calendar_reminders": s.get("calendar_reminders", []),
             "first_turn_plan_size": s.get("first_turn_plan_size"),
