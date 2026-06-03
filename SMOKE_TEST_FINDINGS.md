@@ -128,7 +128,7 @@ triggers the Battle) when a random Approach choice is rejected. The co-location
 invariant + the concede regression test are the durable guards. Marked
 `SMOKE-004`. Engine unchanged for this item.
 
-### SMOKE-005 (OPEN) — stale `locale.bypass` suppresses Approach against a fresh un-bypassed enemy Lord
+### SMOKE-005 (RESOLVED — see resolution below) — stale `locale.bypass` suppresses Approach against a fresh un-bypassed enemy Lord
 
 **Pattern:** lifecycle leak (a flag set but never cleared) producing an illegal
 board state — surfaced by the new SMOKE-004 co-location invariant.
@@ -149,7 +149,7 @@ locale-level suppression with a per-Lord `bypassed` exclusion in
 `_enemy_lord_ids_at`?) is a Rules-of-Play 4.3.5 / design question; needs
 consultation before a fix to avoid a regression. Surfaced to the user.
 
-### SMOKE-006 (OPEN) — Retreat destination rules incomplete (4.8.3)
+### SMOKE-006 (RESOLVED — see resolution below) — Retreat destination rules incomplete (4.8.3)
 
 **Pattern:** rules-coverage gap (clear rule, partially enforced).
 **Symptom:** `battle._lord_fate` (Battle) and `battle._end_sally_besiegers_lose`
