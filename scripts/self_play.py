@@ -65,16 +65,19 @@ def _build_plan_action(s: LLMSession, move: dict) -> dict:
     cards, per = [], {}
     if move.get("_treachery_required"):
         cards.append("treachery")  # exactly one Treachery card owed this turn (1.4)
+    # Fill to plan size round-robin, never exceeding 4 Command cards per Lord
+    # (1.9.2); when every available Lord is at its 4-card cap, use No Command.
     i = 0
     while len(cards) < need:
-        if avail:
-            lid = avail[i % len(avail)]; i += 1
-            if per.get(lid, 0) < 4:
-                cards.append(lid); per[lid] = per.get(lid, 0) + 1; continue
-        if cards.count("no_command") < 5 or not avail:
-            cards.append("no_command")
+        lid = None
+        for _ in range(len(avail)):
+            cand = avail[i % len(avail)]; i += 1
+            if per.get(cand, 0) < 4:
+                lid = cand; break
+        if lid is not None:
+            cards.append(lid); per[lid] = per.get(lid, 0) + 1
         else:
-            cards.append(avail[i % len(avail)]); i += 1
+            cards.append("no_command")
     if move.get("_no_command_required") and "no_command" not in cards:
         cards[-1] = "no_command"  # Unpredictable Weather: enemy must use 1 No Command
     return {"type": "build_plan", "side": side, "cards": cards}
