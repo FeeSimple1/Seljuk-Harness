@@ -403,6 +403,8 @@ def _feed_side(gs: GameState, side: str, result: dict) -> None:
             # Unfed: shift Service Marker left one box (4.6.1)
             if lord.service_box is not None:
                 lord.service_box = max(0, lord.service_box - 1)
+                from .state import shift_vassal_service
+                shift_vassal_service(gs, lord, -1)  # 6.2
             result["feed"].append({"lord": lord.id, "needed": need, "fed": paid, "unfed": True})
         else:
             result["feed"].append({"lord": lord.id, "needed": need, "fed": paid, "unfed": False})

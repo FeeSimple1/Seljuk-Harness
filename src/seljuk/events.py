@@ -35,6 +35,8 @@ def _shift_calendar(gs: GameState, lord_id: str, what: str, direction: str) -> d
         if lord.service_box is None:
             raise IllegalAction("no_service", f"{lord_id} has no Service Marker")
         lord.service_box = max(0, min(13, lord.service_box + delta))
+        from .state import shift_vassal_service
+        shift_vassal_service(gs, lord, delta)  # 6.2
         return {"shifted": "service", "box": lord.service_box}
     raise IllegalAction("bad_what", "shift 'cylinder' or 'service'")
 

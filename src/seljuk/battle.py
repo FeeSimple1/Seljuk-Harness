@@ -765,6 +765,8 @@ def _end_battle(gs: GameState, att_ids: list[str], def_ids: list[str], loser: st
             roll = roller.d6()
             shift = 1 if roll <= 3 else 2
             lord.service_box = max(0, lord.service_box - shift)
+            from .state import shift_vassal_service
+            shift_vassal_service(gs, lord, -shift)  # 6.2: Vassals shift with their Lord
             events["service"].append({"lord": lid, "roll": roll, "shift": shift})
 
     # Losses (4.8.4): roll for each Routed unit (both sides).

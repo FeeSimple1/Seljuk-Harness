@@ -52,6 +52,8 @@ class VassalSlot(_Model):
     special_name: Optional[str] = None
     requires_capability: Optional[str] = None
     levied: bool = False
+    service_box: Optional[int] = None  # 6.2 Vassal Service: Calendar position when Mustered
+    unready: bool = False              # 6.2: Coat-of-Arms down (Disbanded this Levy) -> may not Muster
 
 
 class ThemataMarker(_Model):
@@ -179,3 +181,14 @@ class GameState(_Model):
 
     def side_decks(self, side: str) -> SideDecks:
         return self.seljuk if side == "seljuk" else self.roman
+
+
+def shift_vassal_service(gs: "GameState", lord: "LordState", delta: int) -> None:
+    """6.2 Vassal Service: whenever a Lord's Service Marker shifts for any reason,
+    shift each of his Mustered Vassals' Markers the same number of boxes (2.2.3
+    off-Calendar clamping 0..13). No-op unless the optional rule is in effect."""
+    if not (gs.meta.options or {}).get("vassal_service"):
+        return
+    for v in lord.vassals:
+        if v.levied and v.service_box is not None:
+            v.service_box = max(0, min(13, v.service_box + delta))

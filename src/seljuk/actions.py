@@ -13,7 +13,7 @@ from typing import Any
 from . import scenarios, static_data as sd
 from . import capabilities
 from .rng import DiceRoller
-from .state import GameState, IllegalAction, LordState, VassalSlot
+from .state import GameState, IllegalAction, LordState, VassalSlot, shift_vassal_service
 
 OFF_RIGHT = 13  # Service Marker shifted right beyond box 12 sits off-board (2.2.3)
 
@@ -51,10 +51,11 @@ def _on_map(lord: LordState) -> bool:
     return lord.mustered and lord.cylinder not in ("calendar", "offboard", "removed")
 
 
-def _shift_service_right(lord: LordState, amount: int) -> None:
+def _shift_service_right(gs: GameState, lord: LordState, amount: int) -> None:
     if lord.service_box is None:
         raise IllegalAction("no_service_marker", f"{lord.id} has no Service Marker to shift")
     lord.service_box = min(lord.service_box + amount, OFF_RIGHT)
+    shift_vassal_service(gs, lord, amount)  # 6.2: Vassals shift with their Lord
 
 
 # --- Pay (3.2) --------------------------------------------------------------
@@ -135,7 +136,7 @@ def h_pay(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str
         raise IllegalAction("target_no_service", f"{tid} has no Service Marker")
     setattr(payer.assets, asset, getattr(payer.assets, asset) - amount)
     before = tgt.service_box
-    _shift_service_right(tgt, amount)
+    _shift_service_right(gs, tgt, amount)
     return {"ok": True, "payer": pid, "target": tid, "asset": asset, "amount": amount,
             "service_box": [before, tgt.service_box]}
 
@@ -195,6 +196,7 @@ def resolve_disband(gs: GameState, side: str) -> list[dict[str, Any]]:
     Disband Lords at Service limit (re-Muster later). Returns per-Lord events."""
     events: list[dict[str, Any]] = []
     box = gs.meta.calendar_box
+    events.extend(_disband_expired_vassals(gs, side))  # 6.2 (before Lord Disband)
     for lid, lord in list(gs.lords.items()):
         if lord.side != side or not lord.mustered or lord.service_box is None:
             continue
@@ -205,6 +207,35 @@ def resolve_disband(gs: GameState, side: str) -> list[dict[str, Any]]:
     if events:
         gs.meta.vp = scenarios.score(gs)
     return events
+
+
+def _disband_expired_vassals(gs: GameState, side: str) -> list[dict[str, Any]]:
+    """6.2: at each Disband step, Vassals at or beyond their Service limit return
+    to their Lord's mat Coat-of-Arms down (Unready); their Forces go back to the
+    pool (as able). A Lord left with no Forces Disbands (1.6/3.3.2)."""
+    if not gs.meta.options.get("vassal_service"):
+        return []
+    box = gs.meta.calendar_box
+    out: list[dict[str, Any]] = []
+    for lord in gs.lords.values():
+        if lord.side != side or not lord.mustered:
+            continue
+        for v in lord.vassals:
+            if not (v.levied and v.service_box is not None and v.service_box <= box):
+                continue
+            for u, n in v.forces.items():           # return Forces to the pool (as able)
+                have = lord.forces.get(u, 0)
+                if have:
+                    lord.forces[u] = have - min(have, n)
+                    if lord.forces[u] <= 0:
+                        lord.forces.pop(u, None)
+            v.levied = False
+            v.unready = True
+            v.service_box = None
+            out.append({"lord": lord.id, "vassal_disband": v.special_name or list(v.forces)})
+        if lord.mustered and not lord.forces and lord.service_box is not None:  # 1.6 empty -> Disband
+            out.append(_disband_at_limit(gs, lord))
+    return out
 
 
 def _disband_beyond(gs: GameState, lord: LordState) -> dict[str, Any]:
@@ -245,11 +276,15 @@ def _disband_at_limit(gs: GameState, lord: LordState) -> dict[str, Any]:
 
 def reset_muster_segment(gs: GameState) -> None:
     gs.meta.notes.pop("imperial_rivalry_attempted", None)  # S9: re-arm the obligation each Levy
+    vs_on = gs.meta.options.get("vassal_service")
     for lord in gs.lords.values():
         lord.flags.pop("lordship_spent", None)
         lord.flags.pop("mustered_this_segment", None)
         lord.flags.pop("lordship_bonus", None)
         lord.flags.pop("restored_this_muster", None)
+        if vs_on:  # 6.2: after Vassal Muster, flip Coat-of-Arms-down Markers up (Ready)
+            for v in lord.vassals:
+                v.unready = False
 
 
 def lordship_remaining(gs: GameState, lord: LordState) -> int:
@@ -524,13 +559,18 @@ def h_levy_vassal(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> 
         raise IllegalAction("cannot_levy", "Lord cannot take a Levy action now (3.4)")
     if idx is None or not _vassal_levyable(gs, lord, int(idx)):
         raise IllegalAction("vassal_unavailable", f"{lord.id} cannot Levy that Vassal (3.4.2)")
-    _spend_lordship(lord, 1)
     v = lord.vassals[int(idx)]
+    if gs.meta.options.get("vassal_service") and v.unready:
+        raise IllegalAction("vassal_unready", "an Unready (Coat-of-Arms down) Vassal may not Muster (6.2)")
+    _spend_lordship(lord, 1)
     v.levied = True
     added = _alloc_from_pool(gs, v.forces)  # 1.6 pool cap: unavailable pieces are not added
     for u, n in added.items():
         lord.forces[u] = lord.forces.get(u, 0) + n
-    return {"ok": True, "action": "levy_vassal", "lord": lord.id, "vassal_index": int(idx), "forces_added": added}
+    if gs.meta.options.get("vassal_service"):  # 6.2: place the Vassal's Service Marker like a Lord (3.4.1)
+        v.service_box = min(gs.meta.calendar_box + int(v.service or 0), OFF_RIGHT)
+    return {"ok": True, "action": "levy_vassal", "lord": lord.id, "vassal_index": int(idx),
+            "forces_added": added, "vassal_service_box": v.service_box}
 
 
 def h_levy_themata(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
@@ -971,7 +1011,9 @@ def h_cta_empress(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> 
                     or l.service_box is None or rom is None or rom.service_box is None):
                 raise IllegalAction("bad_lord", "decrease a Constantinople-Seat Lord's Service to raise Romanos (3.5.1.2)")
             l.service_box = max(0, l.service_box - 1)
+            shift_vassal_service(gs, l, -1)               # 6.2
             rom.service_box = min(rom.service_box + 1, OFF_RIGHT)
+            shift_vassal_service(gs, rom, 1)              # 6.2
         else:
             raise IllegalAction("bad_effect", "Empress effect must be 'shift_cylinder' or 'transfer_service'")
         gs.meta.notes["empress_token"] = "constantinople"
