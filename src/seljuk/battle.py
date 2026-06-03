@@ -544,7 +544,8 @@ def _resolve_step(gs, step, striking: _Side, target_side: _Side, role, pursuit, 
     hit_type = "missile" if step == "missile" else "melee"
     skip_charge = skip_charge or set()
     srow = getattr(striking, striker_row)
-    by = {}        # target -> [normal, anti]
+    by = {}        # target -> [normal, anti, select]
+    contrib = {}   # target -> {striker slots that hit it} (for Flank absorb, 4.8.2)
     for slot in SLOTS:
         lid = srow[slot]
         if not lid or _is_routed(gs.lords[lid]):
@@ -561,8 +562,49 @@ def _resolve_step(gs, step, striking: _Side, target_side: _Side, role, pursuit, 
         cur[0] += normal
         cur[1] += anti
         cur[2] += select
+        contrib.setdefault(target, set()).add(slot)
+
+    def _absorb_target(target_id):
+        """4.8.2 APPLY HITS TO LORDS: Hits land on the opposed, Flanked, or
+        Flanking Enemy Lord. When the target D is Struck only by the Lord
+        directly opposite him (no Enemy is Flanking D) and the receiving side has
+        a Flanking Lord F whose own Flank-Strike falls on that same opposing Lord,
+        the receiving Player may choose to route the Hits onto F instead of D
+        ("A Flanking Lord may absorb Hits from a Lord he Flanks if no enemies
+        Flank the target Lord")."""
+        trow = getattr(target_side, target_row)
+        d = next((sl for sl in SLOTS if trow[sl] == target_id), None)
+        if d is None:
+            return target_id
+        # An Enemy Flanks D if any contributing striker is not directly opposite D.
+        if any(sl != d for sl in contrib.get(target_id, ())):
+            return target_id
+        z = srow[d]  # the directly-opposed striker whose Hits these are
+        if not z:
+            return target_id
+        cands = []
+        for f in SLOTS:
+            fid = trow[f]
+            if not fid or fid == target_id or _is_routed(gs.lords[fid]):
+                continue
+            if srow[f]:
+                continue  # F has an Enemy directly opposite -> F is not Flanking
+            fi = SLOTS.index(f)
+            present = [(abs(SLOTS.index(sl) - fi), sl) for sl in SLOTS
+                       if srow[sl] and not _is_routed(gs.lords[srow[sl]])]
+            if not present:
+                continue
+            present.sort()
+            mind = present[0][0]
+            if z in [srow[sl] for dd, sl in present if dd == mind]:  # F Flanks Z
+                cands.append(fid)
+        if not cands:
+            return target_id
+        return ctx.decide("flank_absorb", [target_id] + cands,
+                          {"target": target_id, "striker": z})
 
     def _emit(target, n_raw, a_raw, s_raw, walls):
+        target = _absorb_target(target)
         if pursuit.get(role):  # Pursuit halving (4.8.2)
             n_raw /= 2.0
             a_raw /= 2.0
