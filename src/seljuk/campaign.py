@@ -945,7 +945,7 @@ def command_menu(gs: GameState) -> list[dict[str, Any]]:
                     if lord.side == "roman":
                         out.append({"type": "cmd_ravage", "lord": lid, "target": _adj,
                                     "_desc": f"Steppe Raid (Ravage adjacent {_adj}) (S3)"})
-                    elif gs.meta.actions_remaining >= 1:
+                    elif gs.meta.actions_remaining >= 2:
                         out.append({"type": "cmd_ravage", "lord": lid, "target": _adj, "actions": 2,
                                     "_desc": f"Steppe Raid (Ravage adjacent {_adj}) (S3)"})
         # Supply (4.4): a Route to an un-Ruined Seat within Cart budget.
