@@ -158,9 +158,12 @@ def h_pass_step(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> di
 # --- Disband (3.3) ----------------------------------------------------------
 
 def _return_capabilities_to_deck(gs: GameState, lord: LordState) -> None:
-    """Return a Lord's 'This Lord' Capability cards to that side's AoW deck (3.3)."""
-    deck = gs.side_decks(lord.side).draw_deck
+    """Return a Lord's 'This Lord' Capability cards to their AoW decks (3.3).
+    Route each card by its PRINTED side, not the Lord's current allegiance: a
+    Lord who switched sides on a Loyalty Check (1.4.2) must not migrate a Seljuk
+    Capability into the Roman deck (or vice versa)."""
     for cid in lord.capabilities:
+        deck = gs.side_decks(sd.card(cid)["side"]).draw_deck
         if cid not in deck:
             deck.append(cid)
     lord.capabilities = []
@@ -330,7 +333,12 @@ def _muster_seats(gs: GameState, lord_id: str, side: str) -> list[str]:
     """Free Seats where this Lord could Muster, with the dual-allegiance
     Holding-Box fallback (1.4.2)."""
     info = sd.lord(lord_id)
-    free = [s for s in info.get("seats", []) if _seat_is_free(gs, side, s)]
+    # A dual-allegiance Lord uses his alignment-specific Seat when set (e.g.
+    # Arisighi's Seat is the Constantinople Holding Box when Roman-aligned),
+    # not his printed (primary-side) Seat (1.4.2 / Map Reference).
+    aligned = info.get(f"seat_when_{side}_aligned")
+    candidates = [aligned] if aligned else list(info.get("seats", []))
+    free = [s for s in candidates if _seat_is_free(gs, side, s)]
     if free:
         return free
     # Holding-box fallback for Arisighi / Robert / Roussel (1.4.2)

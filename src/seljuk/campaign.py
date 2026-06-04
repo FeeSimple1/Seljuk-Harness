@@ -593,7 +593,8 @@ def _do_one_wastage(gs: GameState, l: LordState) -> bool:
         setattr(l.assets, top, assets[top] - 1)
         return True
     if len(l.capabilities) > 1:
-        gs.side_decks(l.side).draw_deck.append(l.capabilities.pop())
+        _cid = l.capabilities.pop()
+        gs.side_decks(sd.card(_cid)["side"]).draw_deck.append(_cid)  # route by printed side
         return True
     return False
 
@@ -765,7 +766,12 @@ def _winter_quarters(gs: GameState) -> None:
         if (capabilities.lord_has(gs, lid, "Fealty to the Basileus")
                 or capabilities.lord_has(gs, lid, "Nizam al-Mulk Administrates the Sultanate")):
             continue  # may choose not to return to Seat in Winter (R15 / S15)
-        seats = sd.lord(lid).get("seats", [])
+        _info = sd.lord(lid)
+        # Dual-allegiance Lords return to their alignment-specific Seat when set
+        # (Arisighi -> Constantinople Holding Box when Roman-aligned), not the
+        # printed Seljuk Seat (4.7.6 / Map Reference).
+        _aligned = _info.get(f"seat_when_{lord.side}_aligned")
+        seats = [_aligned] if _aligned else _info.get("seats", [])
         dest = None
         for s in seats:
             if gs.locales[s].conquered_side not in (None, lord.side):
@@ -940,6 +946,9 @@ def command_menu(gs: GameState) -> list[dict[str, Any]]:
                         continue  # no Lord may enter an Enemy Holding Box (1.3.1)
                     if edge["type"] == "pass" and _passes_blocked(gs):
                         continue  # Unpredictable Weather: no Pass March
+                    if (_enemy_lord_ids_at(gs, to, lord.side) and not gs.locales[to].bypass
+                            and not _peace_can_pay(gs, lord)):
+                        continue  # S13 Peace Offering: cannot pay the Coin this Approach (4.5)
                     way = _way_between(loc_id, to, edge["type"])
                     if way is None:
                         continue

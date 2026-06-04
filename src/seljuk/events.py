@@ -62,7 +62,7 @@ def _wastage_once(gs, lord) -> bool:
         return True
     if len(lord.capabilities) > 1:
         card = lord.capabilities.pop()
-        gs.side_decks(lord.side).draw_deck.append(card)  # 4.7.4/3.4.4: discarded Capability returns to that side's deck
+        gs.side_decks(sd.card(card)["side"]).draw_deck.append(card)  # route by printed side (4.7.4/3.4.4)
         return True
     return False
 
@@ -227,6 +227,50 @@ def _ev_aleppo_independence(gs, args, roller):   # R14
     return {"aleppo_independence": True}
 
 
+def _draw_replacement_event(gs, side, roller):
+    """Card-text "discard and draw a new Event": draw the next Arts-of-War card
+    for ``side`` and classify it (immediate -> a fresh pending, Hold -> held,
+    This-Campaign -> filed/applied), as at the normal AoW draw (3.1.3)."""
+    deck = gs.side_decks(side).draw_deck
+    if not deck:
+        return None
+    if roller is not None:
+        roller.shuffle(deck)
+    card = deck.pop()
+    from . import actions
+    actions._classify_drawn_event(gs, side, card, roller)
+    return card
+
+
+def _ev_emir_spurns(gs, args, roller):           # R15* (Emir of Aleppo Spurns Alp Arslan)
+    """If Aleppo is Seljuk-Conquered with no Siege marker: place Independent
+    Aleppo (or, if it is already present, make Aleppo Roman-Conquered); adjust
+    VP; mark the once-per-game Calendar. Otherwise (already triggered, an enemy
+    Seljuk Lord is in Aleppo, or Aleppo is Roman-Conquered) the Event has no
+    effect: discard and draw a replacement Event."""
+    aleppo = gs.locales["aleppo"]
+    seljuk_lord_in_aleppo = any(l.mustered and l.cylinder == "aleppo" and l.side == "seljuk"
+                                for l in gs.lords.values())
+    eligible = (aleppo.conquered_side == "seljuk" and aleppo.siege_markers == 0)
+    if ("R15" in gs.meta.asterisks_used or aleppo.conquered_side == "roman"
+            or seljuk_lord_in_aleppo or not eligible):
+        return {"no_op": True, "reason": "Aleppo not an eligible Seljuk conquest / already triggered",
+                "replacement": _draw_replacement_event(gs, "roman", roller)}
+    if not gs.meta.independent_aleppo_on_map:
+        gs.meta.independent_aleppo_on_map = True   # place Independent Aleppo (no longer Seljuk-held)
+        aleppo.conquered_side = None
+        aleppo.conquered_count = 0
+        result = {"independent_aleppo": True}
+    else:
+        gs.meta.independent_aleppo_on_map = False   # already present -> Roman Conquered instead
+        aleppo.conquered_side = "roman"
+        aleppo.conquered_count = {"fort": 1, "town": 2, "city": 3}[sd.locale("aleppo")["type"]]
+        result = {"roman_conquered": "aleppo"}
+    gs.meta.asterisks_used.append("R15")            # once-per-game (mark the Calendar)
+    gs.meta.vp = scenarios.score(gs)                # adjust VP
+    return result
+
+
 def _ev_resilient_agriculture(gs, args, roller):  # R19 (remove up to 2 Seljuk Ravaged in the Roman Empire)
     removed = 0
     for lid, loc in gs.locales.items():
@@ -260,11 +304,45 @@ def _ev_deserters(gs, args, roller):             # S7 (remove 1 Themata from a b
 
 
 def _ev_thematic_desert(gs, args, roller):       # S15 (Alp Arslan in a Thema removes 1 Themata there)
+    """Alp Arslan in a Thema removes 1 Levied or Unlevied Themata Service marker
+    there (card clarification: Unlevied in the Thema box -- even Besieged/
+    defending a Stronghold -- or Levied onto the Roman Commander's mat). Search
+    all three: the Unlevied box, defending markers at his Locale, and Levied
+    markers on Lord mats at his Locale."""
     aa = gs.lords["alp_arslan"]
-    thema = sd.locale(aa.cylinder)["thema"] if aa.mustered else None
+    if not aa.mustered:
+        return {"no_op": True, "reason": "Alp Arslan not in a Thema"}
+    thema = sd.locale(aa.cylinder)["thema"]
     if thema is None:
         return {"no_op": True, "reason": "Alp Arslan not in a Thema"}
-    return _remove_themata(gs, thema, args.get("unit"))
+    unit = args.get("unit")
+    loc = aa.cylinder
+    src = args.get("source")  # optional: "unlevied" | "defending" | "levied"
+
+    def _match(m):
+        return unit is None or m.unit == unit
+
+    if src in (None, "unlevied"):
+        box = gs.themata.get(thema, [])
+        for i, m in enumerate(box):
+            if _match(m):
+                box.pop(i)
+                return {"removed": {"thema": thema, "unit": m.unit, "source": "unlevied"}}
+    if src in (None, "defending"):
+        deff = gs.locales[loc].themata_defending
+        for i, m in enumerate(deff):
+            if _match(m):
+                mk = deff.pop(i)
+                return {"removed": {"thema": thema, "unit": mk.unit, "source": "defending", "locale": loc}}
+    if src in (None, "levied"):
+        for l in gs.lords.values():
+            if l.cylinder != loc:
+                continue
+            for i, m in enumerate(l.themata_on_mat):
+                if _match(m):
+                    mk = l.themata_on_mat.pop(i)
+                    return {"removed": {"thema": thema, "unit": mk.unit, "source": "levied", "lord": l.id}}
+    raise IllegalAction("no_themata", f"no Levied/Unlevied Themata to remove in {thema} / at {loc}")
 
 
 def _ev_siege_of_bari(gs, args, roller):         # S5* (remove up to 2 Unlevied Themata)
@@ -353,7 +431,7 @@ _RESOLVERS = {
     "R17": _ev_weather_roman, "S17": _ev_weather_seljuk,
     "R5": _ev_shift_seljuk, "R10": _ev_afsin_murders, "R12": _ev_afsin_recalled,
     "R13": _ev_thrakion, "R14": _ev_aleppo_independence, "R19": _ev_resilient_agriculture,
-    "R20": _ev_armenian_resistance,
+    "R15": _ev_emir_spurns, "R20": _ev_armenian_resistance,
     "S5": _ev_siege_of_bari, "S7": _ev_deserters, "S8": _ev_merchant_financing,
     "S12": _ev_doukai, "S14": _ev_manuel_ill, "S15": _ev_thematic_desert,
     "S20": _ev_consolidates_power, "S22": _ev_massacre, "S23": _ev_reinforcements_denied,
