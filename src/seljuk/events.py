@@ -189,7 +189,20 @@ def _ev_shift_seljuk(gs, args, roller):          # R5 Fatimid Conflict
     return _shift_calendar(gs, args["lord"], args.get("what", "cylinder"), args.get("direction", "left"))
 
 
+def _shiftable(lord) -> bool:
+    """A Lord can be shifted on the Calendar only if he has a Service Marker or a
+    cylinder currently on the Calendar. A permanently removed/disbanded Lord has
+    neither, so a Calendar-shift Event targeting him has no effect."""
+    on_calendar = lord.cylinder == "calendar" and lord.cylinder_calendar_box is not None
+    return lord.service_box is not None or on_calendar
+
+
 def _ev_afsin_recalled(gs, args, roller):        # R12
+    afsin = gs.lords["afsin_beg"]
+    if not _shiftable(afsin):
+        # Afsin Beg permanently removed: nothing to shift, the Event has no
+        # effect (the card does not call for a replacement Event draw).
+        return {"no_op": True, "reason": "Afsin Beg has no Service Marker or Calendar cylinder to shift"}
     return _shift_calendar(gs, "afsin_beg", args.get("what", "service"), args.get("direction", "left"))
 
 
@@ -198,6 +211,9 @@ def _ev_doukai(gs, args, roller):                # S12 Doukai Court Intrigues
 
 
 def _ev_manuel_ill(gs, args, roller):            # S14 Manuel Komnenos Falls Ill
+    mk = gs.lords["manuel_komnenos"]
+    if not _shiftable(mk):
+        return {"no_op": True, "reason": "Manuel Komnenos has no Service Marker or Calendar cylinder to shift"}
     return _shift_calendar(gs, "manuel_komnenos", args.get("what", "service"), args.get("direction", "left"))
 
 
