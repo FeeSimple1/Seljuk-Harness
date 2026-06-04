@@ -316,15 +316,18 @@ play changes that were tracked separately are implemented:
 - **R23 Kleisourai** — a Seljuk March across a Pass raises a `kleisourai`
   pending; the Roman holder plays (1 Hit per crossing Lord) or declines, then
   the deferred March arrival resumes (`_finish_march_arrival`). The co-location
-  invariant excludes the kleisourai Locale as a momentary contact. (The card's
-  Avoid-Battle / Retreat across-Pass sub-triggers, which live inside battle
-  resolution, remain a narrow documented follow-up.)
+  invariant excludes the kleisourai Locale as a momentary contact. The card's
+  Avoid-Battle and Retreat across-Pass sub-triggers are also covered: Seljuk
+  Pass crossings are collected during Avoid (`h_respond_approach`) and Retreat
+  (`battle._lord_fate`), and a gate at the top of `_after_card` offers the
+  reaction before the Command card ends, resuming Feed/Pay/Disband afterward.
 - **R21/S21** — recognized by `_consume_battle_events` and applied at the battle
   locale, played via the `battle_events` parameter like the other in-Battle
   holds (R2/S2/S3/R24/S6); Storm consumes them with an allow-filter. The
   approach/Storm menu entries advertise the available holds.
 Tests: `tests/test_imperial_coffers_window.py`, `tests/test_summer_heat_window.py`,
-`tests/test_kleisourai_window.py`, `tests/test_battle_storm_events_window.py`,
+`tests/test_kleisourai_window.py`, `tests/test_kleisourai_avoid_retreat.py`,
+`tests/test_battle_storm_events_window.py`,
 plus the in-window/out-of-window guards in `tests/test_hold_event_menu.py`.
 
 ### SMOKE-009 — Feed scope: Siege over-marked, Ravage under-marked Moved/Fought

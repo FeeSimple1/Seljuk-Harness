@@ -203,6 +203,7 @@ def _reveal_next(gs: GameState) -> None:
         lord.flags.pop("unstoppable_used_this_card", None)
         lord.flags.pop("peace_paid_this_card", None)
         gs.meta.notes.pop("marwanid_supply_lock", None)
+        gs.meta.notes.pop("_kleisourai_crossers", None)  # per-card R23 crossing tally
         # Summer Heat (R3 Roman / S4 Seljuk): in Summer, the *enemy* of the
         # revealed Lord may immediately make that Lord Command 1 (card text).
         # Offer the reaction before any Command action; the holder plays/declines.
@@ -248,6 +249,17 @@ def _store_fpd_roller(gs: GameState, roller: DiceRoller) -> None:
 
 
 def _after_card(gs: GameState) -> None:
+    # R23 Kleisourai (Avoid/Retreat across Pass): a Seljuk Lord may have crossed
+    # a Pass while Avoiding Battle or Retreating during this card. Offer the
+    # Roman holder the reaction before the card ends; resume end-of-card after.
+    crossers = [m for m in gs.meta.notes.get("_kleisourai_crossers", [])
+                if m in gs.lords and gs.lords[m].mustered]
+    gs.meta.notes.pop("_kleisourai_crossers", None)
+    if (crossers and "R23" in gs.roman.held_events
+            and not any(p["type"] == "kleisourai" for p in gs.meta.pending)):
+        gs.meta.pending.append({"type": "kleisourai", "reactor": "roman",
+                                "trigger": "reaction", "movers": crossers, "resume": "after_card"})
+        return
     if gs.meta.phase == "winter":
         _winter_end_activation(gs)
         return
@@ -1560,7 +1572,8 @@ def h_cmd_march(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> di
             and "R23" in gs.roman.held_events
             and not any(p["type"] == "kleisourai" for p in gs.meta.pending)):
         gs.meta.pending.append({
-            "type": "kleisourai", "reactor": "roman", "movers": [g.id for g in group],
+            "type": "kleisourai", "reactor": "roman", "trigger": "march",
+            "movers": [g.id for g in group],
             "to": to, "from": march_from, "unstoppable": bool(action.get("unstoppable", False)),
         })
         res["pending"] = "kleisourai"
@@ -1702,6 +1715,9 @@ def h_respond_approach(gs: GameState, action: dict[str, Any], roller: DiceRoller
             lord.assets.loot = 0
             lord.assets.provender = min(lord.assets.provender, lord.assets.carts)
             _award_avoid_spoils(gs, pend["attackers"], disc_loot, disc_prov)
+            if (lord.side == "seljuk"
+                    and any(w["type"] == "pass" for w in gmap.ways_between(to, dest))):
+                gs.meta.notes.setdefault("_kleisourai_crossers", []).append(did)  # R23: Avoid across Pass
             lord.cylinder = dest
             lord.moved_fought = True
             avoided.append(did)
@@ -2170,9 +2186,21 @@ def h_discard_imperial_coffers(gs: GameState, action: dict[str, Any], roller: Di
     return {"ok": True, "action": "discard_imperial_coffers", "loyalty": res}
 
 
+def _resume_after_kleisourai(gs: GameState, pend: dict) -> dict[str, Any]:
+    """Continue the flow a Kleisourai reaction interrupted: a March (trigger
+    "march") resumes its deferred arrival; an Avoid/Retreat (trigger "reaction")
+    resumes the deferred end-of-card (Feed/Pay/Disband)."""
+    if pend.get("trigger") == "march":
+        group = [gs.lords[mid] for mid in pend["movers"] if mid in gs.lords]
+        return _finish_march_arrival(gs, group, pend["to"], pend.get("from"), bool(pend.get("unstoppable")))
+    if pend.get("resume") == "after_card":
+        _after_card(gs)
+    return {}
+
+
 def h_play_kleisourai(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
     """Play R23 Kleisourai: each crossing Seljuk Lord takes 1 Battle Hit, then the
-    deferred March arrival resumes."""
+    interrupted March arrival / end-of-card resumes."""
     from . import events
     pend = next((p for p in gs.meta.pending if p["type"] == "kleisourai"), None)
     if pend is None:
@@ -2184,20 +2212,18 @@ def h_play_kleisourai(gs: GameState, action: dict[str, Any], roller: DiceRoller)
     hits = [events.kleisourai_hit(gs, gs.lords[mid], roller)
             for mid in pend["movers"] if mid in gs.lords]
     gs.meta.pending.remove(pend)
-    group = [gs.lords[mid] for mid in pend["movers"] if mid in gs.lords]
-    arrival = _finish_march_arrival(gs, group, pend["to"], pend.get("from"), bool(pend.get("unstoppable")))
-    return {"ok": True, "action": "play_kleisourai", "hits": hits, **arrival}
+    resumed = _resume_after_kleisourai(gs, pend)
+    return {"ok": True, "action": "play_kleisourai", "hits": hits, **resumed}
 
 
 def h_decline_kleisourai(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
-    """Decline the optional R23 Kleisourai reaction; resume the March arrival."""
+    """Decline the optional R23 Kleisourai reaction; resume the interrupted flow."""
     pend = next((p for p in gs.meta.pending if p["type"] == "kleisourai"), None)
     if pend is None:
         raise IllegalAction("no_pending", "no Kleisourai reaction owed")
     gs.meta.pending.remove(pend)
-    group = [gs.lords[mid] for mid in pend["movers"] if mid in gs.lords]
-    arrival = _finish_march_arrival(gs, group, pend["to"], pend.get("from"), bool(pend.get("unstoppable")))
-    return {"ok": True, "action": "decline_kleisourai", "declined": True, **arrival}
+    resumed = _resume_after_kleisourai(gs, pend)
+    return {"ok": True, "action": "decline_kleisourai", "declined": True, **resumed}
 
 
 def _clear_summer_heat_pending(gs: GameState) -> None:

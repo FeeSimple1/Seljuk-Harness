@@ -865,6 +865,9 @@ def _lord_fate(gs: GameState, lord: LordState, loser_role: str, locale: str,
         lord.cylinder = locale
         return "withdraw"
     if isinstance(choice, tuple) and choice[0] == "retreat":
+        if (lord.side == "seljuk"
+                and any(w["type"] == "pass" for w in gmap.ways_between(locale, choice[1]))):
+            gs.meta.notes.setdefault("_kleisourai_crossers", []).append(lord.id)  # R23: Retreat across Pass
         lord.cylinder = choice[1]
         lord.besieged = False
         return "retreat"
