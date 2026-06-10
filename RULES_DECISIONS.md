@@ -47,3 +47,27 @@ Format per entry:
   forces.json turkic_horse Melee rewritten as
   {base:0, granted_by:SHOCK_TACTICS, value_when_granted:0.5, applies_to:ceil(n/2)}.
   Tests: test_phase4b_combat_caps.test_shock_tactics_grants_turkic_melee_s4_q002.
+
+
+## D-002 (from Q-002) — Steeled Resolve (R3) Infantry armor value
+
+- **Question.** Does R3 Steeled Resolve set the Lord's Infantry armor to 1-3 or
+  1-4 vs Horse? The Arts of War Reference said "Armor 1-3" (card text +
+  clarification), but the Units data + engine implement base Infantry 1-3 with
+  Steeled Resolve -> 1-4; "1-3" would be a no-op.
+- **Decision.** "Infantry base armor confirmed at 1-3. ... Steeled Resolve grants
+  Armor 1-4 vs. Horse for the marked round." (Eric, 2026-06-09.) Rationale: a
+  Capability granting the armor Infantry already have would be a dead card half;
+  the pattern of Protection Capabilities is +1-style bumps (Klibanophoroi 1-3->1-4,
+  Syndosis Unarmored->1-2); the rulebook's Protection worked example is exactly
+  "a '+1' to Armor improves 1-3 to 1-4"; 1-4 is the elite-foot ceiling (Varangian).
+- **Citation.** Player Aid Forces table (Infantry base Armor 1-3) + Rules of Play
+  Protection section. The Arts of War Reference's "1-3" is a propagated
+  transcription error (a single mistranscription echoed into the clarification);
+  corrected in that file with a sourcing note. Derived correction, NOT published
+  errata -- official Errata, if it ever addresses R3, takes precedence.
+- **Encoded in.** Already implemented in `src/seljuk/capabilities.py`
+  (`protection_range`: Steeled Resolve vs Horse -> (1,4)) and `battle.py`
+  (vs-Horse scope = Missile+Melee in the owner-declared Round, Ruling 2, commit
+  60450cf). Reference corrected in `reference/Seljuk Arts of War Reference.txt`.
+  Tests: `tests/test_r3_steeled_resolve_and_s24.py`.

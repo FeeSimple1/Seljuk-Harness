@@ -44,9 +44,11 @@ HOLD: Play in Summer after Seljuks reveal Command card. That Lord is Command 1.
 Clarification. This effect takes place before any Command actions are performed after revealing the Command card. This card does not prevent Commands that cost an entire card like Tax, March from a holding box, etc.
  
 CAPABILITY - Steeled Resolve (Any)
-This Lord's Infantry have Armor 1-3 vs. Horse in any 1 Round of Battle (mark).
+This Lord's Infantry have Armor 1-4 vs. Horse in any 1 Round of Battle (mark).
  
-Clarification. The Armor 1-3 effect applies to both Missile and Melee. Account for Hits from the Javelins Capability separately from Horse Missiles during Battle when using this Capability. Use the Capability's marker to indicate this card's effect.
+Clarification. The Armor 1-4 effect applies to both Missile and Melee. Account for Hits from the Javelins Capability separately from Horse Missiles during Battle when using this Capability. Use the Capability's marker to indicate this card's effect.
+ 
+[CORRECTION (D-002, 2026-06-09): both Armor values above were transcribed as "1-3"; corrected to "1-4". Derived from the Player Aid Forces table (Infantry base Armor 1-3, confirmed by Eric) plus the no-op argument (a Capability granting the value Infantry already have would be a dead card half), NOT from published errata. If official Errata later addresses R3, the Errata file takes precedence over this derived correction. Residual check: confirm the printed R3 card reads "1-4"; if it reads "1-3", the no-op exists in the published game and is an upstream errata candidate, but the engine implements 1-4 regardless.]
  
 ----------------------------------------------------------------
 R4. SULTAN'S HORSE IS KILLED / PRESSED LEVY SERVICE
