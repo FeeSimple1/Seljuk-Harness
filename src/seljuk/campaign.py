@@ -1007,7 +1007,7 @@ def command_menu(gs: GameState) -> list[dict[str, Any]]:
             if cost is not None and cost <= _available_carts(gs, lord) and lord.assets.provender < 8:
                 out.append({"type": "cmd_supply", "lord": lid, "_desc": "Supply Provender via a Route (4.4)"})
         # Siege/Storm (4.5.1-.2): a Besieging Lord may advance the Siege or Storm.
-        if lord.bypassed and st.bypass:  # 4.3.6 ENCAMP
+        if lord.bypassed and st.bypass and not _enemy_in_open_at(gs, loc_id, lord.side):  # 4.3.6 ENCAMP
             out.append({"type": "cmd_encamp", "lord": lid, "_desc": "Encamp: convert Bypass to Siege (4.3.6)"})
         if (not lord.bypassed and st.bypass and actions.current_allegiance(gs, loc_id) == lord.side
                 and any(o.mustered and o.cylinder == loc_id and o.side == _enemy(lord.side) and o.bypassed
@@ -1439,6 +1439,13 @@ def h_cmd_recruit(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> 
 def _enemy_lord_ids_at(gs: GameState, locale_id: str, side: str) -> list[str]:
     return [lid for lid, l in gs.lords.items()
             if l.mustered and l.cylinder == locale_id and l.side == _enemy(side) and not l.besieged]
+
+
+def _enemy_in_open_at(gs: GameState, locale_id: str, side: str) -> bool:
+    """An opposing Lord standing in the open here (not Besieged-inside, not
+    Bypassed). A Siege/Encamp cannot proceed while such a Lord is present."""
+    return any(l.mustered and l.cylinder == locale_id and l.side == _enemy(side)
+               and not l.besieged and not l.bypassed for l in gs.lords.values())
 
 
 def _all_turkic(lords: list[LordState]) -> bool:
@@ -2045,6 +2052,8 @@ def h_cmd_encamp(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> d
     loc = lord.cylinder
     if not (lord.bypassed and gs.locales[loc].bypass):
         raise IllegalAction("not_bypassing", "only a Bypassing Lord may Encamp (4.3.6)")
+    if _enemy_in_open_at(gs, loc, lord.side):
+        raise IllegalAction("enemy_in_open", "cannot Encamp/Siege with an enemy Lord in the open here (4.3.6)")
     if gs.meta.actions_remaining < 1:
         raise IllegalAction("insufficient_actions", "Encamp uses one March action (4.3.6)")
     gs.locales[loc].bypass = False
