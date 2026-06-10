@@ -143,6 +143,7 @@ class Meta(_Model):
     active_player: str = "seljuk"    # Seljuk first (2.2.4)
     vp: dict[str, float] = Field(default_factory=lambda: {"roman": 0.0, "seljuk": 0.0})
     seljuk_unity_targets: dict[str, int] = Field(default_factory=dict)  # {"3": 10, "6": 13, ...}
+    themata_removed: list[ThemataMarker] = Field(default_factory=list)  # eliminated markers (R13 return pile)
     aleppo_independence_played: bool = False
     independent_aleppo_on_map: bool = False
     asterisks_used: list[str] = Field(default_factory=list)

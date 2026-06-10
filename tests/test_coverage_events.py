@@ -260,10 +260,13 @@ def test_s5_siege_of_bari_removes_up_to_two_themata():
 
 
 def test_r13_thrakion_returns_themata_marker():
+    from seljuk.state import ThemataMarker
     gs = _gs()
+    gs.meta.themata_removed = [ThemataMarker(unit="kavallarioi", home_thema="Charsianon")]
     before = len(gs.themata.get("Charsianon", []))
     E._ev_thrakion(gs, {"thema": "Charsianon", "unit": "kavallarioi"}, _r())
     assert len(gs.themata["Charsianon"]) == before + 1
+    assert gs.meta.themata_removed == []          # drawn from the removed pile
 
 
 def test_kleisourai_no_op_when_no_units():

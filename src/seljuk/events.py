@@ -41,11 +41,21 @@ def _shift_calendar(gs: GameState, lord_id: str, what: str, direction: str) -> d
     raise IllegalAction("bad_what", "shift 'cylinder' or 'service'")
 
 
+def _record_removed_themata(gs, marker, home_thema):
+    """Add an eliminated Themata Service Marker to the removed-from-play pile so
+    R13 Thrakion Reinforcements can later return it to its home Thema."""
+    from .state import ThemataMarker
+    gs.meta.themata_removed.append(
+        ThemataMarker(unit=marker.unit, symbols=marker.symbols,
+                      home_thema=getattr(marker, "home_thema", None) or home_thema))
+
+
 def _remove_themata(gs: GameState, thema: str, unit: str | None = None) -> dict:
     box = gs.themata.get(thema, [])
     for i, m in enumerate(box):
         if unit is None or m.unit == unit:
             box.pop(i)
+            _record_removed_themata(gs, m, thema)
             return {"removed": {"thema": thema, "unit": m.unit}}
     raise IllegalAction("no_themata", f"no matching Themata in {thema}")
 
@@ -228,11 +238,22 @@ def _ev_afsin_murders(gs, args, roller):         # R10* Afsin Murders Seljuk Off
     return {"afsin_fealty": 2}
 
 
-def _ev_thrakion(gs, args, roller):              # R13 Thrakion Reinforcements (return a removed Themata)
+def _ev_thrakion(gs, args, roller):              # R13 Thrakion Reinforcements
+    """Return a Themata Service Marker *previously removed from play* to its home
+    Thema box (card text). Draw from the removed-from-play pile; no-op when the
+    pile is empty -- the Event may not fabricate a marker. Optional thema/unit
+    args filter which removed marker to return."""
     from .state import ThemataMarker
-    thema = args["thema"]; unit = args["unit"]
-    gs.themata.setdefault(thema, []).append(ThemataMarker(unit=unit, symbols=args.get("symbols", 1)))
-    return {"returned": {"thema": thema, "unit": unit}}
+    pile = gs.meta.themata_removed
+    thema = args.get("thema"); unit = args.get("unit")
+    idx = next((i for i, m in enumerate(pile)
+                if (thema is None or m.home_thema == thema) and (unit is None or m.unit == unit)), None)
+    if idx is None:
+        return {"no_op": True, "reason": "no matching Themata previously removed from play to return (R13)"}
+    mk = pile.pop(idx)
+    home = mk.home_thema
+    gs.themata.setdefault(home, []).append(ThemataMarker(unit=mk.unit, symbols=mk.symbols, home_thema=home))
+    return {"returned": {"thema": home, "unit": mk.unit}}
 
 
 def _ev_aleppo_independence(gs, args, roller):   # R14
@@ -375,12 +396,14 @@ def _ev_thematic_desert(gs, args, roller):       # S15 (Alp Arslan in a Thema re
         for i, m in enumerate(box):
             if _match(m):
                 box.pop(i)
+                _record_removed_themata(gs, m, thema)
                 return {"removed": {"thema": thema, "unit": m.unit, "source": "unlevied"}}
     if src in (None, "defending"):
         deff = gs.locales[loc].themata_defending
         for i, m in enumerate(deff):
             if _match(m):
                 mk = deff.pop(i)
+                _record_removed_themata(gs, mk, thema)
                 return {"removed": {"thema": thema, "unit": mk.unit, "source": "defending", "locale": loc}}
     if src in (None, "levied"):
         for l in gs.lords.values():
@@ -389,6 +412,7 @@ def _ev_thematic_desert(gs, args, roller):       # S15 (Alp Arslan in a Thema re
             for i, m in enumerate(l.themata_on_mat):
                 if _match(m):
                     mk = l.themata_on_mat.pop(i)
+                    _record_removed_themata(gs, mk, thema)
                     return {"removed": {"thema": thema, "unit": mk.unit, "source": "levied", "lord": l.id}}
     # No matching marker in the box, defending, or on co-located mats: no effect
     # (do not raise -- an immediate Event that can never resolve stalls the Levy).
