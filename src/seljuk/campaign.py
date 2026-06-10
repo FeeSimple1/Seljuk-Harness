@@ -977,7 +977,9 @@ def command_menu(gs: GameState) -> list[dict[str, Any]]:
                           and info.get("is_stronghold") and info["allegiance"] == "roman"
                           and actions.is_friendly_locale(gs, loc_id, "roman")
                           and st.ravaged_side is None)
-            if at_seat or empire_tax:
+            nomisma_blocks = (lord.side == "roman" and not actions.is_commander(gs, lid)
+                              and gs.meta.notes.get("nomisma_debased_used"))
+            if (at_seat or empire_tax) and not nomisma_blocks:
                 out.append({"type": "cmd_tax", "lord": lid, "_desc": "Tax for a Coin — uses the whole card (4.5.6)"})
         # Ravage (4.5.5): Enemy, not yet Ravaged, not Besieged.
         if not lord.besieged and st.ravaged_side is None and actions.current_allegiance(gs, loc_id) == _enemy(lord.side):
@@ -1064,6 +1066,10 @@ def h_cmd_tax(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict
     lord = _require(action.get("lord"), gs)
     if lord.besieged:
         raise IllegalAction("besieged", "a Besieged Lord may not Tax (4.5.6)")
+    if (lord.side == "roman" and not actions.is_commander(gs, lord.id)
+            and gs.meta.notes.get("nomisma_debased_used")):
+        raise IllegalAction("nomisma_debased",
+                            "Non-Commander Roman Lords may not Tax (R19 Nomisma Debased)")
     loc_id = lord.cylinder
     if loc_id in gs.meta.notes.get("marwanid_seats", []):
         raise IllegalAction("marwanid_no_tax", "Lords may not Tax an activated Marwanid Locale (3.5.1.1)")
