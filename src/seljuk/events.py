@@ -125,14 +125,23 @@ def _ev_norman_pay_revolt(gs, args, roller):      # S19
     return _set_treachery(gs, "seljuk")
 
 
+def _seljuk_lord_minus1_lordship(gs, args):
+    """Already-marked branch shared by R1 and R10: 1 *Seljuk* Lord -1 Lordship
+    this Muster (Seljuk choice). The persistent flag survives the muster-segment
+    reset. No-op if no valid Seljuk target (the selected Lord should be one able
+    to Muster this turn, if possible)."""
+    lid = args.get("lord")
+    l = gs.lords.get(lid)
+    if l is None or l.side != "seljuk":
+        return {"already_marked": True, "no_op": True,
+                "reason": "need a Seljuk Lord for the -1 Lordship effect"}
+    l.flags["lordship_persist"] = int(l.flags.get("lordship_persist", 0)) - 1
+    return {"already_marked": True, "lordship_penalty": lid}
+
+
 def _ev_flooded_river(gs, args, roller):          # R1*
     if "R1" in gs.meta.asterisks_used:
-        lid = args.get("lord")
-        if lid in gs.lords:
-            # -1 Lordship this Muster. Use a persistent flag that survives the
-            # muster-segment reset (set here during Arts of War, applied at Muster).
-            gs.lords[lid].flags["lordship_persist"] = int(gs.lords[lid].flags.get("lordship_persist", 0)) - 1
-        return {"already_marked": True, "lordship_penalty": lid}
+        return _seljuk_lord_minus1_lordship(gs, args)
     aa = gs.lords["alp_arslan"]
     n = sum(1 for _ in range(3) if _wastage_once(gs, aa))
     gs.meta.asterisks_used.append("R1")
@@ -232,9 +241,11 @@ def _ev_reinforcements_denied(gs, args, roller):  # S23
 
 
 def _ev_afsin_murders(gs, args, roller):         # R10* Afsin Murders Seljuk Officer
+    if "R10" in gs.meta.asterisks_used:
+        # Already marked: 1 Seljuk Lord -1 Lordship this Muster instead.
+        return _seljuk_lord_minus1_lordship(gs, args)
     gs.meta.notes["afsin_fealty_2"] = True
-    if "R10" not in gs.meta.asterisks_used:
-        gs.meta.asterisks_used.append("R10")
+    gs.meta.asterisks_used.append("R10")
     return {"afsin_fealty": 2}
 
 
