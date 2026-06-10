@@ -312,10 +312,19 @@ def _ev_armenian_resistance(gs, args, roller):   # R20
     return {"roman_conquered": loc}
 
 
+_S7_BORDER_THEMATA = ("Iberia", "Mesopotamia", "Melitene", "Antiocheia")
+
+
 def _ev_deserters(gs, args, roller):             # S7 (remove 1 Themata from a border Thema)
-    thema = args["thema"]
-    if thema not in ("Iberia", "Mesopotamia", "Melitene", "Antiocheia"):
+    thema = args.get("thema")
+    if thema is not None and thema not in _S7_BORDER_THEMATA:
         raise IllegalAction("bad_thema", "must be a border Thema (S7)")
+    # No valid target is a no-op, not an unresolvable Event (matches R11/R16/S11/
+    # S22 etc.): if no border Thema has a marker the Event has no effect.
+    if not any(gs.themata.get(t) for t in _S7_BORDER_THEMATA):
+        return {"no_op": True, "reason": "no border Themata to remove (S7)"}
+    if thema is None or not gs.themata.get(thema):
+        thema = next(t for t in _S7_BORDER_THEMATA if gs.themata.get(t))
     return _remove_themata(gs, thema, args.get("unit"))
 
 
@@ -358,7 +367,9 @@ def _ev_thematic_desert(gs, args, roller):       # S15 (Alp Arslan in a Thema re
                 if _match(m):
                     mk = l.themata_on_mat.pop(i)
                     return {"removed": {"thema": thema, "unit": mk.unit, "source": "levied", "lord": l.id}}
-    raise IllegalAction("no_themata", f"no Levied/Unlevied Themata to remove in {thema} / at {loc}")
+    # No matching marker in the box, defending, or on co-located mats: no effect
+    # (do not raise -- an immediate Event that can never resolve stalls the Levy).
+    return {"no_op": True, "reason": f"no Levied/Unlevied Themata to remove in {thema} / at {loc}"}
 
 
 def _ev_siege_of_bari(gs, args, roller):         # S5* (remove up to 2 Unlevied Themata)

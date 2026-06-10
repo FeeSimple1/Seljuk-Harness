@@ -52,18 +52,16 @@ def test_removes_levied_marker_on_colocated_lord_mat():
     assert rom.themata_on_mat == []
 
 
-def test_no_themata_anywhere_raises():
+def test_no_themata_anywhere_is_no_op():
+    """No marker in box / defending / co-located mats -> the immediate Event has
+    no effect (must NOT raise, or the Levy stalls on an unresolvable pending)."""
     gs = _gs()
     gs.themata[THEMA] = []
     gs.locales[LOC].themata_defending = []
     for l in gs.lords.values():
         if l.cylinder == LOC:
             l.themata_on_mat = []
-    try:
-        E._ev_thematic_desert(gs, {}, _r())
-        assert False, "expected IllegalAction"
-    except IllegalAction:
-        pass
+    assert E._ev_thematic_desert(gs, {}, _r()).get("no_op") is True
 
 
 def test_no_op_when_not_in_thema():
