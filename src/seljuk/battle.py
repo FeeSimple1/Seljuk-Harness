@@ -723,7 +723,11 @@ def _apply_pools(gs, step, by, contrib, striking: _Side, target_side: _Side, rol
             n_hits = _roll_walls(roller, n_hits, (1, walls))
             a_hits = _roll_walls(roller, a_hits, (1, walls))
             s_hits = _roll_walls(roller, s_hits, (1, walls))
-        vs_horse = (step == "horse_melee" and round_no == 1)  # R3 Steeled Resolve scope
+        # R3 Steeled Resolve: Infantry Armor 1-3 vs Horse applies to BOTH Missile
+        # and Melee (card clarification). Seljuk Missile Strikes against a Roman
+        # Lord are Turkic Horse, so the Missile step counts as "vs Horse". The
+        # "any 1 Round (mark)" choice is modelled as Round 1.
+        vs_horse = (step in ("horse_melee", "missile")) and round_no == 1
         applied = []
         if n_hits:
             applied += _apply_hits(gs, target, n_hits, hit_type, ctx, roller, vs_horse=vs_horse)

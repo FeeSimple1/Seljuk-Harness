@@ -658,13 +658,18 @@ def _hold_common_cultural(gs, args, roller):        # S21 (remove up to 2 Turkic
     return {"turkic_removed": n, "disbanded": _disband_forceless_at(gs, loc)}
 
 
-def _hold_bad_omens(gs, args, roller):              # S24 (reorder top 2 unrevealed Roman Plan cards)
+def _hold_bad_omens(gs, args, roller):              # S24 (inspect top 2 unrevealed Roman Plan cards)
+    """Inspect the top 2 Roman Plan cards and replace them in EITHER order (card
+    text). The Seljuk player may keep the order (args order="keep") or swap them
+    (default)."""
     pp = gs.roman.plan_pointer
     plan = gs.roman.command_plan
-    if len(plan) - pp >= 2:
-        plan[pp], plan[pp + 1] = plan[pp + 1], plan[pp]
-        return {"reordered": plan[pp:pp + 2]}
-    return {"no_op": True, "reason": "fewer than 2 unrevealed Roman cards"}
+    if len(plan) - pp < 2:
+        return {"no_op": True, "reason": "fewer than 2 unrevealed Roman cards"}
+    if args.get("order") == "keep":
+        return {"kept": plan[pp:pp + 2]}
+    plan[pp], plan[pp + 1] = plan[pp + 1], plan[pp]
+    return {"reordered": plan[pp:pp + 2]}
 
 
 def _hold_summer_heat(gs, args, roller):            # R3/S4 (enemy Command 1 after reveal)
