@@ -406,12 +406,25 @@ def _ev_merchant_financing(gs, args, roller):    # S8 (exchange Carts <-> Coin f
     return {"exchanged": n, "to": args.get("to")}
 
 
-def _ev_consolidates_power(gs, args, roller):    # S20 (lower Seljuk Unity by # permanently disbanded Seljuk Lords)
+def _ev_consolidates_power(gs, args, roller):    # S20 (lower THIS YEAR's Seljuk Unity threshold)
+    """Lower this year's Seljuk Unity threshold by the number of *permanently
+    disbanded* Seljuk Lords (card + clarification: no permanently disbanded ->
+    no effect). 'Permanently disbanded' excludes scenario setup-removed Lords
+    (matches campaign._permanently_disbanded), and only this year's threshold box
+    -- the upcoming Winter box (3/6/9) -- is lowered, not every year's."""
     disbanded = sum(1 for lid, l in gs.lords.items()
-                    if sd.lord(lid)["side"] == "seljuk" and l.cylinder == "removed")
-    for box, val in list(gs.meta.seljuk_unity_targets.items()):
-        gs.meta.seljuk_unity_targets[box] = max(0, val - disbanded)
-    return {"unity_lowered_by": disbanded}
+                    if sd.lord(lid)["side"] == "seljuk"
+                    and l.cylinder == "removed" and not l.flags.get("setup_removed"))
+    if disbanded == 0:
+        return {"no_op": True, "reason": "no permanently disbanded Seljuk Lords (S20)"}
+    boxes = sorted(int(b) for b in gs.meta.seljuk_unity_targets)
+    this_year = next((b for b in boxes if b >= gs.meta.calendar_box), None)
+    if this_year is None:
+        return {"no_op": True, "reason": "no Seljuk Unity threshold remaining this game (S20)"}
+    key = str(this_year)
+    gs.meta.seljuk_unity_targets[key] = max(0, gs.meta.seljuk_unity_targets[key] - disbanded)
+    return {"unity_lowered_by": disbanded, "box": this_year,
+            "threshold": gs.meta.seljuk_unity_targets[key]}
 
 
 def _ev_massacre(gs, args, roller):              # S22 (a Seljuk Lord at an Enemy Locale +1 Loot)
