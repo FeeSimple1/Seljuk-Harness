@@ -1765,7 +1765,8 @@ def h_respond_approach(gs: GameState, action: dict[str, Any], roller: DiceRoller
                                   events=action.get("battle_events"),
                                   sallying=set(sallying),
                                   siegeworks=gs.locales[to].siege_markers if sallying else 0,
-                                  approach_origin=approach_origin)
+                                  approach_origin=approach_origin,
+                                  steeled_rounds=action.get("steeled_rounds"))
         if sallying:
             res["relief_sally"] = list(sallying)
             for lid in sallying:                       # Sallying Lords withdraw back inside
@@ -2095,7 +2096,8 @@ def h_cmd_sortie(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> d
                           if lid != lord.id and l.mustered and l.cylinder == loc and l.side == lord.side]
     res = battle.begin_battle(gs, sortie, enemy, loc,
                               scripted=action.get("battle_decisions"),
-                              events=action.get("battle_events"))
+                              events=action.get("battle_events"),
+                              steeled_rounds=action.get("steeled_rounds"))
     gs.meta.actions_remaining = 0
     _after_card(gs)  # _refresh_invest clears the Bypass marker only if the bypasser is gone
     return {"ok": True, "action": "cmd_sortie", "locale": loc, "battle": res}

@@ -53,3 +53,41 @@ def test_s24_no_op_when_fewer_than_two():
     gs = _gs()
     gs.roman.command_plan = ["A"]; gs.roman.plan_pointer = 0
     assert E._hold_bad_omens(gs, {}, _r()).get("no_op") is True
+
+
+# --- R3 round selection (Ruling 2): owner declares the Round (default 1) -------
+def _battle_inf_losses(seed, sr_round):
+    """1v1: Seljuk Turkic Horse vs a Roman R3 Infantry Lord; the defender's
+    Steeled Resolve Round is declared via the flag. Return Infantry remaining."""
+    from seljuk.battle import resolve_battle, DecisionContext
+    gs = S.load_scenario("emperor_and_the_lion", seed=seed)
+    a = gs.lords["alp_arslan"]; d = gs.lords["chatatourios"]
+    a.cylinder = d.cylinder = "melitene"
+    a.forces = {"turkic_horse": 6}; d.forces = {"infantry": 4}
+    d.capabilities = ["R3"]                                   # Steeled Resolve
+    d.flags["steeled_resolve_round"] = sr_round
+    gs.meta.phase = "campaign"; gs.meta.active_lord = "alp_arslan"
+    resolve_battle(gs, ["alp_arslan"], ["chatatourios"], "melitene",
+                   DecisionContext(), DiceRoller(seed))
+    dd = gs.lords["chatatourios"]
+    return dd.forces.get("infantry", 0) + dd.routed.get("infantry", 0)
+
+
+def test_declared_round_affects_outcome():
+    # Declaring the Round must matter (not hardcoded to Round 1): across seeds,
+    # at least one battle differs between Round-1 and a never-used Round.
+    diffs = [ _battle_inf_losses(s, 1) != _battle_inf_losses(s, 99) for s in range(1, 12) ]
+    assert any(diffs)
+
+
+def test_begin_battle_sets_and_clears_the_mark():
+    from seljuk import battle
+    gs = S.load_scenario("emperor_and_the_lion", seed=1)
+    a = gs.lords["alp_arslan"]; d = gs.lords["chatatourios"]
+    a.cylinder = d.cylinder = "melitene"
+    a.forces = {"turkic_horse": 4}; d.forces = {"infantry": 3}; d.capabilities = ["R3"]
+    gs.meta.phase = "campaign"; gs.meta.active_lord = "alp_arslan"
+    battle.begin_battle(gs, ["alp_arslan"], ["chatatourios"], "melitene",
+                        steeled_rounds={"chatatourios": 2})
+    # the mark resets each Battle
+    assert "steeled_resolve_round" not in gs.lords["chatatourios"].flags

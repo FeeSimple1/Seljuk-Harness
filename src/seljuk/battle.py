@@ -137,16 +137,26 @@ def _is_routed(lord: LordState) -> bool:
 def begin_battle(gs: GameState, attackers: list[str], defenders: list[str], locale: str,
                  scripted: Optional[list] = None, events: Optional[dict] = None,
                  sallying: Optional[set] = None, siegeworks: int = 0,
-                 approach_origin: Optional[str] = None) -> dict[str, Any]:
+                 approach_origin: Optional[str] = None,
+                 steeled_rounds: Optional[dict] = None) -> dict[str, Any]:
     """Entry point from the Approach 'Stand' path (4.3.4 -> 4.8). ``events`` maps
     a side to the Held Battle Events it plays; ``sallying``/``siegeworks`` carry
-    a Relief Sally (besieged Lords + the Defenders' Siegeworks Walls vs them)."""
+    a Relief Sally (besieged Lords + the Defenders' Siegeworks Walls vs them).
+    ``steeled_rounds`` is a pre-battle declaration {lord_id: round} for R3 Steeled
+    Resolve (the owner marks which Round; defaults to Round 1)."""
+    involved = list(attackers) + list(defenders)
+    for lid in involved:                       # R3: pre-battle Round declaration (mark)
+        if lid in gs.lords:
+            gs.lords[lid].flags["steeled_resolve_round"] = int((steeled_rounds or {}).get(lid, 1))
     played, cc, charge = _consume_battle_events(gs, events, locale=locale)
     ctx = DecisionContext(scripted)
     roller = _roller(gs)
     result = resolve_battle(gs, attackers, defenders, locale, ctx, roller, played, cc, charge,
                             sallying=sallying, siegeworks=siegeworks, approach_origin=approach_origin)
     _save_roller(gs, roller)
+    for lid in involved:                       # the mark resets each Battle (Battle-only, not Storm)
+        if lid in gs.lords:
+            gs.lords[lid].flags.pop("steeled_resolve_round", None)
     # remove the pending battle marker if present
     gs.meta.pending = [p for p in gs.meta.pending if p.get("type") != "battle"]
     return result
@@ -724,10 +734,12 @@ def _apply_pools(gs, step, by, contrib, striking: _Side, target_side: _Side, rol
             a_hits = _roll_walls(roller, a_hits, (1, walls))
             s_hits = _roll_walls(roller, s_hits, (1, walls))
         # R3 Steeled Resolve: Infantry Armor 1-3 vs Horse applies to BOTH Missile
-        # and Melee (card clarification). Seljuk Missile Strikes against a Roman
+        # and Melee (card clarification); Seljuk Missile Strikes against a Roman
         # Lord are Turkic Horse, so the Missile step counts as "vs Horse". The
-        # "any 1 Round (mark)" choice is modelled as Round 1.
-        vs_horse = (step in ("horse_melee", "missile")) and round_no == 1
+        # owner declares which Round to use the Capability ("any 1 Round (mark)",
+        # like S11 Javelins); the target Lord's declared Round defaults to 1.
+        _sr_round = int(gs.lords[target].flags.get("steeled_resolve_round", 1)) if target in gs.lords else 1
+        vs_horse = (step in ("horse_melee", "missile")) and round_no == _sr_round
         applied = []
         if n_hits:
             applied += _apply_hits(gs, target, n_hits, hit_type, ctx, roller, vs_horse=vs_horse)
