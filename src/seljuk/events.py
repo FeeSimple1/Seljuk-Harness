@@ -306,10 +306,33 @@ def _ev_armenian_resistance(gs, args, roller):   # R20
     from . import actions
     if actions.current_allegiance(gs, loc) != "seljuk":
         return {"no_op": True, "reason": f"{loc} is not Seljuk friendly (R20)"}
-    gs.locales[loc].conquered_side = "roman"
-    gs.locales[loc].conquered_count = {"fort": 1, "town": 2, "city": 3}[sd.locale(loc)["type"]]
+    st = gs.locales[loc]
+    st.conquered_side = "roman"
+    st.conquered_count = {"fort": 1, "town": 2, "city": 3}[sd.locale(loc)["type"]]
+    result = {"roman_conquered": loc}
+    # Clarification: a Strategic Objective marker here returns to available -- it
+    # is NOT placed in Constantinople as VP.
+    if st.strategic_objective:
+        st.strategic_objective = False
+        gs.holding_boxes.constantinople_strategic_objectives_available = min(
+            3, gs.holding_boxes.constantinople_strategic_objectives_available + 1)
+        result["strategic_objective_returned"] = True
+    # Clarification: if a Seljuk Lord is present, he immediately places a Siege or
+    # Bypass marker (Seljuk choice) so he is not left in the open at the now-Roman
+    # Stronghold (default Bypass).
+    seljuk_here = [l for l in gs.lords.values()
+                   if l.mustered and l.cylinder == loc and l.side == "seljuk"]
+    if seljuk_here:
+        if args.get("invest") == "siege":
+            st.siege_markers = max(1, st.siege_markers); st.bypass = False
+            result["invest"] = "siege"
+        else:
+            st.bypass = True
+            for l in seljuk_here:
+                l.bypassed = True
+            result["invest"] = "bypass"
     gs.meta.vp = scenarios.score(gs)
-    return {"roman_conquered": loc}
+    return result
 
 
 _S7_BORDER_THEMATA = ("Iberia", "Mesopotamia", "Melitene", "Antiocheia")
