@@ -64,6 +64,7 @@ _HANDLERS: dict[str, Callable[[GameState, dict, DiceRoller], dict]] = {
     "resolve_event": actions.h_resolve_event,
     "discard_imperial_coffers": campaign.h_discard_imperial_coffers,
     "pass_imperial_coffers": campaign.h_pass_imperial_coffers,
+    "discard_nomisma": actions.h_discard_nomisma,
     "play_hold_event": actions.h_play_hold_event,
 }
 
@@ -189,6 +190,11 @@ def legal_moves(gs: GameState) -> list[dict[str, Any]]:
     step = gs.meta.subphase
     if step == "levy.pay":
         moves = actions.enumerate_pay(gs)
+        if (gs.meta.active_player == "roman" and "R19" in gs.roman.capabilities_in_play
+                and not gs.meta.notes.get("nomisma_debased_used")):
+            moves.append({"type": "discard_nomisma",
+                          "_desc": "Discard Nomisma Debased (R19): shift all Roman Service +1 box (later); "
+                                   "then Non-Commander Roman Lords may not Tax (mark)"})
         moves.append({"type": "pass_step", "_desc": "Finish Pay for this side (3.2)"})
         return moves
     if step == "levy.muster":
