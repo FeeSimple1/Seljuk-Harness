@@ -159,7 +159,7 @@ _BATTLE_HOLDS = {"R2", "S2", "S3", "R24", "S6",  # Mountain Ambush, Betrayal, Ca
 _TURKIC_REMOVAL_HOLDS = {"R21", "S21"}
 
 
-def _remove_turkic_at(gs: GameState, locale: str, count: int) -> int:
+def _remove_turkic_at(gs: GameState, locale: str, count: int, include_themata: bool = False) -> int:
     removed = 0
     for l in gs.lords.values():
         if removed >= count:
@@ -167,7 +167,26 @@ def _remove_turkic_at(gs: GameState, locale: str, count: int) -> int:
         if l.mustered and l.cylinder == locale:
             while removed < count and l.forces.get("turkic_horse", 0) > 0:
                 l.forces["turkic_horse"] -= 1
+                if l.forces["turkic_horse"] <= 0:
+                    l.forces.pop("turkic_horse", None)
                 removed += 1
+    if include_themata:  # S21 also removes Turkic Horse Themata Service Markers
+        deff = gs.locales[locale].themata_defending
+        for i in range(len(deff) - 1, -1, -1):
+            if removed >= count:
+                break
+            if deff[i].unit == "turkic_horse":
+                deff.pop(i); removed += 1
+        for l in gs.lords.values():
+            if removed >= count:
+                break
+            if l.mustered and l.cylinder == locale:
+                mat = l.themata_on_mat
+                for i in range(len(mat) - 1, -1, -1):
+                    if removed >= count:
+                        break
+                    if mat[i].unit == "turkic_horse":
+                        mat.pop(i); removed += 1
     return removed
 
 
@@ -193,7 +212,7 @@ def _consume_battle_events(gs: GameState, events: Optional[dict],
             gs.side_decks(side).draw_deck.append(cid)
             if cid in _TURKIC_REMOVAL_HOLDS:                  # R21/S21 -> remove up to 2 Turkic here
                 if locale is not None:
-                    _remove_turkic_at(gs, locale, 2)
+                    _remove_turkic_at(gs, locale, 2, include_themata=(cid == "S21"))
                 played[side].append(cid)
             elif cid == "S6" and isinstance(entry, dict):     # Command Confusion -> a Roman Lord
                 cc.add(entry["lord"])

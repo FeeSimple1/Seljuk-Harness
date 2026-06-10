@@ -570,7 +570,11 @@ def resolve_event(gs: GameState, card_id: str, args: dict, roller: DiceRoller) -
 # Ambush, Cavalry Charge, Command Confusion, Betrayal) are applied inside the
 # Battle engine via begin_battle/resolve_storm 'events' arguments.
 
-def _remove_turkic_at(gs, locale, count):
+def _remove_turkic_at(gs, locale, count, include_themata=False):
+    """Remove up to ``count`` Turkic Horse at a Locale. ``include_themata`` (S21)
+    also removes Turkic Horse Themata Service Markers (defending + on co-located
+    mats); R21 removes units only. Force keys are popped at zero so a Lord left
+    with no Forces is detectable for Disband (1.6)."""
     removed = 0
     for l in gs.lords.values():
         if removed >= count:
@@ -578,8 +582,40 @@ def _remove_turkic_at(gs, locale, count):
         if l.mustered and l.cylinder == locale:
             while removed < count and l.forces.get("turkic_horse", 0) > 0:
                 l.forces["turkic_horse"] -= 1
+                if l.forces["turkic_horse"] <= 0:
+                    l.forces.pop("turkic_horse", None)
                 removed += 1
+    if include_themata:
+        deff = gs.locales[locale].themata_defending
+        for i in range(len(deff) - 1, -1, -1):
+            if removed >= count:
+                break
+            if deff[i].unit == "turkic_horse":
+                deff.pop(i); removed += 1
+        for l in gs.lords.values():
+            if removed >= count:
+                break
+            if l.mustered and l.cylinder == locale:
+                mat = l.themata_on_mat
+                for i in range(len(mat) - 1, -1, -1):
+                    if removed >= count:
+                        break
+                    if mat[i].unit == "turkic_horse":
+                        mat.pop(i); removed += 1
     return removed
+
+
+def _disband_forceless_at(gs, locale):
+    """1.6 / S21 clarification: a Lord left with no Forces (e.g. his only Turkic
+    Horse removed) Disbands. Used by the standalone Hold resolvers (NOT mid-Battle,
+    where a 0-Force Lord is handled by Battle resolution)."""
+    from . import actions
+    out = []
+    for l in gs.lords.values():
+        if l.mustered and l.cylinder == locale and not l.forces and l.service_box is not None:
+            actions._disband_at_limit(gs, l)
+            out.append(l.id)
+    return out
 
 
 def _hold_michael_attaleiates(gs, args, roller):   # R6 (Muster, on Romanos)
@@ -610,14 +646,16 @@ def _hold_sultans_horse(gs, args, roller):          # R4 (remove 1 Siege where A
     return {"removed_siege_at": aa.cylinder}
 
 
-def _hold_nomadic_tribes(gs, args, roller):         # R21 (remove up to 2 Turkic at a Locale)
-    n = _remove_turkic_at(gs, args["locale"], min(2, int(args.get("count", 2))))
-    return {"turkic_removed": n}
+def _hold_nomadic_tribes(gs, args, roller):         # R21 (remove up to 2 Turkic Horse units)
+    loc = args["locale"]
+    n = _remove_turkic_at(gs, loc, min(2, int(args.get("count", 2))))
+    return {"turkic_removed": n, "disbanded": _disband_forceless_at(gs, loc)}
 
 
-def _hold_common_cultural(gs, args, roller):        # S21 (remove up to 2 Turkic at a Locale)
-    n = _remove_turkic_at(gs, args["locale"], min(2, int(args.get("count", 2))))
-    return {"turkic_removed": n}
+def _hold_common_cultural(gs, args, roller):        # S21 (remove up to 2 Turkic Horse markers/units)
+    loc = args["locale"]
+    n = _remove_turkic_at(gs, loc, min(2, int(args.get("count", 2))), include_themata=True)
+    return {"turkic_removed": n, "disbanded": _disband_forceless_at(gs, loc)}
 
 
 def _hold_bad_omens(gs, args, roller):              # S24 (reorder top 2 unrevealed Roman Plan cards)

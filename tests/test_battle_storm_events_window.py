@@ -34,7 +34,7 @@ def test_s21_consumed_removes_turkic():
     gs = _gs(); aa = _seljuk_with_turkic(gs, n=2)
     gs.seljuk.held_events.append("S21")
     battle._consume_battle_events(gs, {"seljuk": ["S21"]}, locale="ani")
-    assert aa.forces["turkic_horse"] == 0                 # both removed (can force a Disband)
+    assert aa.forces.get("turkic_horse", 0) == 0                 # both removed (can force a Disband)
     assert "S21" in gs.seljuk.draw_deck
 
 
@@ -77,4 +77,4 @@ def test_standalone_resolver_still_works():
     gs.roman.held_events = ["R21"]
     engine.apply_action(gs, {"type": "play_hold_event", "card": "R21",
                              "args": {"locale": "ani", "count": 2}})
-    assert gs.lords["alp_arslan"].forces["turkic_horse"] == 0
+    assert gs.lords["alp_arslan"].forces.get("turkic_horse", 0) == 0
