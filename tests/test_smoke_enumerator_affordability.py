@@ -44,14 +44,33 @@ def test_no_unaffordable_march_with_one_action():
     assert _all_enumerated_moves_apply(gs) == []
 
 
-def test_over_laden_suppresses_march():
+def test_over_laden_march_offered_via_discard():
+    """4.3.2/1.7.2: an over-laden group (more than two Provender per Cart) may not
+    move UNLESS it discards the excess Provender first. The menu must offer such
+    Marches (flagged discard_excess) rather than suppressing March entirely, and
+    each must round-trip through the handler. Marching without opting into the
+    discard is still refused."""
     gs = S.load_scenario("emperor_and_the_lion", seed=1)
     aa = gs.lords["alp_arslan"]; aa.cylinder = "ani"
-    aa.assets.carts = 0; aa.assets.provender = 3  # prov > 2*carts -> over-laden, cannot move
+    aa.assets.carts = 0; aa.assets.provender = 3  # prov > 2*carts -> over-laden
     _active_campaign(gs, "alp_arslan", actions=4)
-    moves = C.command_menu(gs)
-    assert not any(m["type"] == "cmd_march" for m in moves)
-    assert _all_enumerated_moves_apply(gs) == []
+    marches = [m for m in C.command_menu(gs) if m["type"] == "cmd_march"]
+    assert marches, "over-laden Lord must still be offered discard-to-March"
+    assert all(m.get("discard_excess") for m in marches)
+    assert _all_enumerated_moves_apply(gs) == []  # every offered March applies cleanly
+    # Applying a discard-March sheds exactly the excess Provender (carts=0 -> all of it).
+    snap = GameState.from_json(gs.to_json())
+    engine.apply_action(snap, {k: v for k, v in marches[0].items() if not k.startswith("_")})
+    assert snap.lords["alp_arslan"].assets.provender == 0
+    # Omitting the opt-in is refused, and Assets are untouched.
+    snap2 = GameState.from_json(gs.to_json())
+    try:
+        engine.apply_action(snap2, {"type": "cmd_march", "lord": "alp_arslan",
+                                    "to": marches[0]["to"], "way_type": marches[0]["way_type"]})
+        assert False, "over-laden March must be refused without discard_excess"
+    except IllegalAction:
+        pass
+    assert snap2.lords["alp_arslan"].assets.provender == 3
 
 
 def test_seljuk_two_action_ravage_not_offered_with_one_action():

@@ -937,31 +937,38 @@ def command_menu(gs: GameState) -> list[dict[str, Any]]:
         # take now (mirror h_cmd_march: not over-laden, affordable, legal dest).
         if not lord.besieged:
             mgroup = _marching_group(gs, lord, [])
-            if not _over_laden(gs, mgroup):
-                first_march = not lord.flags.get("first_march_used")
-                for edge in gmap.ways_from(loc_id):
-                    to = edge["to"]
-                    dest_info = sd.locale(to)
-                    if dest_info["type"] == "holding_box" and dest_info["allegiance"] != lord.side:
-                        continue  # no Lord may enter an Enemy Holding Box (1.3.1)
-                    if edge["type"] == "pass" and _passes_blocked(gs):
-                        continue  # Unpredictable Weather: no Pass March
-                    if (_enemy_lord_ids_at(gs, to, lord.side) and not gs.locales[to].bypass
-                            and not _peace_can_pay(gs, lord)):
-                        continue  # S13 Peace Offering: cannot pay the Coin this Approach (4.5)
-                    way = _way_between(loc_id, to, edge["type"])
-                    if way is None:
+            # 4.3.2/1.7.2: a group carrying more than two Provender per Cart may
+            # still March if it discards the excess Provender first. Offer those
+            # Marches flagged so the handler knows to shed the excess.
+            over = _over_laden(gs, mgroup)
+            first_march = not lord.flags.get("first_march_used")
+            for edge in gmap.ways_from(loc_id):
+                to = edge["to"]
+                dest_info = sd.locale(to)
+                if dest_info["type"] == "holding_box" and dest_info["allegiance"] != lord.side:
+                    continue  # no Lord may enter an Enemy Holding Box (1.3.1)
+                if edge["type"] == "pass" and _passes_blocked(gs):
+                    continue  # Unpredictable Weather: no Pass March
+                if (_enemy_lord_ids_at(gs, to, lord.side) and not gs.locales[to].bypass
+                        and not _peace_can_pay(gs, lord)):
+                    continue  # S13 Peace Offering: cannot pay the Coin this Approach (4.5)
+                way = _way_between(loc_id, to, edge["type"])
+                if way is None:
+                    continue
+                cost = march_cost(gs, mgroup, way, first_march, consider_discard=over)
+                if cost != "whole_card":  # whole-card Ways always use the rest of the card
+                    if (way["type"] == "pass" and len(mgroup) == 1 and not lord.lower_lord
+                            and not lord.lieutenant_of and capabilities.lord_has(gs, lord.id, "Mules")
+                            and not lord.flags.get("mules_used_this_card")):
+                        cost = min(cost, 1)  # Mules: first Pass March = 1 (no state mutation here)
+                    if cost > gs.meta.actions_remaining:
                         continue
-                    cost = march_cost(gs, mgroup, way, first_march)
-                    if cost != "whole_card":  # whole-card Ways always use the rest of the card
-                        if (way["type"] == "pass" and len(mgroup) == 1 and not lord.lower_lord
-                                and not lord.lieutenant_of and capabilities.lord_has(gs, lord.id, "Mules")
-                                and not lord.flags.get("mules_used_this_card")):
-                            cost = min(cost, 1)  # Mules: first Pass March = 1 (no state mutation here)
-                        if cost > gs.meta.actions_remaining:
-                            continue
-                    out.append({"type": "cmd_march", "lord": lid, "to": to, "way_type": edge["type"],
-                                "_desc": f"March to {sd.locale(to)['name']} via {edge['type']} (4.3)"})
+                mv = {"type": "cmd_march", "lord": lid, "to": to, "way_type": edge["type"],
+                      "_desc": f"March to {sd.locale(to)['name']} via {edge['type']} (4.3)"}
+                if over:
+                    mv["discard_excess"] = True
+                    mv["_desc"] += f" — discard {_excess_provender(mgroup)} excess Provender to move (4.3.2, 1.7.2)"
+                out.append(mv)
         # Forage (4.5.4): available unless Ravaged, or Besieged by >= Size (a Lord
         # Besieged by fewer, or at a friendly Gardens Town/City, may still Forage).
         if st.ravaged_side is None:
@@ -1505,11 +1512,52 @@ def _way_between(origin: str, to: str, way_type: str | None):
     return cands[0]
 
 
-def march_cost(gs: GameState, lords: list[LordState], way: dict, first_march: bool) -> int | str:
-    """Action cost of a March (4.3.3). Returns 'whole_card' for Holding-Box Ways."""
+def _excess_provender(lords: list[LordState]) -> int:
+    """4.3.2: Provender beyond two per Cart that must be discarded before the
+    group may move at all (1.7.2)."""
+    prov = sum(l.assets.provender for l in lords)
+    carts = sum(l.assets.carts for l in lords)
+    return max(0, prov - 2 * carts)
+
+
+def _laden_after_min_discard(gs: GameState, lords: list[LordState]) -> bool:
+    """Laden status (4.3.2) a group would have AFTER discarding only the excess
+    Provender it must shed to move (1.7.2). Used to predict March cost in the
+    enumerator without mutating state; an over-laden group keeps the most
+    Provender it can (two per Cart), so it stays Laden whenever it has any Loot
+    or any Carts."""
+    loot = sum(l.assets.loot for l in lords)
+    prov = sum(l.assets.provender for l in lords)
+    carts = sum(l.assets.carts for l in lords)
+    prov = min(prov, 2 * carts)  # discard excess (4.3.2)
+    return loot > 0 or prov > carts
+
+
+def _discard_excess_provender(gs: GameState, lords: list[LordState]) -> int:
+    """Discard the minimum Provender (across the Sharing group, 4.3.1) needed to
+    bring the group to two Provender per Cart so it may March (4.3.2, 1.7.2).
+    Loot is never touched — it does not affect the two-per-Cart ceiling, only
+    Laden status. Returns the amount discarded."""
+    excess = _excess_provender(lords)
+    shed = excess
+    for l in lords:
+        if excess <= 0:
+            break
+        take = min(l.assets.provender, excess)
+        l.assets.provender -= take
+        excess -= take
+    return shed
+
+
+def march_cost(gs: GameState, lords: list[LordState], way: dict, first_march: bool,
+               consider_discard: bool = False) -> int | str:
+    """Action cost of a March (4.3.3). Returns 'whole_card' for Holding-Box Ways.
+    With ``consider_discard`` the Laden status reflects the minimal excess-Provender
+    discard an over-laden group must make to move (4.3.2, 1.7.2) — used by the
+    enumerator to price a discard-to-March without mutating state."""
     if way["whole_command_card"]:
         return "whole_card"
-    laden = group_laden(gs, lords)
+    laden = _laden_after_min_discard(gs, lords) if consider_discard else group_laden(gs, lords)
     cost = 2 if laden else 1
     if first_march and _all_turkic(lords):
         cost = max(0, cost - 1)  # Turkic-Horse first March of the card (-1)
@@ -1561,7 +1609,14 @@ def h_cmd_march(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> di
         raise IllegalAction("passes_blocked", "Passes cannot be used to March (Unpredictable Weather)")
     group = _marching_group(gs, lord, action.get("group", []))
     if _over_laden(gs, group):
-        raise IllegalAction("over_laden", "group carries more than two Provender per Cart (discard to March, 4.3.2)")
+        # 4.3.2/1.7.2: an over-laden group (more than two Provender per Cart) may
+        # not move UNLESS it discards the excess Provender first. Require the
+        # caller to opt in (so a March never silently sheds Assets), then shed the
+        # minimum needed; the Lord still Marches Laden and pays the Laden cost.
+        if not action.get("discard_excess"):
+            raise IllegalAction("over_laden", "group carries more than two Provender per Cart; "
+                                "pass discard_excess to discard the excess and March (4.3.2, 1.7.2)")
+        _discard_excess_provender(gs, group)
     # Holding-Box rule: only the owning side may enter its own Box; no enemy box.
     dest_info = sd.locale(to)
     if dest_info["type"] == "holding_box" and dest_info["allegiance"] != lord.side:

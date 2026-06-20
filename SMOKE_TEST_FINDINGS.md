@@ -354,3 +354,35 @@ correctly remain unmarked (no movement/fight), so there is no starvation spiral.
 Tests `test_siege_marks_only_besieging_lord_451` (defender not Fed) and
 `test_ravage_marks_lords_moved_fought_455`. Verified at Feed time: only the
 besieger is marked after a Siege.
+
+---
+
+## Guided playthrough of *The Emperor and the Lion* (longest scenario) — 2026-06-20
+
+Two enumerator/handler divergences surfaced by reasoning through the longest
+scenario (neither is caught by the round-trip sweep, which only flags
+*over*-enumeration — a move offered but rejected — not *under*-enumeration —
+a legal move the handler accepts but the menu never offers).
+
+**FIND-A (S3 Steppe Raid under-enumeration).** The Command menu offered only the
+2-action (auto) adjacent Steppe Raid, but `h_cmd_ravage` accepts a 1-action
+adjacent raid (which the Roman may defend with a Themata). Per the S3
+clarification, adjacent Ravages "may be defended per the normal rules, depending
+on how many Command actions were spent", so the 1-action raid is legal and must
+be enumerated. **Fix:** mirror the in-place Seljuk Ravage (4.5.5) — offer both
+the 2-action and 1-action adjacent raids. Tests in
+`test_smoke_enumerator_affordability.py`.
+
+**FIND-B (over-laden Lord stuck with no March).** A group carrying more than two
+Provender per Cart was offered NO March at all (enumerator skipped it; handler
+hard-refused). RoP 4.3.2: "Lords with more than two Provender per Cart may not
+move unless they discard the excess (1.7.2)"; 4.3.3 NOTE: "Lords may discard Loot
+and/or Provender to facilitate March (1.7.2), but never units." So an over-laden
+Lord must be able to shed the excess Provender and March (Laden). **Fix:** the
+menu offers such Marches flagged `discard_excess`; `h_cmd_march` sheds the
+minimum excess Provender across the Sharing group (Loot untouched — it does not
+affect the two-per-Cart ceiling) when the caller opts in, then Marches at the
+Laden cost. A March that does not opt in is still refused (no silent Asset loss).
+NOTE/deferred: 1.7.2 also permits discarding *down to Unladen* to March at the
+cheaper Unladen cost; that optional optimization is not offered for any Laden
+March (pre-existing systemic choice), only the minimal discard needed to move.
