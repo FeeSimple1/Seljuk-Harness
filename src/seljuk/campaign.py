@@ -1000,9 +1000,19 @@ def command_menu(gs: GameState) -> list[dict[str, Any]]:
                     if lord.side == "roman":
                         out.append({"type": "cmd_ravage", "lord": lid, "target": _adj,
                                     "_desc": f"Steppe Raid (Ravage adjacent {_adj}) (S3)"})
-                    elif gs.meta.actions_remaining >= 2:
-                        out.append({"type": "cmd_ravage", "lord": lid, "target": _adj, "actions": 2,
-                                    "_desc": f"Steppe Raid (Ravage adjacent {_adj}) (S3)"})
+                    else:
+                        # S3 clarification: adjacent Ravages "may be defended per the
+                        # normal rules, depending on how many Command actions were
+                        # spent" — so mirror the in-place Seljuk Ravage (4.5.5): a
+                        # 2-action raid auto-succeeds, a 1-action raid lets the Roman
+                        # defend with a Themata. Offering only the 2-action variant
+                        # under-enumerated the legal 1-action raid the handler accepts.
+                        if gs.meta.actions_remaining >= 2:
+                            out.append({"type": "cmd_ravage", "lord": lid, "target": _adj, "actions": 2,
+                                        "_desc": f"Steppe Raid (Ravage adjacent {_adj}, 2 actions, auto) (S3)"})
+                        if gs.meta.actions_remaining >= 1:
+                            out.append({"type": "cmd_ravage", "lord": lid, "target": _adj, "actions": 1,
+                                        "_desc": f"Steppe Raid (Ravage adjacent {_adj}, 1 action; Roman may defend with Themata) (S3)"})
         # Supply (4.4): a Route to an un-Ruined Seat within Cart budget.
         if not lord.besieged:
             cost = _min_supply_cost(gs, lord)

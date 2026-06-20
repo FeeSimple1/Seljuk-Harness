@@ -80,10 +80,13 @@ def test_affordable_road_march_still_offered():
     assert _all_enumerated_moves_apply(gs) == []
 
 
-def test_s3_steppe_raid_not_offered_with_one_action():
-    """S3 Steppe Raid Ravages an adjacent enemy Locale at a fixed cost of 2
-    Command actions. The menu must not offer it when only 1 action remains
-    (the enumerator/handler divergence fixed in campaign.py)."""
+def test_s3_steppe_raid_one_action_offered_and_round_trips():
+    """S3 clarification: adjacent Steppe-Raid Ravages "may be defended per the
+    normal rules, depending on how many Command actions were spent" — so, like a
+    normal Seljuk Ravage (4.5.5), a 1-action adjacent raid is legal (the Roman may
+    defend with a Themata). The handler accepts it, so the enumerator must offer
+    it; offering only the 2-action variant under-enumerated the legal 1-action
+    raid (enumerator/handler divergence)."""
     gs = S.load_scenario("emperor_and_the_lion", seed=1)
     lid, adj = "sav_tekin", "artah"   # manbij (Seljuk) is adjacent to artah (Roman)
     lord = gs.lords[lid]
@@ -91,7 +94,9 @@ def test_s3_steppe_raid_not_offered_with_one_action():
     _active_campaign(gs, lid, actions=1)
     raids = [m for m in C.command_menu(gs)
              if m["type"] == "cmd_ravage" and m.get("target") == adj]
-    assert raids == []                      # 2-action Steppe Raid not offered
+    # With 1 action: the 1-action raid IS offered, the 2-action raid is NOT.
+    assert any(m.get("actions") == 1 for m in raids)
+    assert all(m.get("actions") != 2 for m in raids)
     assert _all_enumerated_moves_apply(gs) == []
 
 
@@ -105,5 +110,7 @@ def test_s3_steppe_raid_offered_with_two_actions():
     _active_campaign(gs, lid, actions=2)
     raids = [m for m in C.command_menu(gs)
              if m["type"] == "cmd_ravage" and m.get("target") == adj]
+    # With 2 actions both the auto (2-action) and defendable (1-action) raids appear.
     assert any(m.get("actions") == 2 for m in raids)
+    assert any(m.get("actions") == 1 for m in raids)
     assert _all_enumerated_moves_apply(gs) == []
