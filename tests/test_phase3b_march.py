@@ -236,9 +236,12 @@ def test_besieged_lord_menu_only_sally_pass_end_421():
     assert "cmd_forage" in types
 
 
-def test_siege_marks_only_besieging_lord_451():
-    """4.5.1: a Siege marks the besieging (Encamping) Lord Moved/Fought, "but not
-    any other Lords there" -- so a Besieged defender inside is NOT forced to Feed."""
+def test_siege_marks_all_lords_both_sides_451():
+    """4.5.1 Siege Command: "Finally, mark all Lords of both sides there as
+    Moved/Fought." So a Besieged defender inside (and any co-located besieger) IS
+    marked and must Feed. (This is distinct from 4.3.6 Encamp, which marks only
+    the Encamping Lord -- see h_cmd_encamp; an earlier fix wrongly applied the
+    Encamp rule to the Siege Command.)"""
     gs = S.load_scenario("emperor_and_the_lion")
     aa = gs.lords["alp_arslan"]; aa.cylinder = "larisa"; aa.assets.provender = 2
     d = gs.lords["chatatourios"]; d.cylinder = "melitene"; d.besieged = True
@@ -248,11 +251,14 @@ def test_siege_marks_only_besieging_lord_451():
     r = engine.apply_action(gs, {"type": "besiege_bypass", "choice": "besiege"})
     if r.get("pending") == "assign_themata_defenders":
         engine.apply_action(gs, {"type": "assign_themata_defenders", "markers": []})
-    d.assets.provender = 1  # reset after any setup Feed
+    d.assets.provender = 1            # reset after any setup Feed
+    d.moved_fought = False; aa.moved_fought = False
     _activate(gs, "alp_arslan")
     engine.apply_action(gs, {"type": "cmd_siege", "lord": "alp_arslan"})
-    # The besieged defender was not marked Moved/Fought -> not Fed -> keeps his Provender.
-    assert d.assets.provender == 1, "besieged defender wrongly Fed by the besieger's Siege"
+    # Both the besieging Lord and the besieged defender are marked Moved/Fought,
+    # so the defender Feeds (2 infantry -> 1 Provender) and loses his Provender.
+    assert aa.moved_fought or aa.assets.provender < 2  # besieger acted (may be cleared by end-of-card Feed)
+    assert d.assets.provender == 0, "besieged defender must Feed after a 4.5.1 Siege (marked Moved/Fought)"
 
 
 def test_ravage_marks_lords_moved_fought_455():

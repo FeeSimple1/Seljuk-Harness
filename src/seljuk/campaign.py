@@ -2039,6 +2039,15 @@ def _besieged_enemy_inside(gs: GameState, locale: str, side: str) -> bool:
                for l in gs.lords.values())
 
 
+def _mark_siege_moved_fought(gs: GameState, loc_id: str) -> None:
+    """4.5.1 Siege Command: "Finally, mark all Lords of both sides there as
+    Moved/Fought." (Distinct from 4.3.6 Encamp, which marks only the Encamping
+    Lord; that is handled by h_cmd_encamp.)"""
+    for _l in gs.lords.values():
+        if _l.mustered and _l.cylinder == loc_id:
+            _l.moved_fought = True
+
+
 def h_cmd_siege(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
     """4.5.1: a Besieging Lord uses the entire card to roll for Surrender and/or
     add a Siege marker (Siegeworks)."""
@@ -2062,7 +2071,7 @@ def h_cmd_siege(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> di
         result["conquer"] = battle.conquer(gs, loc_id, "roman")
         gs.roman.held_events.remove("R25"); gs.roman.draw_deck.append("R25")
         gs.meta.vp = scenarios.score(gs)
-        lord.moved_fought = True  # 4.5.1: only the besieging Lord
+        _mark_siege_moved_fought(gs, loc_id)  # 4.5.1: all Lords of both sides there
         gs.meta.actions_remaining = 0
         _after_card(gs)
         return result
@@ -2083,7 +2092,7 @@ def h_cmd_siege(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> di
             # Conquest. Pause for the Roman response.
             if (info["allegiance"] == "roman" and lord.side == "seljuk" and threshold == 3
                     and "R7" not in gs.meta.asterisks_used and "R7" in gs.roman.held_events):
-                lord.moved_fought = True  # 4.5.1: only the besieging Lord
+                _mark_siege_moved_fought(gs, loc_id)  # 4.5.1: all Lords of both sides there
                 gs.meta.actions_remaining = 0
                 gs.meta.pending.append({"type": "basil_response", "locale": loc_id,
                                         "by_side": lord.side, "_owed_by": "roman"})
@@ -2097,7 +2106,7 @@ def h_cmd_siege(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> di
         if besiegers >= size and gs.locales[loc_id].siege_markers < 4:
             gs.locales[loc_id].siege_markers += 1
             result["siegeworks_added"] = True
-    lord.moved_fought = True  # 4.5.1: only the besieging (Encamping) Lord, "not any other Lords there"
+    _mark_siege_moved_fought(gs, loc_id)  # 4.5.1: mark all Lords of both sides there as Moved/Fought
     gs.meta.actions_remaining = 0  # Siege uses the entire card (4.5.1)
     _after_card(gs)
     return result

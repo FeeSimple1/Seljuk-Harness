@@ -80,7 +80,7 @@ Legend: code = `module.function`; test = `test_file::test_name` (representative)
 | 4.3.4 | Approach: Avoid / Withdraw / Stand (→ Battle) | `campaign.h_respond_approach`, `_validate_avoid`, `_validate_withdraw` | `test_phase3b_march`, `test_phase6_relief_strategic` |
 | 4.3.5 | Besiege / Bypass an enemy Stronghold | `campaign.h_besiege_bypass`, `_resolve_arrival` | `test_phase3b_march` |
 | 4.4 / 4.4.1 | Supply (Route to un-Ruined Seat, Cart budget, blocked Locales) | `campaign._min_supply_cost`, `_blocks_supply`, `h_cmd_supply` | `test_phase3a_end_winter::test_supply_*_44*` |
-| 4.5.1 | Siege (advance Siege / roll Surrender / add Siegeworks) | `campaign.h_cmd_siege` | `test_phase3c_siege_storm` |
+| 4.5.1 | Siege (advance Siege / roll Surrender / add Siegeworks; mark ALL Lords of both sides Moved/Fought) | `campaign.h_cmd_siege` | `test_phase3c_siege_storm`, `test_siege_marks_all_lords_both_sides_451` |
 | 4.5.2 | Storm command | `campaign.h_cmd_storm` → `battle.resolve_storm` | `test_phase3c_siege_storm` |
 | 4.5.3 | Sally command (Besieged Lord attacks Besiegers) | `campaign.h_cmd_sally` → `battle.resolve_sally` | `test_phase3c_siege_storm::test_sally_*_492` |
 | 4.5.4 | Forage (auto at Friendly/Gardens; else roll; Besieged limits) | `campaign.h_cmd_forage` | `test_phase3a_commands`, `test_coverage_campaign_commands` |

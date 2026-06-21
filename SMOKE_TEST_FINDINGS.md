@@ -398,3 +398,22 @@ hint (+`_co_marcher_max`) to every March move, mirroring `build_plan`'s
 `_available_lords`; the player adds a `group` subset and the handler recomputes
 the combined Laden cost. Documented in LLM_PLAY_GUIDE.md. Tests
 `test_group_march_offered_as_hint_431` and `test_non_commander_gets_no_co_marcher_hint_431`.
+
+---
+
+## SMOKE-009 CORRECTION (2026-06-21) — Siege Command (4.5.1) marks ALL Lords
+
+SMOKE-009 (above) "fixed" the Siege Command to mark only the besieging Lord,
+quoting *"Mark the Encamping Lord ... but not any other Lords there."* That quote
+is rule **4.3.6 ENCAMP** (a March-action Bypass→Siege conversion, handled by
+`h_cmd_encamp`), NOT the **4.5.1 Siege Command**. RoP 4.5.1 ends: *"MOVED/FOUGHT:
+Finally, mark **all Lords of both sides there** as Moved/Fought."* Because Feed
+(4.6.1) is gated on `moved_fought`, the SMOKE-009 change let a Besieged defender
+(and any co-located besieger) wrongly skip Feed after a Siege Command. No errata
+qualifies the 4.5.1 clause. **Re-fix (user-adjudicated):** `h_cmd_siege` now marks
+all Lords of both sides at the Locale via `_mark_siege_moved_fought` in every
+branch (normal Surrender path, Honors-of-War R25, Basil R7). `h_cmd_encamp`
+correctly continues to mark only the Encamping Lord (4.3.6). Test renamed
+`test_siege_marks_all_lords_both_sides_451` (besieged defender now Feeds). The
+Ravage half of SMOKE-009 (4.5.5 marks all Lords of both sides) was correct and is
+unchanged.
