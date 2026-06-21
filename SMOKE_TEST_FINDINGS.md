@@ -386,3 +386,15 @@ Laden cost. A March that does not opt in is still refused (no silent Asset loss)
 NOTE/deferred: 1.7.2 also permits discarding *down to Unladen* to March at the
 cheaper Unladen cost; that optional optimization is not offered for any Laden
 March (pre-existing systemic choice), only the minimal discard needed to move.
+
+**FIND-C (Group March unreachable from the palette, 4.3.1).** `h_cmd_march`
+fully supports a Commander (or S7 Trusted Commander) bringing co-located friendly
+Lords via a `group` parameter, and a handler-level test pinned it — but the
+Command menu only ever built solo Marches (`_marching_group(gs, lord, [])`) with
+no co-marcher information, so an agent/CLI player driving from `legal-moves` could
+never execute a Group March (a core mechanic). Same under-enumeration class as
+FIND-A/B. **Fix:** the enumerator now attaches a probe-validated `_co_marchers`
+hint (+`_co_marcher_max`) to every March move, mirroring `build_plan`'s
+`_available_lords`; the player adds a `group` subset and the handler recomputes
+the combined Laden cost. Documented in LLM_PLAY_GUIDE.md. Tests
+`test_group_march_offered_as_hint_431` and `test_non_commander_gets_no_co_marcher_hint_431`.

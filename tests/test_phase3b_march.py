@@ -270,3 +270,41 @@ def test_ravage_marks_lords_moved_fought_455():
     _activate(gs, "sav_tekin", actions=4)  # 2-action Ravage leaves actions -> no end-of-card clear
     engine.apply_action(gs, {"type": "cmd_ravage", "lord": "sav_tekin", "actions": 2})
     assert sav.moved_fought is True, "ravaging Lord left unmarked (would skip Feed)"
+
+
+def test_group_march_offered_as_hint_431():
+    """4.3.1 Group March must be REACHABLE from the palette, not only via the
+    handler: a Commander co-located with friendly Lords gets a `_co_marchers`
+    hint on every March move, and a March built with `group` from that hint
+    round-trips, moving the whole group. (Under-enumeration regression: the menu
+    used to offer only solo Marches.)"""
+    gs = S.load_scenario("emperor_and_the_lion")
+    aa = gs.lords["alp_arslan"]; aa.cylinder = "ani"
+    ar = gs.lords["arisighi"]; ar.cylinder = "ani"; ar.mustered = True
+    af = gs.lords["afsin_beg"]; af.cylinder = "ani"; af.mustered = True
+    _activate(gs, "alp_arslan")
+    marches = [m for m in campaign.command_menu(gs) if m["type"] == "cmd_march"]
+    assert marches, "Commander must be offered Marches"
+    for m in marches:
+        assert set(m["_co_marchers"]) == {"arisighi", "afsin_beg"}
+        assert m["_co_marcher_max"] == 2          # full Commander brings any subset
+    mv = marches[0]
+    engine.apply_action(gs, {"type": "cmd_march", "lord": "alp_arslan", "to": mv["to"],
+                             "way_type": mv["way_type"], "group": mv["_co_marchers"]})
+    assert aa.cylinder == mv["to"] and ar.cylinder == mv["to"] and af.cylinder == mv["to"]
+
+
+def test_non_commander_gets_no_co_marcher_hint_431():
+    """A non-Commander without S7 Trusted Commander cannot lead a Group March, so
+    its March moves carry no co-marcher hint (the probe-based hint never lists a
+    Lord the handler would reject)."""
+    gs = S.load_scenario("emperor_and_the_lion")
+    # afsin_beg is a non-Commander Seljuk Lord; co-locate another Lord with him.
+    af = gs.lords["afsin_beg"]; af.cylinder = "ani"; af.mustered = True
+    ar = gs.lords["arisighi"]; ar.cylinder = "ani"; ar.mustered = True
+    _activate(gs, "afsin_beg")
+    from seljuk import actions as _a
+    assert not _a.is_commander(gs, "afsin_beg")
+    marches = [m for m in campaign.command_menu(gs) if m["type"] == "cmd_march"]
+    assert marches
+    assert all("_co_marchers" not in m for m in marches)

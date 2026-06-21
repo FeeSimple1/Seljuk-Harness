@@ -942,6 +942,12 @@ def command_menu(gs: GameState) -> list[dict[str, Any]]:
             # Marches flagged so the handler knows to shed the excess.
             over = _over_laden(gs, mgroup)
             first_march = not lord.flags.get("first_march_used")
+            # 4.3.1 Group March: a Commander (or S7 Trusted Commander) may bring
+            # co-located friendly Lords. The set of eligible co-marchers does not
+            # depend on the destination, so compute it once and expose it as a hint
+            # (like build_plan's _available_lords); the player adds a "group" list.
+            co_marchers = _eligible_co_marchers(gs, lord)
+            co_max = (len(co_marchers) if actions.is_commander(gs, lord.id) else 1) if co_marchers else 0
             for edge in gmap.ways_from(loc_id):
                 to = edge["to"]
                 dest_info = sd.locale(to)
@@ -968,6 +974,13 @@ def command_menu(gs: GameState) -> list[dict[str, Any]]:
                 if over:
                     mv["discard_excess"] = True
                     mv["_desc"] += f" — discard {_excess_provender(mgroup)} excess Provender to move (4.3.2, 1.7.2)"
+                if co_marchers:
+                    # Optional Group March (4.3.1): add a "group" subset of these
+                    # (<= co_marcher_max) to bring co-located Lords; the handler
+                    # recomputes the combined Laden cost.
+                    mv["_co_marchers"] = list(co_marchers)
+                    mv["_co_marcher_max"] = co_max
+                    mv["_desc"] += f" — may Group-March (4.3.1) with up to {co_max} of {co_marchers}"
                 out.append(mv)
         # Forage (4.5.4): available unless Ravaged, or Besieged by >= Size (a Lord
         # Besieged by fewer, or at a friendly Gardens Town/City, may still Forage).
@@ -1510,6 +1523,25 @@ def _way_between(origin: str, to: str, way_type: str | None):
                 return w
         return None
     return cands[0]
+
+
+def _eligible_co_marchers(gs: GameState, lord: LordState) -> list[str]:
+    """Co-located friendly Lords the active Lord may bring in a Group March
+    (4.3.1; S7 Trusted Commander brings exactly one). Probes _marching_group so
+    the hint never lists a Lord the handler would reject. Returns Lord ids."""
+    skip = {lord.id}
+    if lord.lower_lord:
+        skip.add(lord.lower_lord)
+    out: list[str] = []
+    for cid in gs.lords:
+        if cid in skip:
+            continue
+        try:
+            _marching_group(gs, lord, [cid])
+        except IllegalAction:
+            continue
+        out.append(cid)
+    return out
 
 
 def _excess_provender(lords: list[LordState]) -> int:

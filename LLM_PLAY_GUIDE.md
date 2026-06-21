@@ -86,6 +86,17 @@ Most moves are ready to apply as-is. Two are templates:
   ```bash
   --action '{"type":"build_plan","side":"seljuk","cards":["alp_arslan","alp_arslan","afsin_beg","no_command","no_command","no_command","no_command"]}'
   ```
+- **cmd_march with a Group March** (4.3.1). A `cmd_march` move that carries a
+  `_co_marchers` hint (a list of co-located friendly Lord ids) and `_co_marcher_max`
+  may optionally bring some of those Lords. Add a `"group"` list (a subset of
+  `_co_marchers`, at most `_co_marcher_max`) to March them together:
+  ```bash
+  --action '{"type":"cmd_march","lord":"alp_arslan","to":"ararat","way_type":"pass","group":["arisighi"]}'
+  ```
+  The active Lord leads (he must be a Commander, or an S7 Trusted Commander who
+  may bring exactly one). The whole group moves to the destination and the action
+  cost is recomputed for the combined (possibly Laden) group, so a Group March may
+  cost more than the solo March shown. Omit `group` to March alone.
 - **resolve_event** (an immediate Arts-of-War Event that needs a choice). Pass
   `args` with the choice the card calls for, e.g.
   `{"type":"resolve_event","card":"R5","args":{"lord":"alp_arslan","direction":"left"}}`.
