@@ -133,3 +133,31 @@ def test_sally_fail_raid_reduces_siege_to_one_492():
     r = engine.apply_action(gs, {"type": "cmd_sally", "lord": "chatatourios"})
     if r["sally"]["winner"] == "besiegers":
         assert gs.locales["antioch"].siege_markers == 1  # Raid: all but one removed
+
+
+def test_r25_honors_of_war_offered_in_siege_menu_451():
+    """R25 Honors of War (Roman HOLD) auto-Surrenders a besieged Fort instead of
+    rolling. The active Lord still takes a Siege action, so it is a cmd_siege
+    variant — the menu must offer it (honors_of_war=True) when the card is held
+    and the Lord is besieging a Fort with no Besieged enemy inside, and it must
+    round-trip. (Under-enumeration regression: the handler accepted it but the
+    menu only offered the plain Siege.)"""
+    from seljuk import campaign as C, static_data as sd
+    gs = S.load_scenario("emperor_and_the_lion")
+    fort = next(l for l in sd.all_locale_ids() if sd.locale(l)["type"] == "fort")
+    rl = "romanos_diogenes"
+    lord = gs.lords[rl]; lord.cylinder = fort; lord.mustered = True; lord.forces = {"tagmata": 3}
+    gs.locales[fort].siege_markers = 1
+    gs.roman.held_events = ["R25"]
+    gs.meta.phase = "campaign"; gs.meta.subphase = "campaign.command"
+    gs.meta.active_player = "roman"; gs.meta.active_lord = rl; gs.meta.active_card = rl
+    gs.meta.actions_remaining = 3
+    gs.roman.command_plan = [rl]; gs.roman.plan_pointer = 1
+    gs.seljuk.command_plan = []; gs.seljuk.plan_pointer = 0
+    sieges = [m for m in C.command_menu(gs) if m["type"] == "cmd_siege"]
+    assert any(m.get("honors_of_war") for m in sieges), "Honors of War Siege must be offered"
+    assert any("honors_of_war" not in m for m in sieges), "plain Siege still offered"
+    hon = next(m for m in sieges if m.get("honors_of_war"))
+    r = engine.apply_action(gs, {k: v for k, v in hon.items() if not k.startswith("_")})
+    assert r.get("honors_of_war") and r.get("conquer") is not None
+    assert "R25" not in gs.roman.held_events  # card returned to the deck after use

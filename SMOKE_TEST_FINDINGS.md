@@ -417,3 +417,20 @@ correctly continues to mark only the Encamping Lord (4.3.6). Test renamed
 `test_siege_marks_all_lords_both_sides_451` (besieged defender now Feeds). The
 Ravage half of SMOKE-009 (4.5.5 marks all Lords of both sides) was correct and is
 unchanged.
+
+**FIND-D (R25 Honors of War unreachable from the palette).** `h_cmd_siege`
+accepts a `honors_of_war` flag (R25, Roman HOLD): when a Roman Lord Sieges a Fort
+with no Besieged enemy inside, the Fort auto-Surrenders instead of rolling (no
+Spoils; card clarification: "the active Lord must still take a Siege action").
+But `command_menu` offered only the plain Siege, so a Roman holding R25 could
+never play Honors of War. Same under-enumeration class as FIND-A/B/C. **Fix:** the
+Siege enumeration now also offers `cmd_siege` with `honors_of_war=True` when R25
+is held and the Lord is besieging a Fort with no Besieged enemy inside (mirroring
+how the Storm move already hints R21/S21 holds). Test
+`test_r25_honors_of_war_offered_in_siege_menu_451`.
+
+NOTE (not a bug): 4.5.1 also lets a Besieger decline to roll for Surrender
+(`roll_surrender=False`) and only add Siegeworks. That option is strictly
+dominated (rolling has no downside and Siegeworks is still added on a failed
+roll), reaches no state the default Siege cannot, and is left out of the palette
+deliberately to avoid offering a strictly worse move.

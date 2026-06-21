@@ -1047,6 +1047,15 @@ def command_menu(gs: GameState) -> list[dict[str, Any]]:
             out.append({"type": "cmd_sortie", "lord": lid, "_desc": "Sortie: Approach the Bypassing Enemy (4.3.6)"})
         if _besieging(gs, lord) and _peace_can_pay(gs, lord):
             out.append({"type": "cmd_siege", "lord": lid, "_desc": "Siege: roll Surrender / add Siegeworks (4.5.1)"})
+            # R25 Honors of War (Roman HOLD): during a Siege of a Fort with no
+            # Besieged enemy inside, the Fort auto-Surrenders instead of rolling
+            # (no Spoils). The active Lord still takes the Siege action, so it is a
+            # variant of cmd_siege — offer it when the card is held and eligible.
+            if (lord.side == "roman" and "R25" in gs.roman.held_events
+                    and sd.locale(loc_id)["type"] == "fort"
+                    and not _besieged_enemy_inside(gs, loc_id, lord.side)):
+                out.append({"type": "cmd_siege", "lord": lid, "honors_of_war": True,
+                            "_desc": "Siege with Honors of War (R25): Fort auto-Surrenders, no Spoils (4.5.1)"})
             _storm_holds = sorted(set(gs.side_decks(lord.side).held_events) & {"R21", "S21"})
             out.append({"type": "cmd_storm", "lord": lid, "_desc": "Storm the Stronghold (4.5.2)",
                         **({"_storm_events_available": _storm_holds} if _storm_holds else {})})
