@@ -1861,8 +1861,11 @@ def h_respond_approach(gs: GameState, action: dict[str, Any], roller: DiceRoller
         attackers = list(pend["attackers"])
         att_side = gs.lords[attackers[0]].side
         # Relief Sally (4.8.1): friendly Besieged Lords at this Locale join the
-        # relief Attack for no extra Command actions. (Rearguard rows and the
-        # Siegeworks-vs-Sallying-only nuance are a documented approximation.)
+        # relief Attack for no extra Command actions. The full array (Sallying row
+        # behind the Defenders, a Defending Rearguard row, the no-Rearguard Flank
+        # fallback, and Siegeworks reducing Sallying Strikes only) is resolved in
+        # battle.begin_battle / _fill_rearguard and pinned by
+        # test_phase6_relief_rearguard.py.
         sallying = [lid for lid, l in gs.lords.items()
                     if l.mustered and l.cylinder == to and l.side == att_side and l.besieged]
         attackers += sallying
