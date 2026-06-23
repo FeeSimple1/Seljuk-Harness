@@ -314,3 +314,37 @@ def test_non_commander_gets_no_co_marcher_hint_431():
     marches = [m for m in campaign.command_menu(gs) if m["type"] == "cmd_march"]
     assert marches
     assert all("_co_marchers" not in m for m in marches)
+
+
+def test_discard_to_unladen_march_cheaper_172():
+    """1.7.2 / 4.3.3: a Laden group may discard all Loot and excess Provender to
+    March Unladen, one Command action cheaper. The menu offers that variant
+    (discard_to_unladen) alongside the full-cost Laden March, and applying it
+    sheds Loot + excess Provender and pays the Unladen cost."""
+    gs = S.load_scenario("emperor_and_the_lion")
+    aa = gs.lords["alp_arslan"]; aa.cylinder = "ani"
+    aa.forces = {"tagmata": 2}                 # not all-Turkic (no -1 to muddy costs)
+    aa.assets.provender = 1; aa.assets.carts = 2; aa.assets.loot = 2   # Laden by Loot
+    _activate(gs, "alp_arslan")
+    marches = [m for m in campaign.command_menu(gs)
+               if m["type"] == "cmd_march" and m["to"] == "mempet"]   # road
+    keep = [m for m in marches if not m.get("discard_to_unladen")]
+    unladen = [m for m in marches if m.get("discard_to_unladen")]
+    assert keep and unladen, "both the Laden and discard-to-Unladen Marches must be offered"
+    r = engine.apply_action(gs, {k: v for k, v in unladen[0].items() if not k.startswith("_")})
+    assert r["cost"] == 1                        # Unladen road March
+    assert aa.assets.loot == 0                   # all Loot discarded
+    assert aa.assets.provender <= aa.assets.carts  # Unladen
+
+
+def test_unladen_group_has_no_discard_variant_172():
+    """An already-Unladen group is offered only the plain March (no pointless
+    discard option)."""
+    gs = S.load_scenario("emperor_and_the_lion")
+    aa = gs.lords["alp_arslan"]; aa.cylinder = "ani"
+    aa.forces = {"tagmata": 2}
+    aa.assets.provender = 0; aa.assets.carts = 2; aa.assets.loot = 0   # Unladen
+    _activate(gs, "alp_arslan")
+    marches = [m for m in campaign.command_menu(gs) if m["type"] == "cmd_march"]
+    assert marches
+    assert all(not m.get("discard_to_unladen") for m in marches)

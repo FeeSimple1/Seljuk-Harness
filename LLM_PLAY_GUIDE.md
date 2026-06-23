@@ -97,6 +97,15 @@ Most moves are ready to apply as-is. Two are templates:
   may bring exactly one). The whole group moves to the destination and the action
   cost is recomputed for the combined (possibly Laden) group, so a Group March may
   cost more than the solo March shown. Omit `group` to March alone.
+- **cmd_march discard variants** (1.7.2). A Laden group's March move may carry
+  `discard_excess` (over-laden: shed the excess Provender just to move) and/or a
+  separate `discard_to_unladen` variant (shed all Loot + excess Provender to March
+  one Command action cheaper). Apply whichever the menu offers; both shed Assets,
+  so they are offered as explicit alternatives to the full-cost Laden March.
+- **cmd_siege variants** (4.5.1). Besides the default Siege (roll Surrender, then
+  add Siegeworks on failure), the menu may offer `roll_surrender:false` (add a
+  Siegeworks without rolling) and, with R25 held, `honors_of_war:true` (a Fort
+  auto-Surrenders). Pick the variant object as offered.
 - **resolve_event** (an immediate Arts-of-War Event that needs a choice). Pass
   `args` with the choice the card calls for, e.g.
   `{"type":"resolve_event","card":"R5","args":{"lord":"alp_arslan","direction":"left"}}`.

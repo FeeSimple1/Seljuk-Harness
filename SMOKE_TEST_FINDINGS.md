@@ -434,3 +434,35 @@ NOTE (not a bug): 4.5.1 also lets a Besieger decline to roll for Surrender
 dominated (rolling has no downside and Siegeworks is still added on a failed
 roll), reaches no state the default Siege cannot, and is left out of the palette
 deliberately to avoid offering a strictly worse move.
+
+---
+
+## Completeness pass (2026-06-21) — the last intentionally-omitted moves + a stale comment
+
+At the user's request, the two legal-but-previously-omitted moves are now
+enumerated, and a stale "deferred" comment was corrected.
+
+**FIND-E (discard-to-Unladen March, 1.7.2).** A Laden (or over-laden) group may
+discard ALL Loot and excess Provender to March Unladen, one Command action
+cheaper (4.3.3 + 1.7.2). This is a real action-vs-Assets trade-off (NOT strictly
+dominated), so the menu now offers a `discard_to_unladen` March variant alongside
+the full-cost Laden March, whenever it is affordable and actually saves an action
+(skipped when Mules already makes the Laden March equally cheap). `h_cmd_march`
+sheds the Loot + excess Provender on opt-in. Tests in test_phase3b_march.py.
+
+**FIND-F (decline-to-roll Siege, 4.5.1).** "...including because the Besieger
+declined to roll..." — a Besieger may add a Siegeworks WITHOUT rolling for
+Surrender. The menu now offers a `roll_surrender=False` Siege variant when the
+default Siege would otherwise roll (no Besieged enemy inside) and a Siegeworks
+would actually be added (enough Besiegers, room for a marker), so it is a distinct
+outcome rather than a no-op. Test in test_phase3c_siege_storm.py.
+
+**Stale-comment correction (events.py).** The "Deferred (no decision window
+modelled yet)" comment was wrong: every out-of-turn reaction it listed is in fact
+reachable from the palette — Summer Heat (R3/S4) via a `summer_heat` pending,
+Kleisourai (R23) via a `kleisourai` pending, R21/S21 Turkic-removal via the
+`_battle_holds_available` (approach) and `_storm_events_available` (storm) hints,
+and Imperial Coffers (R14) via the `imperial_coffers` Levy pending. Comment
+rewritten to document the real windows; no code change (already implemented +
+tested, e.g. test_summer_heat_window.py). Supersedes the earlier note that these
+were intentionally un-enumerated.

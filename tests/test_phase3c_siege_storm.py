@@ -161,3 +161,30 @@ def test_r25_honors_of_war_offered_in_siege_menu_451():
     r = engine.apply_action(gs, {k: v for k, v in hon.items() if not k.startswith("_")})
     assert r.get("honors_of_war") and r.get("conquer") is not None
     assert "R25" not in gs.roman.held_events  # card returned to the deck after use
+
+
+def test_siege_decline_to_roll_adds_siegeworks_only_451():
+    """4.5.1: a Besieger may decline to roll for Surrender and only add a
+    Siegeworks marker. The menu offers that variant (roll_surrender=False) when
+    the default Siege would otherwise roll (no Besieged enemy inside) and a
+    Siegeworks can be added; applying it adds a marker and rolls nothing."""
+    from seljuk import campaign as C, static_data as sd
+    gs = S.load_scenario("emperor_and_the_lion")
+    town = next(l for l in sd.all_locale_ids()
+                if sd.locale(l)["type"] == "town" and sd.locale(l)["allegiance"] == "roman")
+    a = gs.lords["alp_arslan"]; a.cylinder = town; a.mustered = True; a.forces = {"turkic_horse": 3}
+    b = gs.lords["afsin_beg"]; b.cylinder = town; b.mustered = True; b.forces = {"turkic_horse": 3}
+    gs.locales[town].siege_markers = 1
+    gs.meta.phase = "campaign"; gs.meta.subphase = "campaign.command"
+    gs.meta.active_player = "seljuk"; gs.meta.active_lord = "alp_arslan"; gs.meta.active_card = "alp_arslan"
+    gs.meta.actions_remaining = 4
+    gs.seljuk.command_plan = ["alp_arslan"]; gs.seljuk.plan_pointer = 1
+    gs.roman.command_plan = []; gs.roman.plan_pointer = 0
+    sieges = [m for m in C.command_menu(gs) if m["type"] == "cmd_siege"]
+    decline = [m for m in sieges if m.get("roll_surrender") is False]
+    assert decline, "decline-to-roll Siege must be offered"
+    assert any("roll_surrender" not in m and not m.get("honors_of_war") for m in sieges)  # default still offered
+    r = engine.apply_action(gs, {k: v for k, v in decline[0].items() if not k.startswith("_")})
+    assert r.get("siegeworks_added") is True
+    assert r.get("surrender_roll") is None          # did not roll
+    assert gs.locales[town].siege_markers == 2

@@ -746,12 +746,19 @@ def play_hold_event(gs: GameState, card_id: str, args: dict, roller: DiceRoller)
 #   R4  Sultan's Horse        - Roman Command turn, Alp Arslan Besieging a
 #                               Locale with >1 Siege marker (remove 1 Siege)
 #
-# Deferred (no decision window modelled yet -> would be over-enumeration):
-#   R3/S4 Summer Heat, R23 Kleisourai  - out-of-turn reactions to the enemy
-#   R21/S21 Turkic removal             - Battle/Storm "play events" step
-#   R14 Imperial Coffers (discard)     - Arts of War (auto-resolved) step
-# These remain reachable via the documented do/apply action; the negative
-# enumerator tests assert they never appear in the normal menu.
+# Out-of-turn / special-window reactions are NOT in this active-side Hold-Event
+# menu, but each IS reachable from the palette through its own decision window:
+#   R3/S4 Summer Heat   - a "summer_heat" pending after the enemy reveals a
+#                         Command card in Summer; legal_moves offers play/decline.
+#   R23 Kleisourai      - a "kleisourai" pending when a Seljuk Lord crosses a
+#                         Pass; legal_moves offers play/decline.
+#   R21/S21 Turkic rmv  - hinted as _battle_holds_available (approach_response)
+#                         and _storm_events_available (cmd_storm); passed via
+#                         battle_events / storm_decisions.
+#   R14 Imperial Coffers- an "imperial_coffers" pending in the Levy discard
+#                         window; legal_moves offers discard/decline.
+# They are deliberately kept out of THIS menu (their windows are elsewhere); the
+# negative enumerator tests assert they never appear in the normal command menu.
 
 def _holds(gs: GameState, side: str) -> set[str]:
     return set(gs.side_decks(side).held_events)

@@ -974,6 +974,20 @@ def command_menu(gs: GameState) -> list[dict[str, Any]]:
                 if over:
                     mv["discard_excess"] = True
                     mv["_desc"] += f" — discard {_excess_provender(mgroup)} excess Provender to move (4.3.2, 1.7.2)"
+                # 1.7.2: a Laden (or over-laden) group may instead discard all Loot
+                # and excess Provender to March Unladen, one Command action cheaper.
+                # Offer that variant when it is affordable and actually saves an
+                # action (so it is not a pointless Asset loss, e.g. under Mules).
+                if (cost != "whole_card" and (over or group_laden(gs, mgroup))):
+                    ucost = _unladen_march_cost(gs, mgroup, way, first_march)
+                    if ucost != "whole_card" and ucost < cost and ucost <= gs.meta.actions_remaining:
+                        umv = {"type": "cmd_march", "lord": lid, "to": to, "way_type": edge["type"],
+                               "discard_to_unladen": True,
+                               "_desc": f"March to {sd.locale(to)['name']} via {edge['type']} "
+                                        f"Unladen (discard Loot + excess Provender to pay {ucost}, not {cost}) (4.3.3, 1.7.2)"}
+                        if co_marchers:
+                            umv["_co_marchers"] = list(co_marchers); umv["_co_marcher_max"] = co_max
+                        out.append(umv)
                 if co_marchers:
                     # Optional Group March (4.3.1): add a "group" subset of these
                     # (<= co_marcher_max) to bring co-located Lords; the handler
@@ -1047,6 +1061,18 @@ def command_menu(gs: GameState) -> list[dict[str, Any]]:
             out.append({"type": "cmd_sortie", "lord": lid, "_desc": "Sortie: Approach the Bypassing Enemy (4.3.6)"})
         if _besieging(gs, lord) and _peace_can_pay(gs, lord):
             out.append({"type": "cmd_siege", "lord": lid, "_desc": "Siege: roll Surrender / add Siegeworks (4.5.1)"})
+            # 4.5.1: the Besieger may DECLINE to roll for Surrender and only add a
+            # Siegeworks ("...including because the Besieger declined to roll..."),
+            # a distinct outcome only when the default Siege would otherwise roll
+            # (no Besieged enemy inside) and a Siegeworks would actually be added
+            # (enough Besiegers, room for another marker). Offer it then.
+            from . import battle as _b
+            if (not _besieged_enemy_inside(gs, loc_id, lord.side)
+                    and len(_besieging_lords_at(gs, loc_id, lord.side)) >= _b._value(loc_id)
+                    and st.siege_markers < 4):
+                out.append({"type": "cmd_siege", "lord": lid, "roll_surrender": False,
+                            "_desc": "Siege, decline to roll: add a Siegeworks marker without "
+                                     "rolling Surrender (4.5.1)"})
             # R25 Honors of War (Roman HOLD): during a Siege of a Fort with no
             # Besieged enemy inside, the Fort auto-Surrenders instead of rolling
             # (no Spoils). The active Lord still takes the Siege action, so it is a
@@ -1590,6 +1616,39 @@ def _discard_excess_provender(gs: GameState, lords: list[LordState]) -> int:
     return shed
 
 
+def _discard_to_unladen(gs: GameState, lords: list[LordState]) -> tuple[int, int]:
+    """1.7.2 / 4.3.2: discard ALL Loot and any Provender beyond Carts so the group
+    Marches Unladen (and thus a Command action cheaper). Loot is discarded to the
+    pool (a plain March, not Avoid/Retreat, so no enemy receives Spoils). Returns
+    (loot_discarded, provender_discarded)."""
+    carts = sum(l.assets.carts for l in lords)
+    loot_shed = sum(l.assets.loot for l in lords)
+    for l in lords:
+        l.assets.loot = 0
+    excess = max(0, sum(l.assets.provender for l in lords) - carts)
+    prov_shed = excess
+    for l in lords:
+        if excess <= 0:
+            break
+        take = min(l.assets.provender, excess)
+        l.assets.provender -= take
+        excess -= take
+    return loot_shed, prov_shed
+
+
+def _unladen_march_cost(gs: GameState, lords: list[LordState], way: dict, first_march: bool) -> int | str:
+    """Action cost of a March (4.3.3) if the group Marches Unladen — used by the
+    enumerator to price a discard-to-Unladen March (1.7.2) against the Laden cost."""
+    if way["whole_command_card"]:
+        return "whole_card"
+    cost = 1
+    if first_march and _all_turkic(lords):
+        cost = max(0, cost - 1)
+    if way["type"] == "pass":
+        cost += 1
+    return cost
+
+
 def march_cost(gs: GameState, lords: list[LordState], way: dict, first_march: bool,
                consider_discard: bool = False) -> int | str:
     """Action cost of a March (4.3.3). Returns 'whole_card' for Holding-Box Ways.
@@ -1649,7 +1708,10 @@ def h_cmd_march(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> di
     if way["type"] == "pass" and _passes_blocked(gs):
         raise IllegalAction("passes_blocked", "Passes cannot be used to March (Unpredictable Weather)")
     group = _marching_group(gs, lord, action.get("group", []))
-    if _over_laden(gs, group):
+    if action.get("discard_to_unladen"):
+        # 1.7.2: discard all Loot and excess Provender to March Unladen (cheaper).
+        _discard_to_unladen(gs, group)
+    elif _over_laden(gs, group):
         # 4.3.2/1.7.2: an over-laden group (more than two Provender per Cart) may
         # not move UNLESS it discards the excess Provender first. Require the
         # caller to opt in (so a March never silently sheds Assets), then shed the
