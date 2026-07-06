@@ -1,0 +1,2060 @@
+                          L e v y & C a m p a i g nSeljuk
+                                                      Series - Volume V
+
+
+
+
+                  Rules of Play & Scenarios
+                                                                      TA BLE OF CONTENTS
+Summary of Seljuk Changes from Nevsky............................2                                Call to Arms..........................................................................13
+1. Introduction.........................................................................3        4. Campaign...........................................................................14
+ General Course of Play...........................................................3               Plan.......................................................................................14
+ Components............................................................................3          Command.............................................................................14
+ Game Board and Map.............................................................4                 March....................................................................................15
+ Loyalty Checks.......................................................................5           Supply...................................................................................16
+ Lords and Vassals...................................................................6            Other Commands..................................................................16
+ Forces.....................................................................................8     Feed - Pay - Disband............................................................18
+ Assets......................................................................................8    End Campaign......................................................................18
+ Other Markers.........................................................................8          Battle.....................................................................................19
+ Cards.......................................................................................9    Storm and Sally....................................................................22
+2. Setup and Calendar............................................................9               5. Victory................................................................................24
+ Setup.......................................................................................9    Earning Victory Points..........................................................24
+ Calendar................................................................................10       Campaign Victory.................................................................24
+3. Levy....................................................................................11     End of Scenario Victory.......................................................24
+ Arts of War...........................................................................11        6. Optional Rules...................................................................24
+ Pay........................................................................................11   7. Scenarios............................................................................25
+ Disband.................................................................................11      Key Terms..............................................................................36
+ Muster...................................................................................12
+
+                                                                               © 2025 GMT Games, LLC
+2                                                    Seljuk
+
+
+
+
+                S ummary of S eljuk C hanges from N evsky
+Strongholds—Types are Fort, Town, and City; VP Val-       Avoid Battle—Lords may Avoid to an Enemy Strong-
+ue equals Size: , , or  (1.3.1).                       hold by Bypassing it (4.3.4-.5).
+Holding Boxes—Certain Seats are map-edge Locales          Assign Hits—Garrisons Select Targets during Missile
+that only the owning Lord may enter. When unavail-        Phase of Battle (4.9.1).
+able for Muster, Lords Muster in an allied Holding Box    Surrender—Forts/Towns/Cities/Aleppo roll 1, 2, 3, or
+(3.4.1).                                                  4 dice; Ravage aids Surrender (4.5.1).
+VP Markers—1 VP Roman Conquered, ½ VP Ruins,              Retreat—Retreat may join Friendly Lords already By-
+½ VP Ravaged (1.3.1, 4.5.5).                              passing an Enemy Stronghold (4.8.3).
+Ways—The types are Road and Pass (1.3.1).                 Storm—Reposition may add a Lord from Reserve to
+Turns—Each Turn is Seasonal (three months/90 days)        the Front, up to Stronghold Size; Lords Melee for at
+(1.3.2).                                                  most six Hits each (4.9.1).
+Seasons—Spring, Summer, Autumn; there is no Winter        Sack—Sack may Ruin Strongholds (1.3.1, 4.9.1, 5.1).
+Campaign season (4.7.6).                                  Sally—Array and Reposition are restricted in a way
+Lords—Commanders replace Marshals and have addi-          similar to that in Storm (4.9.2).
+tional rules about using Coin (3.2.1).                    Supply—Seats always yield one Provender, but not if
+Forces—Units include new types; Lord’s Force size is      Ruined; Passes require two Carts per Way (4.4.1).
+now 8 before incurring additional Provender for feeding   Forage—Inadequately Besieged Lords may Forage
+(1.6, Forces sheet).                                      (4.5.4).
+Transport—Just Carts (1.7).                               Ravage—Ravage targets Strongholds by current Ene-
+Waste—The Asset maximum per type is 8 (1.7.3).            my Allegiance but places Ravaged markers opposite to
+Cards—There are no “No Event” cards (1.9).                printed Allegiance if Locale is in friendly territory and
+                                                          reconquered (4.9.1 Play Note).
+Loyalty Check—Lords may use Coin during a Loyalty
+Check to entice Enemy Vassals to switch sides (1.4.1).    Tax—Roman Commander may Tax outside Seat, but
+                                                          place Ravage (4.5.6).
+Call to Arms—Each side can make use of unique stra-
+tegic options and Capabilities (3.5).                     Feed—Lords with more than 8 units spend a non-linear
+                                                          increase in Provender for Feed (4.6.1).
+March—Passes slow March (4.3.2-.3).
+                                                          End Campaign—Many new steps (4.7).
+Bypass—Lords can Bypass rather than Besiege Ene-
+my Strongholds to use more actions during March or to     Winter—Special interphase that moves Lords back to
+Avoid Battle (4.3.4-.6).                                  Seats and checks Seljuk player VP progress (4.7.6).
+
+Gardens—Friendly Towns and Cities guarantee Forage
+(1.3.1, 4.5.4)
+
+
+                                              © 2025 GMT Games, LLC
+                                                              Seljuk                                                             3
+
+                                                                   1.1 General Course of Play
+                                                                   In SELJUK, players take one of two enemy sides, Romans (Tyr-
+                                                                   ian purple) or Seljuks (pale blue). The Romans march from
+                                                                   Constantinople to protect their borders with a strong but slow
+                                                                   army. The Seljuks comprise a loose alliance of warriors from
+                                                                   the Muslim aristocracy and nomadic steppe tribes from Central
+                                                                   Asia. Small bands of treacherous Norman mercenaries augment
+                                                                   the Roman army, as do their provincial Thematic troops.
+                                                                   In turns covering 90 days each, Roman and Seljuk players will
+                                                                   levy lords and vassal forces, gather transport, and recruit spe-
+                                                                   cialists. Each Lord’s forces and assets are laid out on a mat.
+                                                                   Players then plan and command a Seasonal campaign with
+                                                                   their Lords.
+                                                                   Cylinders on the map show the Lords’ movements, while
+                                                                   markers on a calendar show how long each Lord will serve,
+                                                                   varying by hunger, pay, political events, and success or failure
+                                                                   in their campaigns.
+1.0 INTRODUCTION
+                                                                   Unlike other Levy & Campaign games, SELJUK features a
+SELJUK is a board wargame about campaigns in 11th-Cen-             strong scoring asymmetry; the Seljuk player will primarily be
+tury Anatolia between the Roman Empire and Seljuk Sul-             accruing points through Ravage and returning Loot to their
+tanate that culminated in the climactic battle of Manzikert        home territory during Winter. Some Lords on either side can
+on August 26th, 1071. The newly-crowned Roman Emperor              switch sides during the game through Loyalty Checks, which is
+Romanos IV Diogenes leads the Orthodox Christian military          a die roll against those Lords’ Fealty rating. The Roman player
+against its new enemy the Seljuk Turks, led by the Muslim          has to manage their Themata, garrison frontier troops that can be
+commander Alp Arslan.                                              Mustered during the Campaign phase and also serve defensive
+SELJUK is the fifth volume in GMT Games’ Levy & Cam-               purposes. Winter is not a playable season but rather serves as a
+paign Series that portrays medieval military operations. Play-     victory check and reset phase where most Lords must return to
+ers will gather and equip their armies and then send them          their Seats before the new year begins.
+to ravage, ruin, or conquer enemy locales and defeat enemy
+forces in battle. Alliances and obligations will provide lords     1.2 Components
+and vassals to serve in the field but only for limited periods.
+                                                                   A complete set of SELJUK includes:
+Players must keep an eye on the calendar and offer pay or loot
+to keep troops in the field.                                        • A mounted game board (1.3)
+                                                                    • A Lords sticker sheet (1.5.1, apply to cylinders)
+An optional rule adds detail on vassal service, and optional
+screens can hide armies’ strength for greater fog of war. SEL-      • Sixteen Lord mats (1.5.2)
+JUK has no solitaire system but is solitaire friendly. Team play    • One Battle/Storm mat (4.8.1)
+also works well.                                                    • 85 Horse unit wedges (5 silver [Norman knights], 47 pale
+                                                                      blue [Turkic Horse], 25 Tyrian purple [Tagmata], 6 dark
+A folding play aid summarizes key features of the game. The
+                                                                      green [Ghulam], 2 White [Scholai/Hetaireia]; 1.6)
+final pages of this rulebook provide five scenarios of varying
+length (including a “quickstart” setup for learning the game        • 65 Foot unit bars (52 steel [Infantry (akritai/skutatoi/light
+system), and a key terms index. A Playbook offers examples            Turkic foot)], 11 brown [(lower-class) Militia], 2 white [Va-
+of play for learning the game system, strategy notes, cards           rangian Guard (Norsemen)]; 1.6)
+lists and implementation tips, plus historical and other refer-     • 20 Lord cylinders (10 Tyrian purple, 10 pale blue, including
+ence materials.                                                       3 tall Commander cylinders,1.5.1)
+                                                                    • Three sheets of markers and counters (1.5-1.8)
+                                                                    • Four decks of playing cards (25 Arts of War cards for each side
+                                                                      and 42 Roman Command/46 Seljuk Command cards, 1.9)
+                                                                    • Two copies of a Sequence of Play, Commands, Forces &
+                                                                      Strongholds, and Battle & Storm foldout
+                                                                    • Two screens
+                                                                    • Six 6-sided dice (three purple, three pale blue)
+                                                                    • A Playbook
+                                                                    • This rules booklet
+
+                                                      © 2025 GMT Games, LLC
+ 4                                                                Seljuk
+
+1.3 Game Board and Map
+1.3.1 Map. The game board shows a map of eastern Anatolia,
+Armenia, and Syria, circa 1068. It depicts Locales linked by
+Ways, a Calendar along the top, and Holding Boxes near each
+player’s edge.
+                 Roman                              Seljuk
+ Holding box     Empire       Seasons   Calendar   Sultanate   Seats
+
+
+
+                                                                       FATIMID CALIPHATE: The three spaces in the Fatimid Caliph-
+                                                                       ate (Hama, Aleppo, and Syria) are Friendly to the Roman player
+                                                                       and Enemy to the Seljuk player with the following exceptions:
+                                                                        • The Roman player may not Withdraw (4.3.4) inside Hama or
+                                                                          Aleppo.
+                                                                        • The Roman player does not automatically succeed at Forage
+                                                                          at Hama or Aleppo.
+                                                                        • Various game Events will change the diplomatic status of
+                                                                          Aleppo and the rules around it, as per the Event card text.
+                                                                        • Strongholds in the Caliphate use the Seljuk column of the
+                                                                          Garrison table during Storm.
+                                                                        • If the Roman player Conquers a Seljuk-held Stronghold in
+                                                                          the Caliphate (such as Ibn Khan’s Seat), they only remove
+                                                                          the Seljuk Conquered markers and do not place their own
+                                                                          (see 4.9.1, Conquer).
+                                                                        • After the Aleppo Independence event is played for its effect,
+                                                                          the Seljuks conquering and holding Aleppo through the next
+     Thema          Locales      Road Way   Pass Way Holding box          Winter will result in a Seljuk automatic victory (4.7.6, 5.2).
+
+LOCALES: Locales are the spaces on the map that hold Lord              ALLEGIANCE: A Locale’s symbol (Stronghold circle) in ei-
+cylinders and game markers. Locales have either a Stronghold,          ther Roman purple or Seljuk pale blue shows its original Al-
+Unfortified Settlement, or Wilderness. Holding Boxes are con-          legiance, the side to which it is Friendly. It is Enemy to the
+sidered Locales.                                                       other side.
+ • Strongholds: Fort, Town, and City                                    • Muster (3.4), Pay with Loot (3.2.2), Withdrawal (4.3.4), and
+   Locales are Strongholds. They can be                                   other actions require Friendly Locales.
+   Conquered, Besieged, Stormed and                                     • Original (printed) Allegiance affects who may Ravage where
+   Ruined. Lords can Withdraw inside                                      and the color of Ravage and Ruins markers placed, as well as
+   them. Strongholds show a Value (,                                     valid targets for Roman Strategic Objective markers (3.5.3).
+   , or ) that is also their Size and                                                 NOTE: A bi-colored line on the map divides ter-
+   affects how many Conquered markers they receive (below),                             ritory between originally Roman Locales to the
+   how many Lords they can host, whether they have Gardens                              west (the Roman Empire) and originally Seljuk
+   that aid Forage (4.5.4), and other aspects of Siege, and Storm      Locales (the Sultanate) to the East. A green line denotes the lands
+   (4.3.4, 4.5.1, 4.9.1, 4.9.2). Ruins (below, 4.5.2) eliminate the    of the Fatimid Caliphate, which have special rules (above).
+   Stronghold there until rebuilt.
+ • Wilderness and Unfortified Settlements: These Locales                PLAY NOTE: Roman Conquered 1 VP markers markers show
+   provide only Provender during Ravage (4.5.5) and do not              gains in territory that add to victory.
+   block Loot return paths during Bounty (4.7.6).                      SEATS: Some Strongholds and Holding Boxes host Lords’
+ • Holding Boxes: Locales that serve as a Seat for some Lords          Seats, as shown by that Lord’s large Heraldry there (1.5.1) and
+   and have special rules for movement (4.3) and Muster (3.4).         as written on the Lord’s mat.
+THEMA: The Roman Empire (Allegiance, below) is divided into             • Holding Boxes: Constantinople is available for the Roman
+regions called Thema. Each Thema contains one or more Locales,            side, Mosul and Baghdad for the Seljuks. They have special
+as well as a box to hold Themata Service Markers (1.5.1). Thema-          March and Call to Arms effects, but otherwise serve as a Seat
+ta have special rules with regards to Siege, Recruit, Seljuk Rav-         Locale for the Lords indicated (3.4, 3.5). No Lord may enter
+age, and Roman Garrisons (4.3.5, 4.5.5, 4.5.7, 4.9.1).                    an Enemy Holding Box.
+
+
+                                                          © 2025 GMT Games, LLC
+                                                              Seljuk                                                                5
+
+VP MARKERS: Locales can hold various markers                        • SELJUK UNITY: Each Winter Phase, the Seljuk player will
+that grant a side Victory Points (VPs, 5.1). When-                    be required to have a specific number of Locales occupied by
+ever placing or removing them, immediately adjust                     Ravaged, Conquered, or Ruins markers in their color or lose
+the appropriate round Victory total marker(s) on                      victory points (4.7.6).
+the Calendar track (2.2.5).
+ • Conquered: Roman markers worth
+                                                                   1.4 Loyalty Checks
+   1 VP each (Seljuk Conquered mark-                               Certain Events can cause a Treachery card to be placed in a
+   ers are worth no VPs); they reverse a                           Season’s Campaign Plan. When the Treachery card is revealed
+   Stronghold’s Allegiance. Place the                              during Campaign, the player who revealed it chooses a Lord on
+   number of Conquered markers at a Stronghold equal to its        the Treachery card (even if unlevied)—Robert Crépin or Rous-
+   Value (, , or ; 5.1).Surrender (4.5.1) places or removes     sel de Bailleul for Seljuks, Arisighi for Romans—to undergo a
+   them. Sack instead supplants them with Ruins (4.9.1).           Loyalty Check roll.
+ • Ruins: Successful Seljuk (only) Storm of a                      1.4.1 Loyalty Checks. When a Loyalty Check is triggered
+   Stronghold (Sack, 4.9.1) may place a single Sel-                (through a Treachery card play or the Imperial Coffers Capa-
+   juk Ruins marker there worth ½ VP (5.1), regard-                bility), the revealing player will roll a die. Before the roll, that
+   less of Stronghold Value. Ruins eliminate the                   player can choose to spend Coin from their Commander’s Lord
+   Stronghold at that Locale (for Withdrawal, Bypass, Supply,      mat and/or from the Lord mat of a friendly Lord that is co-locat-
+   Siege, and Forage; 4.3.4-.5, 4.4, 4.5.4). Any Seats there re-   ed with the target of the Treachery; each Coin spent provides a
+   main for Muster (3.4). Allegiance remains as printed.           +1 die roll modifier to the roll. Then, if the Lord being checked
+NOTES: Ruins and Conquered markers never occupy the same           for Treachery is Unbesieged, the opponent has a chance to do
+Locale. The Imperial Fortress Construction Capability re-          the same, except each Coin spent provides a –1 die roll modifier
+pairs Ruined Strongholds (1.9.1).                                  to the roll. The die is then rolled; if the result is higher than the
+                                                                   Fealty rating of the targeted Lord from the Treachery card, that
+ DESIGN NOTE: Seljuk raiding armies would destroy enemy            Lord switches sides; he is Disbanded (3.3) and removed from
+ settlements to show their power and make off with goods and       the game board (he will automatically rejoin the game the fol-
+ valuables.                                                        lowing Pay phase under the control of the opposite player).
+ • Ravaged: Ravage actions place a single Ravaged                  A natural 1 is always a failure and a natural 6 is always a suc-
+   marker at an Unravaged Enemy Locale (4.5.5) in                  cess, regardless of Coin spent.
+   the Ravaging player’s color. Ravaged markers
+                                                                   Lords who can switch sides have pieces in both colors and Com-
+   award ½ VP and affect Surrender and Forage (4.5.1,
+                                                                   mand cards with different backs to reflect their current Alle-
+   4.5.4). No Locale can have more than one Ravaged marker.
+                                                                   giance status.
+WAYS: Two types of Ways—gray Roads and brown Passes—
+link Locales as adjacent. A Way’s type affects March speed and
+                                                                   1.4.2 Switching Sides by Loyalty Check. Place a Lord
+                                                                   who switches sides after a Loyalty Check next to the board along
+Supply command requirements (4.4).
+                                                                   with his Lord mat. If his cylinder was on the Calendar, replace it
+ON MAP: The phrase “on the map” refers to Lords at Locales,        with his cylinder of the opposite color.
+including Holding Boxes (i.e., not on the Calendar).
+                                                                   If his cylinder was on the map, before the next Pay phase,
+1.3.2 Calendar. A Calendar on the board tracks time and            place the Lord’s cylinder in his new Allegiance color at his
+victory scores (2.2, 5.1). Cylinders there track when Lords are    Seat with the appropriate number of Conquered marker(s) of
+Ready for Muster; markers show when Lords (and, if using an        his new side (or, if his Seat has an enemy Lord present at this
+optional rule, Vassals, 6.2) must Disband (3.3).                   moment, place him in his new faction’s Holding Box with-
+TURNS: Each box of the Calendar is a Seasonal Turn of three        out placing Conquered markers). His Lord mat should be set
+months, in one row from Spring 1068 to Autumn 1071.                up with his starting Forces and Assets and his Service Marker
+                                                                   placed on the Calendar as if he were just Mustered.
+SEASONS: Calendar box colors show a Turn as Spring, Sum-
+mer, or Autumn. Seasons show how many Command cards to             If a Lord is switching back to his original side and he is able
+use each Turn (4.1), and some Events. The Calendar also shows      to be placed at his Seat because there is no enemy Lord there,
+Ravaged removal reminders (4.7.2) and the annual Seljuk Unity      remove the Conquered markers of his previous side. Otherwise
+goal (below). NOTE: Italicized Calendar notes provide histori-     place him in his new side’s Holding Box.
+cal background; they do not affect play.                           A Lord remains a part of his new side even when Disbanded.
+Winter is a special non-campaign interphase as described on the     PLAY NOTE: Arisighi’s Seat after joining the Roman play-
+Sequence of Play (4.7.6).                                           er is always the Constantinople box; Roussel de Bailleul and
+                                                                    Robert Crépin will use the Mosul and Baghdad box if their
+                                                                    normal Seat has an enemy Lord present.
+
+
+                                                      © 2025 GMT Games, LLC
+ 6                                                                Seljuk
+
+ DESIGN NOTE: Arisighi historically joined the Romans af-              1.5 Lords and Vassals
+ ter a falling out with Alp Arslan; Roussel and Robert were            Cylinders, Service Markers, and 5" × 5" mats track the status of
+ of dubious loyalty, and the latter rose in revolt over low pay        Lords in SELJUK. Vassals tied to each Lord and Themata also
+ against the Romans in early 1069.                                     have Service Markers and add Forces.
+EXAMPLE #1: Robert Crépin switches sides from Roman to Sel-            1.5.1 Lords. Lords (eight on each side) are the figures who car-
+juk after a Treachery card causes a Loyalty Check. His cylinder is     ried out military preparations and operations—Levy and Cam-
+on the Summer 1070 box on the Calendar. The Seljuk player im-          paign.
+mediately replaces his Roman cylinder there with the Seljuk one
+                                                                       CYLINDERS: Each Lord has a cylinder to show his location or
+and takes Robert’s Lord mat from the Roman player and places it
+                                                                       readiness to Muster. Any reference to location of a Lord means
+in its current state (unmustered) near his side of the table. He can
+                                                                       where his cylinder is—a map Locale, a Holding Box, on the
+now be Mustered in a future Season if he is Ready.
+                                                                       Calendar, or out of the game. A cylinder’s sticker shows that
+EXAMPLE #2: Robert Crépin switches sides from Roman to Sel-            Lord’s Heraldry and Command rating (1.5.3, 4.2). Commanders
+juk after a Treachery card causes a Loyalty Check in Summer            use a taller cylinder.
+of 1069. His cylinder is currently on the map. The Seljuk player
+Disbands him and removes his cylinder from the map, setting it
+aside. He then takes Robert’s Lord mat from the Roman player
+(discarding any attached Roman Capabilities) and places it near
+his side of the table. Before the next Pay phase (Autumn 1069),
+the Seljuk player places Robert’s cylinder at his Seat in Edessa,
+                                                                               Romanos Diogenes                    Arisighi
+placing two Seljuk Conquered markers there. If Edessa had a Ro-               Emperor of the Romans      Brother-in-law to the Sultan
+man Lord present at this moment, Robert would instead be placed
+in the Mosul and Baghdad Holding Box and no Conquered mark-            STICKERING: Apply stickers from the small sheet provided
+ers would be placed at Edessa. He then places Robert’s starting        onto the 20 cylinders, one sticker each, purple sticker on purple,
+Forces and Assets on his Lord mat and his Service Marker in the        pale blue on pale blue. The Romanos sticker (purple with golden
+appropriate Season on the Calendar as if he were just Mustered.        ring) and the Manuel Komnenos sticker (purple with the gold-
+                                                                       en eagle) each go on a tall purple cylinder. Alp Arslan’s sticker
+EXAMPLE #3: It is Summer of 1070 and Robert Crépin is cur-             (green circle with white eagle) goes on a tall blue cylinder. Rob-
+rently a Seljuk Lord located alone at Edessa. Using the ability on     ert Crépin (black shield with gold fleur-de-lis), Roussel de Bail-
+the Imperial Coffers Capability during the Arts of War phase           leul (red shield with blue cross) and Arisighi (orange circle with
+of Summer 1070, the Roman player successfully rolls a Loyalty          black bow) all have one of their stickers on a purple cylinder and
+Check against him. Robert switches sides from Seljuk to Roman.         one on a blue cylinder.
+The Roman player Disbands him and removes his cylinder from
+the map, setting it aside. He then takes Robert’s Lord mat from        HERALDRY: Each Lord has a shield-shaped symbol that iden-
+the Seljuk player (discarding any attached Seljuk Capabilities)        tifies his Seats, cylinder, mat, Vassals, card effects, etc.
+and places it near his side of the table. Before the next Pay phase    Themata Service Markers are placed in their associated Thema
+(Summer 1070), the Roman player places Robert’s cylinder at his        on the map (location on the back of their counter) when not lev-
+Seat in Edessa. Because he is now returning to the Roman side,         ied or under Siege. Both players may inspect them as desired.
+the two Seljuk Conquered markers there are removed. If there
+                                                                       COMMANDERS: Romanos Diogenes and Alp Arslan
+had been another Seljuk Lord with Robert at Edessa, then Robert
+                                                                       can March several Lords together (4.3.1). A gold ring
+would have to be returned to the Constantinople Holding Box and
+                                                                       on their stickers show that they are Commanders.
+the Conquered markers would not be removed. He then places
+                                                                       Commanders may not become Lieutenants or Lower
+Robert’s starting Forces and Assets on his Lord mat and his Ser-
+                                                                       Lords (4.1.3). Romanos is always the Roman Com-
+vice Marker in the appropriate Season on the Calendar as if he
+                                                                       mander whenever he is on the map. Manuel Kom-
+were just Mustered.
+                                                                       nenos is Commander only if Romanos is currently
+                                                                       not on the map (use Manuel’s tall cylinder with the
+                                                                       ring to denote this).
+                                                                       SERVICE MARKERS: Each Lord has a Service Marker that
+                                                                       shows his Heraldry, Service Rating (1.5.3), and Fealty roll. Mus-
+                                                                       tered Lords’ Service Markers shift along the Calendar’s Season-
+                                                                       al boxes (2.2.3) to show how long Lords’ Service will last.
+
+
+
+
+                                                         © 2025 GMT Games, LLC
+                                                                 Seljuk                                                             7
+
+VASSAL MARKERS: Each Vassal (1.5.4) has a marker show-                1.5.2 Lord Mats. Each Lord has a 5" × 5" mat that shows
+ing the Heraldry of the Vassal’s Lord, Vassal Forces (1.6), and       his characteristics and holds his Forces, Vassals, and Assets. Set
+a Service Rating. Vassal markers stay on a Lord’s mat or—if           aside a Lord’s mat unless Mustered. When a Lord Musters, set
+playing with the optional Vassal Service rule—are placed and          his mat in front of that player.
+shift on the Calendar (6.2). If not playing with the optional rule,
+ignore the Service Rating number on the counter.                      Ratings
+
+SPECIAL VASSALS: Certain Vassal markers have distinctive
+borders and background symbols to show that they enter play           Seats
+and behave differently than other Vassals (3.4.2).
+                                                                      Starting Forces
+
+                                                                      Mustered Vassals
+                                             Lord, Vassal,            and Forces here
+                                             and Special
+                                             Vassal Service
+                                                                      Forces/Vassals
+                                             Markers, front
+                                                                      Routed in Battle
+                                             and back
+
+
+
+
+THEMATA SERVICE MARKERS: Each Thema has a set of                      Starting Assets
+Service Markers that serve as Garrison forces for its Strongholds                        Added Assets here     Available Vassals
+in Storm and Siege (4.3.5), possibly prevent Ravage (4.5.5), and      MAT SECTIONS: The Lord’s starting Forces at scenario set-
+can be Recruited by the Roman Commander during the cam-               up or upon Muster (3.4.1) are shown on the mat at the word
+paign phase (4.5.7). Some Themata Service Markers depict two          Forces; put those pieces and any added Forces that the Lord ac-
+unit symbols; these Themata still only roll a single die when         quires in the Forces section. NOTE: Forces of Vassals do not
+defending against Ravage and are Lost if they fail to roll Protec-    start Mustered (1.5.4). Units Routed in Battle or Storm (4.8.2,
+tion (4.8.2), therefore they are much more efficient at being used    4.9.1) slide from the Forces section below a line into a Routed
+as a defender in a Storm.                                             section. Keep the Lord’s starting Assets (3.4.1) and Ready Vas-
+COMMAND CARDS: Each Lord has a set of Command cards                   sal Service Markers plus Assets that he acquires in the Assets &
+(1.9.2) that enables him to take actions on Campaign (4.2).           Vassals section.
+TREACHERY CARDS: A special type of Command card                       ITEMS ON MATS: When setting up a Lord at start (2.1.2, 7.0)
+(1.9.2) that can trigger Loyalty Checks (1.4.1) for Lords when        or as Mustered during Levy (3.4.1, 3.5), place his initial Forces,
+revealed.                                                             Assets, and Vassal Service Markers onto his mat as noted above.
+                                                                      As the Lord Levies his Vassals’ Forces or obtains Assets, add
+DISBANDED: Lords sometimes Disband (3.3). Disband, Bat-
+                                                                      those unit pieces and Asset markers to his mat.
+tle (4.8), and Storm (4.9.1) can permanently remove certain
+Lords from play. Return a Disbanded or removed Lord’s Forces          RATINGS: A Lord’s ratings (1.5.3) are found listed in a column
+and Assets from his mat to their respective pools (1.5.2, 2.1.1)      along the upper right of his mat.
+and discard any “This Lord” Capability cards at his mat (1.9.1,       CARDS AT MATS: Tuck Arts of War cards that affect specific
+3.4.4). If Disbanded but not permanently removed, return his          Lords (1.9.1, 3.1.2, 3.4.4) partly under that Lord’s mat—Events
+cylinder to the Calendar as instructed in 3.3.2.                      at the top edge and a maximum of two “This Lord” Capabilities
+                                                                      at the bottom edge.
+                                                                      SHARING: Lords may use and spend Assets (1.7) to help one
+                                                                      another if at the same Locale. They never Share Vassals, Forces,
+                                                                      or This Lord Capabilities. Unbesieged Commanders may spend
+                                                                      Coin from their mats for any reason and across any distance, ex-
+                                                                      cept to Pay Besieged Lords (3.2.1) or provide die-roll modifiers
+                                                                      for a Loyalty Check for besieged friendly Lords.
+                                                                      EXAMPLE: A Lord Shares his Carts with another Lord whose
+                                                                      Provender exceeds Transport, so as to allow a group’s Unladen
+                                                                      March or enable Avoid Battle (4.3).
+
+                                                                       Important: Lords on the same side may Share but not trans-
+                                                                       fer or trade anything among one another – not Vassals, units,
+                                                                       Assets, or cards.
+
+                                                         © 2025 GMT Games, LLC
+ 8                                                                Seljuk
+
+1.5.3 Ratings. Lord mats list several ratings:                         • If a Lord ever remains Mustered without Forces on his mat,
+ • Fealty: A die-roll range for that Lord’s                              he immediately Disbands as per 3.3.2.
+   propensity to Muster when another Lord                              DESIGN NOTE: In SELJUK a Horse unit represents about
+   Levies him (3.4.1) or switch sides during                           1000-2000 fighting horsemen, Foot about 2000-3000 infantry.
+   a Loyalty Check, shown as a die with the upper number of
+   that range (such as four pips for 1-4).
+                                                                      1.7 Assets
+ • Service: The number of Calendar boxes ahead of the
+   current box that the Lord’s Service Marker is placed               Various items that Lords obtain and use—Transport (Carts),
+   upon Muster (3.4.1) or cylinder is placed upon Dis-                Provender (food and other supplies), Coin (money), and Loot
+   band (3.3), shown as a numeral in a box symbol.                    (livestock and other booty)—are shown by 5/8th-inch counters
+                                                                      placed on Lords’ mats.
+ • Lordship: The number of Levy actions that the Lord
+   takes (3.4), shown as a numeral in a shield symbol.
+
+ • Command: The number of actions that the Lord can
+   undertake each time his Command card is revealed
+   during a Campaign (4.2.1), shown as a numeral in a                 NOTES: Lords use Transport to acquire and move Provender
+   card symbol. This numeral is also on the Lord’s cyl-               (4.3, 4.4); Lords themselves otherwise can move without Trans-
+   inder piece and Command cards.                                     port and do not need Transport to move Coin or Loot.
+
+ DESIGN NOTE: Fealty shows a Lord’s enthusiasm to fight,              1.7.1 Accounting. Lords may add and expend each type of
+ Service his obligation to this conflict, Lordship his wherewith-     Asset as if money, making change as needed. Plain markers rep-
+ al to mobilize for war, and Command his alacrity in the field.       resent one such Asset each; “×2”, “×3”, and “×4” markers rep-
+                                                                      resent those amounts.
+1.5.4 Vassals. Each Lord in SELJUK has Vassals (subordinate           NOTE: Asset markers are not a limit on play (but see 1.7.3). If
+elites and troops) who provide their Lord with additional Forc-       Asset markers run out, stack unused markers below Asset mark-
+es. Like Lords, each Vassal has a Service Marker and a Service        ers as duplicates of the top marker.
+Rating (the latter used only with an optional rule, 6.2). Vassals
+                                                                      1.7.2 Greed. Lords may discard (rather than use) Assets only
+usually have fealty solely to a single Lord, as shown by the Her-
+                                                                      as needed to help them move—to March Laden or Unladen,
+aldry on the front of the Vassal’s Service Marker. A Lord’s Vas-
+                                                                      Avoid Battle, or Retreat (4.3.2, 4.3.4, 4.8.3) or as rules or card
+sals, including the number of them with the same composition
+                                                                      text require.
+of Forces, are shown on his mat in the Assets & Vassals section,
+to simplify preparation of a mat when Mustering a Lord (1.5.2,        1.7.3 Wastage. A Lord may have at most 8 of each Asset
+3.4.1). Some special Vassals (ex. Seljuk Ghulam) can be Mus-          type (8 Provender, 8 Carts, and so on). Any excess is imme-
+tered by multiple Lords via Capability.                               diately lost.
+
+ Important: At setup and when a Lord enters play, place his           1.8 Other Markers
+ Vassal Service Markers (but not Vassal units) on his mat. Add
+                                                                      Variously shaped game counters include round
+ Vassal units only as the Lord Musters those Vassals (3.4.2, 3.5).
+                                                                      markers to track time, scenario end, and victory on
+                                                                      the Calendar (2.1.2, 2.2.2, 5.1) and note Battle or
+1.6 Forces                                                            Storm Locale (4.8, 4.9.1), plus a rectangular marker
+                                                                      for Pursuit in Battle (4.8.2) and one to track Alep-
+SELJUK represents military Forces with wooden unit pieces:
+                                                                      po’s diplomatic status. NOTE: The round “SEL-
+wedges for Horse and bars for Foot.
+                                                                      JUK” token is just a bonus, not used in play.
+                                                                      Several 5/8th-inch square markers include:
+                                                                       • Roman 1 VP Conquered / Seljuk Conquered
+       Varangian Guard       Infantry         Militia                    for Strongholds that switch Allegiance
+                                                                         (1.3.1, 1.4, 4.5.1-.2, 5.1).
+                                                                       • Special Call to Arms markers.
+                                                                       • Seljuk Seat and Fortress Construction markers.
+ Tagmata          Norman      Scholai/      Ghulam       Turkic        • Siege markers to put at Besieged Strongholds
+		                Knights     Hetaireia     Cavalry      Horse           and to show Siegeworks in Storm or Sally
+See the Forces foldout page for a listing of unit types, their           (4.5.3, 4.9).
+pieces, and characteristics (4.8.2). Keep spare Forces pieces
+in a pool such as a bowl. The pool of units is a limit on play
+(Muster, 3.4.1-.2).
+
+                                                         © 2025 GMT Games, LLC
+                                                              Seljuk                                                                                 9
+
+                                                                   CARD USE: When card text contradicts rules, card text takes
+                                                                   precedence. The player of an Event or owner of a Capability
+ • Moved/Fought markers to put at Lord cylinders                   decides how to implement card text within what is specified.
+   during Commands (4.3, 4.8.6, 4.9.1, 4.9.2).
+                                                                   1.9.2 Command Cards. Each side’s Command deck has
+ • Numbered markers to help log actions, rounds,
+                                                                   four action cards per Lord and five No Command cards. Players
+   altered ratings, etc.
+                                                                   build their Campaign Plan each Turn (4.1) by stacking Com-
+ • Assorted large square once-per-game event                       mand cards of their Mustered Lords in an amount determined by
+   reminder markers.                                               the Season. They add No Command cards as needed to fill out
+                                                                   a Plan when too few Lords are Mustered or No Command cards
+ Several ½-inch square markers include:
+                                                                   and/or Treachery cards when required by an Event.
+ • Ruins/½ VP (1.3.1, 4.9.1).
+ • Ravaged/½ VP (1.3.1, 4.5.5).
+ • Bypass Stronghold (4.3.5).                                      2.0 SETUP AND CALENDAR
+                                                                   This section explains the game’s general sequence and use of the
+                                                                   Calendar track.
+
+1.9 Cards                                                          2.1 Setup
+The game has two types of cards: Arts of War cards with Events     2.1.1 Layout. Set the gameboard between the players. You
+and Capabilities, and Command cards for Campaign actions.          will want enough table space around the board for mats, cards,
+Players may not inspect one another’s decks or cards set aside.    and pools. See the layouts shown here and, for solitaire play,
+1.9.1 Arts of War. Each side has its own deck of Arts of           in the Playbook.
+War cards. Each Arts of War card has an upper Event section        POOLS: Create pools for wooden units, Asset markers, and re-
+and lower Capability section. Only one of the two sections is in   maining markers (1.8).
+effect at a time.
+                                                                   DECKS: Separate playing cards into four decks—one Arts of
+NOTE: There is no discard pile; cards played for Events and        War deck and one Command deck per side (1.9).
+discarded Capabilities are shuffled back into the deck.
+                      Seljuk
+                                          Romans
+
+
+Event
+(fleeting,
+3.1.3)
+
+Capability
+(lasting,
+                                                                       Roman Player
+
+
+
+
+                                                                                                                                     Seljuk Player
+3.4.4)
+
+
+
+
+EVENTS: The upper Event section provides players immedi-
+ate and/or temporary benefits or opportunities. Players draw two
+Arts of War cards for their Events at the outset of each Levy
+after the first (3.1). NOTE: For the use of Events, see 3.1.3.
+CAPABILITIES: The lower sections show Capabilities with
+longer-lasting benefits, either drawn randomly during initial
+Levy (3.1) or selected during Muster (3.4.4). Heraldry show
+which Lords may Levy and use the Capability. Capabilities re-
+main in effect unless discarded (Lord removal 3.3, 4.8.5; Dis-
+                                                                                      Sample layout with square or round table and
+card 4.0).
+                                                                                             no Hidden Mats Option (6.1).
+ PLAY NOTE: As Events and Capabilities share cards, draw
+ of some Events delay Levy of the card’s Capability, and a Ca-
+ pability in play bars its Event (3.1.3, 3.4.4).
+
+
+
+                                                      © 2025 GMT Games, LLC
+ 10                                                                               Seljuk
+
+                                                                                      2.2 Calendar
+                                                                                      The Calendar (1.3.2) tracks time and victory.
+                                                                                      2.2.1 Turns. Each Scenario covers one or more 90-day
+                                                                                      (3-month) Seasonal Turns (1.3.2). Each Turn, conduct a Levy
+                                                                                      sequence, then a Campaign sequence, as detailed in rules
+                                                                                      sections 3 and 4 and summarized on the Sequence of Play
+                                                                                      foldout page.
+                                                                                      2.2.2 Marking Time. The round Levy/Campaign
+                                                                                      marker tracks the progress of Seasonal Turns and
+                                                                                      Levy and Campaigns within each. Mark that it is
+                                                                                      Levy or Campaign by placing the marker with that
+                                                                                      side up in the Levy/Campaign circle of the current Seasonal
+                                                                                      Turn box on the Calendar. Where indicated on the Calendar,
+   Roman Player
+
+
+
+
+                                                                  Seljuk Player
+                                                                                      the Winter Phase sequence takes place as part of the end of the
+                                                                                      current Autumn turn.
+                                                                                      2.2.3 Marking Service. Place and shift Service Markers and
+                                                                                      Lord cylinders in the Calendar’s Seasonal boxes as described in
+                                                                                      various rules or on Event cards (1.9.1). All instructions to shift
+                                                                                      right or left mean that number of Turn boxes. If a direction is
+                                                                                      not specified, the executing player chooses. EXAMPLE: “Shift
+                                                                                      1 right” from box 8 means to box 9, “1 left” from 9 means to 8.
+                                                                                      CALENDAR’S END: When a Service Marker or Lord cylinder
+                                                                                      is to appear or shift below (left of) box 1 or beyond (right of)
+                                                                                      box 12, set it just off the board on that side and ignore further
+                                                                                      shifts in that direction. The first shift back toward the Calendar
+                                                                                      places the marker into box 1 or box 12, respectively. NOTE:
+                                                                                      This reduces “end of time” anomalies.
+                                                                                      2.2.4 Player Order. Unless noted otherwise, the Seljuks go
+                                                                                      first and the Romans second in each step of Levy and Campaign.
+                  Sample layout with wide but shallow table and                       EXAMPLE: During Disband Beyond Service (3.3.1), the Seljuk
+                        using Hidden Mats Option (6.1).                               player Disbands Lords, then the Roman player does so.
+                                                                                      EXCEPTIONS:
+OTHER ITEMS: Each player takes a foldout aid. If using
+the Hidden Mats Option (6.1), each player gets a screen. Keep                          • Play of Command cards alternates, one Seljuk card, then one
+unused mats and Service Markers, reference sheets, this rules                            Roman card, then another Seljuk card, and so on (4.2).
+book, and the Playbook handy.                                                          • The order of many steps in Battle, Siege, and Storm will de-
+                                                                                         pend on who is Active, Attacking, has Missiles or Cavalry,
+2.1.2 Scenarios. Choose a scenario (7.0). Agree on wheth-                                and so on (4.8-4.9).
+er to use Hidden mats screens (6.1) and/or advanced Vassal
+Service (6.2) options. Set up the situation, including Mustered                       2.2.5 Tracking Victory Points. The Calendar’s
+Lord mats, and begin play with the first Levy (3.0). NOTE: If                         numbered boxes also serve to track each side’s vic-
+playing for the first time, try the quickstart scenario (7.0).                        tory score (5.1) using round Victory markers. Place
+                                                                                      the Victory marker of each side in the Victory circle
+                                                                                      at the box number equaling that side’s current victory point
+                                                                                      score (VP) between 1 and 12½ (on the +½ side as appropriate);
+                                                                                      just off-map left of box 1 for 0 VP or, on the +½ side, for ½ VP;
+                                                                                      or off-map right of box 12 for over 12½ VPs.
+                                                                                      EXAMPLE: The Romans have 8½ VPs. Put the purple Victory
+                                                                                      marker in box 8 with “+½” up.
+                                                                                      In the rare case that a side exceeds 12 VPs, use a single Victory
+                                                                                      marker of the side ahead to show the net score.
+                                                                                      EXAMPLE: 14 Roman versus 12 Seljuk VPs puts the purple
+                                                                                      marker in box 2.
+
+
+                                                              © 2025 GMT Games, LLC
+                                                                 Seljuk                                                           11
+
+3.0 LEVY                                                              3.2 Pay
+                                                                      After drawing cards, the Seljuk then Roman player may expend
+At the outset of each Seasonal Turn, players prepare for the cam-     Coin and Loot to encourage their Lords to serve longer. They
+paign to follow by adding to their armies. The Sequence of Play       may remove Coin and Loot in this step only to shift Service
+foldout page summarizes the steps of the Levy phase.                  Markers (1.7.2).
+
+3.1 Arts of War                                                       3.2.1 Pay with Coin. Any Lords with Coin
+                                                                      markers on their mat may remove some or all of
+Each side first draws two Arts of War cards as Capabilities or        their Coin to affect their own or other Lords’ Ser-
+Events as follows.                                                    vice. Each Coin spent shifts a single Service Mark-
+3.1.1 Shuffle. Collect and shuffle all unused Seljuk Arts of War      er right on the Calendar by one box, either:
+cards into an Event draw deck; do the same for the Roman play-         • The paying Lord’s own Service Marker, or
+er. Held Events (3.1.3) and Capability cards in play (3.4.4) are       • That of another Lord at the same Locale.
+not included in the draw deck.
+                                                                      EXCEPTION: Unbesieged Commanders in play may pay Coin
+3.1.2 Draw Capabilities. If it is the Levy for the scenario’s         regardless of their location for any Unbesieged friendly Lord.
+first Seasonal Turn, the Seljuk player then the Roman player
+                                                                      3.2.2 Pay with Loot. Players may have any of
+(2.2.4) each draws two Arts of War cards from the player’s own
+                                                                      their Lords who are in a Friendly Locale (1.3.1) that
+deck and deploys them as Capabilities (lower half of the card,
+                                                                      is free of Siege (it may be Bypassed) Pay with Loot
+1.9.1) at that side’s map edge or Lord mats (1.5.2).
+                                                                      markers from their mat (or Share from a Lord at
+  • Return to the deck at the end of the phase any “This Lord”        their current Locale) as if Coin, one for one.
+    card that a side cannot assign to a Mustered Lord (3.4.4).
+                                                                       Important: A Lord must be in a Friendly Locale free of Siege
+3.1.3 Draw Events. If it is the second or any later Levy, the          to Pay with Loot. He may do so at an Unbesieged Stronghold
+Seljuk then the Roman player each draws two cards and imple-
+                                                                       with his side’s Conquered markers, for example, but not at a
+ments their Events in the order drawn (the upper half of each
+                                                                       Besieged Locale.
+card, 1.9.1). Except as specified below, reveal Events immedi-
+ately and return the cards to the deck. Bold-italic card text spec-
+ifies certain Event types:                                            3.3 Disband
+  • Players keep drawn “Hold” Events hidden for later use at the      Seljuks then Romans may have to remove certain Lords from
+    holder’s discretion. When played on a specific Lord, tuck the     the map because of where that Lord’s Service Marker is on the
+    card under the top edge of that Lord’s mat, so that the Event     Calendar (2.2).
+    text shows.
+  • “This Campaign” Events are in effect until the end of the cur-    3.3.1 Beyond Service Limit. First, for each Lord whose Ser-
+    rent Campaign. Do not return them to their deck until then.       vice Marker is to the left of (in a lower-numbered Turn box than)
+    NOTE: The Capability on the bottom half of such a card will       the Levy or Campaign marker (the current Turn), remove him
+    not be available for selection this Levy.                         from the map.
+  • Events/Capabilities with an asterisk following the title can      REMOVAL: When Disbanding a Lord Beyond Service (or re-
+    only be used once per game. Mark the current Season on the        moving him by combat, 4.8.5):
+    Calendar with the appropriate reminder marker when they            • Remove his cylinder permanently from play (or both of his
+    occur the first time. If those Events are drawn again later,         cylinders in the case he is a Lord with multiple): he may not
+    follow the instructions on the card.                                 Muster again.
+NOTE: A side’s Events can affect the opposing side. The side           • Set aside his and his Vassals’ Service Markers, his Forces and
+playing an Event card makes any decisions allowed unless oth-            Assets; return any of his “This Lord” Capability cards (3.4.4)
+erwise specified.                                                        to that side’s Arts of War deck.
+                                                                       • If the Lord was Seljuk and had a Roman Strategic Objective
+3.1.4 Greed. Players may not discard (as opposed to use) cards
+                                                                         marker on his mat, the Roman player claims the marker and
+unless permitted by a rule. EXAMPLE: Hold Events only return
+                                                                         places it in the Constantinople Holding Box, which will earn
+to their deck once used per the text on the card or discarded at
+                                                                         him 1 VP at the end of the game.
+Campaign’s end (4.7.5).
+
+
+
+
+                                                        © 2025 GMT Games, LLC
+ 12                                                              Seljuk
+
+3.3.2 At Service Limit. Lords with Service Markers in the             MUSTERING: When a Lord is Mustered:
+same Turn box as the Levy or Campaign marker Disband but               • Place that Lord’s cylinder at one of his free Seats or, for Ari-
+may Muster again in a later Levy.                                        sighi, Robert, or Roussel only, his associated Holding Box
+ • Place such a Lord’s cylinder onto the Calendar (even if under         per 1.4.2 if his Seat is enemy-occupied/Conquered.
+   Siege or Bypassed, 4.3.5), a number of Seasonal Turn boxes          • Take that Lord’s mat and place starting Forces on it as shown,
+   to the right of the current box equal to that Lord’s Service          drawing from the units pool (1.6). In the rare case that too
+   Rating (1.5.3).                                                       few unit pieces remain in the pool, the Lord does not receive
+ • Return his Forces and Assets to their pools and return Capa-          those units.
+   bility cards under his mat to the Arts of War deck. Set aside       • Place his Assets and Vassal Service Markers (Heraldry up,
+   his mat(s), Service Marker, and remaining Vassal Service              Ready to Muster, 3.4.2) onto the Lord’s mat as shown there.
+   Markers for possible future Muster.                                   Keep aside any Special Vassal Service Markers (e.g., Em-
+NOTE: Rarely, a Lord may Disband because his last unit is re-            peror’s Retinue or Scholai) that are not available because
+moved outside of combat (1.6).                                           the required card has not come into effect (1.5.1, 1.9.1,
+                                                                         3.4.2). NOTE: Do not place Vassal Forces on the mat when
+                                                                         the Lord Musters; they are available for the Lord to Levy at
+3.4 Muster                                                               a later time.
+After any Disband, Seljuk then Roman Lords already on the              • Place the Lord’s own Service Marker (darker purple or blue
+map may take Levy actions up to their Lordship Rating (1.5.3)            than those of Vassals) into a Turn box on the Calendar, a num-
+to Muster other Lords, Vassals, Transport, or Capabilities.              ber of boxes equal to his Service Rating to the right (ahead)
+Each Levy action spends one point of a Lords’ Lordship Rat-              of the current box (where the Levy marker is; if beyond 12,
+ing. Complete each Lord’s actions before the next Lord, in any           then just off the game board, 2.2.3).
+order desired.
+REQUIREMENTS: To use Lordship, a Lord must have begun                                                            Fealty Rating
+this Muster segment at an Unbesieged Friendly Locale (1.3.1)                                                     Service Rating
+including a Holding Box.
+                                                                                           A Lord’s Service Marker
+ Important: Lords may not conduct Muster from Enemy Lo-
+ cales or at a Siege. Lords brought onto the map during this          EXAMPLE: A Lord with Service “2” Mustering in Spring of
+ Muster segment (3.4.1) may not take Levy actions themselves          1069 (Levy marker in box 4) would place his Service Marker two
+ until that Levy’s Call to Arms at the earliest (3.5).                boxes ahead into Turn box 6 (Autumn 1069).
+                                                                      3.4.2 Levy Vassals. A Lord may use one Levy action to Mus-
+3.4.1 Levy Other Lords. A Lord may use a Levy action (one             ter one of his Vassals. The Vassal must have a face-up Service
+point of Lordship) for another Lord to roll Fealty for placement      Marker in the Assets & Vassals section of his mat (1.5.2).
+on the map. If the roll fails, the Levying Lord may use more
+Levy actions (within his Lordship Rating) to keep trying to           PROCEDURE: When a Vassal Musters, slide its Service Mark-
+Muster the same Lord (or others).                                     er on its Lord’s mat up into the Forces section. Place the units
+                                                                      shown on the Vassal’s marker near or on it, drawing from the
+NOTE: Lords can Levy a Ready Commander to Muster like any             units pool (1.6). In the rare case that the pool holds too few unit
+other Lord.                                                           pieces, the Vassal does not add those units.
+ PLAY NOTE: Consider keeping some Lords in reserve, ready
+ to Muster in a future Levy.                                          Vassal’s Lord
+                                                                                                                      Service Rating
+                                                                      Forces added                                    (optional rule only)
+FEALTY ROLL: Designate a Lord to roll. The rolling Lord
+must be Ready, his cylinder in a Turn box at or left of the Levy                         Vassal Service Marker
+marker (2.2). Also, he must have a Seat free with no enemy Lord
+or Conquered markers there (it may be Bypassed, 4.3.5, or Rav-        NOTE: Ignore Vassal Service Ratings unless using the optional
+aged, 4.5.5). Roll one die—if the roll is within that Lord’s Fealty   rule (6.2). Loss of Vassal units leaves the marker in place—it
+Rating (1.5.3), Muster him per “MUSTERING” below; if not,             does not Disband it—to show that the Vassal already Mustered.
+do nothing.                                                           SCHOLAI, EMPEROR’S RETINUE,
+                                                                      ELITE GHULAM CAVALRY, &
+                                                                      OGHUZ MERCENARIES: These Spe-
+                                                                      cial Vassals start set aside until the asso-
+                                                                      ciated Capability enables them to be Levied per normal rules.
+                                                                      Discard of the card Disbands the Vassal.
+
+
+
+
+                                                        © 2025 GMT Games, LLC
+                                                                Seljuk                                                            13
+
+                                                                     3.5.1.1 MARWANID ALLIANCE PROCEDURE: During Call
+3.4.3 Levy Transport. A Lord at a Friendly Locale                    to Arms, the Seljuk player may choose to either transfer 1 Coin
+may use one Levy action to add one Cart to his mat.                  from Alp Arslan’s Assets to this card or spend any number of
+3.4.4 Levy Capabilities. A Lord at a Friendly                        Coin from the Marwanid Alliance card; for each Coin spent,
+Locale may obtain Capabilities (an Arts of War card’s bottom         make either the Amid or Mayyafariqin Locales (marked with
+half), either for himself, or for his entire side (per card text,    the Kurdish star) a Seat for Seljuk Lords until the end of the
+1.9.1), for one Levy action per card selected. Select from any of    next Winter Phase. Lords may not tax in these Locales and only
+the side’s currently unused cards, within these restrictions:        one may serve as a Supply Source per Command card. Place the
+                                                                     Lord Seat marker(s) as a reminder.
+ • The (lower) Capability section of each Arts of War card
+   shows the Heraldry of those Lords who can Levy that Ca-           3.5.1.2 EMPRESS EUDOKIA MAKREMBOLITISSA PRO-
+   pability and whom it affects, including “any”, “ALL”, or          CEDURE: During Call to Arms, the Roman player may either
+   “NOT”.                                                            place the Empress token on this card or move the Empress token
+ • Certain Capabilities refer to “This Lord”. Such Capabilities      from this card to Constantinople to choose one of the two below
+   when Levied will affect only the Lord who Levied it. Place        effects:
+   the card at the bottom edge of that Lord’s mat, with the upper     • Shift a Roman Lord cylinder 1 Calendar box
+   half of the card (the card’s Event) tucked out of view under-      • Decrease the service of a Lord with a Seat located at Con-
+   neath the mat as shown in 1.5.2. Each Lord mat may only               stantinople 1 Calendar box to increase the service of Roma-
+   have two “This Lord” Capabilities at a time, neither with the         nos Diogenes by 1 Calendar box
+   same name. After drawing a third, immediately choose and
+   discard one.                                                      3.5.2 Loot. If desired, the Seljuk player may remove a Loot
+ • Other Capabilities do not say “This Lord” and affect more         marker from the Mosul and Baghdad box (adjusting VPs) to
+   than a single Lord. Tuck such cards’ upper half under the         shift a Seljuk Lord cylinder 1 Calendar box.
+   player’s closest game board edge as shown in table layout         3.5.3 Strategic Objective. If desired, and if a Roman Com-
+   (2.1.1). A Lord may Levy any number of such Capabilities          mander is in Constantinople, the Roman player may take a Stra-
+   (see also 4.0).                                                   tegic Objective marker from the supply and make it available
+ PLAY NOTE: Levying a Capability blocks the Event on that            in front of them. Alternatively, if they already have at least one
+ card from occurring.                                                available in front of them from a previous Call to Arms, they
+                                                                     may instead place one of those available Strategic Objective
+3.4.5 Levy Themata. These markers can be Levied during               markers on a Mustered enemy Lord mat or an Enemy Strong-
+the Muster Phase by the Roman Commander by spending one              hold in the Sultanate (1.3.1).
+Lordship as if he were performing the Recruit action (4.5.7) in      The Roman player may never take a Strategic Objective from the
+his current Thema. Always place the Themata Service Marker           supply and place it on a valid target in the same Call to Arms.
+on his Lord mat, and then also put the unit(s) depicted on it atop
+                                                                     There are three Strategic Objective markers in the game, and
+the marker to track the unit status during Battle.
+                                                                     the Roman player may have all three in front of them at one
+ PLAY NOTE: This is different to the handling of Vassals as          time. Once a marker is claimed for VPs after being placed
+ described in this game and previous games in the series.            (3.3.1, 4.5.1, 4.9.1), it will always be located in the Constanti-
+                                                                     nople Holding Box.
+3.5 Call to Arms                                                      DESIGN NOTE: Empress Eudokia Makrembolitissa engi-
+Each side has different strategic options during this phase de-       neered Romanos’ ascension to the throne and backed his au-
+pending on what Capabilities have been previously Levied.             thority in the imperial court while he was away on campaign.
+                                                                      The Roman army had major designs on the forts around Lake
+PROCEDURE: Each Call to Arms phase, Seljuks may com-                  Van in the east, seeking to turn them into a buffer region for
+plete any one Call to Arms option, then Romans do so. NOTE:           the empire, and focused a lot of military planning on their cap-
+Events can trigger at most one Call to Arms per Levy.                 ture. The Marwanid Dynasty in eastern Anatolia were Kurdish
+3.5.1 MARWANID ALLIANCE, DEEP RAIDS, EMPRESS                          allies to the Seljuks, and enjoyed a period of flourishing eco-
+                                                                      nomic prosperity and investment in the 11th Century thanks to
+EUDOKIA. During this phase, a Lord that meets the criteria on
+                                                                      the expanding Muslim influence from Central Asia.
+any of these Capabilities may choose to execute one for their
+Call to Arms action for the turn.
+
+
+
+
+                                                        © 2025 GMT Games, LLC
+ 14                                                              Seljuk
+
+                                                                       PLAY NOTE: When arranging one’s Plan stack, fan the cards
+4.0 CAMPAIGN                                                           to show the order of Lords by corner Heraldry from left to
+After Levy, conduct that Turn’s Seasonal Campaign, completing          right, then flip face down.
+the steps below. The Sequence of Play page of the foldout sum-
+marizes the Campaign steps.                                           4.1.3 Lieutenants. During Planning (only), players
+                                                                      may put a Lord cylinder of their side on top of one
+CAPABILITY DISCARD: The players (Seljuk first) must se-
+                                                                      other cylinder at the same Locale. The upper Lord
+lect and discard any Capability cards they have exceeding their
+                                                                      is a Lieutenant, overseeing the Lower Lord for that
+number of Mustered Lords—not including any “This Lord” Ca-
+                                                                      entire Campaign, unless one is removed. A Lieu-
+pabilities (3.4.4). Compare the number of cards tucked under a
+                                                                      tenant may have only one Lower Lord at a time; the
+side’s map edge to its number of Lord mats in use—the player
+                                                                      Lower Lord may not be a Lieutenant. A Command-
+must discard any excess.
+                                                                      er may not be a Lieutenant or Lower Lord. A side may have
+CAMPAIGN STEPS:                                                       several Lieutenants.
+ • Plan: Each side sets its Campaign Plan—an ordered stack            NOTE: If Romanos disbands and Manuel Komnenos is in play
+   of Command cards (4.1)—and may designate Lieutenants to            as a Lieutenant to a different Lord, immediately replace Manu-
+   lead other Lords (4.1.3).                                          el’s cylinder with the taller version with the ring. He is no longer
+ • Activation: Starting with the Seljuk player, one side flips its    a Lieutenant.
+   top Command card and executes actions (4.3-4.5, possibly            • Lieutenant and Lower Lord always move together in March,
+   Treachery) with the Lord on that card or does nothing if a No          Avoid, Retreat, etc. (4.3, 4.8.3).
+   Command card (4.2.3).
+                                                                       • If a Lieutenant or his Lower Lord Disbands while the other
+   o Actions: One side is Active, using Command card actions;             does not, the remaining Lord becomes a normal Lord.
+      the other side is Inactive.
+                                                                       • Revealing a Lower Lord’s Command card results in a Pass,
+   o Feed/Pay/Disband: At the end of each card, both sides                as if a No Command card (4.2.3).
+      Feed Forces who Moved or Fought, may Pay Lords, then
+      check if they Disband (4.6).                                     PLAY NOTE: A Lieutenant and Lower Lord may not With-
+ • More Activations: The other side next flips its top card and        draw into a Fort (Size ; 1.3.1, 4.3.4).
+   executes that Activation (actions, Feed/Pay/Disband). Con-
+   tinue to alternate Activations by side until both Plan stacks      4.2 Command
+   are exhausted.
+                                                                      After building Plan stacks, the Seljuk then Roman player alter-
+ • End Campaign: After the sides exhaust Plan stacks and fin-
+                                                                      nate flipping (revealing) the top current Command card of their
+   ish all Command Activations, the Campaign ends. Reset per
+                                                                      stack—one Seljuk card, then one Roman card, and so on. After
+   4.7 and, if this was not the scenario’s last Turn, advance and
+                                                                      revealing a Command card, a side Activates the Lord shown on
+   flip the Campaign marker to the next Seasonal Turn Levy.
+                                                                      that card or Passes if a No Command card is revealed (4.2.3).
+4.1 Plan
+The players each build a Plan for the coming Campaign by se-
+lecting and stacking available Command cards (1.9.2). The cur-
+rent Season on the Calendar specifies the number of Command
+cards that each Plan stack must use:
+ • 7 cards in Spring.
+ • 8 cards in Summer.
+ • 7 cards in Autumn.
+NOTE: Some seasons may add more cards due to Events
+4.1.1 Selecting Cards. A Plan may use any cards available in                     Roman Command              Seljuk Treachery
+that side’s Command deck (1.9.2). Command action cards (those         NOTE: After each Command card, Lords who moved and/or
+with a numeral) and No Command cards are always available.            fought will Feed their Forces, and Lords may Pay or might Dis-
+                                                                      band (4.6).
+4.1.2 Arranging Stacks. Each side stacks its required num-
+ber of selected Command action and/or No Command cards in             4.2.1 Actions. A Lord shown on a
+any order desired, face down. The top face-down card will be          Command card (bearing his Command                   Command
+that side’s first Active Lord, and so on. Players may not rearrange   Rating number, 1.5.3), may execute a                  Rating
+Plan stacks once built. Keep all remaining Command cards face         series of Commands of the owning
+down as well. Players may always inspect their own Plan and the       player’s choice (4.2.2, 4.3-4.5), in any
+other side’s played (but not unused) Command cards.                   order, using actions numbering up to that Lord’s Command Rat-
+
+                                                        © 2025 GMT Games, LLC
+                                                                 Seljuk                                                          15
+
+ing (1.5.3, as shown on the card, the Lord cylinder, and possibly     4.3.3 March Speed. An Unbesieged Lord takes one Com-
+modified by Arts of War cards), including Pass (4.5.8).               mand action to March to an adjacent Locale via a single con-
+EXCEPTIONS: Besieged Lords (4.3.5) may only Sally (4.5.3),            necting Way, except as modified below.
+Pass (4.5.8), or perhaps Forage (4.5.4). Siege and Tax take an         • Turkic Horse—the first March of a Command card of a Lord
+entire card (4.5.1, 4.5.6). Starting a Siege and any Battle or           commanding Forces comprised entirely of Turkic Horse
+Storm end that card’s actions (4.3.5, 4.8, 4.9).                         costs –1 Command actions (to a minimum of 0) to move ad-
+                                                                         jacent along a Way (1.3.1).NOTE: If acting as a Lieutenant
+NOTE: Lords may use multiple actions on a single Command
+                                                                         or Lower Lord, all Lords’ forces in the stack must only be
+type, for example, three actions to Forage three times.
+                                                                         Turkic Horse to gain this benefit.
+4.2.2 Command Menu. Lords select from Command ac-                      • Marching Laden—with Loot or more Provender than Carts
+tions listed on the Commands foldout page and detailed below:            (4.3.2)—costs two Command actions, not just one.
+March, Siege, Storm, Sally, Supply, Forage, Ravage, Tax, or            • Subject to the above, Marching across a Pass (1.3.1) adds one
+Pass; Romans can Recruit (4.5.7).                                        to the total action cost of the March Command.
+ Important: A Besieged Lord on a Command card may only                 • EXCEPTION: Marching to/from a Holding Box costs the
+ Sally, Pass, or perhaps Forage.                                         entire Command Card’s actions (and may be done Laden)
+                                                                      NOTES: The type of Way influences the number of Commands a
+4.2.3 No Command Card. Upon revealing a No Com-                       Lord uses to March. Remember, Lords may discard Loot and/or
+mand card, a Lower Lord’s card (4.1.3), or the card of a Lord         Provender to facilitate March (1.7.2), but never units.
+not on the map, that side does nothing. Play instead passes to
+the other side or ends the Campaign if neither side has cards         4.3.4 Approach. If a Marching Lord enters the Unbypassed
+left in its Plan (4.7).                                               Locale of an Unbesieged enemy Lord, check immediately for
+                                                                      Avoid Battle (moving to an adjacent Locale), Withdrawal (into a
+                                                                      Stronghold there), Battle, and Siege as follows.
+4.3 March
+                                                                      AVOID BATTLE: Upon enemy Approach, some or all Inac-
+An Unbesieged (4.3.5) Lord may expend a Command action
+                                                                      tive Lords may move to one or more adjacent Locales, within
+(possibly two if Laden or across a Pass, or three if both, 4.3.2-3)
+                                                                      these restrictions:
+to March to another Locale.
+                                                                        • Lords may not Avoid Battle across any part of the Way that
+ Important: Carts are never needed to March; they haul Prov-              the Enemy used to Approach the Locale.
+ ender. Their number determines how much Provender a Lord               • Lords may not Avoid Battle to any Locale with an Unbe-
+ can take along and whether he will be Laden (4.3.2). Lords               sieged Enemy Lord.
+ do not need Carts to move with Coin or Loot.
+                                                                        • Mark Lords Avoiding Battle to an Unbesieged Enemy Strong-
+                                                                          hold as Bypassing it (4.3.5).
+MOVED/FOUGHT: As a reminder, upon any move-
+ment during March, put a Moved/Fought marker on                         • Lords may only Avoid Battle Unladen (4.3.2). They may take
+or next to each moving Lord’s cylinder that does not                      no Loot and may take only Provender equal to their own or
+yet have one.                                                             Shared Carts.
+                                                                        • Lords may discard Loot and Provender as needed to become
+4.3.1 Group March. Any or all of a side’s Unbesieged Lords                Unladen and thereby Avoid Battle (1.7.2). The Approaching
+in the same Locale with its Commander may March with him                  Enemy Lords receive and divide among them any Assets so
+(1.5.1). The Lower Lord beneath a Marching Lieutenant (4.1.3)             discarded (as if Spoils, 4.8.3).
+must move with the Lieutenant.
+                                                                      Mark Avoiding Lords as Moved/Fought (4.3).
+4.3.2 Laden. Provender and Loot can hinder March, Avoid
+Battle (4.3.4), and Retreat (4.8.3).                                   PLAY NOTE: The Local Scouts Event can prevent Avoid
+                                                                       Battle.
+ • A Lord with any Loot on any Way moves Laden.
+ • A Lord with more Provender than Carts but not more than            WITHDRAW: Upon Approach or after Battle (4.8.3), the In-
+   twice as much moves Laden along any Way.                           active side may Withdraw some or all Lords into a Friendly
+ • Lords with more than two Provender per Cart may not move           Stronghold there (not Ruins), equal to a number of Lords up to
+   unless they discard the excess (1.7.2).                            its Size (, , or , 1.3.1). NOTE: Withdrawal alone does not
+                                                                      mark Lords as Moved/Fought.
+ DESIGN NOTE: Medieval war booty (Loot in the game) in-
+ cluded livestock herds or delicate goods that could only fun-        BATTLE: Unless all enemy Lords there either Avoid Battle or
+ nel so fast down narrow ways.                                        Withdraw, conduct a Battle immediately with the Marching side
+                                                                      as Attacker (4.8), as part of that March Command. Rules section
+SHARING: Lords moving as a group (4.3.1) Share Carts                  4.8 covers the Battle procedure in detail.
+(1.5.2). Count all Provender and Carts of Lords moving together
+to determine Laden status.
+
+                                                        © 2025 GMT Games, LLC
+ 16                                                           Seljuk
+
+4.3.5 Besiege or Bypass. When any Lord(s) are in a Locale          SORTIE: A Lord or group inside a Bypassed Friendly Strong-
+outside an Enemy Stronghold (not Ruins) that isn’t Bypassed or     hold may use one March action (regardless of Laden status,
+Besieged they must immediately either Besiege or Bypass if no      4.3.2) to Approach (4.3.4) the Bypassing Enemy instead of mov-
+Enemy Lords are outside (either initially or after Withdrawal),    ing adjacent. If they lose a Battle there, they Withdraw or Re-
+after Approach (4.3.4):                                            treat normally (4.3.4, 4.8.3), keeping the Bypass marker. NOTE:
+ • Besiege: Place one Siege marker of that side’s                  Only a Commander or Lieutenant can Sortie a group (4.3.1).
+   color on the Enemy Stronghold or Lord(s) there,
+   skip any more actions on this card, and go to                   4.4 Supply
+   Feed/Pay/Disband (4.6), or                                      An Unbesieged Lord may use a Command action to add Proven-
+ • Bypass: Place a Bypass marker on that side’s Lord(s)            der to his mat from his Seats.
+   outside the Stronghold and continue any actions on
+   that Command card without leaving that Locale (EX-              4.4.1 Sources and Routes. The Active Lord
+   AMPLES: Supply, 4.4; Forage, 4.5.4; Ravage, 4.5.5).             must have an unbroken Route of Locales and
+                                                                   Ways, served by Transport, to his own Seat(s) at
+A Locale can only have a maximum of one Bypass marker (all         an Unruined Stronghold that he will use as a
+Lords are considered to be Bypassing that Locale).                 Supply Source. Mark Sources as needed.
+At the moment the first Siege marker is placed on a Roman           • A Supply Route may not include any Locale with an Enemy
+Stronghold, the Roman player may assign a number of avail-            Lord or Stronghold unless Besieged or Bypassed (4.3.5).
+able Themata Service Markers from that Stronghold’s Thema
+                                                                   NOTE: Neither Ruins nor Ravaged (1.3.1, 4.5.5, 4.9.1) block
+as defenders of that Stronghold. The number of markers avail-
+                                                                   Supply Routes, but a Ruined Seat cannot itself be a Source.
+able to defend is at maximum the size of the Stronghold (see
+Stronghold foldout).                                               TRANSPORT: To add Provender, the Active
+                                                                   Lord must have or Share (1.5.2) at least one Cart
+Whenever a Besieged or Bypassed Stronghold becomes free
+                                                                   for each intervening Road crossed (and two for
+of Enemy Lords in the Locale, remove all Siege and Bypass
+                                                                   each Pass) along any Route to a Source. NOTE:
+markers there, then return all Themata Service Markers to their
+                                                                   A Lord at his Seat would not need Carts to use it
+home Thema.
+                                                                   as a Source.
+NOTE: Lords outside an Enemy Stronghold are either all Be-
+sieging or all Bypassing it. Ruins and Friendly Strongholds do      Important: In order to draw multiple Provender per Supply
+not impede March; Lords never Besiege or Bypass them.               action, a Lord must have a Cart (2 Carts along a Pass) for
+                                                                    each Provender along each Way used by each Route.
+ PLAY NOTE: Bypassing rather than Besieging a Stronghold
+ allows a Marching Lord to use actions remaining on his card       4.4.2 Add Provender. The Active Lord adds one Provender
+ to Ravage, Supply, or Forage. Siege or Bypass allows Retreat      to his mat per Unruined Stronghold Seat used within the Trans-
+ to or Supply past an Enemy Stronghold (4.8.3, 4.4.1).             port limit (Carts along Routes to Sources).
+4.3.6 March from Bypass. For any of the following ac-              NOTE: A Lord may have at most 8 Provender (1.7.3).
+tions, mark Marching Lords as Moved/Fought:                        EXAMPLE: A Lord two Ways from his Seat, one Road and one
+DEPART: A Lord or group that begins a Command card at a            Pass, with three Carts could draw one Provender per Supply ac-
+Bypass marker (either Bypassing or Bypassed) may March to an       tion (as limited by his Transport). If he could reach two of his
+adjacent Locale normally (4.3). If no Lords remain at an Enemy     Seats, he can still only obtain 1 Provender per Supply action be-
+Stronghold, remove any Bypass markers.                             cause each Cart is committed to a single Way per action.
+
+ENCAMP: A Bypassing Lord may use one March action (re-             4.5 Other Commands
+gardless of Laden status, 4.3.2) to replace the Bypass marker at
+the Bypassed Stronghold with one Siege marker, skip any more       4.5.1 Siege. Any Besieging Lord may use his entire Command
+actions on this card, and go to Feed/Pay/Disband (4.6). Mark the   card to advance the Siege as follows.
+Encamping Lord (the one who used the March action) Moved/          SURRENDER? If the Siege Locale
+Fought, but not any other Lords there.                             has no Besieged Lords, the Besieging
+ PLAY NOTE: With enough Command actions, a Lord could              side may roll for Surrender. It rolls a
+ Bypass, Forage or Ravage, and then Encamp all on a single         number of dice equal to the Strong-
+ card.                                                             hold’s Value (, , or , or 4 dice if
+                                                                   Aleppo, 1.3.1). If each die rolled is less than or equal to the
+                                                                   number of Siege plus Ravaged markers there (up to four Siege
+                                                                   markers plus zero or one Ravaged marker), the Besiegers seize
+                                                                   the Stronghold:
+
+
+                                                      © 2025 GMT Games, LLC
+                                                               Seljuk                                                            17
+
+ • Set it to their Allegiance (1.3.1, either placing Conquered      4.5.5 Ravage. An Unbesieged Lord may use a
+   markers equal to its Value of , , or  or removing mark-       Command action (or two actions if Seljuk) at a Locale
+   ers already there; adjust Victory Points/VP, 5.1).               to place a Ravaged ½ VP marker there. The Locale
+ • Remove all Siege markers.                                        must currently be Enemy (1.3.1) and not yet Ravaged. Ravage
+ • Terms: Award no Spoils (4.9.1).                                  places a marker of the opposite color to the Locale’s current
+ • Themata: All Themata Service Markers (1.5.1) garrisoning         Allegiance (adjust Victory, 5.1).
+   the Stronghold are removed from the game.                         • Add one Provender to that Lord’s mat; if at an un-Ruined
+ • If the Stronghold has a Roman Strategic Objective marker on         Stronghold also add one Loot.
+   it, the Roman player claims it by placing it in the Constanti-    DESIGN NOTE: Settled areas confronted raiders with tough-
+   nople Holding Box.                                                er local defenses but also offered more to carry off.
+NOTE: A Ravaged marker at the Siege Locale adds one to the
+Surrender die roll range regardless of whose Ravaged marker         Roman Ravage costs one Command and is always successful.
+it is.                                                              If a Seljuk Lord uses two Commands to Ravage a Locale in the
+SIEGEWORKS: If the Stronghold did not Surrender (includ-            Roman Empire, it is automatically successful.
+ing because the Besieger declined to roll), and if the Besieging    If a Seljuk Lord uses only one Command to ravage a Locale in
+side has at least as many Lords there as the Stronghold’s Size      the Roman Empire, the Roman player may choose one available,
+(, , or ), add one Siege marker, to a maximum of four            Unbesieged Themata Service Marker from the box in that Lo-
+markers at the Locale.                                              cale’s Thema to defend against the Ravage. Assign a Hit to the
+                                                                    Themata Service Marker and roll Protection for its unit type as
+ DESIGN NOTE: Larger Strongholds required more forces to
+                                                                    if in Battle (4.8.2). If the roll is successful, the Ravage action
+ blockade effectively.
+                                                                    fails and no Provender or Loot is received by the Seljuk Lord. If
+ PLAY NOTE: Siege markers can erode at Campaign’s end               the roll fails, eliminate the chosen Themata Service Marker from
+ (4.7.3).                                                           play and the Ravage succeeds as above. Only one Seljuk Ravage
+                                                                    attempt is allowed per Locale per Command card.
+MOVED/FOUGHT: Finally, mark all Lords of both sides there           For this purpose, there is no difference for Themata Service
+as Moved/Fought.                                                    Markers depicting one or two units; if a marker showing two
+4.5.2 Storm. A Lord may use a Command action to Storm a             units is chosen to defend, only a single die is rolled and the
+Stronghold currently under Siege. This ends the card, even if       marker is removed from the game if the Protection roll fails.
+there are Command actions remaining. For Storm, see the full        If only one Command to Ravage is used and the Roman player
+procedure in 4.9.1.                                                 chooses not to defend with Themata, the Ravage automatically
+4.5.3 Sally. A Besieged Lord may use a Command action to            succeeds as above.
+Attack Besiegers in a Battle. See 4.9.2 for the procedure.           PLAY NOTE: Lords can Ravage while Besieging and at Ru-
+4.5.4 Forage. A Lord may use a Command action to seek to             ins. Ravage at Enemy Allegiance markers encourages Surren-
+add one Provender to his mat:                                        der (4.5.1). Ravaged markers are subject to periodic removal
+                                                                     (4.7.2).
+ • His Locale may not be Ravaged (4.5.5) and,
+ • He may not be Besieged (4.3.5) by a number of Enemy Lords        4.5.6 Tax. An Unbesieged Lord at any of his Seats
+   equal to or more than the Stronghold’s Size (1.3.1).             may use his entire Command card to add one Coin
+PROCEDURE: Forage at an Unbesieged Friendly Stronghold              to his mat, even if the Locale is Enemy. Additional-
+(not Ruins, 1.3.1) automatically adds one Provender. For Forage     ly, the Roman Commander may Tax any Friendly
+anywhere else (including Ruins):                                    Stronghold (only) in the Roman Empire that is not his Seat.
+                                                                    When he does, add one Seljuk Ravaged marker to that Strong-
+ • Roll a die: a roll of 1-3 adds one Provender; 4-6 fails.
+                                                                    hold if not yet Ravaged. A Roman Commander may not tax a
+GARDENS: A Lord at a Friendly Town or City (not Fort) may           Stronghold if a Ravaged marker is already present.
+Forage to add one Provender automatically, even if Besieged.
+                                                                     DESIGN NOTE: The Roman Emperor employed special
+ PLAY NOTE: Ravage blocks Forage while Ruins block Sup-              right during the campaign to requisition funds from the pop-
+ ply Sources. Forage requires no Sources or Transport but can        ulation, which had serious negative effects for a community’s
+ be less sure and bountiful than Supply.                             ability to function.
+
+
+
+
+                                                       © 2025 GMT Games, LLC
+ 18                                                               Seljuk
+
+4.5.7 Recruit. An Unbesieged Roman Commander may spend                 4.7 End Campaign
+one Command to add an available Themata Service Marker and
+                                                                       After revealing all Command cards in both sides’ Plan stacks,
+its unit(s) to his Forces from the Thema in which he is currently
+                                                                       end this Seasonal Turn.
+located. Always place the Themata Service Marker on his Lord
+mat, and then also put the unit(s) depicted on it atop the marker      4.7.1 Game End. If the just-ended Campaign was part of the
+to track the unit status during Battle.                                scenario’s final Seasonal Turn, the game ends; the side with the
+                                                                       most Victory points wins (5.3).
+4.5.8 Pass. An Active Lord may opt to Pass (do nothing) in-
+stead of using any actions or Treachery.                               4.7.2 Grow. At the end of each Spring Turn (boxes 1, 4, 7, and
+                                                                       10), the Seljuk player then the Roman player each must select
+4.6 Feed - Pay - Disband                                               and reduce the Enemy’s Ravaged markers on the map to ½ their
+At the end of each Command card, those Lords on                        total number, rounded up (adjust VPs, 5.1). EXAMPLE: Reduce
+both sides marked Moved/Fought (because they                           five markers on the map to three.
+took part in March, Avoid Battle, Battle, Siege, or                    4.7.3 Repair. At the end of each Campaign,
+Storm) must Feed their Forces. All Lords on both                       remove one Siege marker from each Strong-
+sides may receive Pay. All then check for Disband.                     hold that has three or four Siege markers.
+4.6.1 Feed. Each Lord who Moved or Fought (Sel-                        4.7.4 Wastage. Seljuks then Romans must
+juk then Roman) must remove Provender or Loot                          select and discard any one Asset or “This Lord”
+per the number of units on his mat:                                    Capability card from each of their Lords who has more than one
+ • One Provender or Loot for 1-8 units.                                of any type of Asset or more than one such card.
+ • Two for 9-12 units.                                                 EXAMPLE: A Lord with two Carts, one Loot, and one card at his
+ • Three for 13-16 units.                                              mat must discard one item because of the two Carts; the owner
+ • Four for 17+ units.                                                 could choose a Cart, Loot, or the card.
+NOTES: Put “Feed ×2” or “Feed ×3” markers on                            DESIGN NOTE: Wastage represents rotting of food, loss of
+mats as a cue when thresholds are exceeded.                             draft and pack animals to mistreatment, wear and tear on wag-
+GREED: Feed may not remove Assets beyond this require-                  ons, and so on.
+ment (1.7.2). NOTE: Loot Pays Lords only at Friendly Locales
+                                                                       4.7.5 Reset. Prepare for the next Turn:
+(3.2.2) but Feeds them anywhere.
+                                                                        • The Roman Commander may retain all Themata Service
+SHARING: First, all Lords must Feed their own Forces, using               Markers and their units from a Thema on his Lord mat by
+Provender and Loot from their own mats. Then, Lords must ex-              paying one Coin per Thema with units present. If not, return
+pend Provender and Loot to Feed Forces of other Friendly Lords            each unpaid Themata Service Marker to its home Thema and
+at the same Locale who did not fully Feed their own Forces but            remove the provided Forces (1.6).
+are out of Provender and Loot (1.5.2). A side may not withhold
+                                                                        • Unstack any Lieutenants and Lower Lords (4.1.3).
+Provender or Loot; it must use all as able to meet Feeding needs,
+even if only partially.                                                 • Discard all “This Campaign” Events (3.1.3).
+                                                                        • The Seljuk then Roman player may discard any Arts of War
+EXAMPLE: Romanos Diogenes is at Edessa with 9 units, 1 Cart,              cards back into their decks (1.9.1).
+and 1 Provender. Nikephoros Bryennios is also at Edessa with 6
+                                                                        • Advance the Campaign marker to the next Seasonal Turn box
+units, 2 Carts and 4 Provender. Both are marked Moved/Fought.
+                                                                          and flip the marker to Levy (2.2.2).
+During Feed/Pay/Disband at the end of the current Command phase,
+Romanos must spend 2 Provender on himself (because he has more         4.7.6 Winter. Conduct this phase after Reset in the first three
+than 8 units in Forces) and Nikephoros one. Because Romanos only       Autumn turns (boxes 3, 6, and 9).
+has 1 Provender, he must use one from Nikephoros’s mat.                 • If the Aleppo Independence event has been played for its ef-
+UNFED: Shift the Service Marker for any Lord that received                fect and Aleppo is Seljuk Conquered, the Seljuk player wins
+less Provender or Loot than required one Seasonal box left. (If           an automatic victory (5.2).
+using the Vassal Service optional rule, 6.2, also shift those of his    • Bounty. A Seljuk Lord who can trace a path of Locales that
+Vassals.) A Lord requiring two or three Provender and/or Loot             are either Ruins, Wilderness, Unfortified Settlements, Friend-
+but with access to fewer consumes them and suffers the shift.             ly Strongholds, or Bypassed or Besieged Enemy Strongholds
+                                                                          back to his Seat may score 1 VP per Loot on his Lord mat
+4.6.2 Pay and Disband. Any Seljuk then Roman Lords may
+                                                                          up to the number of Carts he and co-located Lords currently
+receive Pay as per Levy (3.2). Then all Lords on both sides Dis-
+                                                                          possess. The Carts do not need to be assigned to a Way like
+band as required by their Service limit (3.3.1-.2).
+                                                                          during the Supply action, their number just limits the amount
+4.6.3 Remove Markers. Remove Moved/Fought markers                         of Loot that can be scored during this phase. Put Loot tokens
+from all Lords and proceed with the other side’s next Command             scored this way into the Mosul & Baghdad Holding Box as a
+card, if any.                                                             way to track those VPs.
+                                                         © 2025 GMT Games, LLC
+                                                                    Seljuk                                                                                       19
+
+ • Seljuk Unity. Count the total number of Locales that have
+   Seljuk-colored Ruins, Conquered, or Ravaged markers (not
+   VP value) on the map. Compare to the yearly Seljuk Uni-
+   ty value on the Calendar (Autumn box). If the number of
+   Locales with those markers is less than the Calendar value,
+   the Seljuk player loses VPs equal to the difference, removing
+   Loot in the Mosul and Baghdad Holding Box first (if any),
+   then placing Roman Conquered 1 VP markers in the Con-
+   stantinople Holding Box. These Roman Conquered 1 VP
+   markers will be removed first when the Seljuk player scores
+   positive VPs during a future Bounty phase (i.e., remove a 1
+   VP marker from Constantinople for each Loot to be placed in
+   Mosul & Baghdad until there are none remaining, then place
+   Loot markers in Mosul & Baghdad as normal).
+                                                                                                  Battle mat with Lord cylinders in Array
+ • Winter Quarters. Unless allowed by a Capability to ignore
+   this phase, return all Lords to their Seats Unladen by discard-
+   ing any excess Assets (1.7.2). If Lord’s Seat is Enemy Con-
+
+
+
+
+                                                                                        R E S E RVE
+
+
+
+
+                                                                                                                                                   R E S E RVE
+                                                                                                                F R O N T
+   quered, place Lord in their Allied Holding Box. Each Lord
+
+
+
+
+                                                                                                                              F R O N T
+   then reduces his Carts to half their number rounded up.
+
+
+                                                                         Roman Player
+
+
+
+
+                                                                                                                                                                  Seljuk Player
+ • Remove any Marwanid Alliance Seat markers from the map.
+
+
+
+
+                                                                                                      Center
+
+
+
+
+                                                                                                                                          Center
+    PLAY NOTE: Arisighi’s Seat will always be the Constan-
+    tinople Holding Box if he is currently allied to the Roman
+    player. If Roussel de Bailleul or Robert Crépin is Seljuk-al-
+    lied, his respective Seat will be the Mosul and Baghdad
+    Holding Box if his normal Seat is enemy-occupied.
+
+ • Aleppo Diplomacy. If the Independent Aleppo marker is                                                   Battle Array using Lord mats
+   currently on the map, roll a die. On 1-2, remove the marker.
+   On 3-6, it remains.                                                    PLAY NOTE: Players may use Lord cylinders on the Battle
+                                                                          mat or Array Lord mats, as preferred.
+4.8 Battle                                                               EVENTS: Attacking then Defending sides may then play Held
+When a Lord Approaches an Unbesieged, Unbypassed Enemy                   Events that specify “in Battle” or “in Storm”, as applicable
+Lord who does not Avoid Battle or Withdraw (4.3.4), a Battle             (3.1.3).
+ensues. All Unbesieged and Unbypassed Lords in the Locale                 PLAY NOTE: In the rare instance the Cavalry Charge event
+must participate, others may not. A Battle and Storm page of the          is played in the same Battle as Command Confusion, Caval-
+foldout summarizes these rules. NOTE: Storm of a Stronghold               ry Charge’s effect takes precedence.
+(4.9) follows similar but distinct rules from field Battle.
+MARKER: As a reminder where Lords are fight-                             RELIEF SALLY: When a side Approaches (4.3.4) a Locale
+ing, put the Battle/Storm marker at that Locale.                         where it is also Besieged, any Besieged Lords may join any At-
+                                                                         tack for no additional Command actions. Array Sallying Attack-
+4.8.1 Battle Array. Players Array their Lords                            ers in a row as above but behind the Defenders. Any Defending
+involved—cylinders either on the Battle mat or                           Lords in Reserve instead position as above, opposite Sallying
+mats on the table, as players prefer.                                    Attackers to fight them as a Rearguard row. If there is no Rear-
+ • Attackers then Defenders position their Lords.                        guard, Sallying Lords fight Front Defenders as if Flanking them
+ • A side must be able to have a Lord in up to three possible Front      all equally closely (4.8.2). Siegeworks (4.9.1) protect against
+   positions: left, center, and right. Other Lords start in Reserve.     Strikes by Sallying Attackers only (round separately). If the At-
+ • The Active Lord must start at Front center. The Attackers then        tackers lose, Withdraw Sallying Lords back into the Stronghold
+   fill in Front left and/or right positions with one other Lord pres-   (4.8.3) and reduce Siege markers there to one (4.9.2).
+   ent in each, if any, and put any remaining Lords in Reserve.          4.8.2 Rounds. Once Arrayed, a Battle continues Round
+ • The Defender must put one Lord directly opposite each                 after Round, until a side Concedes or all its Lords Rout. A
+   Front Attacking Lord, first in the center, then left and/or           Round of Battle will go through the steps below in this or-
+   right, as able.                                                       der: Concede?, Reposition, Strike. Within each Strike step,
+                                                                         determine Hits, then Protection, then Rout. See the Battle and
+                                                                         Storm chart of the play aid.
+                                                                         NOTE: Some Battle Event effects vary by Round.
+                                                           © 2025 GMT Games, LLC
+ 20                                                             Seljuk
+
+CONCEDE THE FIELD? At the start of                                   TOTAL HITS: Each unit causes ½, 1, 2, or 3 Hits, depending
+each Battle Round, the Attacker then the                             on Forces and Strike type—see the Forces table. Total all Hits
+Defender may declare that the Battle will                            for that step, including Flanking plus directly opposing Lords,
+end after this Round with that side as the                           rounding up. NOTE: You do not roll to generate Hits—they gen-
+loser but with diminished losses (4.8.3-4). NOTE: Battles last at    erate automatically based on the Forces Striking.
+least one Round.                                                      • Mixed Missiles. When Garrison Missiles or Missiles that
+ • Place the Pursuit marker between the two sides, pointing to-         choose targets (Parthian Shot Capability) combine with
+   ward the Conceding side. The marker shows that the Con-              normal Missiles, round Hits in favor of the Garrison or Capa-
+   ceding side in this final Round will halve its Hits against the      bility Missiles.
+   Enemy (see below).                                                 • Pursuit. The Conceding side halves its
+REPOSITION: Then, in each Round after the first, both sides             total Hits against the Pursuing side.
+reposition Lords as follows (in this order).                            Round all fractions up within each step.
+                                                                        EXCEPTION: A single conceding Lord
+ • Rout. Remove Routed Lords from the Battle Array. They no
+                                                                        with only Turkic Horse units in his Forces at the start of the
+   longer occupy any Array position nor participate further until
+                                                                        battle facing only another single Lord causes both sides to be
+   Ending the Battle (4.8.3).
+                                                                        halved.
+ • Adjust Rows. If Relief Sally (4.8.1) and all of any row Rout-
+   ed, advance or reface rows: if no Sallying Lords remain, Re-      APPLY HITS TO LORDS: Hits apply to the Forces of the
+   arguard becomes Reserve; if no Rearguard, Sallying Lords          opposed, Flanked, or Flanking Enemy Lord. A Player with a
+   Flank Defenders; if no Front Defenders, Rearguard faces           Flanking Lord where no Enemies are Flanking the target choos-
+   about as Reserve.                                                 es either the Flanking or directly opposed Lord to take Hits.
+                                                                     Whenever a Lord Routs to create a new Flanking situation, ap-
+ • Advance Lords. Attacker then Defender may slide any
+                                                                     ply remaining Hits accordingly.
+   Unrouted Lords in Reserve into any empty Front positions
+   (one each).
+ • Center. If a center position remains empty, first the At-
+   tacker then the Defender must select and slide one of that
+   side’s Lords from either left or right front to fill its empty
+   Front-center position.
+STRIKE: The Forces of each Lord Strike those of the Lord
+directly opposite them or—if Flanking—of the closest enemy
+Lord in that row.
+ • Flanking. Whenever a Lord facing an enemy row has no en-
+   emy Lord directly opposite, he Flanks and Strikes the clos-
+   est enemy Lord in that row. Center Flanks left and right and
+   chooses one to Strike. Total all Hits from Flanking Lords
+   plus the directly opposed Lord, then round up. A Flanking                            A portion of the Forces table.
+   Lord may absorb Hits from a Lord he Flanks if no enemies
+   Flank the target Lord.                                            PROTECTION: Strongholds, Siegeworks, some cards, and
+                                                                     most Forces types give saving rolls that can nullify Hits—Walls,
+ • Initiative. Lords Strike step by step in the order shown be-
+                                                                     Armor, Evade, and Unarmored Protection. See the Forces and
+   low; each letter designates a separate step. Within each step,
+                                                                     Strongholds tables. Card text (1.9.1) and Garrison units (below)
+   Striking Lords choose the order of Strike, Lord by Lord (or
+                                                                     can change these die-roll ranges by adding to or subtracting
+   Lord with Flanking Lord[s]). Then any Flanking Lords choose
+                                                                     from the top number of the range.
+   whether to absorb Strikes before opposed Lords. Resolve all
+   Hits, Protection rolls, and Rout before Striking in the next      EXAMPLES: A “+1” to Armor would improve a 1-3 Armor
+   step, not simultaneously. EXAMPLE: Attackers take Hits from       die-roll range to 1-4. A “–1” to Walls would nullify a single
+   Defending Missiles before Attacking Archers Strike.               Walls marker.
+ 1. Missile steps                                                    ROLL WALLS: If this is a Storm or
+  a. Defending Missiles                                              Sally (4.5.2-3, 4.9), a Lord benefiting
+  b. Attacking Missiles                                              from any Walls or any Siege markers
+                                                                     first rolls dice equal to the total number
+ 2. Melee steps
+                                                                     of Hits just received in that step before assigning any Hits to his
+  a. Defending Horse                                                 units. Each roll within the Walls range specified (typically, “1-
+  b. Attacking Horse                                                 4”) or less than or equal to the total Siege markers cancels one
+  c. Defending Foot                                                  of those Hits. Roll Hits that differ from others (such as –2 Ar-
+  d. Attacking Foot                                                  mor) separately.
+
+                                                        © 2025 GMT Games, LLC
+                                                               Seljuk                                                           21
+
+ASSIGN HITS TO UNITS: After rolling for any Walls, the              4.8.3 Ending the Battle. A side that Conceded at the start
+owner chooses which unit will absorb each Hit, Hit by Hit (EX-      of the Round or that has no Unrouted Lords when the other side
+CEPTIONS: Select Target; Storm Attack). Each Hit causes a           did not Concede loses the Battle at the end of that Round. Pro-
+Protection die roll that can Rout that unit.                        ceed thus:
+ Important: A unit may absorb several Hits in succession,           RETREAT, WITHDRAWAL, OR REMOVAL: All losing
+ shielding its fellow units, as long as it succeeds on each Pro-    Lords must either:
+ tection roll.                                                       • Retreat to a single adjacent Locale that has no Enemy Lords
+                                                                       or Strongholds that are not already Besieged or Bypassed
+ • Select Target. Garrison missiles and the                            (4.3.5), or
+   Event Parthian Shot can enable the
+                                                                     • Withdraw into a friendly Stronghold at the Battle Locale (if
+   Striking side instead to select which En-
+                                                                       it Sallied or is Defending at one), or
+   emy unit takes each such Hit. After the
+   player receiving the Hits chooses a Lord to be affected           • Be removed per 4.8.5 below.
+   (such as when Flanking), the Striking side Selects Target        The owning player chooses each Lord’s fate among the above,
+   units for such Hits; then the owner chooses units to take any    within the following requirements:
+   other Hits.                                                       • Defenders may not Retreat along any part of the Way that
+    PLAY NOTE: Garrison units (4.9.1) will Select Targets              Attackers used to Approach the Locale.
+    when Defending a Stronghold in Storm.                            • Marching Attackers must Retreat to the Locale whence they
+                                                                       Approached (4.3.4).
+ • Storm Attack. Hits against a side Attacking in Storm must
+   be applied to Armored before Unarmored units, regardless of       • Sallying Attackers must Withdraw back into their Strong-
+   who is choosing what (4.9.1).                                       hold.
+
+ROLL BY HIT: Units roll Protection as follows.                      LOSSES: Both sides check for removal of Routed Forces per
+                                                                    4.8.4 below.
+ • Armor. A unit with any Armor Protection assigned a Hit
+   rolls a die. A roll within the Armor range specified (on the     SPOILS: Lords on the losing side of a Battle (or Sacked in
+   Forces table or by card, 1.9.1) means that Hit has no effect     Storm, 4.9.1) may have to immediately transfer Assets to Lords
+   (no Rout).                                                       on the winning side; the winning player distributes these Assets
+ • Evade. Units with Evade Protection roll and absorb Hits just     among mats of Lords at the Locale:
+   as if Armored, except that Evade is not used against Missile      • Lords who Withdrew keep all their Assets.
+   Hits nor Hits in Storm.                                           • Lords who Conceded and Retreated transfer all Loot and any
+ • Garrison Missiles. Missile Hits from Stronghold Garrisons           Provender beyond that which they could move without being
+   roll against Armor reduced by –1, to a minimum Armor of “1”.        Laden (4.3.2) but lose no other Assets.
+ • Unarmored. Militia avoid Routing on a Hit only on a roll          • Losing Lords who were removed (for being unable to Retreat
+   of 1.                                                               or Withdraw or by Losses, or who Retreated without having
+                                                                       Conceded the Field (see above) transfer all their Assets.
+ROUT: A unit is Routed as soon as it fails to negate a Hit with a
+successful Protection roll. Slide each Routed unit to the “Rout-    SERVICE: The losing side rolls one die for each of its Retreat-
+ed” section of the Lord’s mat. Routed units no longer Strike nor    ed Lords and shifts that Lord’s Service Marker (and, if using the
+absorb Hits in that Battle.                                         Vassal Service optional rule, 6.2, each of his Vassals’ markers)
+ • A Lord Routs at the moment that his last Unrouted unit Routs.    left one box on a roll of 1, 2, or 3, two boxes on a 4, 5, or 6.
+   Remove him from the Array. A new Flanking situation may           • Losing Lords who Withdrew into a Stronghold do not shift
+   immediately result among Lords facing each other. When an            their Service.
+   entire row Routs, ignore remaining Hits against that row.
+                                                                     PLAY NOTE: Defending outside one’s own Stronghold can
+ • Make sure to track Themata status by keeping their units on       avoid the worst effects of a defeat.
+   their marker.
+ PLAY NOTE: When a Themata marker with more than one                4.8.4 Losses. After losing Lords Retreat, Withdraw, or are re-
+ unit has only one unit Rout, players are advised to keep track     moved in a Sack (4.9.1), both sides determine the fate of their
+ of which units belong to the Themata in some convenient fash-      Routed units:
+ ion until the Battle is over.                                       • Roll a die for each Routed unit.
+                                                                     • All Routed units of Lords who Retreated without having
+NEW ROUND: If neither side Conceded and at least one Lord              Conceded the Field (4.8.2) or who were Attacking in Storm
+on each side has yet to Rout, begin a new Round with the “Con-         (4.9.1) fail unless they roll a “1”.
+cede the Field?” step (above); otherwise end per below.
+
+
+
+
+                                                       © 2025 GMT Games, LLC
+ 22                                                             Seljuk
+
+ • For Routed units of all other Lords (even if the Lord Routed      ARRAY: Follow Battle rules (4.8.1-4.8.2) except that each
+   after Conceding the Field), compare each unit’s roll to its in-   side’s Front row begins with at most one Lord (for the Attacker,
+   herent Protection, as shown on the Forces table for that type,    the Active Lord); other Lords start in Reserve. (More Lords may
+   unmodified by Events or Capabilities.                             later Reposition to the Front, up to the Stronghold’s Size.)
+ • Units that roll within those ranges are no longer Routed—         CONCEDE? At the start of each Round after the first, the At-
+   push them above the line on their mat. Those that fail their      tacker (only) may end the Storm then. The Attacker loses. Go to
+   roll are Lost—remove them to the pool. (Service Markers           Ending the Storm below.
+   stay put.)
+                                                                     REPOSITION: In each Storm Round after the first, Attacker
+ • Once a Themata Service Marker has all its units Lost in a
+                                                                     then Defender may add one Lord from Reserve to the Front, up
+   Battle, the Service Marker is removed from the game.
+                                                                     to Stronghold Size (, , or ). A Reserve Lord (if any pres-
+ • For a Lord who loses all his Forces in Battle or Storm, re-       ent) must move to Front if all of their Front Lords Routed, or
+   move him per 4.8.5 below.                                         must move to Front to match an enemy Front Lord.
+4.8.5 Lord Removal by Combat. Lords removed in Battle                STRONGHOLD EFFECTS:
+(4.8.3-4) or Storm (4.9.1)—by failure to Retreat or Withdraw,         • The Besieged side receives the Garrison units (and for the
+Loss of all his Forces, or Sack—suffer removal as if Disbanding         Romans, any present Themata Service Markers chosen to
+Beyond Service (3.3.1).                                                 defend the Stronghold at the start of the Siege) shown for
+NOTE: Later Disband due to Service Limit (3.3) does not count           that type of Stronghold on the Strongholds table. The cur-
+as removal by combat, even if Battle caused a shortening of Ser-        rent Allegiance of a Stronghold determines which units are
+vice.                                                                   used in defense as indicated by the columns on the Strong-
+                                                                        holds section of the player aid card (remember: Strongholds
+4.8.6 Aftermath. After resolving Spoils and Losses, con-
+                                                                        in the Fatimid Caliphate, 1.3.1, always use the Seljuk Garri-
+clude the Battle or Storm as follows.
+                                                                        son column).
+ • Moved/Fought: Mark all Attacking and Defending Lords               • In the rare case that the pool has too few pieces, do not place
+   Moved/Fought (if not already marked).                                those units.
+ • Events: Discard all Hold Events (3.1.3) used in this Battle or     • The Besieged side uses that Stronghold’s Walls, per 4.8.2 and
+   Storm.                                                               the Strongholds table.
+ • Siege: If the combat created or ended a Siege, adjust Siege,       • The Besieging side uses Siegeworks as its own Walls (see
+   Conquered, Ruins, and/or Victory markers (1.3.1, 4.3.5,              below).
+   4.9.1, 5.1).
+                                                                      • All Defending units Melee Strike before any Attacking units
+ • Recovery: Skip any Command actions remaining on this                 do, unlike Battle in which Horse Melee precedes Foot (4.8.2,
+   card. Go to Feed/Pay/Disband (4.6).                                  see the Battle and Storm chart).
+ Important: A Battle or Storm blocks any further Command              • The Attacking side must absorb Hits with any Armored units
+ actions on the current Command card.                                   before doing so with other units.
+                                                                      • Each Lord of each side in Storm adds no more than six Hits
+                                                                        in Melee. (Missiles are unlimited.)
+4.9 Storm and Sally
+Lords at Siege Locales (4.3.5) may advance the Siege, Storm or
+Sally (Attack).
+4.9.1 Storm. Any Lord outside a Besieged
+Stronghold may use a Command action to launch
+an Attack. Proceed per Battle rules (4.8) except as
+follows; refer to the Battles and Storm chart.
+NOTE: Some Events and Capabilities apply to Battle but not to
+Storm, or vice versa.
+
+                      Siegeworks           Garrison
+            Reserve
+
+
+
+
+                                                 der
+                                           Defenderer
+                                           Besiegedd
+                                               i ged
+                       Attacker
+                       Attacker
+
+
+
+
+                                           Def nde
+                                           Defende
+
+
+
+
+                                                                                The Strongholds table lists Walls and Garrisons.
+                        Active
+
+
+
+
+                                           Defend
+                                           Besieg
+                                             esieg
+                         ctive
+                           cke
+                            kerr
+
+
+
+
+                                           B
+
+
+
+
+                                   Walls   Themata
+
+
+
+                                                        © 2025 GMT Games, LLC
+                                                                Seljuk                                                            23
+
+GARRISON FORCES DURING STORM:                                            PLAY NOTE: In other words, only flip a Ravaged marker
+ • A Garrison’s Foot units have both Melee and Missiles. Its             if it’s a Friendly Lord re-conquering a Friendly Stronghold
+   Infantry and Militia are × ½ Missile units that select En-            from the enemy. You always place a Ravaged marker of
+   emy targets (4.8.2 ASSIGN HITS TO UNIT) with –1 to                    your color at enemy Locales. But if that Locale is printed
+   Enemy Armor.                                                          as friendly to you on the map, when you remove enemy
+ • Garrisons add their Strikes to those of the Defending Lord            Conquered markers after Siege or Storm, flip your own
+   (rounding up), if any, but do not otherwise affect the Lord’s         Ravaged marker to the enemy color if present in the space.
+   Strikes. Garrisons are separate from any Defending Lord and           Loyal citizens who came under the control of the enemy
+   ignore cards affecting that Lord individually.                        resent their original liege sowing terror upon them in his
+ • The Defender must assign all Hits suffered to Garrison units          attempt to re-take the settlement.
+   until they are Routed, after which the units of the Front De-
+                                                                      • Ruin. Instead of Conquering the Stronghold the
+   fending Lord (if any) absorb Hits.
+                                                                        Seljuk player (only) may choose to Ruin it if it is in
+ • Whenever Routed and at the end of the Storm, return Garri-           the Roman Empire. Remove all Siege markers
+   son units to the pool.                                               there (1.3.1, 4.5.1). Place one Ruins marker. Adjust VPs
+ • The full complement of Garrison units Defend in each Ene-            (2.2.5, 5.1).
+   my Storm action, regardless of what may have happened in           • Award Spoils. Besieging Lords receive and distribute as de-
+   previous Storm actions.                                              sired among their mats a number of Loot, Provender, and
+SIEGEWORKS: The Besieging side places all Siege mark-                   Coin each according to the Stronghold’s Value (, , or ;
+ers at the Locale in front of its Attacking Lord(s). Those Lords        1.3.1, see Strongholds table) plus all Assets from Disbanding
+during the Storm have Walls with Value equal to the number of           Lords. EXAMPLE: Sacking a Town yields two Provender
+Siege markers against both Missile and Melee Strikes. EXAM-             and one Coin.
+PLE: Lords Storming with three Siege markers would benefit            • Remove Lords. Remove each losing Lord per 4.8.5—that is,
+from Walls 1-3.                                                         Disband him as if Beyond Service (3.3.1).
+ENDING THE STORM: A Storm ends once the number of                     • Remove Themata. Remove each losing Themata Service
+Rounds completed equals the number of Siege markers there,              Marker (1.5.1), eliminating them from the game.
+or earlier if a side loses because all its Lords there Rout or the   AFTERMATH: Proceed with Aftermath (4.8.6).
+Attacker Concedes.
+ • Unless all the Defenders Routed, the Attackers lose. Losing       4.9.2 Sally. A Besieged Lord may use a Command action to
+   Attackers neither Retreat nor give up Spoils. Presuming that      Attack Besiegers in a Battle. Follow Battle rules (4.8), including
+   Attackers survive, the Locale remains Besieged—return the         skipping any remaining Command actions (4.8.6) EXCEPT:
+   Siege markers to the map and go to Aftermath (4.8.6).             ARRAY AND REPOSITION: Each side begins with one Lord
+ • If Defenders lose, Sack the Stronghold (see below). If De-        in Front (for the Attacker, the Active Lord); other Lords start in
+   fenders win, any Themata Service Markers garrisoning the          Reserve. In each Round after the first, Attacker then Defender
+   Stronghold remain.                                                may add one Lord from Reserve to the Front, up to Stronghold
+ • Both sides’ Forces take Losses per Battle (4.8.4), except that    Size (, , or ). If all Front Lords Routed, a Reserve Lord (if
+   Routed Defending units always roll against Protection and         any present) must move to Front. NOTE: Positioning of Lords
+   Routed Attacking units that fail to roll a “1” are removed.       in Sally in this way mimics that in Storm (4.9.1).
+ • Mark all Lords there as Moved/Fought, even Lords who re-          SIEGEWORKS: Defenders receive Siegeworks as if Storming
+   mained in Reserve. NOTE: Lords at a Storm Locale may not          (4.9.1). NOTE: Attackers do not receive any Walls or Garrison.
+   simply sit it out. Used or not, they showed up for action.        END: Losing Defenders Retreat normally, ending the Siege.
+SACK: When Besieged Defenders lose a Storm:                          Losing Attackers must Withdraw back into their Stronghold
+ • Conquer. The Besiegers Conquer the Stronghold. Remove             (4.8.3, not Retreat).
+   Siege markers. If the Stronghold now has a Ravaged marker         RAID: If Sallying Attackers lose, remove all but one Siege
+   that is the same color as its Allegiance printed on the map,      marker at the Locale (reflecting damage to Siegeworks by the
+   flip it to the opposite color. If the Stronghold has a Roman      sortie). The Siege goes on.
+   Strategic Objective marker on it, the Roman player claims it
+   by placing it in the Constantinople Holding Box. Place or re-
+   move Conquered markers (1.3.1, EXCEPTION: see FATIM-
+   ID CALIPHATE) and adjust appropriate VP marker on the
+   Calendar (2.2.5, 5.1).
+
+
+
+
+                                                        © 2025 GMT Games, LLC
+ 24                                                            Seljuk
+
+                                                                    6.2 Vassal Service Optional Rule. For more detail, track
+5.0 VICTORY                                                         Vassal Service on the Calendar.
+A side may win an immediate victory during play (5.2). Other-       Vassals whose Service Markers are Coat-of-Arms side down—
+wise, determine victory at Game End (5.3).                          Unready, because they Disbanded this Levy (see below)—may
+                                                                    not Muster.
+                                                                     • Place a Mustering Vassal’s Service Marker right of the Levy
+                                                                       marker by a number of Turn boxes equal to the Vassal’s Ser-
+                                                                       vice Rating (just as for a Lord, 3.4.1) and put its Forces onto
+                                                                       its Lord’s mat.
+5.1 Earning Victory Points                                           • Whenever a Lord’s Service Marker is to shift for any rea-
+                                                                       son, also shift all his Vassals’ Service Markers on the Calen-
+Track victory points (VPs) on the Calendar (2.2.5). A side earns
+                                                                       dar that number of boxes in the same direction. Shift Vassal
+½ VP for each of its Ruins and Ravaged markers (4.5.5, 4.9.1).
+                                                                       markers the specified number of boxes even when the own-
+The Roman player also earns 1 VP for each of its Conquered
+                                                                       ing Lord’s marker is already left of box 1 or right of box 12.
+markers on the map. (1.3.1).
+                                                                       Shift Vassal markers left or right off the Calendar in the same
+To each player’s total add their associated victory points earned      manner as Lord’s markers (2.2.3).
+from Roman Strategic Objective (3.5.3) and Conquered mark-           • After a side finishes all Vassal Muster for this Levy, flip up
+ers (4.7.6) in the Constantinople box (1 VP each for the Roman         all Service Markers that are Lord’s Coat-of-Arms side down
+player), or Loot markers in the Mosul and Baghdad box (1 VP            (3.3.1), making them Ready for Muster later in the game.
+each for the Seljuk player).
+                                                                    NOTE: If using the Hidden Mats Option (6.1), the Vassal Ser-
+                                                                    vice optional rule will nevertheless reveal on the Calendar
+5.2 Campaign Victory                                                which Vassals Muster.
+If at any moment during Campaign (4.0) a side has no Mustered
+                                                                    Each Disband step (3.3, 4.6.2), put any Vassal markers that are
+Lords on the map, the game ends immediately—the other side
+                                                                    at or beyond their Service limit onto their Lord’s mat (even if
+wins regardless of VPs.
+                                                                    under Siege, 4.3.5)—Lord’s Coat-of-Arms side down (Un-
+The Seljuk player wins in the first phase of Winter if they have    ready—they are not available until after the ensuing Muster).
+Conquered Aleppo and the Aleppo Independence Event has               • Return Forces shown on any Disbanding Vassal’s Service
+been played for its effect.                                            Marker from that Lord’s mat (as able) to the pool. If that
+                                                                       leaves the Lord without Forces, Disband him (1.6).
+5.3 End of Scenario Victory
+                                                                    6.3 Simultaneous Horse Combat. For players who want
+If neither side wins by the Game End step (4.7.1) of the last       more unpredictable and chaotic combat, they may agree to make
+Campaign of a scenario, the side with more Victory Points wins;     all Strikes of Horse units during Battle (not Storm) resolve si-
+if tied, the sides draw.                                            multaneously for Missiles and/or Melee. This will heavily re-
+                                                                    duce defender advantage for firing first in Battle, and will also
+                                                                    swing the balance of the game toward the Roman player.
+6.0 Optional Rules                                                  6.4 Deadlier Seljuk Missiles. For players who want the
+The following optional rules are available for players who wish     Seljuks to have an easier time in combat (or feel that they de-
+to tinker with game balance and fog of war. They are not con-       serve an inherent archery advantage), they may agree that Seljuk
+sidered the “real” way to play, nor should they be viewed as        Missiles always Strike first in Battle, regardless of who is the At-
+preferred by the designer. They are simply alternative ways to      tacker or Defender. This will greatly advantage the Seljuk player
+experience the campaigns of this period.                            and encourage them to attack more frequently.
+6.1 Hidden Mats Option. For fog of war, players may agree
+to hide their Mustered Lords’ mats (and “This Lord” Capabili-
+ty cards, 3.4.4) behind screens (2.1.1) except when in Battle or
+Storm (4.8, 4.9.1).
+ • Players declare hidden Assets, Capabilities, Forces, and Vas-
+   sals only as needed to verify actions on the board, such as
+   enough Transport for a March (4.3).
+ • Capabilities affecting an entire side remain revealed per the
+   usual rules (3.4.4).
+
+
+
+
+                                                       © 2025 GMT Games, LLC
+                                                             Seljuk                                                             25
+
+                                                                  LORD MATS: Prepare the mats of Mustered Lords listed as if
+7.0 SCENARIOS                                                     just Levied (3.4.1), with their starting Forces, Assets, and Vassal
+Prepare general setup per 2.1.1. Agree on whether to use any      Service Markers.
+optional rules (6.0). Choose a scenario from the Scenario Guide    • Vassals other than Special Vassals (3.4.2) are Ready, Service
+below. Find the scenario in the following pages and set it up.       Markers face up on their mat.
+QUICKSTART: If playing Levy & Campaign for the first              REMOVE FROM PLAY: Return the cylinders, Service Mark-
+time, set up the Year of Treacherous Ambition – 1070 A.D.         ers, mats, and Command cards of Lords listed as removed to the
+Learning Scenario.                                                game box.
+MAP: Place markers, Mustered Lord cylinders, and Capability       SPECIAL RULES: Note any listed scenario rules, such as spe-
+cards (if any) as listed.                                         cial VP conditions and/or number of Command cards to be used.
+CALENDAR: Place markers and cylinders as                          BEGIN PLAY: Commence the first Levy by shuffling each
+listed for that scenario and shown in its Calendar                side’s Arts of War deck and drawing random Capabilities (3.1.1-
+setup illustration. Use the “End” marker to block                 3.1.2).
+the Levy/Campaign circle in the box after the sce-                The Scenarios Guide below shows a chronology of each scenar-
+nario’s last Campaign.                                            io with the season and year it begins through to the season and
+DECKS: Each side has one Arts of War deck and one Com-            year it will end (if there is no instant Campaign Victory, 5.2).
+mand deck per side. Be sure to find and set aside each Command    The illustrations accompanying each scenario show how to set
+deck’s Treachery card.                                            up the game pieces for that scenario based on the instructions.
+
+
+
+
+Scenarios Guide
+              1068                            1069                            1070                              1071
+
+
+
+
+A. The Emperor and the Lion
+Spring 1068 - Autumn 1071 (12 turns)
+B. Specter of Norman Betrayal
+Spring 1069 - Winter 1069 (3 turns)
+C. Year of Treacherous Ambition (Learning Scenario)
+Spring 1070 - Winter 1070 (3 turns)
+D. Showdown in Anatolia
+Spring 1070 - Autumn 1071 (6 turns)
+E. Manzikert: The Fall of the Roman East
+Spring 1071 - Autumn 1071 (3 turns)
+
+
+
+
+                                                     © 2025 GMT Games, LLC
+26          Seljuk
+
+                             The Emperor and the Lion
+                             1068 A.D. - Campaign Scenario
+                 Newly coronated as Roman Emperor, Romanos Diogenes begins
+                 a rapid mobilization and reorganization of the Roman army in
+                 the wake of Seljuk incursions that are devastating the frontier.
+                 His first mission: wrest away control of the Syrian border cita-
+                 dels to secure his southern flank and inflict a defeat on the Sul-
+                 tan’s armies they won’t soon forget.
+                 Seasons: Spring 1068 through Autumn 1071 (up to 12 turns)
+                 Seljuk Unity target: 10 (Winter 1068), 13 (Winter 1069),
+                 15 (Winter 1070)
+                 Markers on Map:
+                  • Seljuk Ruins marker at Kaisareia
+                  • Seljuk Conquered marker at Hama
+                 Mustered (begin with these Lords on the map):
+                      Romans:
+                      Romanos IV at CONSTANTINOPLE
+                      Nikephoros Bryennios at CONSTANTINOPLE
+                      Chatatourios at ANTIOCH
+                      Seljuks
+                      Alp Arslan at ANI
+                      Arisighi at MOSUL
+                      Ibn Khan at Hama
+                 Calendar:
+                                   Seljuk Victory +½ marker to the left of
+                                   Spring 1068
+                  Spring 1068      Levy marker, Robert Crépin cylinder
+                  Summer 1068      Joseph Tarchaneiotes cylinder, Afshin Beg
+                                   cylinder
+                  Autumn 1068      Andronikos Doukas cylinder, Chatatouri-
+                                   os Service, Sav-Tekin cylinder, Ibn Khan
+                                   Service
+                  Spring 1069      Nikephoros Bryennios Service, Manuel
+                                   Komnenos cylinder, Emir of Arran cylinder,
+                                   Sanduq al-Turki cylinder, Arisighi Service
+                  Summer 1069      Alp Arslan Service, Romanos Diogenes
+                                   Service
+                  Autumn 1069      Artuk Beg cylinder
+                  Spring 1070      Roussel de Bailleul cylinder
+                 Remove from Play: Remove the following Themata Garrison
+                 Service Markers from play:
+                       Charsianon: 1× tagmata
+                 Victory: The Seljuks win automatically if they have conquered
+                 Aleppo during any Winter Phase check after Aleppo Indepen-
+                 dence Event has been revealed. The Romans win immediately
+                 if Alp Arslan is permanently Disbanded. Otherwise, whichever
+                 side has more VPs at the end of Autumn 1071 is victorious.
+
+
+
+     © 2025 GMT Games, LLC
+                               Seljuk                                     27
+
+
+
+
+Scenario Setup — The Emperor and the Lion ~ 1068 A.D. Campaign Scenario
+
+
+
+
+                        © 2025 GMT Games, LLC
+ 28                                                           Seljuk
+
+                                                                        Romans:
+                                                                        Romanos IV at CONSTANTINOPLE (with only 1 Coin,
+                                                                          otherwise with starting Assets as indicated on mat)
+                                                                        Nikephoros Bryennios at CONSTANTINOPLE
+                                                                        Joseph Tarchaneiotes at CONSTANTINOPLE
+                                                                        Chatatourios at ANTIOCH
+                                                                        Nomisma Debased Capability Levied at board edge
+                                                                        Seljuks
+                                                                        Afshin Beg at MOSUL (with only 1 Coin, otherwise with
+                                                                          starting Assets as indicated on Lord mat)
+                                                                        Arisighi at MOSUL
+                                                                        Sav-Tekin at ANI
+                                                                        Robert Crépin (Seljuk) at Edessa
+                                                                        1 Loot in To Mosul & Baghdad Holding Box
+                                                                        Marwanid Alliance Capability Levied at board edge
+                                                                          with 1 Coin on it
+                                                                   Calendar:
+                                                                    Spring 1068 Roman Victory +½ marker (1½ VPs)
+                                                                    Autumn 1068 Andronikos Doukas cylinder
+                                                                    Spring 1069 Levy marker, Nikephoros Bryennios Ser-
+                                                                                vice, Manuel Komnenos cylinder, Emir of
+                                                                                Arran cylinder, Sanduq al-Turki cylinder
+                                                                    Summer 1069 Romanos Diogenes Service, Chatatourios
+                                                                                Service, Joseph Tarchaneiotes Service,
+                                                                                Robert Crépin (Seljuk) Service, Afshin
+                                                                                Beg Service, Sav-Tekin Service, Arisighi
+         Specter of Norman Betrayal                                             Service, Ibn Khan cylinder, Seljuk Victory
+                                                                                +½ marker (5½ VPs)
+                          1069 A.D.                                 Autumn 1069 Artuk Beg cylinder
+Norman mercenary Robert Crépin, unhappy with his pay from           Spring 1070 Roussel de Bailleul cylinder, Alp Arslan
+the imperial throne, rises in revolt against Romanos IV and in                  cylinder
+the process diverts imperial forces from dealing with the Seljuk
+threat. Meanwhile, Sultan Alp Arslan is away in the east leaving   Remove from Play: Remove the following Themata Garrison
+his top lieutenants to continue ravaging the empire…               Service Markers from play:
+                                                                        Charsianon: 1× tagmata
+Seasons: Spring 1069 through Winter 1069 (3 turns)
+                                                                        Iberia: 1× Turkic horse, 1× tagmata
+Seljuk Unity target: 13                                                 Melitene: 1× tagmata
+Markers on Map:                                                    Victory: The Seljuks win automatically if they have conquered
+ • Seljuk Ruins marker at Kaisareia                                Aleppo during any Winter Phase check after Aleppo Indepen-
+ • Seljuk Conquered Marker at Edessa, Hama                         dence Event has been revealed. The Romans win immediately
+ • Seljuk Ravaged Marker at Chaldia, Keltzene, Melitene,           if Alp Arslan is permanently Disbanded. Otherwise, whichever
+   Romanoupolis, Larisa, Tephrike, Edessa, Theodosiopolis          side has more VPs at the end of Winter 1069 is victorious.
+ • Roman Conquered Marker at Manbij                                 NOTE: Because Alp Arslan does not start on the map in this
+ • Roman Ravaged Marker at Manbij                                   scenario, the Roman player cannot achieve automatic victory
+ • 1 Roman Strategic Objective marker available in front of                          if/until he comes into play.
+   Roman player
+Mustered (begin with these Lords on the map):
+
+
+
+
+                                                      © 2025 GMT Games, LLC
+                        Seljuk                            29
+
+
+
+
+Scenario Setup — Specter of Norman Betrayal ~ 1069 A.D.
+
+
+
+
+                © 2025 GMT Games, LLC
+ 30                                                              Seljuk
+
+                                                                     Calendar:
+                                                                      Autumn 1068 Roman Victory marker (3 VPs), Seljuk
+                                                                                  Victory marker (3 VPs)
+                                                                      Autumn 1069 Nomisma Debased marker
+                                                                      Spring 1070 Campaign marker, Joseph Tarchaneiotes
+                                                                                  cylinder, Afshin Beg cylinder
+                                                                      Summer 1070 Roussel de Bailleul Service
+                                                                      Autumn 1070 Emir of Arran Service, Arisighi Service,
+                                                                                  Manuel Komnenos Service, Chatatourios
+                                                                                  Service
+                                                                      Summer 1071 Alp Arslan Service
+        Year of Treacherous Ambition
+                                                                     Remove from Play: Cylinders, mats, and Service Markers of all
+            1070 A.D. - Learning Scenario                            other Lords. Remove the following Themata Garrison Service
+Unavailable to campaign in person due to political maneu-            Markers from play:
+vering in Constantinople, Emperor Romanos assigns Manuel                   Iberia: 1× Turkic horse, 1× tagmata
+Komnenos the title of protostrator and command of the Ro-                  Charsianon: 1× tagmata
+man armies with one mission: stop the Turks from ravaging
+                                                                           Melitene: 1× tagmata, 1× double infantry
+eastern Anatolia.
+                                                                           Anatolikon: 1× militia, 1× tagmata
+Seasons: Spring 1070 through Winter 1070 (3 turns). Skip the
+                                                                           Koloneia: 1× tagmata
+Levy phase on the first turn and begin immediately with the
+Campaign phase.                                                            Sebasteia: 1× infantry
+
+Seljuk Unity target: 15 (Winter 1070)                                Spring Command card deck: Both sides construct a Command
+                                                                     deck of only 6 cards in Spring 1070
+Markers on Map:
+                                                                     Victory: The Seljuks win automatically if they have conquered
+ • Roman Conquered 1 VP markers: Arkesh, Manzikert,
+                                                                     Aleppo during any Winter Phase check after Aleppo Indepen-
+   Manbij
+                                                                     dence Event has been revealed. The Romans win immediately
+ • Seljuk Ruins marker: Kaisareia                                    if Alp Arslan is permanently Disbanded. Otherwise, whichever
+ • Seljuk Ravaged marker at Romanoupolis, Keltzene,                  side has more VPs at the end of Winter 1070 is victorious.
+   Edessa, Melitene, Theodosiopolis
+                                                                     In addition to normal VP rules, the Seljuks score 1 VP each for
+ • Seljuk Siege marker at Manbij                                     reaching Ikonion and/or Western Anatolia with a Lord, and the
+ • Bypass marker on Theodosiopolis                                   Romans score 1 VP if Arisighi switches sides.
+Mustered (begin with these Lords on the map):                        At the end of Winter 1070, both sides score one additional VP
+      Romans:                                                        each for control of Manbij, Edessa, Khliat, and Manzikert.
+      Manuel Komnenos (Commander) at CONSTANTINO-
+       PLE (with only 2 Carts, otherwise with starting Assets
+       as indicated on Lord mat and,
+       Centralized Administration Capability Levied)
+      Chatatourios at ANTIOCH
+      Roussel de Bailleul at Ankyra
+      Armenian Garrisons Capability Levied at board edge
+      Seljuks
+      Alp Arslan at ANI (with 3 Carts, otherwise with starting
+        Assets as indicated on Lord mat, and, Lamellar Ar-
+        mor Capability levied)
+      Arisighi at Theodosiopolis (with Steppe Raiders
+        Capability Levied)
+      Emir of Arran at Manbij (with Nizam Al-Mulk
+        Administrates the Sultanate Capability Levied)
+      Marwanid Alliance Capability Levied at board edge
+        with 2 Coins on it
+
+
+
+                                                      © 2025 GMT Games, LLC
+                                  Seljuk                                        31
+
+
+
+
+Scenario Setup — Year of Treacherous Ambition ~ 1070 A.D. ~ Learning Scenario
+
+
+
+
+                           © 2025 GMT Games, LLC
+ 32                                                              Seljuk
+
+                                                                     Remove from Play: Cylinders, mats, and Service Markers of all
+             Showdown in Anatolia                                    other Lords. Remove the following Themata Garrison Service
+       1070 A.D. - 6 Turn Half-Campaign                              Markers from play:
+Beginning with Manuel Komnenos’ appointment as army com-                   Iberia: 1× Turkic horse, 1× tagmata
+mander, this scenario will see players campaign through 1071               Charsianon: 1× tagmata
+towards a decisive final clash that will decide the future of the          Melitene: 1× tagmata, 1× double infantry
+Roman Empire.                                                              Anatolikon: 1× militia, 1× tagmata
+Seasons: Spring 1070 through the end of Autumn 1071 (6 turns)              Koloneia: 1× tagmata
+Seljuk Unity target: 15 (Winter 1070)                                      Sebasteia: 1× infantry
+
+Markers on Map:                                                      Victory: The Seljuks win automatically if they have conquered
+                                                                     Aleppo during any Winter Phase check after Aleppo Indepen-
+ • Roman Conquered 1 VP markers: Arkesh, Manzikert, Manbij
+                                                                     dence Event has been revealed. The Romans win immediately
+ • Seljuk Ruins marker: Kaisareia                                    if Alp Arslan is permanently Disbanded. Otherwise, whichever
+ • Seljuk Ravaged marker at Romanoupolis, Keltzene,                  side has more VPs at the end of Autumn 1071 is victorious.
+   Edessa, Melitene, Theodosiopolis
+ • Seljuk Siege marker at Manbij
+Mustered (begin with these Lords on the map):
+      Romans:
+      Manuel Komnenos (Commander) at CONSTANTINOPLE
+      Chatatourios at ANTIOCH
+      Roussel de Bailleul at Ankyra
+      Seljuks
+      Alp Arslan at ANI (with 3 Carts, otherwise with starting
+        Assets as indicated on Lord mat)
+      Arisighi at ANI
+      Emir of Arran at Manbij (with Nizam Al-Mulk
+        Administrates the Sultanate Capability Levied)
+      Marwanid Alliance Capability Levied at board edge
+        with 1 Coin on it
+Calendar:
+ Autumn 1068 Roman Victory marker (3 VPs), Seljuk
+             Victory marker (3 VPs)
+ Autumn 1069 NOMISMA DEBASED marker
+ Spring 1070 Levy marker, Joseph Tarchaneiotes cylinder,
+             Afshin Beg cylinder
+ Summer 1070 Roussel de Bailleul Service
+ Autumn 1070 Sav-Tekin cylinder, Artuk Beg cylinder,
+             Emir of Arran Service, Arisighi Service,
+             Manuel Komnenos Service, Chatatourios
+             Service
+ Spring 1071 Romanos Diogenes cylinder, Nikephoros
+             Bryennios cylinder, Andronikos Doukas
+             cylinder, Sanduq al-Turki cylinder
+ Summer 1071 Alp Arslan Service
+
+
+
+
+                                                       © 2025 GMT Games, LLC
+                                Seljuk                                     33
+
+
+
+
+Scenario Setup — Showdown in Anatolia ~ 1070 A.D. ~ 6 Turn Half-Campaign
+
+
+
+
+                         © 2025 GMT Games, LLC
+ 34                                                           Seljuk
+
+                                                                   Calendar:
+Manzikert: The Fall of the Roman East
+                                                                    Spring 1068 Roman Victory marker (1VP)
+                          1071 A.D.
+                                                                    Autumn 1068 Seljuk Victory +½ marker (3½ VPs)
+As the Emperor assembles a massive multi-ethnic army from           Autumn 1069 NOMISMA DEBASED marker
+all corners of the empire, the largest seen in Anatolia in near-
+ly a century, Alp Arslan and the military might of the Seljuk       Spring 1071 Campaign marker, Closed Passes event
+Sultanate is focused squarely on Aleppo and taking the city                     marker, Chatatourios cylinder, Joseph Tarch-
+from the Fatimid Caliphate once and for all. But when Ro-                       aneiotes cylinder, Nikephoros Bryennios
+manos breaks a previously agreed-upon truce with the Sultan                     cylinder, Afshin Beg cylinder, Sanduq
+and marches toward the eastern frontier around Lake Van, Alp                    al-Turki cylinder
+Arslan rushes home to confront the Romans for one final cli-        Summer 1071 Artuk Beg Service, Roussel de Bailleul Ser-
+mactic engagement.                                                              vice, Andronikos Doukas Service
+Seasons: Spring 1071 through Autumn 1071 (3 turns). Skip            Autumn 1071 Sav-Tekin Service, Emir of Arran Service,
+the Levy phase on the first turn and begin immediately with the                 Arisighi (Roman) Service, Romanos IV
+Campaign phase.                                                                 Service, Alp Arslan Service
+
+Seljuk Unity target: N/A                                           Remove from Play: Cylinders, mats, and Service Markers of
+                                                                   Ibn Khan, Robert Crépin and Manuel Komnenos. Remove 1 Ro-
+Markers on Map:                                                    man Strategic Objective from play. Remove the following The-
+ • Roman Fort markers at Chaldia and Romanoupolis                  mata Garrison Service Markers from play:
+ • Roman Strategic Objective marker at Manzikert                        Charsianon: 1× tagmata, 1× militia
+ • Seljuk Ruins markers: Kaisareia                                      Melitene: 1× double infantry, 1× tagmata
+ • Seljuk Ravaged markers at: Western Anatolia, Ikonion,                Anatolikon: 1× tagmata, 1× infantry, 1× militia
+   Herakleia Kybistra, Melitene, Lykandos and Sebasteia                 Koloneia: 1× tagmata, 1× infantry
+ • Seljuk Siege marker at ALEPPO                                        Sebasteia: 1× infantry
+Mustered (begin with these Lords on the map):                           Kappadokia: 1× infantry
+      Romans:                                                           Armeniakon: 1× tagmata, 1× infantry
+      • Romanos IV at CONSTANTINOPLE (with Siege                        Iberia: 1× tagmata, 1× Turkic Horse
+        Weaponry and Emperor’s Retinue Capabilities                Spring Command card deck: Both sides construct a command
+        Levied)                                                    deck of only 4 cards in Spring 1071
+      • Andronikos Doukas at CONSTANTINOPLE (with 2
+        Carts in Assets on Lord Mat and Psiloi and Syndosis        Victory: The Seljuks win immediately if Romanos IV is per-
+        Capabilities Levied)                                       manently Disbanded, or Aleppo is Seljuk conquered at the end
+                                                                   of Autumn 1071 (Aleppo Independence is considered to have
+      • Arisighi (Roman) at CONSTANTINOPLE
+                                                                   been revealed). The Romans win immediately if Alp Arslan is
+      • Roussel de Bailleul at Ankyra (with Martial Society        permanently Disbanded, or Manzikert and Khliat both con-
+        Capability Levied)                                         tain Roman Conquered markers and Aleppo is not Seljuk-con-
+      • 1× Strategic Objective in Constantinople Holding Box       quered. Otherwise, whichever side has more VPs at the end of
+      • Armenian Garrisons Capability Levied at board edge         Autumn 1071 is victorious.
+      Seljuks                                                      Both sides scores 1 VP for each permanently Disbanded Lord of
+      • Alp Arslan at ALEPPO (with 3 Carts in Assets on Lord       their opponent.
+        mat, and Shock Tactics and Lamellar Armor Capa-
+        bilities Levied)
+      • Artuk Beg at ALEPPO (with Lamellar Armor and
+        Artukid Legacy Capabilities Levied)
+      • Emir of Arran at ALEPPO (with Javelins Capability
+        Levied)
+      • Sav-Tekin at ANI (with 2 Carts in Assets on Lord mat
+        and 2× Infantry Vassal Levied)
+      • Marwanid Alliance Capability Levied at board edge
+
+
+
+
+                                                      © 2025 GMT Games, LLC
+                             Seljuk                                  35
+
+
+
+
+Scenario Setup — Manzikert: The Fall of the Roman East ~ 1071 A.D.
+
+
+
+
+                     © 2025 GMT Games, LLC
+ 36                                                                       Seljuk
+
+Key Terms                                              Grow—Remove Ravage in Spring (4.7.2).              Sack—Conquer/Ruin and obtain Spoils by Storm
+                                                       Heraldry—Lord or Vassal’s symbol (1.5.1).               (4.9.1).
+90 Days—Calendar box, a Turn (1.3.2).                                                                     Sally—Besieged Attack (4.8.1, 4.9.2).
+                                                       Hetaireia—Special Vassal type (1.5.1).
+Active—Acting on Campaign (4.0).                                                                          Season—Aspect of 90-day Turn (1.3.2).
+                                                       Hit—Combat effect endangering a unit (4.8.2).
+Adjacent—Linked by a Way (1.3.1).                                                                         Seat—Stronghold aspect (1.3.1).
+                                                       Hold/Held—Event type (1.9.1).
+Allegiance—Friendly or Enemy (1.3.1); VP                                                                  Seljuk—A side (1.1).
+                                                       Horse—Forces category (1.6).
+     markers that show a Stronghold has switched
+                                                       Infantry—Foot Forces type (1.6).                   Service—Lord/Vassal rating (1.5.3-.4); marker
+     sides.
+                                                       Initiative—Strike order (4.8.2).                        (1.5.1); optional rule (6.2).
+Approach—March to enemy (4.3.4).
+                                                       Laden—Slowed by Assets (4.3.2).                    Share—Use Asset for another Lord (1.5.2).
+Armor—Unit Protection (4.8.2).
+                                                       Levy—Phase of 90 days (3.0); call into play        Siege—Marker (4.3.5); action (4.5.1).
+Array—Lords in Battle or Storm (4.8.1, 4.9.1).
+                                                             (3.4-3.5).                                   Siegeworks—Besiegers’ Walls (4.5.1, 4.9.1).
+Arts of War—card, deck (1.9.1, 3.1).
+                                                       Lieutenant—Lord leading another Lord (4.1.3).      Size—Stronghold aspect (1.3.1).
+Asset—Coin, Loot, Provender, Transport (1.7).
+                                                       Locale—Map space (1.3.1).                          Sortie—Approach Bypasser (4.3.6).
+Attack—Initiate Battle or Storm (4.3.4, 4.5.2, 4.8).
+                                                       Loot—Asset type (1.7).                             Source—Locale yielding Provender via Supply
+Autumn—Type of Season (1.3.2).                                                                                 (4.4.1).
+                                                       Lord—Military leader (1.5.1).
+Avoid Battle—Back off from Approach (4.3.4).                                                              Special Vassal—Vassal type (1.5.1, 3.4.2).
+                                                       Lordship—Lord rating (1.5.3).
+Battle—Fight due to March (4.8).                                                                          Spoils—Battle/Storm gain (4.8.3, 4.9.1).
+                                                       Loss—Unit removal in combat (4.8.4).
+Battle mat—Array option (4.8.1).                                                                          Spring—Type of Season (1.3.2).
+                                                       Lower Lord—Led by Lieutenant (4.1.3).
+Besieged—Under Siege (4.3.5).                                                                             Storm—Command action (4.5.2).
+                                                       Loyalty Check—How a Lord can change sides
+Bounty—Returning Seljuk Loot for VP (4.7.6)                                                               Strike—Inflict Hits (4.8.2).
+                                                             (1.4).
+Bypass—Approach option, marker (4.3.5).                                                                   Stronghold—Locale type (1.3.1).
+                                                       Map—Section of game board (1.3.1).
+Calendar—Board track for Turns, Ready Lords,                                                              Summer—Type of Season (1.3.2).
+                                                       March—Command action (4.3).
+     Service, and victory (1.3.2, 2.2).
+                                                       Mat—Display for Lord, Array (1.5, 4.8.1).          Supply—Command action (4.4).
+Call to Arms—Occasional part of Levy (3.5).
+                                                       Melee—Strike type (4.8.2).                         Surrender—Taken via Siege (4.5.1).
+Campaign—Phase of each 90 days (4.0).
+                                                       Militia—Foot Forces type (1.6).                    Tagmata—Horse Forces type (1.6).
+Capability—Card aspect (1.9.1, 3.4.4).
+                                                       Missile—Strike type (4.8.2).                       Tax—Command action (4.5.6).
+Cart—Asset type (1.7).
+                                                       Moved/Fought—marker (4.3, 4.6, 4.8).               Terms—No Spoils in Surrender (4.5.1).
+City—Stronghold type (1.3.1).
+                                                       Muster—Levy Segment, enter play (3.4-3.5).         Thema—Roman provincial area (1.3.1)
+Coin—Asset type (1.7).
+                                                       Norman Knight—Horse Forces type (1.6).             Themata—Roman troops based in a Thema (1.5.1)
+Command—Rating (1.5.3); card (1.9.2); Activa-
+     tion (4.2); actions (4.5).                        On Map—At a Locale (1.3.1).                        This Lord—Capability type (3.4.4).
+Commander—Lord type (1.5.1).                           Pass—Command action (4.2.3, 4.5.8). Also: Way      Town—Stronghold type (1.3.1).
+                                                             type (1.3.1).                                Transport—Cart Asset type (1.7).
+Concede the Field—Declare end to Battle (4.8.2).
+                                                       Pay—Expend Coin or Loot (3.2.1-.2).                Treachery—Command card type (1.9.2, 1.4)
+Cylinder—A Lord’s piece (1.5.1).
+                                                       Plan—Stack of Command cards (4.1).                 Turkic Horse—Horse Forces type (1.6).
+Defend—Face an Attack (4.5.2, 4.8, 4.9.1).
+                                                       Protection—Saving roll (4.8.2).                    Turn—90 days (2.2.1).
+Depart—Leave from Bypass (4.3.6).
+                                                       Provender—Asset type (1.7).                        Unit—Forces piece (1.6).
+Disband—Remove Lord from map (3.3).
+                                                       Pursuit—Battle advantage (4.8.2).                  Unarmored—Unit Protection roll (4.8.2).
+Encamp—Convert Bypass to Siege (4.3.6).
+                                                       Raid—Siege reduction by Sally (4.5.3).             Value—Stronghold aspect (1.3.1).
+Enemy—Of the other side (1.1, 1.3.1).
+                                                       Ravage—Command action (4.5.5).                     Varangian Guard—Special Vassal type (1.5.1,
+Event—Arts of War card aspect (1.9.1).
+                                                       Ready—Able to Muster (3.4.1-.2).                        3.4.2).
+Fatimid Caliphate—Special map area (1.3.1)
+                                                       Recovery—Battle or Storm end to actions (4.8.6).   Vassal—Forces Lords Levy (1.5.4)
+Fealty—Lord rating (1.5.3).
+                                                       Relief Sally—Besieged Lords joining an Attack      VPs—Victory Points (5.1).
+Feed—Eat after Marched/Fought (4.6.1).
+                                                             from outside Approach (4.8.1).               Walls—Overall saving roll (4.9.1).
+Flank—Fight non-opposite (4.8.2).
+                                                       Removal by Combat—Lord removal during Battle       Waste—Asset or Capability limit or loss (1.7.3,
+Forage—Command action (4.5.4).                               or Storm (4.8.5, 4.9.2)                           4.7.4).
+Forces—Foot and Horse units (1.6).                     Repair—End-of-Turn Siege erosion (4.7.3).          Way—Link between Locales (1.3.1).
+Foot—Forces category (1.6).                            Reposition—Move in Array (4.8.2, 4.9.2).           Winter—Type of Season (1.3.2).
+Fort—Stronghold type (1.3.1).                          Reserve—Array back row (4.8.1, 4.9.2).             Withdraw—Pull back into Stronghold (4.3.4).
+Free—Able to host Muster (3.4.1).                      Retreat—Forced out by Battle (4.8.3).
+Friendly—Of the same side (1.3.1).                     Road—Way type (1.3.1).
+Front—Forward Array row (4.8.1).                       Roman—A side (1.1).
+Garrison—Storm Defense units (4.9.1).                  Rout—Battle harm to unit/Lord (4.8.2).                        P.O. Box 1308
+Ghulam—Horse Forces type (1.6).                        Route—Locales and Ways with Carts (4.4.1).                    Hanford, CA 93232
+Greed—Discard restriction (1.7.2, 3.1.4, 4.6.1).                                                                     www.GMTGames.com
+
+                                                                 © 2025 GMT Games, LLC
+

@@ -303,3 +303,23 @@ Nothing in 6.0 remains out of scope.
 - Unit component pool is not a hard Muster limit; `treachery_available` field is
   unused; mid-Winter VP display can include the Year end-control bonus one step
   early. Optional rules 6.1-6.4 remain out of scope (BRIEF.md Phase 5).
+
+## Second-look pass (2026-07-05, Fable re-review)
+
+- **4.5.1 Moved/Fought re-verified against the Rulebook PDF**: the Siege
+  Command section ends "MOVED/FOUGHT: Finally, mark all Lords of both sides
+  there as Moved/Fought" (p17, immediately after SIEGEWORKS), and 4.3.6 ENCAMP
+  reads "Mark the Encamping Lord ... but not any other Lords there" (p16); the
+  March-2026 errata is silent on both. The SMOKE-009-correction commit
+  (2c9de2d) therefore stands: `h_cmd_siege` marks all Lords of both sides,
+  `h_cmd_encamp` marks only the Encamping Lord. Also confirmed Stronghold
+  Size == Value per type in the static data (surrender dice vs Siegeworks
+  Lord-count use the same number; Aleppo overrides to 4 dice).
+- **Under-enumeration audit completed** (FIND-G..N, SMOKE_TEST_FINDINGS.md):
+  R1 cmd_fort, 3.4.1 Muster-Seat choice, 3.4.5/4.5.7 Themata-marker choice,
+  S1 Surprise (+ Themata-before-Storm per its Clarification), S18 Unstoppable
+  Turkmen, 4.9.2 Sally Hold Events (R21/S21/R2/S2 + Steeled Resolve),
+  Storm defender-side hints + R4 `play_sultans_horse`, R4 "Besieging" gate,
+  1.4.1 Loyalty coin hints, 4.1.3 Lieutenant hints.
+  Open questions logged: Q-002 (Marwanid Seats & Muster), Q-003 (Loot/Empress
+  shift direction), Q-004 (S3/S6/R24 in the side-aggregate Sally engine).

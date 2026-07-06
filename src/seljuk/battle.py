@@ -1507,21 +1507,31 @@ def _sally_emit(gs, target_side: _Side, n_raw: float, a_raw: float, walls: int, 
     if not front:
         return
     tid = front[0]
+    if hit_type == "missile" and round_no == 1 and target_side.mountain_ambush:
+        n_hits = _roll_walls(roller, n_hits, (1, 3))  # Mountain Ambush (R2/S2)
+        a_hits = _roll_walls(roller, a_hits, (1, 3))
     if walls > 0:  # Siegeworks protect Besiegers against Sallying strikes (4.9.2)
         n_hits = _roll_walls(roller, n_hits, (1, walls))
         a_hits = _roll_walls(roller, a_hits, (1, walls))
+    # R3 Steeled Resolve applies in a Sally too (a Sally is a Battle, 4.9.2):
+    # Infantry Armor vs Horse strikes in the declared Round (Missile counts,
+    # as in resolve_battle's _emit).
+    _base_step = step.split("_", 1)[1] if "_" in step else step
+    _sr_round = int(gs.lords[tid].flags.get("steeled_resolve_round", 1)) if tid in gs.lords else 1
+    _vs_horse = (_base_step in ("horse_melee", "missile")) and round_no == _sr_round
     applied = []
     if n_hits:
-        applied += _apply_hits(gs, tid, n_hits, hit_type, ctx, roller)
+        applied += _apply_hits(gs, tid, n_hits, hit_type, ctx, roller, vs_horse=_vs_horse)
     if a_hits:
-        applied += _apply_hits(gs, tid, a_hits, hit_type, ctx, roller, anti_armor=True)
+        applied += _apply_hits(gs, tid, a_hits, hit_type, ctx, roller, anti_armor=True, vs_horse=_vs_horse)
     if n_hits or a_hits:
         log.append({"round": round_no, "step": step, "target": tid,
                     "hits": n_hits + a_hits, "routed": applied})
 
 
 def resolve_sally(gs: GameState, sallying_ids: list[str], besieger_ids: list[str], locale: str,
-                  ctx: DecisionContext, roller: DiceRoller) -> dict[str, Any]:
+                  ctx: DecisionContext, roller: DiceRoller,
+                  played: Optional[dict] = None) -> dict[str, Any]:
     """A Besieged Lord Attacks the Besiegers (4.9.2). Battle rules, but the
     Besiegers (defenders here) get Siegeworks as Walls and the Sallying side
     gets no Walls/Garrison. Storm-like Array/Reposition. Raid on a failed Sally."""
@@ -1536,6 +1546,14 @@ def resolve_sally(gs: GameState, sallying_ids: list[str], besieger_ids: list[str
     _solo = len(sallying_ids) == 1 and len(besieger_ids) == 1
     att = _Side(gs, list(sallying_ids), "attacker")   # Sallying side attacks
     deff = _Side(gs, list(besieger_ids), "defender")  # Besiegers defend
+    # Mountain Ambush (R2/S2) in a Sally: 4.9.2 follows Battle rules, so the
+    # played side's Lords get Walls 1-3 against Missiles in Round 1 when the
+    # Locale is adjacent to a Pass (card text; mirrors resolve_battle).
+    for _so, _ids in ((att, sallying_ids), (deff, besieger_ids)):
+        _sn = gs.lords[_ids[0]].side
+        _amb = "R2" if _sn == "roman" else "S2"
+        if played and _amb in played.get(_sn, []) and gmap.adjacent_to_pass(locale):
+            _so.mountain_ambush = True
     if att.reserve:
         att.front["center"] = att.reserve.pop(0)
     if deff.reserve:

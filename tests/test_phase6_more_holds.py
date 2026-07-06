@@ -10,14 +10,36 @@ def _cmd(gs, lord, side):
 
 
 def test_surprise_places_two_siege_and_storms_s1():
+    # S1 Clarification: the Roman player places his Themata as normal BEFORE
+    # the 2 Siege markers are placed (and hence before the Surprise Storm).
     gs = S.load_scenario("emperor_and_the_lion", seed=4)
     aa = gs.lords["alp_arslan"]; aa.cylinder = "tephrike"; aa.forces = {"turkic_horse": 6}  # alone at a Roman fort
     gs.seljuk.held_events = ["S1"]
     _cmd(gs, "alp_arslan", "seljuk")
     gs.meta.pending = [{"type": "besiege_or_bypass", "locale": "tephrike", "lords": ["alp_arslan"]}]
     r = engine.apply_action(gs, {"type": "besiege_bypass", "choice": "besiege", "surprise": True})
-    assert r["action"] == "besiege_surprise" and "storm" in r
-    assert "S1" not in gs.seljuk.held_events  # consumed
+    assert r["action"] == "besiege_surprise"
+    assert "S1" not in gs.seljuk.held_events  # consumed on commitment
+    if r.get("pending") == "assign_themata_defenders":   # Roman Themata window first
+        r = engine.apply_action(gs, {"type": "assign_themata_defenders", "markers": [0]})
+        assert gs.locales["tephrike"].themata_defending   # placed BEFORE the Storm
+    assert "storm" in r
+
+
+def test_surprise_offered_in_besiege_bypass_menu_s1():
+    # The S1 Surprise Besiege variant is enumerated when held and eligible.
+    from seljuk.legal_moves import legal_moves
+    gs = S.load_scenario("emperor_and_the_lion", seed=4)
+    aa = gs.lords["alp_arslan"]; aa.cylinder = "tephrike"; aa.forces = {"turkic_horse": 6}
+    gs.seljuk.held_events = ["S1"]
+    _cmd(gs, "alp_arslan", "seljuk")
+    gs.meta.pending = [{"type": "besiege_or_bypass", "locale": "tephrike", "lords": ["alp_arslan"],
+                        "_owed_by": "seljuk"}]
+    mvs = legal_moves(gs)
+    assert any(m.get("surprise") for m in mvs if m["type"] == "besiege_bypass")
+    gs.seljuk.held_events = []          # not held -> not offered
+    mvs = legal_moves(gs)
+    assert not any(m.get("surprise") for m in mvs if m["type"] == "besiege_bypass")
 
 
 def test_local_scouts_forces_avoider_to_stand_r18():

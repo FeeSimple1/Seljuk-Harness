@@ -616,9 +616,20 @@ def enumerate_muster(gs: GameState) -> list[dict[str, Any]]:
              and t.side == side]
     for lid, lord in actors:
         for tid, t in ready:
-            if _muster_seats(gs, tid, t.side):
+            _seats = _muster_seats(gs, tid, t.side)
+            if not _seats:
+                continue
+            if len(_seats) == 1:
                 out.append({"type": "levy_lord", "levyer": lid, "target": tid,
                             "_desc": f"{sd.lord(lid)['name']} rolls Fealty to Muster {sd.lord(tid)['name']} (3.4.1)"})
+            else:
+                # 3.3.2/3.4.1: the Lord Musters "at one of his free Seats" -- when
+                # more than one is free (e.g. Alp Arslan: Ani or the Mosul &
+                # Baghdad box) the OWNER chooses; enumerate one move per Seat.
+                for _st in _seats:
+                    out.append({"type": "levy_lord", "levyer": lid, "target": tid, "seat": _st,
+                                "_desc": f"{sd.lord(lid)['name']} rolls Fealty to Muster "
+                                         f"{sd.lord(tid)['name']} at {sd.locale(_st)['name']} (3.4.1)"})
         out.append({"type": "levy_transport", "lord": lid, "_desc": f"{sd.lord(lid)['name']} Levies a Cart (3.4.3)"})
         for cid in gs.side_decks(side).draw_deck:
             if _capability_eligible(gs, lord, cid):
@@ -631,8 +642,18 @@ def enumerate_muster(gs: GameState) -> list[dict[str, Any]]:
         if lord.side == "roman" and is_commander(gs, lid):
             thema = sd.locale(lord.cylinder)["thema"]
             if thema and gs.themata.get(thema):
-                out.append({"type": "levy_themata", "lord": lid, "thema": thema,
-                            "_desc": f"{sd.lord(lid)['name']} Levies Themata in {thema} (3.4.5)"})
+                # One option per distinct marker kind: the box mixes unit types
+                # (Tagmata / Infantry / Militia), and the Commander chooses which
+                # Themata Service Marker to take (3.4.5).
+                _tkinds: set = set()
+                for _ti, _tm in enumerate(gs.themata[thema]):
+                    if (_tm.unit, _tm.symbols) in _tkinds:
+                        continue
+                    _tkinds.add((_tm.unit, _tm.symbols))
+                    out.append({"type": "levy_themata", "lord": lid, "thema": thema,
+                                "marker_index": _ti,
+                                "_desc": f"{sd.lord(lid)['name']} Levies a {_tm.unit} Themata "
+                                         f"(x{_tm.symbols}) in {thema} (3.4.5)"})
     # S5 Forced Conscription / S19 Baghdad Reinforcements: a Lord with the
     # Capability, at an Unbesieged Friendly Locale, may restore 1 of his Lost
     # units (free, once per Muster phase).
@@ -1088,6 +1109,16 @@ def _spend_loyalty_coins(gs: GameState, side: str, target_id: str, n: int) -> No
         take = min(srcl.assets.coin, n)
         srcl.assets.coin -= take
         n -= take
+
+
+def loyalty_coin_budget(gs: GameState, side: str, target_id: str) -> int:
+    """1.4.1: Coin available to a side for a Loyalty Check vs ``target_id`` --
+    from its Commander and/or its Lords co-located with the target (Unbesieged).
+    Used for the palette's _max_coins_for/_max_coins_against hints."""
+    target = gs.lords[target_id]
+    return sum(l.assets.coin for lid, l in gs.lords.items()
+               if l.side == side and _on_map(l) and not l.besieged
+               and (is_commander(gs, lid) or l.cylinder == target.cylinder))
 
 
 def resolve_loyalty_check(gs: GameState, target_id: str, revealing_side: str,

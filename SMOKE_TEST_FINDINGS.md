@@ -466,3 +466,74 @@ and Imperial Coffers (R14) via the `imperial_coffers` Levy pending. Comment
 rewritten to document the real windows; no code change (already implemented +
 tested, e.g. test_summer_heat_window.py). Supersedes the earlier note that these
 were intentionally un-enumerated.
+
+---
+
+## Second-pass under-enumeration audit (2026-07-05) — Findings G–N
+
+Systematic diff of every handler's accepted `action.get(...)` parameters
+against what the enumerator emits (the class behind FIND-A..F: the round-trip
+sweep only catches OVER-enumeration, so a legal move the menu never offers is
+invisible to it). Tests: `tests/test_under_enumeration_audit.py`.
+
+**FIND-G (R1 cmd_fort never enumerated).** `h_cmd_fort` + dispatch + tests
+existed, but `command_menu` never emitted `cmd_fort`, so a Lord with Imperial
+Fortress Construction could never build a Fort from the palette. Now offered
+per eligible target (unfortified/Ruined Roman-Empire Locale, < 2 Fort markers
+on map). Hardened the handler: Besieged Lords rejected (4.2.1), Holding Boxes
+rejected (R1/1.3.1).
+
+**FIND-H (levy_lord Seat choice, 3.4.1).** A Lord Musters "at one of his free
+Seats" — the OWNER chooses. Alp Arslan and Afsin Beg each have two printed
+Seats (Ani; Mosul & Baghdad box), but the menu emitted a single seat-less move
+and the handler silently took `seats[0]`. Now one move per free Seat when more
+than one is free. (Marwanid-activated Seats for Muster: open question Q-002.)
+
+**FIND-I (levy_themata / cmd_recruit marker choice, 3.4.5/4.5.7).** Themata
+boxes are heterogeneous (Tagmata / Infantry / Militia mix); both handlers
+accept `marker_index` but the menus emitted index-less moves that silently
+took marker 0. Now one move per DISTINCT (unit, symbols) marker kind.
+
+**FIND-J (S1 Surprise never enumerated + Themata ordering).** The Surprise
+Besiege variant was handler-only. Now offered in the besiege_or_bypass menu
+when held and eligible. ALSO a rules fix: the S1 Clarification says the Roman
+player places his Themata "as normal" BEFORE the Siege markers are placed —
+the old handler stormed immediately, skipping the Themata window. The Surprise
+path now pends `assign_themata_defenders` first (when owed) and the 2 Siege
+markers + Storm resume after the assignment.
+
+**FIND-K (S18 Unstoppable Turkmen never enumerated).** The Bypass-without-
+stopping March (`unstoppable: true`) was handler-only. Now offered as a March
+variant when the S18 holder would arrive at an un-invested enemy Stronghold
+with no enemy Lord outside and hasn't used it this card.
+
+**FIND-L (Sally ignored Battle Hold Events, 4.9.2).** A Sally is a Battle, but
+`h_cmd_sally` consumed no `battle_events` and never applied R3 Steeled Resolve.
+Now: R21/S21 (pre-battle Turkic removal) and R2/S2 Mountain Ambush (Walls 1-3
+vs Missiles Round 1 at a Pass-adjacent Locale) are consumable via
+`battle_events`; `steeled_rounds` declarations are honored (vs-Horse Infantry
+Armor in the declared Round, Missile counts, mirroring `_emit`); the cmd_sally
+menu hints `_battle_holds_available` for both sides. S3/S6/R24 per-Lord
+ordering holds: open question Q-004.
+
+**FIND-M (Storm hints hid the defender's window).** `_storm_events_available`
+listed only the ACTIVE side's R21/S21 — but R21 is a Roman card and S21 Seljuk,
+so the defender's (usual) play was invisible; and R4 Sultan's Horse's Storm
+effect (`play_sultans_horse`, Rounds -1) had no hint at all. The hint is now
+`{"attacker": [...], "defender": [...]}` plus `_r4_sultans_horse_available`
+when Alp Arslan storms at >1 Siege marker and Rome holds R4.
+
+**FIND-N (R4 campaign window ignored "Besieging").** R4's first effect reads
+"Play where Alp Arslan BESIEGING Stronghold with >1 Siege marker", but menu
+and resolver only checked Alp-at-a-Locale-with->1-markers — offering Rome the
+card when Alp was himself the one under Siege. Both now require him Besieging
+(not Besieged).
+
+**Hints/docs (no rules change).** Loyalty-Check coin DRMs (1.4.1) and the R14
+Imperial Coffers check now hint `_max_coins_for` / `_max_coins_against`
+(sources: the side's Commander + Lords co-located with the target, Unbesieged;
+owner may not resist for a Besieged target); `build_plan` now hints
+`_lieutenant_options` (4.1.3 eligible pairs); LLM_PLAY_GUIDE documents
+`battle_events`, `steeled_rounds`, `local_scouts`, `surprise`,
+`play_sultans_horse`, `coins_for/coins_against`, `seat`, `marker_index`,
+and `lieutenants`.

@@ -181,9 +181,14 @@ def legal_moves(gs: GameState) -> list[dict[str, Any]]:
     ic = next((p for p in gs.meta.pending if p["type"] == "imperial_coffers"), None)
     if ic is not None:
         # R14 discard window: after both sides resolved Events, before Pay.
-        moves = [{"type": "discard_imperial_coffers", "target": t,
-                  "_desc": f"Discard Imperial Coffers (R14): Loyalty Check vs {t} (1.4.1)"}
-                 for t in campaign.imperial_coffers_targets(gs)]
+        moves = []
+        for t in campaign.imperial_coffers_targets(gs):
+            _for = actions.loyalty_coin_budget(gs, "roman", t)
+            _agn = 0 if gs.lords[t].besieged else actions.loyalty_coin_budget(gs, gs.lords[t].side, t)
+            moves.append({"type": "discard_imperial_coffers", "target": t,
+                          "_max_coins_for": _for, "_max_coins_against": _agn,
+                          "_desc": f"Discard Imperial Coffers (R14): Loyalty Check vs {t} (1.4.1)"
+                                   f" — optional coins_for (max {_for}) / coins_against (max {_agn})"})
         moves.append({"type": "pass_imperial_coffers",
                       "_desc": "Decline to discard Imperial Coffers (R14)"})
         return moves

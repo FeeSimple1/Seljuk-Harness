@@ -136,6 +136,19 @@ def build_plan(gs: GameState, side: str, cards: list[str], lieutenants: list[dic
     return {"ok": True, "side": side, "plan": list(cards)}
 
 
+def _lieutenant_options(gs: GameState, side: str) -> list[dict[str, str]]:
+    """4.1.3: eligible (Lieutenant, Lower Lord) pairs for this side's Plan --
+    same side, on the map at the same Locale, neither a Commander, neither
+    already stacked. Exposed as a build_plan hint; pass them via the optional
+    "lieutenants" list."""
+    cands = [(lid, l) for lid, l in gs.lords.items()
+             if l.side == side and on_map(l) and not sd.lord(lid).get("commander")
+             and not l.lower_lord and not l.lieutenant_of]
+    return [{"lieutenant": a, "lower_lord": b}
+            for a, la in cands for b, lb in cands
+            if a != b and la.cylinder == lb.cylinder]
+
+
 def _designate_lieutenant(gs: GameState, side: str, lieut: str, lower: str) -> None:
     li, lo = gs.lords.get(lieut), gs.lords.get(lower)
     if li is None or lo is None:
@@ -862,8 +875,15 @@ def legal_moves_campaign(gs: GameState) -> list[dict[str, Any]]:
                 {"type": "basil_response", "play": False, "_desc": "Decline: Stronghold is Conquered"}]
     lc = next((p for p in gs.meta.pending if p["type"] == "loyalty_check"), None)
     if lc is not None:
-        return [{"type": "resolve_loyalty", "target": tgt, "_desc": f"Loyalty Check vs {tgt} (1.4)"}
-                for tgt in lc["targets"]]
+        _lmvs = []
+        for tgt in lc["targets"]:
+            _for = actions.loyalty_coin_budget(gs, lc["side"], tgt)
+            _agn = 0 if gs.lords[tgt].besieged else actions.loyalty_coin_budget(gs, gs.lords[tgt].side, tgt)
+            _lmvs.append({"type": "resolve_loyalty", "target": tgt,
+                          "_max_coins_for": _for, "_max_coins_against": _agn,
+                          "_desc": f"Loyalty Check vs {tgt} (1.4) — optional coins_for (+1 each, max {_for})"
+                                   f" / coins_against (owner resists, -1 each, max {_agn})"})
+        return _lmvs
     at = next((p for p in gs.meta.pending if p["type"] == "assign_themata_defenders"), None)
     if at is not None:
         thema = sd.locale(at["locale"])["thema"]
@@ -883,8 +903,19 @@ def legal_moves_campaign(gs: GameState) -> list[dict[str, Any]]:
                           "either side may pass in-Battle Held Events via battle_events"}]
     bb = next((p for p in gs.meta.pending if p["type"] == "besiege_or_bypass"), None)
     if bb is not None:
-        return [{"type": "besiege_bypass", "choice": "besiege", "_desc": "Besiege the Stronghold (4.3.5)"},
-                {"type": "besiege_bypass", "choice": "bypass", "_desc": "Bypass the Stronghold (4.3.5)"}]
+        moves = [{"type": "besiege_bypass", "choice": "besiege", "_desc": "Besiege the Stronghold (4.3.5)"},
+                 {"type": "besiege_bypass", "choice": "bypass", "_desc": "Bypass the Stronghold (4.3.5)"}]
+        # S1 Surprise (Seljuk HOLD): "Play upon Besieging an enemy Fort or Town
+        # where no other Lord. Place 2 Siege there (not 1), then Storm." Offer it
+        # as a Besiege variant when held and eligible (was handler-only).
+        _bs = gs.lords[bb["lords"][0]].side
+        _bl = bb["locale"]
+        if (_bs == "seljuk" and "S1" in gs.seljuk.held_events
+                and sd.locale(_bl)["type"] in ("fort", "town")
+                and sum(1 for l in gs.lords.values() if l.mustered and l.cylinder == _bl) == 1):
+            moves.append({"type": "besiege_bypass", "choice": "besiege", "surprise": True,
+                          "_desc": "Besiege with Surprise (S1): place 2 Siege markers, then Storm"})
+        return moves
     pend = next((p for p in gs.meta.pending if p["type"] == "ravage_defence"), None)
     if pend is not None:
         moves = [{"type": "resolve_ravage_defence", "defend_with": None,
@@ -904,6 +935,7 @@ def legal_moves_campaign(gs: GameState) -> list[dict[str, Any]]:
         treachery_required = gs.meta.notes.get("treachery_side") == side
         return [{"type": "build_plan", "side": side, "_plan_size": need,
                  "_available_lords": avail, "_no_command": "no_command",
+                 "_lieutenant_options": _lieutenant_options(gs, side),
                  "_treachery_required": treachery_required, "_treachery": "treachery",
                  "_no_command_required": gs.meta.notes.get("weather_no_command_side") == side,
                  "_desc": f"Build the {side} Campaign Plan: {need} ordered cards (4.1)"
@@ -996,6 +1028,21 @@ def command_menu(gs: GameState) -> list[dict[str, Any]]:
                     mv["_co_marcher_max"] = co_max
                     mv["_desc"] += f" — may Group-March (4.3.1) with up to {co_max} of {co_marchers}"
                 out.append(mv)
+                # S18 Unstoppable Turkmen: "Once per Command, this Lord may
+                # Bypass without stopping." Offer the March variant when arriving
+                # at an un-invested enemy Stronghold with no enemy Lord outside
+                # (was handler-only; the palette never surfaced it).
+                if (capabilities.lord_has(gs, lid, "Unstoppable Turkmen")
+                        and not lord.flags.get("unstoppable_used_this_card")
+                        and _is_stronghold(gs, to)
+                        and actions.current_allegiance(gs, to) == _enemy(lord.side)
+                        and not gs.locales[to].bypass and gs.locales[to].siege_markers == 0
+                        and not _enemy_lord_ids_at(gs, to, lord.side)):
+                    _smv = dict(mv)
+                    _smv["unstoppable"] = True
+                    _smv["_desc"] = (f"March to {sd.locale(to)['name']} via {edge['type']} and Bypass "
+                                     f"without stopping (S18 Unstoppable Turkmen)")
+                    out.append(_smv)
         # Forage (4.5.4): available unless Ravaged, or Besieged by >= Size (a Lord
         # Besieged by fewer, or at a friendly Gardens Town/City, may still Forage).
         if st.ravaged_side is None:
@@ -1082,20 +1129,66 @@ def command_menu(gs: GameState) -> list[dict[str, Any]]:
                     and not _besieged_enemy_inside(gs, loc_id, lord.side)):
                 out.append({"type": "cmd_siege", "lord": lid, "honors_of_war": True,
                             "_desc": "Siege with Honors of War (R25): Fort auto-Surrenders, no Spoils (4.5.1)"})
-            _storm_holds = sorted(set(gs.side_decks(lord.side).held_events) & {"R21", "S21"})
-            out.append({"type": "cmd_storm", "lord": lid, "_desc": "Storm the Stronghold (4.5.2)",
-                        **({"_storm_events_available": _storm_holds} if _storm_holds else {})})
+            _ah = sorted(set(gs.side_decks(lord.side).held_events) & {"R21", "S21"})
+            _dh = sorted(set(gs.side_decks(_enemy(lord.side)).held_events) & {"R21", "S21"})
+            _mvSt = {"type": "cmd_storm", "lord": lid, "_desc": "Storm the Stronghold (4.5.2)"}
+            if _ah or _dh:
+                # EITHER side may play its Turkic-removal hold before the Storm
+                # (R21 is a Roman card, S21 Seljuk); pass via battle_events.
+                _mvSt["_storm_events_available"] = {"attacker": _ah, "defender": _dh}
+                _mvSt["_desc"] += " — pass R21/S21 via battle_events"
+            # R4 Sultan's Horse (Roman HOLD, Storm effect): during a Storm by Alp
+            # Arslan at a Locale with >1 Siege marker, reduce the Rounds by 1
+            # (defender's choice; pass play_sultans_horse: true).
+            if (lord.side == "seljuk" and "R4" in gs.roman.held_events
+                    and "alp_arslan" in _besieging_lords_at(gs, loc_id, "seljuk")
+                    and st.siege_markers > 1):
+                _mvSt["_r4_sultans_horse_available"] = True
+                _mvSt["_desc"] += " — Roman may reduce Rounds by 1 via play_sultans_horse (R4)"
+            out.append(_mvSt)
         if (gs.meta.notes.get("gifts_coins", 0) > 0 and not lord.besieged
                 and gs.meta.notes.get("gifts_taken", {}).get(lord.side, 0) < 2):
             out.append({"type": "cmd_take_gift_coin", "lord": lid, "_desc": "Take 1 Coin from Gifts Exchanged (S13)"})
         # Sally (4.5.3): a Besieged Lord may Attack the Besiegers.
         if lord.besieged:
-            out.append({"type": "cmd_sally", "lord": lid, "_desc": "Sally against the Besiegers (4.5.3)"})
+            _sset = {"R21", "S21"} | ({"R2", "S2"} if gmap.adjacent_to_pass(loc_id) else set())
+            _sh = {"attacker": sorted(set(gs.side_decks(lord.side).held_events) & _sset),
+                   "defender": sorted(set(gs.side_decks(_enemy(lord.side)).held_events) & _sset)}
+            _mvSa = {"type": "cmd_sally", "lord": lid, "_desc": "Sally against the Besiegers (4.5.3)"}
+            if _sh["attacker"] or _sh["defender"]:
+                _mvSa["_battle_holds_available"] = _sh
+                _mvSa["_desc"] += " — either side may pass Sally-eligible Held Events via battle_events"
+            out.append(_mvSa)
         # Recruit (4.5.7): Roman Commander in a Thema with available Themata.
+        # Offer one option per distinct marker kind: the player chooses WHICH
+        # marker to take (boxes mix e.g. Tagmata / Infantry / Militia), so a
+        # single index-less move under-enumerated the real choice.
         if lord.side == "roman" and actions.is_commander(gs, lid) and not lord.besieged:
             thema = info.get("thema")
             if thema and gs.themata.get(thema):
-                out.append({"type": "cmd_recruit", "lord": lid, "_desc": "Recruit a Themata into Forces (4.5.7)"})
+                _kinds: set = set()
+                for _mi, _mk in enumerate(gs.themata[thema]):
+                    if (_mk.unit, _mk.symbols) in _kinds:
+                        continue
+                    _kinds.add((_mk.unit, _mk.symbols))
+                    out.append({"type": "cmd_recruit", "lord": lid, "marker_index": _mi,
+                                "_desc": f"Recruit a {_mk.unit} Themata (x{_mk.symbols}) into Forces (4.5.7)"})
+        # R1 Imperial Fortress Construction: as a Command action, this Lord may
+        # place a Fort marker on an unfortified Locale (including Ruined) in the
+        # Roman Empire, max 2 Fort markers on the map. Card Clarification: the
+        # Lord does NOT have to be at the target Locale.
+        if (lord.side == "roman" and not lord.besieged
+                and capabilities.lord_has(gs, lid, "Imperial Fortress Construction")
+                and sum(1 for _l2 in gs.locales.values() if _l2.fort_marker) < 2):
+            for _ft in sd.all_locale_ids():
+                _fti = sd.locale(_ft)
+                _fts = gs.locales[_ft]
+                if _fti["allegiance"] != "roman" or _fti["type"] == "holding_box":
+                    continue
+                if (_fti.get("is_stronghold") and not _fts.ruins) or _fts.fort_marker:
+                    continue
+                out.append({"type": "cmd_fort", "lord": lid, "target": _ft,
+                            "_desc": f"Build a Fort at {_fti['name']} (R1 Imperial Fortress Construction)"})
     except (KeyError, AttributeError):  # pragma: no cover - suppress over offer
         return out
     return out
@@ -1995,12 +2088,23 @@ def h_besiege_bypass(gs: GameState, action: dict[str, Any], roller: DiceRoller) 
         if (action.get("surprise") and side == "seljuk" and "S1" in gs.seljuk.held_events
                 and sd.locale(to)["type"] in ("fort", "town") and len(lords_here) == 1):
             # S1 Surprise: place 2 Siege markers (not 1), then immediately Storm.
-            gs.locales[to].siege_markers = 2
+            # Card Clarification: "The Roman player still gets to place his
+            # Themata (if any) as normal" BEFORE the Siege markers are placed --
+            # so a first Siege of a Roman Stronghold pends the Themata
+            # assignment and the 2 markers + Storm resume after it.
             gs.seljuk.held_events.remove("S1"); gs.seljuk.draw_deck.append("S1")
+            gs.meta.actions_remaining = 0
+            if _needs_themata_assignment(gs, to, side):
+                gs.meta.pending.append({"type": "assign_themata_defenders", "locale": to,
+                                        "_owed_by": "roman",
+                                        "_surprise_storm": {"attacker": pend["lords"][0],
+                                                            "storm_decisions": action.get("storm_decisions")}})
+                return {"ok": True, "action": "besiege_surprise", "locale": to,
+                        "pending": "assign_themata_defenders"}
+            gs.locales[to].siege_markers = 2
             from . import battle
             res = battle.resolve_storm(gs, [pend["lords"][0]], to,
                                        battle.DecisionContext(action.get("storm_decisions")), roller)
-            gs.meta.actions_remaining = 0
             _after_card(gs)
             return {"ok": True, "action": "besiege_surprise", "locale": to, "storm": res}
         gs.locales[to].siege_markers = max(1, gs.locales[to].siege_markers)  # place first Siege marker (4.3.5)
@@ -2044,9 +2148,13 @@ def h_cmd_fort(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dic
     lord = _require(action.get("lord"), gs)
     if lord.side != "roman" or not capabilities.lord_has(gs, lord.id, "Imperial Fortress Construction"):
         raise IllegalAction("no_fort_capability", "only a Lord with Imperial Fortress Construction may build a Fort (R1)")
+    if lord.besieged:
+        raise IllegalAction("besieged", "a Besieged Lord may only Sally, Pass, or perhaps Forage (4.2.1)")
     target = action.get("target")
     if target not in gs.locales:
         raise IllegalAction("bad_locale", "unknown Fort target")
+    if sd.locale(target)["type"] == "holding_box":
+        raise IllegalAction("bad_locale", "a Fort cannot be built in a Holding Box (R1/1.3.1)")
     if sum(1 for l in gs.locales.values() if l.fort_marker) >= 2:
         raise IllegalAction("no_fort_markers", "both Fort markers are already on the map (R1)")
     info = sd.locale(target)
@@ -2218,6 +2326,17 @@ def h_assign_themata_defenders(gs: GameState, action: dict[str, Any], roller: Di
         gs.locales[loc_id].themata_defending.append(marker)
         chosen.append(marker.unit)
     gs.meta.pending.remove(pend)
+    _ss = pend.get("_surprise_storm")
+    if _ss:
+        # S1 Surprise continuation: Themata were placed first (Clarification);
+        # now place the 2 Siege markers and resolve the Storm.
+        gs.locales[loc_id].siege_markers = 2
+        res = battle.resolve_storm(gs, [_ss["attacker"]], loc_id,
+                                   battle.DecisionContext(_ss.get("storm_decisions")), roller)
+        gs.meta.actions_remaining = 0
+        _after_card(gs)
+        return {"ok": True, "action": "assign_themata_defenders", "locale": loc_id,
+                "assigned": chosen, "storm": res}
     if gs.meta.actions_remaining <= 0:
         _after_card(gs)
     return {"ok": True, "action": "assign_themata_defenders", "locale": loc_id, "assigned": chosen}
@@ -2321,8 +2440,23 @@ def h_cmd_sally(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> di
                 if l.mustered and l.cylinder == locale and l.side == lord.side and l.besieged]
     # Active sallying Lord first.
     sallying = [lord.id] + [s for s in sallying if s != lord.id]
+    # 4.9.2: a Sally is a Battle, so Hold Events playable "in Battle or Storm"
+    # apply. The side-aggregate Sally engine honors the Turkic-removal holds
+    # (R21/S21, immediate) and Mountain Ambush (R2/S2: Walls 1-3 vs Missiles,
+    # Round 1, at a Pass-adjacent Locale). R3 Steeled Resolve Round declarations
+    # are honored via steeled_rounds (as in begin_battle). Per-Lord ordering
+    # holds (S3/S6/R24) do not map onto the aggregate engine -- RULES_QUESTIONS.
+    _inv = sallying + besiegers
+    for _sl in _inv:
+        if _sl in gs.lords:
+            gs.lords[_sl].flags["steeled_resolve_round"] = int((action.get("steeled_rounds") or {}).get(_sl, 1))
+    played, _cc, _chg = battle._consume_battle_events(
+        gs, action.get("battle_events"), locale=locale, allow={"R21", "S21", "R2", "S2"})
     ctx = battle.DecisionContext(action.get("battle_decisions"))
-    res = battle.resolve_sally(gs, sallying, besiegers, locale, ctx, roller)
+    res = battle.resolve_sally(gs, sallying, besiegers, locale, ctx, roller, played=played)
+    for _sl in _inv:
+        if _sl in gs.lords:
+            gs.lords[_sl].flags.pop("steeled_resolve_round", None)
     gs.meta.actions_remaining = 0  # Sally ends the card (4.8.6)
     _after_card(gs)
     return {"ok": True, "action": "cmd_sally", "sally": res}

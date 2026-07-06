@@ -74,9 +74,10 @@ If you submit an illegal action, `do` prints `IllegalAction: <reason>` and exits
 non-zero **without changing the game** — pick a different move. Every move
 `legal-moves` offers is guaranteed applicable.
 
-### Two template actions that need you to build them
+### Template actions and optional parameters
 
-Most moves are ready to apply as-is. Two are templates:
+Most moves are ready to apply as-is. Some are templates or carry optional
+parameters (hinted by `_`-prefixed keys):
 
 - **build_plan** (Campaign Plan step). `legal-moves` gives `_plan_size` (how many
   cards), `_available_lords`, and `_treachery_required`. Build an ordered list
@@ -106,6 +107,35 @@ Most moves are ready to apply as-is. Two are templates:
   add Siegeworks on failure), the menu may offer `roll_surrender:false` (add a
   Siegeworks without rolling) and, with R25 held, `honors_of_war:true` (a Fort
   auto-Surrenders). Pick the variant object as offered.
+- **build_plan lieutenants** (4.1.3). The build_plan move hints
+  `_lieutenant_options` (eligible `{"lieutenant": L, "lower_lord": M}` pairs:
+  same side, co-located, neither a Commander, neither already stacked). Pass a
+  `"lieutenants"` list of such pairs to appoint them for the Campaign; the
+  Lieutenant then plays his Lower Lord's Command cards.
+- **In-Battle Held Events** (`battle_events`). Moves that start a combat accept
+  `"battle_events": {"seljuk": [...], "roman": [...]}` naming Held Event cards
+  EITHER side plays for that combat; the palette hints what is available via
+  `_battle_holds_available` (respond_approach, cmd_sally) or
+  `_storm_events_available` (cmd_storm). Battle (Stand/Sortie) honors
+  R2/S2/S3/S6/R24/R21/S21 (S6/R24 entries are dicts naming the Roman Lord:
+  `{"card":"R24","lord":...}`); Storm honors R21/S21 plus, for the Roman
+  defender, `"play_sultans_horse": true` (R4: Rounds -1, hinted by
+  `_r4_sultans_horse_available`); Sally honors R21/S21 and R2/S2.
+- **steeled_rounds** (R3 Steeled Resolve). Any combat-starting move accepts
+  `"steeled_rounds": {LORD: N}` — the Round (default 1) in which that Lord's
+  Capability applies.
+- **local_scouts** (R18, respond_approach). The Approaching side may force one
+  Avoiding Lord to Stand/Withdraw: `"local_scouts": {"lord": L, "action": "stand"}`.
+- **besiege_bypass with surprise** (S1). The menu offers a
+  `{"choice":"besiege","surprise":true}` variant when S1 is held and eligible;
+  optionally add `storm_decisions` for the immediate Storm. If the Stronghold
+  is owed a Themata assignment, that pends FIRST (S1 Clarification) and the
+  2 Siege markers + Storm resume after it.
+- **Loyalty coin DRMs** (1.4.1). `resolve_loyalty` / `discard_imperial_coffers`
+  accept `"coins_for"` (checking side, +1 each) and `"coins_against"` (owner
+  resists, -1 each), bounded by the `_max_coins_for` / `_max_coins_against`
+  hints (Commander + co-located Unbesieged Lords' Coin; no resisting for a
+  Besieged target).
 - **resolve_event** (an immediate Arts-of-War Event that needs a choice). Pass
   `args` with the choice the card calls for, e.g.
   `{"type":"resolve_event","card":"R5","args":{"lord":"alp_arslan","direction":"left"}}`.
@@ -125,7 +155,7 @@ After some actions the game owes a sub-decision before normal play resumes.
 | `besiege_or_bypass` | `{"type":"besiege_bypass","choice":"besiege"\|"bypass"}` |
 | `assign_themata_defenders` | `{"type":"assign_themata_defenders","markers":[...]}` |
 | `ravage_defence` | `{"type":"resolve_ravage_defence","defend_with":INDEX_or_null}` |
-| `loyalty_check` | `{"type":"resolve_loyalty","target":LORD}` (from `targets`) |
+| `loyalty_check` | `{"type":"resolve_loyalty","target":LORD}` (from `targets`; optional `coins_for`/`coins_against`, see hints) |
 | `basil_response` | `{"type":"basil_response","play":true\|false}` |
 
 Battles, Storms, and Sallies are **auto-resolved** by the engine when you Stand

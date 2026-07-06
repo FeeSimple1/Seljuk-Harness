@@ -640,8 +640,8 @@ def _hold_eastern_rebellions(gs, args, roller):     # S10 (Muster, on Alp Arslan
 
 def _hold_sultans_horse(gs, args, roller):          # R4 (remove 1 Siege where Alp Arslan besieging >1)
     aa = gs.lords["alp_arslan"]
-    if not aa.mustered or gs.locales[aa.cylinder].siege_markers <= 1:
-        raise IllegalAction("not_applicable", "Alp Arslan must be at a Locale with >1 Siege marker (R4)")
+    if not aa.mustered or aa.besieged or gs.locales[aa.cylinder].siege_markers <= 1:
+        raise IllegalAction("not_applicable", "Alp Arslan must be Besieging at a Locale with >1 Siege marker (R4)")
     gs.locales[aa.cylinder].siege_markers -= 1
     return {"removed_siege_at": aa.cylinder}
 
@@ -793,8 +793,10 @@ def held_event_menu(gs: GameState) -> list[dict[str, Any]]:
                 out.append({"type": "play_hold_event", "card": "S24",
                             "_desc": "Hold Event S24 Bad Omens: inspect/reorder top 2 Roman Plan cards"})
         if side == "roman" and "R4" in held:
+            # "Play where Alp Arslan BESIEGING Stronghold with >1 Siege marker"
+            # -- Alp must be the (unbesieged) besieger, not himself under Siege.
             aa = gs.lords["alp_arslan"]
-            if aa.mustered and gs.locales[aa.cylinder].siege_markers > 1:
+            if aa.mustered and not aa.besieged and gs.locales[aa.cylinder].siege_markers > 1:
                 out.append({"type": "play_hold_event", "card": "R4",
                             "_desc": f"Hold Event R4 Sultan's Horse: remove 1 Siege at {aa.cylinder}"})
     return out
