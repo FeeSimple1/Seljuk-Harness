@@ -157,6 +157,7 @@ After some actions the game owes a sub-decision before normal play resumes.
 | `ravage_defence` | `{"type":"resolve_ravage_defence","defend_with":INDEX_or_null}` |
 | `loyalty_check` | `{"type":"resolve_loyalty","target":LORD}` (from `targets`; optional `coins_for`/`coins_against`, see hints) |
 | `basil_response` | `{"type":"basil_response","play":true\|false}` |
+| `winter_quarters` | `{"type":"winter_quarters","lord":L,"dest":SEAT}` or `{"lord":L,"stay":true}` (R15/S15; options in the pending's `dests`/`may_stay`) |
 
 Battles, Storms, and Sallies are **auto-resolved** by the engine when you Stand
 (or Storm/Sally); the result is returned by `do`. You don't roll dice — the

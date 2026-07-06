@@ -50,6 +50,9 @@ def _resolve_pending(s: LLMSession) -> bool:
             s.apply({"type": "resolve_loyalty", "target": p["targets"][0]})
         elif t == "basil_response":
             s.apply({"type": "basil_response", "play": False})
+        elif t == "winter_quarters":
+            # 4.7.6: return to the first eligible Seat (greedy default).
+            s.apply({"type": "winter_quarters", "lord": p["lord"], "dest": p["dests"][0]})
         else:
             s.gs.meta.pending.remove(p)
         return True

@@ -101,6 +101,11 @@ def _rand_resolve_pending(s, rng, findings, tag):
             s.apply({"type": "resolve_loyalty", "target": rng.choice(p["targets"])})
         elif t == "basil_response":
             s.apply({"type": "basil_response", "play": rng.choice([True, False])})
+        elif t == "winter_quarters":
+            opts = [{"type": "winter_quarters", "lord": p["lord"], "dest": d} for d in p["dests"]]
+            if p.get("may_stay"):
+                opts.append({"type": "winter_quarters", "lord": p["lord"], "stay": True})
+            s.apply(rng.choice(opts))
         else:
             s.gs.meta.pending.remove(p)
     except IllegalAction:

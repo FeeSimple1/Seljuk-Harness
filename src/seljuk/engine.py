@@ -99,6 +99,7 @@ _CAMPAIGN_HANDLERS: dict[str, Callable[[GameState, dict, DiceRoller], dict]] = {
     "decline_kleisourai": campaign.h_decline_kleisourai,
     "winter_activate": campaign.h_winter_activate,
     "winter_proceed": campaign.h_winter_proceed,
+    "winter_quarters": campaign.h_winter_quarters,
     "discard_imperial_coffers": campaign.h_discard_imperial_coffers,
     "play_hold_event": actions.h_play_hold_event,
 }

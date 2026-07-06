@@ -33,7 +33,7 @@ def test_winter_quarters_returns_roman_arisighi_to_constantinople():
     gs = _gs()
     ar = gs.lords["arisighi"]; ar.side = "roman"; ar.mustered = True; ar.cylinder = "ankyra"
     ab = gs.lords["artuk_beg"]; ab.side = "seljuk"; ab.mustered = True; ab.cylinder = "to_mosul_and_baghdad"
-    C._winter_quarters(gs)
+    C._begin_winter_quarters(gs)   # Arisighi has a single aligned Seat -> applied immediately
     assert ar.cylinder == "to_constantinople"
     assert ar.cylinder != "to_mosul_and_baghdad"
     assert check_invariants(gs) == []          # not co-located with Seljuk Artuk Beg

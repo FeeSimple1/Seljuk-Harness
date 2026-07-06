@@ -53,6 +53,11 @@ explicit exceptions.
 seat enumeration, `tests/test_phase2_muster.py`, all scenarios with S8 in deck.
 
 **Blocking?** No — current behavior is Option (b); flagged for adjudication.
+**Additional evidence (2026-07-05):** the Playbook Winter example (p12) lists
+Alp Arslan's Winter-Quarters options as ONLY "Ani or the Mosul & Baghdad
+Holding Box" while Amid is an activated Marwanid Seat — evidence that
+activated Marwanid Seats do NOT count for Quarters return (and, by the same
+"Seat for Seljuk Lords" phrase, perhaps not for Muster either).
 
 ## Q-003 — 3.5.2 Loot / 3.5.1.2 Empress: may a cylinder be shifted RIGHT?
 
@@ -123,3 +128,42 @@ side-aggregate Sally resolver.
 `battle._consume_battle_events` allow-set, `tests/test_under_enumeration_audit.py`.
 
 **Blocking?** No — current behavior is Option (b); R21/S21/R2/S2 are live.
+
+## Q-005 — Bounty (4.7.6, errata): is the co-located Cart allowance a SHARED pool?
+
+**Context.** Errata Bounty text: a qualifying Seljuk Lord "may score 1 VP per
+Loot on his Lord mat up to the number of Carts he and co-located Lords
+currently possess." The harness reads this per-Lord: EACH co-located Lord's
+cap = the sum of the group's Carts. The Playbook Winter example (p12) computes
+it as a SHARED pool: Alp Arslan (3 Loot) and Arisighi (1 Loot) share Melitene's
+two Carts and return exactly TWO Loot total ("The remaining two Loot with Alp
+Arslan must stay on his mat ... successfully returns two Loot, +2 VP") — the
+per-Lord reading would return three (Alp 2 + Arisighi 1).
+
+**Consultation log.** (1) Errata & Clarifications Jan-2026, 4.7.6 Bounty: the
+corrected sentence above; silent on pooling. (2) Curated references (Sequence
+of Play, Winter): restate the errata sentence. (3) Rules of Play 4.7.6: the
+pre-errata text (superseded). (4) Background Book p12 Winter example: works
+the shared-pool math explicitly (2 returned, not 3) — examples only, not a
+rules source, but this one is arithmetic, not interpretation. (5)
+RULES_DECISIONS.md: no prior decision. No external sources.
+
+**What is ambiguous.** Whether each co-located Lord independently caps at the
+group's total Carts (current harness behavior; can multiply the same Carts
+across Lords) or the group shares one Cart budget per Locale (the example's
+math; each Cart carries one Loot for the whole group).
+
+**Options.**
+- (a) Shared per-Locale pool (matches the example's printed totals; physically
+  sensible — a Cart carries one Loot). Needs an allocation order when Loot
+  exceeds the pool (player's choice; harness would need a deterministic rule
+  or a decision window).
+- (b) Per-Lord cap = group Carts (current behavior; a literal reading of "up
+  to the number of Carts he and co-located Lords currently possess" applied
+  Lord by Lord). Contradicts the example's "remaining two Loot must stay".
+
+**Affects.** `campaign._bounty`, S24 Prisoners (+1 for that Lord), B.5.3 VP
+cancellation order, `tests/test_phase3a_end_winter.py` Bounty tests.
+
+**Blocking?** No — current behavior is Option (b); VP-affecting, flagged
+prominently for adjudication.

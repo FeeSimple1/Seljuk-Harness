@@ -112,8 +112,11 @@ def test_provincial_bureaucracy_first_empire_tax_no_ravage_r9():
 def test_winter_stay_capability_keeps_lord_in_place_s15():
     gs = S.load_scenario("emperor_and_the_lion")
     aa = gs.lords["alp_arslan"]; aa.cylinder = "melitene"; aa.capabilities = ["S15"]  # Nizam al-Mulk
-    campaign._winter_quarters(gs)
-    assert aa.cylinder == "melitene"  # did not return to Seat
+    campaign._begin_winter_quarters(gs)
+    p = next(p for p in gs.meta.pending if p["type"] == "winter_quarters" and p["lord"] == "alp_arslan")
+    assert p["may_stay"]              # S15: "may CHOOSE not to return" -- a choice, not an auto-stay
+    engine.apply_action(gs, {"type": "winter_quarters", "lord": "alp_arslan", "stay": True})
+    assert aa.cylinder == "melitene"  # chose to stay in the field
 
 
 def test_prisoners_returns_loot_beyond_carts_s24():

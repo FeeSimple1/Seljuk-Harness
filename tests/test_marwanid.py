@@ -92,7 +92,10 @@ def test_marwanid_locale_may_not_be_taxed():
 def test_marwanid_expires_at_end_of_winter():
     gs = _year_cta()
     engine.apply_action(gs, {"type": "cta_marwanid", "locales": ["amid"]})
-    campaign._winter(gs)
+    res = campaign._winter(gs)
+    while any(p["type"] == "winter_quarters" for p in gs.meta.pending):   # settle 4.7.6 choices
+        p = next(p for p in gs.meta.pending if p["type"] == "winter_quarters")
+        engine.apply_action(gs, {"type": "winter_quarters", "lord": p["lord"], "dest": p["dests"][0]})
     assert gs.meta.notes.get("marwanid_seats") is None
 
 

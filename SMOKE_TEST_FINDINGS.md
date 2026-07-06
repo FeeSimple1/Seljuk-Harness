@@ -537,3 +537,38 @@ owner may not resist for a Besieged target); `build_plan` now hints
 `battle_events`, `steeled_rounds`, `local_scouts`, `surprise`,
 `play_sultans_horse`, `coins_for/coins_against`, `seat`, `marker_index`,
 and `lieutenants`.
+
+---
+
+## Playbook-oracle pass (2026-07-05) — Battle/Winter/Loyalty examples + FIND-O
+
+The Background Book's Examples of Play extract cleanly from the PDF after all
+(the earlier note that the Playbook text was unavailable was wrong). Three new
+oracle suites pin the printed numbers through the real engine:
+`test_oracle_playbook_battle.py` (every Strike total, Protection range, the
+Round-2 Flank pool x5, Concede halving, Service-shift rolls 2->1 box / 5->2
+boxes via _end_battle, and the Conceded-Retreat excess-Provender Spoils),
+`test_oracle_playbook_winter.py` (Seljuk Unity goal-10 shortfall math incl.
+the Mosul-Loot-first VP strip, no gain at/above goal; Aleppo Diplomacy 1-2
+removes / 3+ stays; Quarters choices below; Loyalty Check DRM arithmetic:
+Fealty 4, one Coin against -> only a 6 succeeds, natural 6/1 overrides), plus
+the existing Storm oracle.
+
+**FIND-O (Winter Quarters made strategic choices for the player, 4.7.6).**
+The Playbook Winter example is explicit: Alp Arslan "can CHOOSE to return to
+Ani or the Mosul & Baghdad Holding Box", and an R15/S15 holder "can choose to
+stay in the field". `_winter_quarters` auto-took the first free Seat and
+auto-stayed every R15/S15 holder — the harness was making both decisions (a
+No-Agent-in-the-Harness violation). Winter now pauses at `winter.quarters`
+with one `winter_quarters` pending per Lord who has a real choice (several
+free Seats, or a stay option); no-choice Lords are returned automatically;
+`h_winter_quarters` applies each choice and completes the Winter (Aleppo
+Diplomacy, Marwanid expiry, advance) after the last one. Drivers
+(self_play/smoke_fuzz/long_play) resolve the pending; LLM_PLAY_GUIDE
+documents it.
+
+**Bounty pooled-Carts discrepancy -> Q-005.** The same Winter example returns
+TWO Loot from Alp (3 Loot) + Arisighi (1 Loot) sharing two Carts; the
+harness's per-Lord cap (each Lord caps at the GROUP's Carts) would return
+three. VP-affecting; logged as Q-005 rather than changed silently, since the
+errata sentence reads per-Lord and the Playbook is examples-only.

@@ -1,5 +1,5 @@
 """Phase 3a: End Campaign (4.7) and Winter (4.7.6)."""
-from seljuk import scenarios as S, campaign
+from seljuk import scenarios as S, campaign, engine
 
 
 def test_grow_halves_enemy_ravaged_in_spring_472():
@@ -66,7 +66,10 @@ def test_winter_quarters_returns_to_seat_unladen_and_halves_carts_476():
     aa.cylinder = "larisa"  # away from Seat
     aa.assets.loot = 2
     aa.assets.carts = 3
-    campaign._winter_quarters(gs)
+    campaign._begin_winter_quarters(gs)  # Alp has TWO free Seats -> owner chooses (4.7.6)
+    p = next(p for p in gs.meta.pending if p["type"] == "winter_quarters" and p["lord"] == "alp_arslan")
+    assert set(p["dests"]) == {"ani", "to_mosul_and_baghdad"}
+    engine.apply_action(gs, {"type": "winter_quarters", "lord": "alp_arslan", "dest": "ani"})
     assert aa.cylinder in S.sd.lord("alp_arslan")["seats"]
     assert aa.assets.loot == 0          # Unladen
     assert aa.assets.carts == 2          # halve 3 -> 2 (round up)
@@ -92,6 +95,9 @@ def test_winter_box_conducts_winter_then_game_end_for_specter():
     gs = S.load_scenario("specter_of_norman_betrayal")
     gs.meta.calendar_box = 6  # Autumn 1069 = Winter box AND final turn
     campaign._end_campaign(gs)
+    while any(p["type"] == "winter_quarters" for p in gs.meta.pending):   # settle 4.7.6 choices
+        p = next(p for p in gs.meta.pending if p["type"] == "winter_quarters")
+        engine.apply_action(gs, {"type": "winter_quarters", "lord": p["lord"], "dest": p["dests"][0]})
     assert gs.meta.phase == "game_over"
 
 

@@ -74,7 +74,7 @@ def test_winter_quarters_provender_capped_to_carts_before_halving():
     aa.assets.provender = 4
     aa.assets.carts = 4
     aa.assets.loot = 1
-    campaign._winter_quarters(gs)
+    campaign._apply_winter_quarters(gs, aa, "ani")
     assert aa.assets.loot == 0
     assert aa.assets.carts == 2                     # 4 halved
     # Provender was already <= original Carts (4), so it is retained, NOT
@@ -88,7 +88,7 @@ def test_winter_quarters_excess_provender_discarded_to_original_carts():
     aa.cylinder = "larisa"
     aa.assets.provender = 5
     aa.assets.carts = 3
-    campaign._winter_quarters(gs)
+    campaign._apply_winter_quarters(gs, aa, "ani")
     assert aa.assets.carts == 2                     # 3 halved (round up)
     assert aa.assets.provender == 3                 # capped to original carts (3), then carts halved
 

@@ -508,6 +508,8 @@ def _end_campaign(gs: GameState) -> None:
 def _finalize_winter(gs: GameState) -> None:
     winner = _winter(gs)
     gs.meta.vp = scenarios.score(gs)
+    if winner == "paused":
+        return              # Winter Quarters choices pending (h_winter_quarters)
     if winner:
         _set_game_over(gs, winner, "5.2/4.7.6: Seljuk Aleppo Independence auto-victory")
         return
@@ -682,16 +684,24 @@ def _reset(gs: GameState) -> None:
 
 def _winter(gs: GameState) -> str | None:
     """4.7.6: Aleppo auto-victory, Bounty, Seljuk Unity, Winter Quarters,
-    Aleppo Diplomacy. Returns a winning side if the Aleppo auto-victory fires."""
+    Aleppo Diplomacy. Returns "seljuk" on the Aleppo auto-victory, "paused" if
+    Winter Quarters owes player choices (multi-Seat return, or an R15/S15
+    stay-in-the-field option), else None."""
     # Aleppo Independence auto-victory (5.2)
     if gs.meta.aleppo_independence_played and gs.locales["aleppo"].conquered_side == "seljuk":
         return "seljuk"
     _bounty(gs)
     _seljuk_unity(gs)
-    _winter_quarters(gs)
+    if _begin_winter_quarters(gs):
+        return "paused"     # h_winter_quarters completes the Winter when done
+    _complete_winter(gs)
+    return None
+
+
+def _complete_winter(gs: GameState) -> None:
+    """The Winter tail after every Lord's Quarters is settled (4.7.6)."""
     _aleppo_diplomacy(gs)
     gs.meta.notes.pop("marwanid_seats", None)  # 3.5.1.1: deactivate at end of Winter Phase
-    return None
 
 
 def _bounty_traversable(gs: GameState, locale_id: str) -> bool:
@@ -769,38 +779,92 @@ def _seljuk_unity(gs: GameState) -> None:
     gs.holding_boxes.constantinople_roman_vp_markers += (deficit - take)
 
 
-def _winter_quarters(gs: GameState) -> None:
-    """4.7.6: return Lords to their Seats Unladen; Seat-if-Conquered -> allied
-    Holding Box; halve Carts (round up). (Capabilities that let a Lord stay are
-    Phase 4.)"""
-    for lid, lord in gs.lords.items():
-        if not on_map(lord):
-            continue
-        if (capabilities.lord_has(gs, lid, "Fealty to the Basileus")
-                or capabilities.lord_has(gs, lid, "Nizam al-Mulk Administrates the Sultanate")):
-            continue  # may choose not to return to Seat in Winter (R15 / S15)
-        _info = sd.lord(lid)
-        # Dual-allegiance Lords return to their alignment-specific Seat when set
-        # (Arisighi -> Constantinople Holding Box when Roman-aligned), not the
-        # printed Seljuk Seat (4.7.6 / Map Reference).
-        _aligned = _info.get(f"seat_when_{lord.side}_aligned")
-        seats = [_aligned] if _aligned else _info.get("seats", [])
-        dest = None
-        for s in seats:
-            if gs.locales[s].conquered_side not in (None, lord.side):
+def _winter_quarters_dests(gs: GameState, lord: LordState) -> list[str]:
+    """4.7.6: the Seats this Lord may return to (free of enemy Conquered
+    markers), or the allied Holding Box fallback. Dual-allegiance Lords use
+    their alignment-specific Seat (Arisighi -> Constantinople box when
+    Roman-aligned). The OWNER chooses among several (Playbook Winter example:
+    Alp Arslan "can choose to return to Ani or the Mosul & Baghdad Holding
+    Box")."""
+    _info = sd.lord(lord.id)
+    _aligned = _info.get(f"seat_when_{lord.side}_aligned")
+    seats = [_aligned] if _aligned else _info.get("seats", [])
+    dests = [s for s in seats if gs.locales[s].conquered_side in (None, lord.side)]
+    if not dests:
+        dests = ["to_mosul_and_baghdad" if lord.side == "seljuk" else "to_constantinople"]
+    return dests
+
+
+def _apply_winter_quarters(gs: GameState, lord: LordState, dest: str | None) -> None:
+    """Apply one Lord's Winter Quarters. dest=None means STAY in the field
+    (R15 Fealty to the Basileus / S15 Nizam al-Mulk: "may choose not to
+    return to Seat in Winter"); a staying Lord keeps his position and state."""
+    if dest is None:
+        return
+    lord.cylinder = dest
+    lord.assets.loot = 0  # Unladen: discard Loot
+    # Unladen also requires Provender <= Carts; this is checked against the
+    # Lord's CURRENT Carts and only THEN are Carts halved (B.5.4 order).
+    lord.assets.provender = min(lord.assets.provender, lord.assets.carts)
+    lord.assets.carts = -(-lord.assets.carts // 2)  # halve, round up
+    lord.besieged = False
+    lord.bypassed = False
+
+
+def _begin_winter_quarters(gs: GameState) -> bool:
+    """4.7.6 Winter Quarters, "Beginning with the Seljuks". Lords with no
+    choice are returned immediately; each real choice (several free Seats, or
+    an R15/S15 stay option) becomes a winter_quarters pending the owner
+    resolves via h_winter_quarters. Returns True if any pending was queued."""
+    queued = False
+    for side in ("seljuk", "roman"):
+        for lid, lord in gs.lords.items():
+            if lord.side != side or not on_map(lord):
                 continue
-            dest = s
-            break
-        if dest is None:
-            dest = "to_mosul_and_baghdad" if lord.side == "seljuk" else "to_constantinople"
-        lord.cylinder = dest
-        lord.assets.loot = 0  # Unladen: discard Loot
-        # Unladen also requires Provender <= Carts; this is checked against the
-        # Lord's CURRENT Carts and only THEN are Carts halved (B.5.4 order).
-        lord.assets.provender = min(lord.assets.provender, lord.assets.carts)
-        lord.assets.carts = -(-lord.assets.carts // 2)  # halve, round up
-        lord.besieged = False
-        lord.bypassed = False
+            dests = _winter_quarters_dests(gs, lord)
+            may_stay = (capabilities.lord_has(gs, lid, "Fealty to the Basileus")
+                        or capabilities.lord_has(gs, lid, "Nizam al-Mulk Administrates the Sultanate"))
+            if len(dests) == 1 and not may_stay:
+                _apply_winter_quarters(gs, lord, dests[0])
+                continue
+            gs.meta.pending.append({"type": "winter_quarters", "lord": lid,
+                                    "dests": dests, "may_stay": may_stay,
+                                    "_owed_by": side})
+            queued = True
+    if queued:
+        gs.meta.phase = "winter"
+        gs.meta.subphase = "winter.quarters"
+        gs.meta.active_lord = None
+        gs.meta.active_card = None
+    return queued
+
+
+def h_winter_quarters(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
+    """Resolve one Lord's Winter Quarters choice (4.7.6; R15/S15 stay)."""
+    pend = next((p for p in gs.meta.pending if p["type"] == "winter_quarters"
+                 and action.get("lord") in (None, p["lord"])), None)
+    if pend is None:
+        raise IllegalAction("no_pending", "no Winter Quarters choice to resolve")
+    lord = gs.lords[pend["lord"]]
+    if action.get("stay"):
+        if not pend.get("may_stay"):
+            raise IllegalAction("must_return", f"{lord.id} must return to a Seat (4.7.6)")
+        dest = None
+    else:
+        dest = action.get("dest")
+        if dest not in pend["dests"]:
+            raise IllegalAction("bad_dest", f"choose a Winter Quarters Seat from {pend['dests']}")
+    _apply_winter_quarters(gs, lord, dest)
+    gs.meta.pending.remove(pend)
+    res = {"ok": True, "action": "winter_quarters", "lord": lord.id,
+           "dest": dest if dest is not None else "stay"}
+    if not any(p["type"] == "winter_quarters" for p in gs.meta.pending):
+        _complete_winter(gs)
+        gs.meta.vp = scenarios.score(gs)
+        if gs.meta.phase != "game_over":
+            _advance_or_end(gs)
+        res["winter_resolved"] = True
+    return res
 
 
 def _aleppo_diplomacy(gs: GameState) -> None:
@@ -873,6 +937,15 @@ def legal_moves_campaign(gs: GameState) -> list[dict[str, Any]]:
     if br is not None:
         return [{"type": "basil_response", "play": True, "_desc": "Play Basil: Surrender -> Bypass (R7)"},
                 {"type": "basil_response", "play": False, "_desc": "Decline: Stronghold is Conquered"}]
+    wq = next((p for p in gs.meta.pending if p["type"] == "winter_quarters"), None)
+    if wq is not None:
+        _wmvs = [{"type": "winter_quarters", "lord": wq["lord"], "dest": d,
+                  "_desc": f"Winter Quarters: return {wq['lord']} to {sd.locale(d)['name']} (4.7.6)"}
+                 for d in wq["dests"]]
+        if wq.get("may_stay"):
+            _wmvs.append({"type": "winter_quarters", "lord": wq["lord"], "stay": True,
+                          "_desc": f"Winter Quarters: {wq['lord']} stays in the field (R15/S15)"})
+        return _wmvs
     lc = next((p for p in gs.meta.pending if p["type"] == "loyalty_check"), None)
     if lc is not None:
         _lmvs = []
