@@ -322,4 +322,13 @@ Nothing in 6.0 remains out of scope.
   Storm defender-side hints + R4 `play_sultans_horse`, R4 "Besieging" gate,
   1.4.1 Loyalty coin hints, 4.1.3 Lieutenant hints.
   Open questions logged: Q-002 (Marwanid Seats & Muster), Q-003 (Loot/Empress
-  shift direction), Q-004 (S3/S6/R24 in the side-aggregate Sally engine).
+  shift direction), Q-004 (S3/S6/R24 in the side-aggregate Sally engine),
+  Q-005 (Bounty co-located Cart pool vs per-Lord cap).
+- **5.0 Victory re-verified against the Rulebook**: 5.1 marker VP (Ruins/
+  Ravaged 1/2, Roman Conquered 1/marker, Constantinople SO+Conquered markers,
+  Mosul Loot), Strategic Objective claim timing (3.3.1 PERMANENT removal only
+  — `_disband_beyond`; 4.5.1/4.9.1 conquest/sack), both 5.2 instant wins
+  (checked at Campaign start and after every card; Aleppo Independence at the
+  first Winter step), 5.3 higher-VP-else-draw + Manzikert's special end
+  conditions. Winter boundary behavior pinned by the new Playbook oracles
+  (Unity at/above goal, deficit split, Aleppo Diplomacy 1-2/3+).
