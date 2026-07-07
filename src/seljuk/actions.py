@@ -338,6 +338,14 @@ def _muster_seats(gs: GameState, lord_id: str, side: str) -> list[str]:
     # not his printed (primary-side) Seat (1.4.2 / Map Reference).
     aligned = info.get(f"seat_when_{side}_aligned")
     candidates = [aligned] if aligned else list(info.get("seats", []))
+    if side == "seljuk":
+        # D-002-Marwanid (3.5.1.1, adjudicated 2026-07-06): an activated
+        # Marwanid Locale is "a Seat for Seljuk Lords" -- nothing prohibits
+        # Muster there, so it is allowed (Lords Reference lists Amid?/
+        # Mayyafariqin? on every Seljuk Lord's Seats line). Winter-Quarters
+        # return remains printed-Seats-only (the Playbook Winter example lists
+        # Alp's Quarters options exhaustively WITHOUT the active Amid).
+        candidates += [s for s in gs.meta.notes.get("marwanid_seats", []) if s not in candidates]
     free = [s for s in candidates if _seat_is_free(gs, side, s)]
     if free:
         return free
@@ -814,8 +822,14 @@ def enumerate_call_to_arms(gs: GameState) -> list[dict[str, Any]]:
     if side == "seljuk" and gs.holding_boxes.mosul_baghdad_loot > 0:
         for lid, l in gs.lords.items():
             if l.side == "seljuk" and l.cylinder == "calendar":
-                out.append({"type": "cta_loot", "lord": lid, "direction": "left",
-                            "_desc": "Spend 1 Loot to shift a Ready Seljuk Lord's cylinder 1 box (3.5.2)"})
+                if (l.cylinder_calendar_box or 0) > 0:
+                    out.append({"type": "cta_loot", "lord": lid, "direction": "left",
+                                "_desc": "Spend 1 Loot to shift a Ready Seljuk Lord's cylinder 1 box left (3.5.2)"})
+                # D-003 (adjudicated 2026-07-06): "shift" is directionless --
+                # a right shift (delaying Readiness) is equally legal.
+                if (l.cylinder_calendar_box or 0) < OFF_RIGHT:
+                    out.append({"type": "cta_loot", "lord": lid, "direction": "right",
+                                "_desc": "Spend 1 Loot to shift a Ready Seljuk Lord's cylinder 1 box right (3.5.2)"})
     if side == "seljuk" and capabilities.side_has(gs, "seljuk", "Marwanid Alliance"):
         active = set(gs.meta.notes.get("marwanid_seats", []))
         card_coins = gs.seljuk.capability_coins.get("S8", 0)
@@ -849,9 +863,14 @@ def enumerate_call_to_arms(gs: GameState) -> list[dict[str, Any]]:
         else:
             for lid, l in gs.lords.items():
                 if l.side == "roman" and l.cylinder == "calendar" and l.cylinder_calendar_box is not None:
-                    out.append({"type": "cta_empress", "mode": "use", "effect": "shift_cylinder",
-                                "lord": lid, "direction": "left",
-                                "_desc": f"Empress: shift {lid}'s cylinder 1 box (3.5.1.2)"})
+                    if l.cylinder_calendar_box > 0:
+                        out.append({"type": "cta_empress", "mode": "use", "effect": "shift_cylinder",
+                                    "lord": lid, "direction": "left",
+                                    "_desc": f"Empress: shift {lid}'s cylinder 1 box left (3.5.1.2)"})
+                    if l.cylinder_calendar_box < OFF_RIGHT:  # D-003: either direction is legal
+                        out.append({"type": "cta_empress", "mode": "use", "effect": "shift_cylinder",
+                                    "lord": lid, "direction": "right",
+                                    "_desc": f"Empress: shift {lid}'s cylinder 1 box right (3.5.1.2)"})
             rom = gs.lords.get("romanos_diogenes")
             if rom is not None and rom.service_box is not None:
                 for lid in ("manuel_komnenos", "andronikos_doukas", "joseph_tarchaneiotes", "nikephoros_bryennios"):

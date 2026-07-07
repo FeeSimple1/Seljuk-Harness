@@ -71,3 +71,69 @@ Format per entry:
   (vs-Horse scope = Missile+Melee in the owner-declared Round, Ruling 2, commit
   60450cf). Reference corrected in `reference/Seljuk Arts of War Reference.txt`.
   Tests: `tests/test_r3_steeled_resolve_and_s24.py`.
+
+
+## D-006 (from Q-002, 2026-07-05) — Marwanid Alliance Seats (3.5.1.1) allow MUSTER
+
+- **Question.** Do activated Amid/Mayyafariqin count as Seats for Muster
+  (3.4.1), or only for Supply Routes / Bounty?
+- **Decision.** "Unless we can make the case that muster is prohibited in this
+  circumstance, allow it. It would have been easy for the sources to say it was
+  not allowed if it weren't." (Eric, 2026-07-06.) Muster at an activated
+  Marwanid Seat is ALLOWED for any Seljuk Lord while the activation lasts.
+- **Citation.** 3.5.1.1 "a Seat for Seljuk Lords until the end of the next
+  Winter Phase" with only the Tax and Supply-Source carve-outs; Lords Reference
+  Seats lines ("Amid?, Mayyafariqin?" on every Seljuk Lord). Winter-Quarters
+  return remains printed-Seats-only: the Playbook Winter example lists Alp
+  Arslan's Quarters options exhaustively (Ani or the Mosul & Baghdad box)
+  while Amid is active — a positive case that Quarters is excluded, which the
+  no-prohibition principle above therefore does not override.
+- **Encoded in.** `actions._muster_seats` (+ the levy_lord per-Seat palette);
+  tests `test_decisions_d002m_d003.py::test_marwanid_seat_offered_and_used_for_muster_3511`
+  / `..._not_offered_when_inactive_3511`.
+
+
+## D-007 (from Q-003, 2026-07-05) — Loot / Empress cylinder shifts go EITHER direction
+
+- **Question.** Does "shift a Lord cylinder 1 Calendar box" (3.5.2 Loot,
+  3.5.1.2 Empress) permit shifting right (delaying Readiness)?
+- **Decision.** "Allow shifting right. If it doesn't just say shift left, when
+  it could, it must mean shift either direction." (Eric, 2026-07-06.)
+- **Citation.** 3.5.2 / 3.5.1.2 ("shift", directionless). No-op shifts are not
+  enumerated (left at box 0, right at the off-right position).
+- **Encoded in.** `actions.enumerate_call_to_arms` (left/right variants for
+  `cta_loot` and the Empress shift_cylinder effect; handlers already accepted
+  `direction`); tests `test_decisions_d002m_d003.py::test_cta_loot_shifts_right_352`
+  / `test_cta_empress_shifts_right_3512`.
+
+
+## D-008 (from Q-004, 2026-07-05) — Sally resolves on the per-Lord Battle machinery
+
+- **Question.** S3 Betrayal / S6 Command Confusion / R24 Cavalry Charge are
+  Battle holds and a Sally is a Battle (4.9.2), but their per-Lord ordering
+  effects had no exact home in the side-aggregate Sally resolver. Approximate,
+  leave them Sally-ineligible, or rework the Sally engine?
+- **Decision.** "Unfortunately, I think the invasive thing to do is the correct
+  thing to do." (Eric, 2026-07-06.) Rework the Sally onto resolve_battle's
+  per-Lord machinery so every Battle hold plays exactly.
+- **Citation.** 4.5.3/4.9.2 ("Attack Besiegers in a Battle"; Battle rules with
+  the 4.9.2 exceptions: Besiegers' Siegeworks as Walls vs Sallying strikes
+  only, no Walls/Garrison for the Sallying side, Raid on a failed Sally,
+  Siege ends if the Besiegers lose).
+- **Encoded in.** The Sally-rework commit (hash recorded there);
+  `battle.resolve_sally` via `resolve_battle`, full `_BATTLE_HOLDS` allow-set
+  in `h_cmd_sally`.
+
+
+## D-009 (from Q-005, 2026-07-05) — Bounty Cart allowance is PER-LORD (errata text governs)
+
+- **Question.** Errata Bounty: "1 VP per Loot ... up to the number of Carts he
+  and co-located Lords currently possess" — per-Lord cap, or a shared
+  per-Locale pool as the Playbook Winter example computes (2 returned, not 3)?
+- **Decision.** "The errata should trump." (Eric, 2026-07-06.) Per-Lord cap:
+  each qualifying Lord returns up to the GROUP's Carts. The Playbook example's
+  shared-pool arithmetic is superseded by the errata sentence.
+- **Citation.** Errata & Clarifications Jan-2026, 4.7.6 Bounty (authority rank
+  1); Playbook is examples-only (rank 4).
+- **Encoded in.** No code change — `campaign._bounty` already implements the
+  per-Lord cap. This entry pins it as adjudicated, not accidental.
