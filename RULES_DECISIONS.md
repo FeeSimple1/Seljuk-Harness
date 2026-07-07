@@ -120,9 +120,10 @@ Format per entry:
   the 4.9.2 exceptions: Besiegers' Siegeworks as Walls vs Sallying strikes
   only, no Walls/Garrison for the Sallying side, Raid on a failed Sally,
   Siege ends if the Besiegers lose).
-- **Encoded in.** The Sally-rework commit (hash recorded there);
-  `battle.resolve_sally` via `resolve_battle`, full `_BATTLE_HOLDS` allow-set
-  in `h_cmd_sally`.
+- **Encoded in.** Commit ce39ae6: `battle.resolve_sally` on `_strike_phase`
+  (new `sally_walls`) + `_end_battle` (new `withdraw_inside`); full
+  `_BATTLE_HOLDS` set in `h_cmd_sally`; tests `test_decisions_d008_sally.py`,
+  `test_sally_concede.py` (rebaselined).
 
 
 ## D-009 (from Q-005, 2026-07-05) — Bounty Cart allowance is PER-LORD (errata text governs)
