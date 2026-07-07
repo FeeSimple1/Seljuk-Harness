@@ -1,9 +1,10 @@
 """End-to-end oracle: the Playbook Example of Play (pp.14, 17).
 
-The full Playbook game text is NOT in the provided source materials, but the
-Errata & Clarifications (Jan 31 2026) preserve the example's exact printed
-combat numbers. This test drives those numbers through the REAL engine
-functions (`_lord_step_hits_caps`, `_roll_walls`, `_apply_hits`, `_lord_fate`,
+(2026-07-05 correction: the Playbook text DOES extract from
+source/Seljuk_Background_Book_web.pdf via pdftotext — see the fuller oracle
+suites test_oracle_playbook_battle.py / test_oracle_playbook_winter.py. This
+file pins the p14/p17 numbers as corrected by the Jan-2026 errata.)
+This test drives those numbers through the REAL engine functions (`_lord_step_hits_caps`, `_roll_walls`, `_apply_hits`, `_lord_fate`,
 `protection_range`) and asserts the engine reproduces them.
 
 Documented numbers:
