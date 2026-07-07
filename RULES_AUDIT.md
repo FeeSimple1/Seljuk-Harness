@@ -289,20 +289,15 @@ Nothing in 6.0 remains out of scope.
 
 ### Known remaining items (low impact / edge / documented simplifications)
 
-- S9 Imperial Rivalry: the *mandatory* Andronikos Muster attempt is not forced
-  (offered as optional).
-- Marwanid "only one Supply Source per Command card" when BOTH Seats are active
-  (the supply pathfinder already routes each Lord to one cheapest Seat per action).
-- Storm Garrison Missiles "select target" (armored-first is enforced; striker's
-  pick among armored units is not).
+(Pruned 2026-07-06: the earlier entries for S9 forced Muster, the Marwanid
+Supply-Source lock, Storm Garrison select-target, Avoid discard-to-Unladen
+with Spoils, the Flank-absorb choice point, the unit-pool Muster limit, and
+Optional Rules 6.1-6.4 were ALL since implemented — see the Pass-2
+corrections above — and `treachery_available` no longer exists. Remaining:)
+
 - Supply drawing >1 Provender/action via disjoint Cart-funded routes (4.4.2 edge).
-- Avoid: discard-to-Unladen + award discarded Assets to the attacker as Spoils
-  (current model rejects a Laden Avoid outright — stricter).
 - Feed Sharing uses greedy allocation (minimises but doesn't optimise Unfed).
-- Flanking "absorb / choose target Lord" optional choice (deterministic target).
-- Unit component pool is not a hard Muster limit; `treachery_available` field is
-  unused; mid-Winter VP display can include the Year end-control bonus one step
-  early. Optional rules 6.1-6.4 remain out of scope (BRIEF.md Phase 5).
+- Mid-Winter VP display can include the Year end-control bonus one step early.
 
 ## Second-look pass (2026-07-05, Fable re-review)
 
@@ -323,7 +318,8 @@ Nothing in 6.0 remains out of scope.
   1.4.1 Loyalty coin hints, 4.1.3 Lieutenant hints.
   Open questions logged: Q-002 (Marwanid Seats & Muster), Q-003 (Loot/Empress
   shift direction), Q-004 (S3/S6/R24 in the side-aggregate Sally engine),
-  Q-005 (Bounty co-located Cart pool vs per-Lord cap).
+  Q-005 (Bounty co-located Cart pool vs per-Lord cap). All four adjudicated
+  2026-07-06 -> RULES_DECISIONS.md D-006..D-009 (encoded d058cfb / ce39ae6).
 - **5.0 Victory re-verified against the Rulebook**: 5.1 marker VP (Ruins/
   Ravaged 1/2, Roman Conquered 1/marker, Constantinople SO+Conquered markers,
   Mosul Loot), Strategic Objective claim timing (3.3.1 PERMANENT removal only

@@ -128,3 +128,38 @@ def test_sally_losing_besiegers_retreat_with_service_shifts():
         assert rom.service_box == max(0, sb_before - sv["romanos_diogenes"]["shift"])
         assert rom.cylinder != loc                        # actually left the Locale
     assert gs.lords["alp_arslan"].besieged is True        # victors return inside
+
+
+# --- Relief Sally (4.8.1): losing Sallying Lords also Withdraw inside --------
+
+def test_relief_sally_losing_salliers_withdraw_inside_481():
+    # "If Attackers lose, Withdraw Sallying Lords back into the Stronghold
+    #  (4.8.3)" -- Withdraw fate: Assets kept, no Service shift, back inside.
+    gs = S.load_scenario("emperor_and_the_lion", seed=3)
+    loc = "melitene"
+    gs.locales[loc].siege_markers = 2
+    # Besieged Seljuk Lord inside; Roman besieger outside; Seljuk relief force
+    # approaches and stands -- the Besieged Lord joins the Attack (Relief Sally).
+    inside = gs.lords["artuk_beg"]
+    inside.mustered = True; inside.cylinder = loc; inside.besieged = True
+    inside.forces = {"turkic_horse": 2}
+    inside.assets.coin = 2; inside.assets.carts = 1; inside.assets.provender = 1
+    sb_before = inside.service_box
+    relief = gs.lords["alp_arslan"]
+    relief.mustered = True; relief.cylinder = loc; relief.besieged = False
+    relief.forces = {"turkic_horse": 3}
+    rom = gs.lords["romanos_diogenes"]
+    rom.mustered = True; rom.cylinder = loc; rom.besieged = False
+    rom.forces = {"tagmata": 4, "infantry": 2}
+    r = battle.begin_battle(gs, ["alp_arslan", "artuk_beg"], ["romanos_diogenes"], loc,
+                            scripted=[("concede", True)],       # relieving side concedes
+                            sallying={"artuk_beg"},
+                            siegeworks=gs.locales[loc].siege_markers,
+                            approach_origin="germanikeia")
+    assert r["loser"] == "attacker"
+    fates = {e["lord"]: e["fate"] for e in r["ending"]["retreat"]}
+    assert fates.get("artuk_beg") == "withdraw", fates   # Sallier: back inside, not Retreat
+    assert inside.besieged is True and inside.cylinder == loc
+    assert inside.assets.coin == 2                       # Withdraw keeps Assets
+    assert not any(e["lord"] == "artuk_beg" for e in r["ending"]["service"])
+    assert inside.service_box == sb_before               # no Service shift on Withdraw

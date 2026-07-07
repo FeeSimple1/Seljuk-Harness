@@ -354,8 +354,12 @@ def resolve_battle(gs: GameState, attacker_ids: list[str], defender_ids: list[st
     else:
         loser, winner = "defender", "attacker"  # shouldn't happen; safe default
 
+    # Relief Sally (4.8.1): "If Attackers lose, Withdraw Sallying Lords back
+    # into the Stronghold (4.8.3)" -- the Sallying subset takes the Withdraw
+    # fate (Assets kept, no Service shift), never a Retreat.
     ending = _end_battle(gs, attacker_ids, defender_ids, loser, conceder, locale, ctx, roller,
-                         approach_origin=approach_origin, sallying=sallying)
+                         approach_origin=approach_origin, sallying=sallying,
+                         withdraw_inside=sallying)
     gs.meta.vp = scenarios.score(gs)
     return {"ok": True, "action": "battle", "locale": locale, "winner": winner, "loser": loser,
             "conceder": conceder, "rounds": round_no, "strikes": rounds, "ending": ending,
