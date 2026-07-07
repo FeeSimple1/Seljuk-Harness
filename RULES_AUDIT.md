@@ -82,7 +82,7 @@ Legend: code = `module.function`; test = `test_file::test_name` (representative)
 | 4.4 / 4.4.1 | Supply (Route to un-Ruined Seat, Cart budget, blocked Locales) | `campaign._min_supply_cost`, `_blocks_supply`, `h_cmd_supply` | `test_phase3a_end_winter::test_supply_*_44*` |
 | 4.5.1 | Siege (advance Siege / roll Surrender / add Siegeworks; mark ALL Lords of both sides Moved/Fought) | `campaign.h_cmd_siege` | `test_phase3c_siege_storm`, `test_siege_marks_all_lords_both_sides_451` |
 | 4.5.2 | Storm command | `campaign.h_cmd_storm` → `battle.resolve_storm` | `test_phase3c_siege_storm` |
-| 4.5.3 | Sally command (Besieged Lord attacks Besiegers) | `campaign.h_cmd_sally` → `battle.resolve_sally` | `test_phase3c_siege_storm::test_sally_*_492` |
+| 4.5.3 | Sally command (Besieged Lord attacks Besiegers) | `campaign.h_cmd_sally` → `battle.resolve_sally` (per-Lord Battle machinery, D-008) | `test_phase3c_siege_storm::test_sally_*_492`, `test_decisions_d008_sally` |
 | 4.5.4 | Forage (auto at Friendly/Gardens; else roll; Besieged limits) | `campaign.h_cmd_forage` | `test_phase3a_commands`, `test_coverage_campaign_commands` |
 | 4.5.5 | Ravage (Enemy Locale; Roman 1 action; Seljuk 1–2; Themata defence) | `campaign.h_cmd_ravage`, `h_resolve_ravage_defence` | `test_phase3a_commands`, `test_coverage_campaign_commands` |
 | 4.5.6 | Tax (own Seat; Roman Commander Empire Tax → Ravaged marker) | `campaign.h_cmd_tax` | `test_phase3a_commands`, `test_coverage_campaign_commands` |
@@ -127,7 +127,7 @@ Legend: code = `module.function`; test = `test_file::test_name` (representative)
 | 4.9.1 | Walls (defender) & Siegeworks (attacker) roll separately | `battle._roll_walls`, `_hit_attacker`, `_hit_defender`, `_effective_walls` | `test_phase3c_siege_storm`, `test_oracle_playbook_example` |
 | 4.9.1 | Storm losses (Attacker Harsh; Armored-first); Lord removal | `battle._storm_losses`, `_loss_roll`, `_absorb_storm` | `test_phase3c_siege_storm` |
 | 4.9.1 | Sack: Conquer or Ruin; Spoils; Themata removed | `battle._sack`, `conquer`, `ruin`, `award_spoils` | `test_phase3c_siege_storm::test_storm_defender_routed_sacks_and_conquers_491` |
-| 4.9.2 | Sally / Relief Sally / Raid (besiegers lose → Siege ends; fail → Siege to 1) | `battle.resolve_sally`, `_end_sally_besiegers_lose`, `_absorb_simple` | `test_phase3c_siege_storm::test_sally_*_492`, `test_coverage_battle` |
+| 4.9.2 | Sally / Relief Sally / Raid (besiegers lose → Siege ends; fail → Siege to 1) | `battle.resolve_sally` on `_strike_phase`/`_end_battle` (D-008: one-Front Array, Size-capped advances, sally_walls, withdraw_inside) | `test_phase3c_siege_storm::test_sally_*_492`, `test_sally_concede`, `test_decisions_d008_sally` |
 
 ## 5.0 Victory
 

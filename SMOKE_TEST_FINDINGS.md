@@ -572,3 +572,25 @@ TWO Loot from Alp (3 Loot) + Arisighi (1 Loot) sharing two Carts; the
 harness's per-Lord cap (each Lord caps at the GROUP's Carts) would return
 three. VP-affecting; logged as Q-005 rather than changed silently, since the
 errata sentence reads per-Lord and the Playbook is examples-only.
+
+---
+
+## D-008 Sally rework (2026-07-06)
+
+Per the Q-004 adjudication ("the invasive thing to do is the correct thing"),
+`resolve_sally` was rebuilt on the per-Lord Battle machinery: the shared
+`_strike_phase` (so S3 Betrayal, S6 Command Confusion, R24 Cavalry Charge,
+R2/S2 Mountain Ambush, and R21/S21 all play EXACTLY as in a Battle, along
+with Steeled Resolve, Bardoukia, Javelins, and the 6.3/6.4 optional rules)
+plus `_end_battle` (Battle Losses 4.8.4, Spoils 4.8.3, Service shifts, and
+Removal 4.8.5). The 4.9.2 exceptions are explicit: one Front Lord per side at
+Array, `_storm_reposition` advances capped by Stronghold Size, a new
+`sally_walls` parameter rolls the Besiegers' Siegeworks Walls against every
+Sallying strike (Missile and Melee), and a new `withdraw_inside` parameter
+makes losing Sallying Attackers Withdraw back inside (Assets kept, no Service
+shift) while losing Besiegers Retreat normally and the Siege ends. RAID (all
+but one Siege marker) unchanged. The old side-aggregate helpers
+(`_side_step_caps`, `_sally_emit`, `_end_sally_besiegers_lose`) are deleted;
+`sally_walls` defaults to 0 so ordinary Battles are bit-identical (the full
+non-sally suite passed unmodified). h_cmd_sally consumes the full
+`_BATTLE_HOLDS` set and threads cc/charge; the menu hints the full set.

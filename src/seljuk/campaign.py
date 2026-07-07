@@ -1222,15 +1222,19 @@ def command_menu(gs: GameState) -> list[dict[str, Any]]:
         if (gs.meta.notes.get("gifts_coins", 0) > 0 and not lord.besieged
                 and gs.meta.notes.get("gifts_taken", {}).get(lord.side, 0) < 2):
             out.append({"type": "cmd_take_gift_coin", "lord": lid, "_desc": "Take 1 Coin from Gifts Exchanged (S13)"})
-        # Sally (4.5.3): a Besieged Lord may Attack the Besiegers.
+        # Sally (4.5.3): a Besieged Lord may Attack the Besiegers. D-008: all
+        # Battle holds play (R2/S2 only matter at a Pass-adjacent Locale).
         if lord.besieged:
-            _sset = {"R21", "S21"} | ({"R2", "S2"} if gmap.adjacent_to_pass(loc_id) else set())
+            from . import battle as _b
+            _sset = set(_b._BATTLE_HOLDS)
+            if not gmap.adjacent_to_pass(loc_id):
+                _sset -= {"R2", "S2"}
             _sh = {"attacker": sorted(set(gs.side_decks(lord.side).held_events) & _sset),
                    "defender": sorted(set(gs.side_decks(_enemy(lord.side)).held_events) & _sset)}
             _mvSa = {"type": "cmd_sally", "lord": lid, "_desc": "Sally against the Besiegers (4.5.3)"}
             if _sh["attacker"] or _sh["defender"]:
                 _mvSa["_battle_holds_available"] = _sh
-                _mvSa["_desc"] += " — either side may pass Sally-eligible Held Events via battle_events"
+                _mvSa["_desc"] += " — either side may pass in-Battle Held Events via battle_events"
             out.append(_mvSa)
         # Recruit (4.5.7): Roman Commander in a Thema with available Themata.
         # Offer one option per distinct marker kind: the player chooses WHICH
@@ -2513,20 +2517,18 @@ def h_cmd_sally(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> di
                 if l.mustered and l.cylinder == locale and l.side == lord.side and l.besieged]
     # Active sallying Lord first.
     sallying = [lord.id] + [s for s in sallying if s != lord.id]
-    # 4.9.2: a Sally is a Battle, so Hold Events playable "in Battle or Storm"
-    # apply. The side-aggregate Sally engine honors the Turkic-removal holds
-    # (R21/S21, immediate) and Mountain Ambush (R2/S2: Walls 1-3 vs Missiles,
-    # Round 1, at a Pass-adjacent Locale). R3 Steeled Resolve Round declarations
-    # are honored via steeled_rounds (as in begin_battle). Per-Lord ordering
-    # holds (S3/S6/R24) do not map onto the aggregate engine -- RULES_QUESTIONS.
+    # 4.9.2 / D-008: a Sally is a Battle on the per-Lord machinery -- EVERY
+    # Battle Hold Event applies (R2/S2/S3/S6/R24/R21/S21), as do R3 Steeled
+    # Resolve Round declarations via steeled_rounds (as in begin_battle).
     _inv = sallying + besiegers
     for _sl in _inv:
         if _sl in gs.lords:
             gs.lords[_sl].flags["steeled_resolve_round"] = int((action.get("steeled_rounds") or {}).get(_sl, 1))
     played, _cc, _chg = battle._consume_battle_events(
-        gs, action.get("battle_events"), locale=locale, allow={"R21", "S21", "R2", "S2"})
+        gs, action.get("battle_events"), locale=locale)
     ctx = battle.DecisionContext(action.get("battle_decisions"))
-    res = battle.resolve_sally(gs, sallying, besiegers, locale, ctx, roller, played=played)
+    res = battle.resolve_sally(gs, sallying, besiegers, locale, ctx, roller,
+                               played=played, cc=_cc, charge=_chg)
     for _sl in _inv:
         if _sl in gs.lords:
             gs.lords[_sl].flags.pop("steeled_resolve_round", None)

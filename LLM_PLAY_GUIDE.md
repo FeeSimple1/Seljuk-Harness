@@ -116,11 +116,11 @@ parameters (hinted by `_`-prefixed keys):
   `"battle_events": {"seljuk": [...], "roman": [...]}` naming Held Event cards
   EITHER side plays for that combat; the palette hints what is available via
   `_battle_holds_available` (respond_approach, cmd_sally) or
-  `_storm_events_available` (cmd_storm). Battle (Stand/Sortie) honors
-  R2/S2/S3/S6/R24/R21/S21 (S6/R24 entries are dicts naming the Roman Lord:
-  `{"card":"R24","lord":...}`); Storm honors R21/S21 plus, for the Roman
-  defender, `"play_sultans_horse": true` (R4: Rounds -1, hinted by
-  `_r4_sultans_horse_available`); Sally honors R21/S21 and R2/S2.
+  `_storm_events_available` (cmd_storm). Battle (Stand/Sortie) AND Sally
+  (D-008) honor the full set R2/S2/S3/S6/R24/R21/S21 (S6/R24 entries are
+  dicts naming the Roman Lord: `{"card":"R24","lord":...}`); Storm honors
+  R21/S21 plus, for the Roman defender, `"play_sultans_horse": true`
+  (R4: Rounds -1, hinted by `_r4_sultans_horse_available`).
 - **steeled_rounds** (R3 Steeled Resolve). Any combat-starting move accepts
   `"steeled_rounds": {LORD: N}` — the Round (default 1) in which that Lord's
   Capability applies.

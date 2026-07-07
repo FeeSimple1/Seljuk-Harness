@@ -536,10 +536,18 @@ def _front_set(side: _Side) -> set:
 def _strike_phase(gs: GameState, att: _Side, deff: _Side, pursuit: dict, round_no: int,
                   ctx: DecisionContext, roller: DiceRoller, log: list,
                   cc: set | None = None, charge: set | None = None,
-                  sallying: set | None = None, siegeworks: int = 0) -> None:
+                  sallying: set | None = None, siegeworks: int = 0,
+                  sally_walls: int = 0) -> None:
     cc = cc or set()
     charge = charge or set()
     sides = ((deff, att, "defender"), (att, deff, "attacker"))
+
+    def _w(role):
+        """4.9.2 SIEGEWORKS (pure Sally): the Besiegers roll Walls equal to the
+        Siege markers against ALL Sallying (attacker) strikes, Missile and
+        Melee. Zero in an ordinary Battle (relief-sally rows keep their own
+        Siegeworks handling in _secondary)."""
+        return sally_walls if role == "attacker" else 0
 
     # Optional Rules 6.3 / 6.4 (Battle only -- Storm uses _storm_strike).
     opt = gs.meta.options or {}
@@ -581,7 +589,7 @@ def _strike_phase(gs: GameState, att: _Side, deff: _Side, pursuit: dict, round_n
             ids = _front_set(striking) & charge
             if ids:
                 _resolve_step(gs, "horse_melee", striking, target_side, role, pursuit, round_no,
-                              ctx, roller, log, restrict=ids)
+                              ctx, roller, log, restrict=ids, step_walls=_w(role))
                 charged |= ids
     cc_eff = cc - charge  # Cavalry Charge takes precedence over Command Confusion
     msides = _missile_sides()
@@ -598,21 +606,21 @@ def _strike_phase(gs: GameState, att: _Side, deff: _Side, pursuit: dict, round_n
             pooled.append((by, ctb, striking, target_side, role))
         for by, ctb, striking, target_side, role in pooled:
             _apply_pools(gs, "missile", by, ctb, striking, target_side, role, pursuit,
-                         round_no, ctx, roller, log, "front", "front", 0)
+                         round_no, ctx, roller, log, "front", "front", _w(role))
         for striking, target_side, role in msides:
             _resolve_step(gs, "missile", striking, target_side, role, pursuit, round_no, ctx, roller, log,
-                          restrict=_front_set(striking) - cc_eff, cat="foot")
+                          restrict=_front_set(striking) - cc_eff, cat="foot", step_walls=_w(role))
             _secondary(striking, target_side, role, "missile")
     else:
         for striking, target_side, role in msides:
             _resolve_step(gs, "missile", striking, target_side, role, pursuit, round_no, ctx, roller, log,
-                          restrict=_front_set(striking) - cc_eff)
+                          restrict=_front_set(striking) - cc_eff, step_walls=_w(role))
             _secondary(striking, target_side, role, "missile")
     for striking, target_side, role in msides:
         ids = _front_set(striking) & cc_eff
         if ids:
             _resolve_step(gs, "missile", striking, target_side, role, pursuit, round_no, ctx, roller, log,
-                          restrict=ids)
+                          restrict=ids, step_walls=_w(role))
     # Melee (Horse then Foot, Defending then Attacking): non-CC Front Lords plus
     # the Relief-Sally rows first.
     for mstep in ("horse_melee", "foot_melee"):
@@ -625,13 +633,13 @@ def _strike_phase(gs: GameState, att: _Side, deff: _Side, pursuit: dict, round_n
                 pooled.append((by, ctb, striking, target_side, role))
             for by, ctb, striking, target_side, role in pooled:
                 _apply_pools(gs, "horse_melee", by, ctb, striking, target_side, role, pursuit,
-                             round_no, ctx, roller, log, "front", "front", 0)
+                             round_no, ctx, roller, log, "front", "front", _w(role))
             for striking, target_side, role in sides:
                 _secondary(striking, target_side, role, "horse_melee")
         else:
             for striking, target_side, role in sides:
                 _resolve_step(gs, mstep, striking, target_side, role, pursuit, round_no, ctx, roller, log,
-                              restrict=_front_set(striking) - cc_eff, skip_charge=charged)
+                              restrict=_front_set(striking) - cc_eff, skip_charge=charged, step_walls=_w(role))
                 _secondary(striking, target_side, role, mstep)
     # Then the CC Lords' Melee (strike second).
     for mstep in ("horse_melee", "foot_melee"):
@@ -639,7 +647,7 @@ def _strike_phase(gs: GameState, att: _Side, deff: _Side, pursuit: dict, round_n
             ids = _front_set(striking) & cc_eff
             if ids:
                 _resolve_step(gs, mstep, striking, target_side, role, pursuit, round_no, ctx, roller, log,
-                              restrict=ids, skip_charge=charged)
+                              restrict=ids, skip_charge=charged, step_walls=_w(role))
 
 
 def _compute_pools(gs, step, striking: _Side, target_side: _Side, round_no, ctx,
@@ -803,7 +811,8 @@ def _apply_hits(gs: GameState, target_id: str, hits: int, hit_type: str,
 def _end_battle(gs: GameState, att_ids: list[str], def_ids: list[str], loser: str,
                 conceder: Optional[str], locale: str, ctx: DecisionContext,
                 roller: DiceRoller, approach_origin: Optional[str] = None,
-                sallying: Optional[set] = None) -> dict[str, Any]:
+                sallying: Optional[set] = None,
+                withdraw_inside: Optional[set] = None) -> dict[str, Any]:
     losing_ids = att_ids if loser == "attacker" else def_ids
     loser_role = loser
     conceded = (conceder == loser)
@@ -811,8 +820,16 @@ def _end_battle(gs: GameState, att_ids: list[str], def_ids: list[str], loser: st
               "spoils_to": "defender" if loser == "attacker" else "attacker"}
 
     sallying = sallying or set()
+    withdraw_inside = withdraw_inside or set()
     for lid in losing_ids:
         lord = gs.lords[lid]
+        if lid in withdraw_inside:
+            # 4.9.2 END: losing Sallying Attackers "must Withdraw back into
+            # their Stronghold (not Retreat)" -- keep Assets, no Service shift.
+            lord.besieged = True
+            lord.cylinder = locale
+            events["retreat"].append({"lord": lid, "fate": "withdraw"})
+            continue
         # A Marching Attacker (not a Relief-Sally Lord) must Retreat to the
         # Locale it Approached from (4.8.3).
         marcher_origin = approach_origin if (loser_role == "attacker" and lid not in sallying) else None
@@ -1482,61 +1499,32 @@ def _loss_roll(gs: GameState, lord: LordState, harsh: bool, roller: DiceRoller):
 
 
 # === Sally (4.9.2) ==========================================================
-
-def _side_step_caps(gs, side: _Side, step: str, round_no: int) -> tuple[float, float]:
-    """(normal, anti-armor) Hits for a side's Front Lords in a Strike step,
-    applying Battle Capabilities (Javelins/Alakatia/Shock Tactics/Bardoukia)."""
-    n = a = 0.0
-    for lid in side.front_lords():
-        sn, sa, ssel = _lord_step_hits_caps(gs, lid, step, round_no)
-        n += sn + ssel
-        a += sa
-    return n, a
-
-
-def _sally_emit(gs, target_side: _Side, n_raw: float, a_raw: float, walls: int, hit_type: str,
-                step: str, round_no: int, halve: bool, roller, ctx, log) -> None:
-    """Apply a Sally strike step to the target side's Front Lord: Pursuit halving,
-    Siegeworks Walls (Sallying strikes only), then normal + anti-armor Hits."""
-    if halve:  # Conceding side halves its Hits this final Round (Pursuit, 4.8.3-.4)
-        n_raw /= 2.0
-        a_raw /= 2.0
-    n_hits = _round_up(n_raw)
-    a_hits = _round_up(a_raw)
-    front = target_side.front_lords()
-    if not front:
-        return
-    tid = front[0]
-    if hit_type == "missile" and round_no == 1 and target_side.mountain_ambush:
-        n_hits = _roll_walls(roller, n_hits, (1, 3))  # Mountain Ambush (R2/S2)
-        a_hits = _roll_walls(roller, a_hits, (1, 3))
-    if walls > 0:  # Siegeworks protect Besiegers against Sallying strikes (4.9.2)
-        n_hits = _roll_walls(roller, n_hits, (1, walls))
-        a_hits = _roll_walls(roller, a_hits, (1, walls))
-    # R3 Steeled Resolve applies in a Sally too (a Sally is a Battle, 4.9.2):
-    # Infantry Armor vs Horse strikes in the declared Round (Missile counts,
-    # as in resolve_battle's _emit).
-    _base_step = step.split("_", 1)[1] if "_" in step else step
-    _sr_round = int(gs.lords[tid].flags.get("steeled_resolve_round", 1)) if tid in gs.lords else 1
-    _vs_horse = (_base_step in ("horse_melee", "missile")) and round_no == _sr_round
-    applied = []
-    if n_hits:
-        applied += _apply_hits(gs, tid, n_hits, hit_type, ctx, roller, vs_horse=_vs_horse)
-    if a_hits:
-        applied += _apply_hits(gs, tid, a_hits, hit_type, ctx, roller, anti_armor=True, vs_horse=_vs_horse)
-    if n_hits or a_hits:
-        log.append({"round": round_no, "step": step, "target": tid,
-                    "hits": n_hits + a_hits, "routed": applied})
-
+# D-008 (from Q-004, adjudicated 2026-07-06): a Sally resolves on the per-Lord
+# BATTLE machinery (_strike_phase), so every Battle Hold Event -- R2/S2
+# Mountain Ambush, S3 Betrayal, S6 Command Confusion, R24 Cavalry Charge,
+# R21/S21 Turkic removal -- plays exactly as in a Battle. 4.9.2 exceptions:
+#   ARRAY/REPOSITION: one Front Lord per side to start (Attacker: the Active
+#     Lord); from Round 2 each side may advance one Reserve Lord to Front, up
+#     to the Stronghold's Size ("mimics that in Storm" -> _storm_reposition).
+#   SIEGEWORKS: Defenders (Besiegers) roll Walls equal to the Siege markers
+#     against ALL Sallying strikes, Missile and Melee ("as if Storming",
+#     _strike_phase sally_walls); the Sallying side gets no Walls or Garrison.
+#   END: losing Defenders Retreat normally (Losses/Spoils/Service, 4.8.3-.5)
+#     and the Siege ends; losing Attackers Withdraw back inside (not Retreat).
+#   RAID: if the Sallying Attackers lose, remove all but one Siege marker.
 
 def resolve_sally(gs: GameState, sallying_ids: list[str], besieger_ids: list[str], locale: str,
                   ctx: DecisionContext, roller: DiceRoller,
-                  played: Optional[dict] = None) -> dict[str, Any]:
-    """A Besieged Lord Attacks the Besiegers (4.9.2). Battle rules, but the
-    Besiegers (defenders here) get Siegeworks as Walls and the Sallying side
-    gets no Walls/Garrison. Storm-like Array/Reposition. Raid on a failed Sally."""
+                  played: Optional[dict] = None, cc: Optional[set] = None,
+                  charge: Optional[set] = None) -> dict[str, Any]:
+    """A Besieged Lord Attacks the Besiegers (4.9.2): Battle rules per Lord
+    (D-008), with the 4.9.2 Array / Siegeworks / END / RAID exceptions."""
+    played = played or {"seljuk": [], "roman": []}
+    cc = cc or set()
+    charge = charge or set()
     gs.meta.active_lord = sallying_ids[0]
     siege = gs.locales[locale].siege_markers
+    size = _eff_value(gs, locale)
     for _lid in sallying_ids + besieger_ids:
         gs.lords[_lid].flags["turkic_routed_battle"] = 0
     # 4.8.2 Pursuit exception snapshot: a single Conceding Lord whose Forces are
@@ -1546,101 +1534,92 @@ def resolve_sally(gs: GameState, sallying_ids: list[str], besieger_ids: list[str
     _solo = len(sallying_ids) == 1 and len(besieger_ids) == 1
     att = _Side(gs, list(sallying_ids), "attacker")   # Sallying side attacks
     deff = _Side(gs, list(besieger_ids), "defender")  # Besiegers defend
-    # Mountain Ambush (R2/S2) in a Sally: 4.9.2 follows Battle rules, so the
-    # played side's Lords get Walls 1-3 against Missiles in Round 1 when the
-    # Locale is adjacent to a Pass (card text; mirrors resolve_battle).
+    # 4.9.2 ARRAY: each side begins with ONE Lord in Front (Attacker: the
+    # Active Lord, list head); every other Lord starts in Reserve.
+    att.front["center"] = att.reserve.pop(0)
+    deff.front["center"] = deff.reserve.pop(0)
+    # Mountain Ambush (R2/S2): Round-1 Walls 1-3 vs Missiles for the playing
+    # side, if the Locale is adjacent to a Pass (Battle rules apply).
     for _so, _ids in ((att, sallying_ids), (deff, besieger_ids)):
+        _so.locale = locale
         _sn = gs.lords[_ids[0]].side
         _amb = "R2" if _sn == "roman" else "S2"
-        if played and _amb in played.get(_sn, []) and gmap.adjacent_to_pass(locale):
+        if _amb in played.get(_sn, []) and gmap.adjacent_to_pass(locale):
             _so.mountain_ambush = True
-    if att.reserve:
-        att.front["center"] = att.reserve.pop(0)
-    if deff.reserve:
-        deff.front["center"] = deff.reserve.pop(0)
-    size = _eff_value(gs, locale)
-    log = []
+    betrayal_pending = "S3" in played.get("seljuk", [])
+    if betrayal_pending and "S3" not in gs.meta.asterisks_used:
+        gs.meta.asterisks_used.append("S3")
+
+    log: list = []
     pursuit = {"attacker": False, "defender": False}
     conceder = None
     round_no = 0
     while round_no < 30:
         round_no += 1
-        # Concede? 4.9.2 follows Battle rules (4.8.3): Attacker (Sallying) then
-        # Defender (Besiegers) may declare; the Conceding side halves its Hits
-        # this final Round (Pursuit, 4.8.3-.4) and ends the Sally as the loser --
-        # it does NOT skip the final exchange the way a Storm Concede does (4.9.1).
         if round_no > 1:
-            for role, side, ids in (("attacker", att, sallying_ids), ("defender", deff, besieger_ids)):
-                if conceder is None and _offer_concede(gs, side, ctx, role):
+            # Concede (4.8.3 via 4.9.2): Attacker then Defender, from Round 2;
+            # the Conceding side halves its Hits in this final Round.
+            for role, side_obj, ids in (("attacker", att, sallying_ids),
+                                        ("defender", deff, besieger_ids)):
+                if conceder is None and _offer_concede(gs, side_obj, ctx, role):
                     conceder = role
                     pursuit[role] = True
                     if _solo and _turkic_only_start.get(ids[0]):  # 4.8.2 -> both halve
                         pursuit["attacker"] = True
                         pursuit["defender"] = True
+            # 4.9.2 REPOSITION "mimics that in Storm": each side may advance one
+            # Reserve Lord to Front, up to the Stronghold's Size.
             _storm_reposition(gs, att, deff, size, ctx)
-        # Sally follows BATTLE rules (4.9.2): Defender then Attacker within each
-        # step, and Missile -> Horse Melee -> Foot Melee (NOT the Storm "all
-        # Defending melee then all Attacking melee" order). Capabilities apply
-        # (Sally is a Battle). Besiegers (Defenders) get Siegeworks (Walls = Siege
-        # count) against the Sallying Attackers' strikes only; the Sallying side
-        # gets no Walls. No 6-Hit Melee cap (Storm-only).
-        for step, hit_type in (("missile", "missile"), ("horse_melee", "melee"), ("foot_melee", "melee")):
-            dn, da = _side_step_caps(gs, deff, step, round_no)          # Defenders (Besiegers) strike
-            _sally_emit(gs, att, dn, da, 0, hit_type, f"def_{step}", round_no, pursuit["defender"], roller, ctx, log)
-            an, aa = _side_step_caps(gs, att, step, round_no)           # Attackers (Sallying) strike
-            _sally_emit(gs, deff, an, aa, siege, hit_type, f"att_{step}", round_no, pursuit["attacker"], roller, ctx, log)
-        if conceder is not None:
-            break  # Sally ends after this (halved) final Round
-        if _all_routed(gs, deff) or _all_routed(gs, att):
+            if betrayal_pending:  # S3 Betrayal: a non-Commander Roman Front Lord to Reserve
+                for _sd_obj in (att, deff):
+                    for _slot in SLOTS:
+                        _blid = _sd_obj.front[_slot]
+                        if _blid and gs.lords[_blid].side == "roman" and not sd.lord(_blid).get("commander"):
+                            _sd_obj.front[_slot] = None
+                            _sd_obj.reserve.append(_blid)
+                            betrayal_pending = False
+                            break
+                    if not betrayal_pending:
+                        break
+        _strike_phase(gs, att, deff, pursuit, round_no, ctx, roller, log,
+                      cc=cc, charge=charge, sally_walls=siege)
+        att_alive = any(not _is_routed(gs.lords[l]) for l in att.all_lords())
+        def_alive = any(not _is_routed(gs.lords[l]) for l in deff.all_lords())
+        if conceder is not None or not att_alive or not def_alive:
             break
-        _purge_routed(att); _purge_routed(deff)
+        _purge_routed(att)
+        _purge_routed(deff)
 
-    # Besiegers lose (Sally succeeds) if they Concede, or are all Routed while the
-    # Sallying side did not Concede.
-    besiegers_lose = (conceder == "defender") or (_all_routed(gs, deff) and conceder != "attacker")
-    if besiegers_lose:
-        # Losing Besiegers Retreat; the Siege ends.
-        winner = "sally"
-        _end_sally_besiegers_lose(gs, besieger_ids, locale, ctx, roller)
-        gs.locales[locale].siege_markers = 0
-        gs.locales[locale].bypass = False
-        for lid in sallying_ids:  # Sallying Lords stay (Withdraw back inside)
-            gs.lords[lid].besieged = True
+    att_alive = any(not _is_routed(gs.lords[l]) for l in att.all_lords())
+    def_alive = any(not _is_routed(gs.lords[l]) for l in deff.all_lords())
+    if conceder == "attacker" or not att_alive:
+        loser = "attacker"
+    elif conceder == "defender" or not def_alive:
+        loser = "defender"
     else:
-        # Sally fails: Sallying Lords Withdraw back inside; Raid removes all but
-        # one Siege marker (4.9.2).
-        winner = "besiegers"
-        for lid in sallying_ids:
-            gs.lords[lid].besieged = True
-        gs.locales[locale].siege_markers = 1  # Raid: remove all but one Siege marker (4.9.2)
-    # Losses for both sides. Harsh for losing Besiegers who Retreat without having
-    # Conceded (4.8.4 via 4.9.2); Sallying Lords Withdraw, so never Harsh.
-    for lid in sallying_ids + besieger_ids:
-        if lid in gs.lords:
-            harsh = (lid in besieger_ids and winner == "sally" and conceder != "defender")
-            _loss_roll(gs, gs.lords[lid], harsh=harsh, roller=roller)
-    for lid in sallying_ids + besieger_ids:
-        if lid in gs.lords and gs.lords[lid].mustered and _is_routed(gs.lords[lid]):
-            from . import actions
-            actions._disband_beyond(gs, gs.lords[lid])
-    for lid in sallying_ids + besieger_ids:
-        if lid in gs.lords and gs.lords[lid].mustered:
-            gs.lords[lid].moved_fought = True
+        loser = "attacker"  # safe default: the Siege goes on
+    besiegers_lose = (loser == "defender")
+    winner = "sally" if besiegers_lose else "besiegers"
+
+    # END (4.9.2): Battle Losses / Spoils / Service via _end_battle. Losing
+    # Attackers Withdraw back inside (withdraw_inside); losing Defenders
+    # Retreat normally (Service shifts; Harsh Losses if they Retreat without
+    # having Conceded, 4.8.4).
+    ending = _end_battle(gs, sallying_ids, besieger_ids, loser, conceder, locale,
+                         ctx, roller, sallying=set(sallying_ids),
+                         withdraw_inside=(set(sallying_ids) if loser == "attacker" else None))
+    if besiegers_lose:
+        gs.locales[locale].siege_markers = 0     # the Siege ends
+        gs.locales[locale].bypass = False
+        for lid in sallying_ids:                 # victors Withdraw back inside
+            if lid in gs.lords and gs.lords[lid].mustered:
+                gs.lords[lid].besieged = True
+                gs.lords[lid].cylinder = locale
+    else:
+        # RAID: remove all but one Siege marker; the Siege goes on.
+        if gs.locales[locale].siege_markers > 1:
+            gs.locales[locale].siege_markers = 1
     gs.meta.vp = scenarios.score(gs)
     return {"ok": True, "action": "sally", "locale": locale, "winner": winner,
-            "conceder": conceder, "rounds": round_no, "strikes": log, "decisions": ctx.trace}
-
-
-def _end_sally_besiegers_lose(gs: GameState, besieger_ids, locale, ctx, roller) -> None:
-    from . import map as gmap
-    for lid in besieger_ids:
-        lord = gs.lords[lid]
-        if _is_routed(lord):
-            continue
-        # Losing Besiegers Retreat normally (4.8.3): adjacent Locale free of enemy
-        # Lords and of unbesieged/unbypassed enemy Strongholds.
-        opts = [e["to"] for e in gmap.ways_from(locale)
-                if not _retreat_blocked(gs, e["to"], lord.side)]
-        if opts:
-            lord.cylinder = ctx.decide("retreat", opts, {"lord": lid})
-
+            "conceder": conceder, "rounds": round_no, "strikes": log,
+            "ending": ending, "decisions": ctx.trace}
