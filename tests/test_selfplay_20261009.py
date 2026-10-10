@@ -1,7 +1,9 @@
 """Regressions from a 132-action, deliberately chosen two-sided Manzikert game.
 
-The recorded game avoids the SP-01 exploit. Its exact state hashes are from
-unmodified main (3be117b); the fixes must not change this legal play sequence.
+The recorded game avoids the SP-01 exploit. All 132 actions are unchanged.
+Ten state hashes were rebaselined by the longest-scenario fixes: relief clears
+immediately, and the returned S17 card changes the later Autumn draw. Exact
+state and save/load assertions still cover every action.
 """
 from __future__ import annotations
 

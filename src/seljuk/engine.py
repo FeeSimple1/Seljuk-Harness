@@ -130,6 +130,12 @@ def apply_action(gs: GameState, action: dict[str, Any]) -> dict[str, Any]:
             break
     if any(p["type"] == "retain_themata" for p in gs.meta.pending) and atype != "retain_themata":
         raise IllegalAction("pending_decision", "resolve Themata retention before continuing (4.7.5)")
+    # Investment is a mandatory Approach/Battle aftermath decision, not a
+    # Command action that can be skipped by ending a spent card (4.3.5/4.8.6).
+    for pending_type, required in (("besiege_or_bypass", "besiege_bypass"),
+                                   ("assign_themata_defenders", "assign_themata_defenders")):
+        if any(p["type"] == pending_type for p in gs.meta.pending) and atype != required:
+            raise IllegalAction("pending_decision", f"resolve {pending_type} before continuing (4.3.5)")
     from .rng import action_roller
     with action_roller(gs) as roller:
         result = table[atype](gs, action, roller)

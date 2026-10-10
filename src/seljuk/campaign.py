@@ -47,6 +47,16 @@ def plan_size(gs: GameState, side: str | None = None) -> int:
     return base
 
 
+def no_command_required(gs: GameState, side: str) -> bool:
+    """A mandatory No Command from Treachery or Unpredictable Weather (4.1).
+
+    Shared by the Plan hint and validator, so clients cannot miss an obligation
+    that the direct action handler enforces.
+    """
+    return any(gs.meta.notes.get(key) == side for key in
+               ("treachery_no_command_side", "weather_no_command_side"))
+
+
 # --- predicates shared with actions.py via import there ---------------------
 
 def on_map(lord: LordState) -> bool:
@@ -104,7 +114,10 @@ def build_plan(gs: GameState, side: str, cards: list[str], lieutenants: list[dic
     nc_cap = 5 + (1 if gs.meta.notes.get("treachery_no_command_side") == side else 0)
     if gs.meta.notes.get("treachery_side") == side and counts.get("treachery", 0) != 1:
         raise IllegalAction("treachery_required", f"{side} must include exactly one Treachery card (1.4)")
-    if gs.meta.notes.get("weather_no_command_side") == side and counts.get("no_command", 0) < 1:
+    if no_command_required(gs, side) and counts.get("no_command", 0) < 1:
+        if gs.meta.notes.get("treachery_no_command_side") == side:
+            raise IllegalAction("treachery_no_command",
+                                f"{side} must include 1 No Command added by Treachery (1.4, 4.1)")
         raise IllegalAction("weather_no_command", f"{side} must include 1 No Command this turn (Unpredictable Weather)")
     for c, n in counts.items():
         if c == "treachery":
@@ -749,7 +762,15 @@ def _reset(gs: GameState, retained: dict | None = None) -> None:
         l.lieutenant_of = None
         l.lower_lord = None
     for side in SIDES:
-        gs.side_decks(side).this_campaign_events = []
+        decks = gs.side_decks(side)
+        # 3.1.3 / 4.7.5: discard the physical cards back to their deck, not
+        # out of the game. Their Event effects end below, but either card
+        # half must be available again in subsequent Levies.
+        # An Event that puts its own card into play as a Capability (S13)
+        # is already accounted for there; discard that physical card once.
+        decks.draw_deck.extend(c for c in decks.this_campaign_events
+                               if c not in decks.capabilities_in_play)
+        decks.this_campaign_events.clear()
     gs.meta.notes.pop("moustache_campaign", None)
     gs.meta.notes.pop("peace_offering_season", None)
     gs.meta.notes.pop("gifts_coins", None)
@@ -992,17 +1013,6 @@ def h_end_activation(gs: GameState, action: dict[str, Any], roller: DiceRoller) 
 def legal_moves_campaign(gs: GameState) -> list[dict[str, Any]]:
     if any(p["type"] == "retain_themata" for p in gs.meta.pending):
         return _retention_moves(gs)
-    if gs.meta.subphase == "winter.activation":
-        if gs.meta.active_lord is not None:
-            return command_menu(gs) + [{"type": "end_activation", "_desc": "End the Winter activation"}]
-        side = gs.meta.active_player
-        card = "R9" if side == "roman" else "S18"
-        out = [{"type": "winter_proceed", "_desc": "Decline the Winter activation (R9/S18)"}]
-        if card in gs.side_decks(side).held_events:
-            out = [{"type": "winter_activate", "lord": lid,
-                    "_desc": f"Winter Campaign/March: activate {lid} (R9/S18)"}
-                   for lid, l in gs.lords.items() if l.mustered and l.side == side] + out
-        return out
     kl = next((p for p in gs.meta.pending if p["type"] == "kleisourai"), None)
     if kl is not None:
         return [{"type": "play_kleisourai",
@@ -1080,6 +1090,17 @@ def legal_moves_campaign(gs: GameState) -> list[dict[str, Any]]:
             moves.append({"type": "resolve_ravage_defence", "defend_with": opt["index"],
                           "_desc": f"Defend with {opt['unit']} Themata (4.5.5)"})
         return moves
+    if gs.meta.subphase == "winter.activation":
+        if gs.meta.active_lord is not None:
+            return command_menu(gs) + [{"type": "end_activation", "_desc": "End the Winter activation"}]
+        side = gs.meta.active_player
+        card = "R9" if side == "roman" else "S18"
+        out = [{"type": "winter_proceed", "_desc": "Decline the Winter activation (R9/S18)"}]
+        if card in gs.side_decks(side).held_events:
+            out = [{"type": "winter_activate", "lord": lid,
+                    "_desc": f"Winter Campaign/March: activate {lid} (R9/S18)"}
+                   for lid, l in gs.lords.items() if l.mustered and l.side == side] + out
+        return out
     step = gs.meta.subphase
     if step == "campaign.plan":
         side = gs.meta.active_player
@@ -1093,9 +1114,10 @@ def legal_moves_campaign(gs: GameState) -> list[dict[str, Any]]:
                  "_available_lords": avail, "_no_command": "no_command",
                  "_lieutenant_options": _lieutenant_options(gs, side),
                  "_treachery_required": treachery_required, "_treachery": "treachery",
-                 "_no_command_required": gs.meta.notes.get("weather_no_command_side") == side,
+                 "_no_command_required": no_command_required(gs, side),
                  "_desc": f"Build the {side} Campaign Plan: {need} ordered cards (4.1)"
-                          + (" incl. one Treachery card" if treachery_required else "")}]
+                          + (" incl. one Treachery card" if treachery_required else "")
+                          + ("; must include one No Command" if no_command_required(gs, side) else "")}]
     if step == "campaign.fpd_pay":
         moves = actions.enumerate_pay(gs)  # 4.6.2: Pay as per Levy (3.2)
         moves.append({"type": "fpd_done", "_desc": "Finish Pay for this side, then Disband (4.6.2)"})
@@ -2082,10 +2104,10 @@ def _refresh_invest(gs: GameState, locale: str) -> None:
     and _resolve_arrival keeps suppressing the Approach (4.3.4) of a later
     un-bypassed enemy Lord (and blocks re-Besiege)."""
     st = gs.locales[locale]
-    if st.siege_markers == 0 and not st.bypass:
+    if not _is_stronghold(gs, locale):
         return
-    if not sd.locale(locale).get("is_stronghold"):
-        return
+    # Also handle inside flags left by a Battle that eliminated every attacker
+    # before a first Siege marker could be placed (4.8.6).
     alleg = actions.current_allegiance(gs, locale)
     # "Enemy Lords" = Lords of the side opposing the Stronghold (its besiegers /
     # bypassers), which are always outside; a withdrawn defender is same-side.
@@ -2097,12 +2119,14 @@ def _refresh_invest(gs: GameState, locale: str) -> None:
     # free (SMOKE-007 / Inferno advisory #2 Door B: a stale `besieged` flag would
     # otherwise persist and corrupt Sally/March/Feed legality forever).
     for l in gs.lords.values():
-        if l.mustered and l.cylinder == locale and l.besieged:
+        if l.mustered and l.cylinder == locale:
             l.besieged = False
+            l.bypassed = False
     for marker in st.themata_defending:
         home = marker.home_thema
         if home and home in gs.themata:
             marker.home_thema = None
+            marker.reset_units()
             gs.themata[home].append(marker)
     st.themata_defending = []
 
@@ -2209,6 +2233,9 @@ def h_respond_approach(gs: GameState, action: dict[str, Any], roller: DiceRoller
         else:
             standers.append(did)
     gs.meta.pending.remove(pend)
+    # 4.3.5: relief is immediate when the last besieger Avoids. Waiting until
+    # end-of-card Disband exposes stale Siege/Storm actions and trapped Lords.
+    _refresh_invest(gs, to)
     if standers:
         from . import battle
         attackers = list(pend["attackers"])
@@ -2238,11 +2265,20 @@ def h_respond_approach(gs: GameState, action: dict[str, Any], roller: DiceRoller
                     gs.lords[lid].cylinder = to
             if res.get("winner") == "defender" and gs.locales[to].siege_markers > 0:
                 gs.locales[to].siege_markers = 1       # reduce Siege markers to one (4.8.1)
-        # A Battle ends the active Lord's card (4.8.6): skip remaining actions.
-        if gs.meta.phase == "campaign":
-            gs.meta.actions_remaining = 0
+        # 4.8.6 / 4.3.5: settle an ended/new investment BEFORE recovery and
+        # feeding. A victorious outside force may still owe Besiege/Bypass
+        # after the defenders Retreat or Withdraw; Battle does not waive it.
+        _refresh_invest(gs, to)
+        gs.meta.actions_remaining = 0
+        if gs.meta.phase == "campaign" and _campaign_5_2_over(gs):
+            return {"ok": True, "action": "respond_approach", "battle": res}
+        outside = [l for l in gs.lords.values()
+                   if on_map(l) and l.cylinder == to and not l.besieged]
+        arrival = _resolve_arrival(gs, outside, to) if outside else {}
+        # Battle has ended the card, even when the winner chooses Bypass.
+        if not arrival.get("pending"):
             _after_card(gs)
-        return {"ok": True, "action": "respond_approach", "battle": res}
+        return {"ok": True, "action": "respond_approach", "battle": res, **arrival}
     # No defenders left to fight -> the attacker may now Besiege/Bypass if a
     # Stronghold remains, else the card continues.
     arrival = _resolve_arrival(gs, [gs.lords[a] for a in pend["attackers"]], to)
@@ -2281,6 +2317,8 @@ def h_besiege_bypass(gs: GameState, action: dict[str, Any], roller: DiceRoller) 
     to = pend["locale"]
     side = gs.lords[pend["lords"][0]].side
     choice = action.get("choice")
+    if choice not in ("besiege", "bypass"):
+        raise IllegalAction("bad_choice", "choose 'besiege' or 'bypass' (4.3.5)")
     gs.meta.pending.remove(pend)
     if choice == "besiege":
         lords_here = [l for l in gs.lords.values() if l.mustered and l.cylinder == to]
@@ -2412,7 +2450,12 @@ def _peace_can_pay(gs: GameState, lord: LordState) -> bool:
 
 
 def _besieging(gs: GameState, lord: LordState) -> bool:
-    return on_map(lord) and not lord.besieged and gs.locales[lord.cylinder].siege_markers > 0
+    # A stale marker cannot authorize attacking a friendly garrison (4.3.5).
+    # Use current allegiance, including Conquered and R1 Fort markers.
+    return (on_map(lord) and not lord.besieged
+            and _is_stronghold(gs, lord.cylinder)
+            and actions.current_allegiance(gs, lord.cylinder) == _enemy(lord.side)
+            and gs.locales[lord.cylinder].siege_markers > 0)
 
 
 def _besieged_enemy_inside(gs: GameState, locale: str, side: str) -> bool:
