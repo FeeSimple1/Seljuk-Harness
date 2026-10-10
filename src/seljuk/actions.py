@@ -882,12 +882,13 @@ def enumerate_call_to_arms(gs: GameState) -> list[dict[str, Any]]:
         # any number of card Coins).
         avail = [loc for loc in ("amid", "mayyafariqin") if loc not in active and not gs.locales[loc].ruins]
         if card_coins >= 1 and avail:
-            out.append({"type": "cta_marwanid", "locales": avail[:card_coins],
-                        "_desc": f"Spend Card Coin to activate {avail[:card_coins]} as Seljuk Seats (3.5.1.1)"})
-            if card_coins >= 1:
-                for loc in avail:  # also offer activating just one
-                    out.append({"type": "cta_marwanid", "locales": [loc],
-                                "_desc": f"Spend 1 Card Coin to activate {loc} as a Seljuk Seat (3.5.1.1)"})
+            together = avail[:card_coins]
+            if len(together) > 1:  # otherwise duplicates one of the single-Seat choices
+                out.append({"type": "cta_marwanid", "locales": together,
+                            "_desc": f"Spend Card Coin to activate {together} as Seljuk Seats (3.5.1.1)"})
+            for loc in avail:
+                out.append({"type": "cta_marwanid", "locales": [loc],
+                            "_desc": f"Spend 1 Card Coin to activate {loc} as a Seljuk Seat (3.5.1.1)"})
     if side == "seljuk":
         for lid, l in gs.lords.items():
             if (l.side == "seljuk" and l.mustered and l.cylinder in ("ikonion", "western_anatolia")

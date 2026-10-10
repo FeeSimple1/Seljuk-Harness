@@ -59,8 +59,13 @@ def test_summer_heat_sets_command_one_r3():
     gs = S.load_scenario("emperor_and_the_lion")
     gs.meta.calendar_box = 2  # Summer
     gs.meta.phase = "campaign"; gs.meta.subphase = "campaign.command"
-    gs.meta.active_lord = "alp_arslan"; gs.meta.active_card = "alp_arslan"; gs.meta.actions_remaining = 4
     gs.roman.held_events = ["R3"]
+    # Open the real enemy-reveal response window rather than bypass its timing.
+    from seljuk import campaign
+    gs.meta.active_player = "seljuk"
+    gs.seljuk.command_plan = ["alp_arslan"]
+    gs.seljuk.plan_pointer = 0
+    campaign._reveal_next(gs)
     engine.apply_action(gs, {"type": "play_hold_event", "card": "R3", "args": {}})
     assert gs.meta.actions_remaining == 1
 

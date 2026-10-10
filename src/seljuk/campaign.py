@@ -548,6 +548,7 @@ def _winter_end_activation(gs: GameState) -> None:
     gs.meta.active_lord = None
     gs.meta.active_card = None
     gs.meta.actions_remaining = 0
+    gs.meta.notes.pop("card_full_actions", None)
     holders = gs.meta.notes.get("winter_holders", [])
     if holders:
         gs.meta.active_player = holders[0]   # next Holder may activate or proceed
@@ -572,6 +573,7 @@ def h_winter_activate(gs: GameState, action: dict[str, Any], roller: DiceRoller)
     gs.meta.active_lord = lord.id
     gs.meta.active_card = lord.id
     gs.meta.actions_remaining = capabilities.command_rating(gs, lord.id, roller)
+    gs.meta.notes["card_full_actions"] = gs.meta.actions_remaining
     lord.flags.pop("first_march_used", None)
     return {"ok": True, "action": "winter_activate", "lord": lord.id, "actions": gs.meta.actions_remaining}
 
@@ -1148,7 +1150,9 @@ def command_menu(gs: GameState) -> list[dict[str, Any]]:
                 if way is None:
                     continue
                 cost = march_cost(gs, mgroup, way, first_march, consider_discard=over)
-                if cost != "whole_card":  # whole-card Ways always use the rest of the card
+                if cost == "whole_card" and not _full_card_available(gs):
+                    continue
+                if cost != "whole_card":
                     if (way["type"] == "pass" and len(mgroup) == 1 and not lord.lower_lord
                             and not lord.lieutenant_of and capabilities.lord_has(gs, lord.id, "Mules")
                             and not lord.flags.get("mules_used_this_card")):
@@ -1216,7 +1220,7 @@ def command_menu(gs: GameState) -> list[dict[str, Any]]:
                           and st.ravaged_side is None)
             nomisma_blocks = (lord.side == "roman" and not actions.is_commander(gs, lid)
                               and gs.meta.notes.get("nomisma_debased_used"))
-            if (at_seat or empire_tax) and not nomisma_blocks:
+            if (at_seat or empire_tax) and not nomisma_blocks and _full_card_available(gs):
                 out.append({"type": "cmd_tax", "lord": lid, "_desc": "Tax for a Coin — uses the whole card (4.5.6)"})
         # Ravage (4.5.5): Enemy, not yet Ravaged, not Besieged.
         if not lord.besieged and st.ravaged_side is None and actions.current_allegiance(gs, loc_id) == _enemy(lord.side):
@@ -1263,28 +1267,29 @@ def command_menu(gs: GameState) -> list[dict[str, Any]]:
                         for o in gs.lords.values())):  # 4.3.6 SORTIE
             out.append({"type": "cmd_sortie", "lord": lid, "_desc": "Sortie: Approach the Bypassing Enemy (4.3.6)"})
         if _besieging(gs, lord) and _peace_can_pay(gs, lord):
-            out.append({"type": "cmd_siege", "lord": lid, "_desc": "Siege: roll Surrender / add Siegeworks (4.5.1)"})
-            # 4.5.1: the Besieger may DECLINE to roll for Surrender and only add a
-            # Siegeworks ("...including because the Besieger declined to roll..."),
-            # a distinct outcome only when the default Siege would otherwise roll
-            # (no Besieged enemy inside) and a Siegeworks would actually be added
-            # (enough Besiegers, room for another marker). Offer it then.
-            from . import battle as _b
-            if (not _besieged_enemy_inside(gs, loc_id, lord.side)
-                    and len(_besieging_lords_at(gs, loc_id, lord.side)) >= _b._value(loc_id)
-                    and st.siege_markers < 4):
-                out.append({"type": "cmd_siege", "lord": lid, "roll_surrender": False,
-                            "_desc": "Siege, decline to roll: add a Siegeworks marker without "
-                                     "rolling Surrender (4.5.1)"})
-            # R25 Honors of War (Roman HOLD): during a Siege of a Fort with no
-            # Besieged enemy inside, the Fort auto-Surrenders instead of rolling
-            # (no Spoils). The active Lord still takes the Siege action, so it is a
-            # variant of cmd_siege — offer it when the card is held and eligible.
-            if (lord.side == "roman" and "R25" in gs.roman.held_events
-                    and sd.locale(loc_id)["type"] == "fort"
-                    and not _besieged_enemy_inside(gs, loc_id, lord.side)):
-                out.append({"type": "cmd_siege", "lord": lid, "honors_of_war": True,
-                            "_desc": "Siege with Honors of War (R25): Fort auto-Surrenders, no Spoils (4.5.1)"})
+            if _full_card_available(gs):
+                out.append({"type": "cmd_siege", "lord": lid, "_desc": "Siege: roll Surrender / add Siegeworks (4.5.1)"})
+                # 4.5.1: the Besieger may DECLINE to roll for Surrender and only add a
+                # Siegeworks ("...including because the Besieger declined to roll..."),
+                # a distinct outcome only when the default Siege would otherwise roll
+                # (no Besieged enemy inside) and a Siegeworks would actually be added
+                # (enough Besiegers, room for another marker). Offer it then.
+                from . import battle as _b
+                if (not _besieged_enemy_inside(gs, loc_id, lord.side)
+                        and len(_besieging_lords_at(gs, loc_id, lord.side)) >= _b._value(loc_id)
+                        and st.siege_markers < 4):
+                    out.append({"type": "cmd_siege", "lord": lid, "roll_surrender": False,
+                                "_desc": "Siege, decline to roll: add a Siegeworks marker without "
+                                         "rolling Surrender (4.5.1)"})
+                # R25 Honors of War (Roman HOLD): during a Siege of a Fort with no
+                # Besieged enemy inside, the Fort auto-Surrenders instead of rolling
+                # (no Spoils). The active Lord still takes the Siege action, so it is a
+                # variant of cmd_siege — offer it when the card is held and eligible.
+                if (lord.side == "roman" and "R25" in gs.roman.held_events
+                        and sd.locale(loc_id)["type"] == "fort"
+                        and not _besieged_enemy_inside(gs, loc_id, lord.side)):
+                    out.append({"type": "cmd_siege", "lord": lid, "honors_of_war": True,
+                                "_desc": "Siege with Honors of War (R25): Fort auto-Surrenders, no Spoils (4.5.1)"})
             _ah = sorted(set(gs.side_decks(lord.side).held_events) & {"R21", "S21"})
             _dh = sorted(set(gs.side_decks(_enemy(lord.side)).held_events) & {"R21", "S21"})
             _mvSt = {"type": "cmd_storm", "lord": lid, "_desc": "Storm the Stronghold (4.5.2)"}
@@ -1372,6 +1377,30 @@ def _require(lord_id: str, gs: GameState) -> LordState:
     return gs.lords[lord_id]
 
 
+def _full_card_available(gs: GameState) -> bool:
+    """4.2.1/4.3.3: entire-card costs require the whole activation budget.
+
+    Use the rating saved on reveal, not a fresh Capability roll or a rating
+    recalculated at a different Locale. Older isolated states without that
+    snapshot fall back to the current non-random rating. Campaign and Winter
+    entry points always save the actual budget; Summer Heat replaces it.
+    A zero-cost first Turkic March does not spend any of this budget.
+    """
+    if gs.meta.active_lord is None or gs.meta.actions_remaining <= 0:
+        return False
+    full = gs.meta.notes.get("card_full_actions")
+    if full is None:
+        full = capabilities.command_rating(gs, gs.meta.active_lord)
+    return gs.meta.actions_remaining >= full
+
+
+def _require_full_card(gs: GameState, command: str, rule: str) -> None:
+    if not _full_card_available(gs):
+        raise IllegalAction("full_card_required",
+                            f"{command} requires the entire Command card; "
+                            f"actions have already been spent ({rule})")
+
+
 def _enemy(side: str) -> str:
     return "roman" if side == "seljuk" else "seljuk"
 
@@ -1408,6 +1437,7 @@ def h_cmd_tax(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict
                 commander_empire_tax = True
         if not commander_empire_tax:
             raise IllegalAction("not_taxable", "Tax requires the Lord's own Seat, or Roman Commander Tax in the Empire (4.5.6)")
+    _require_full_card(gs, "Tax", "4.2.1, 4.5.6")
     lord.assets.coin = min(lord.assets.coin + 1, 8)
     placed_ravage = False
     if commander_empire_tax:
@@ -1959,11 +1989,13 @@ def h_cmd_march(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> di
     to = action.get("to")
     if to not in gs.locales:
         raise IllegalAction("bad_destination", "unknown destination Locale")
-    if _enemy_lord_ids_at(gs, to, lord.side) and not gs.locales[to].bypass:
-        _peace_gate(gs, lord)  # S13: an Approach this Season requires 1 Coin
     way = _way_between(lord.cylinder, to, action.get("way_type"))
     if way is None:
         raise IllegalAction("no_way", f"no Way from {lord.cylinder} to {to}")
+    if way["whole_command_card"]:
+        _require_full_card(gs, "March to/from a Holding Box", "4.3.3")
+    if _enemy_lord_ids_at(gs, to, lord.side) and not gs.locales[to].bypass:
+        _peace_gate(gs, lord)  # S13: an Approach this Season requires 1 Coin
     if way["type"] == "pass" and _passes_blocked(gs):
         raise IllegalAction("passes_blocked", "Passes cannot be used to March (Unpredictable Weather)")
     group = _marching_group(gs, lord, action.get("group", []))
@@ -2403,6 +2435,7 @@ def h_cmd_siege(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> di
     lord = _require(action.get("lord"), gs)
     if not _besieging(gs, lord):
         raise IllegalAction("not_besieging", "only a Besieging Lord may Siege (4.5.1)")
+    _require_full_card(gs, "Siege", "4.2.1, 4.5.1")
     _peace_gate(gs, lord)  # S13 Peace Offering coin-gate
     loc_id = lord.cylinder
     from . import battle

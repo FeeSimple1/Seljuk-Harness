@@ -1,0 +1,1246 @@
+{
+  "scenario": "manzikert",
+  "seed": 20261009,
+  "source_commit": "3be117b100b9691619fc189f749235afa937eaca",
+  "initial_sha256": "1e3d6ed9467286351d2a61e230f467f259abecab7669c022bb294350906161fe",
+  "expected_winner": "seljuk",
+  "expected_win_reason": "5.2: roman has no Mustered Lords during Campaign",
+  "expected_score": {
+    "roman": 1.0,
+    "seljuk": 3.5
+  },
+  "steps": [
+    {
+      "action": {
+        "type": "build_plan",
+        "side": "seljuk",
+        "cards": [
+          "alp_arslan",
+          "alp_arslan",
+          "sav_tekin",
+          "alp_arslan"
+        ],
+        "lieutenants": [
+          {
+            "lieutenant": "artuk_beg",
+            "lower_lord": "emir_of_arran"
+          }
+        ]
+      },
+      "reason": "Take Aleppo early, then raid north with the main army; Sav-Tekin protects the eastern objective.",
+      "after_sha256": "c17d6d62acea6e5261f22767edb201d5078603f69c197e049d1003ffd72e4a8a"
+    },
+    {
+      "action": {
+        "type": "build_plan",
+        "side": "roman",
+        "cards": [
+          "romanos_diogenes",
+          "romanos_diogenes",
+          "romanos_diogenes",
+          "romanos_diogenes"
+        ],
+        "lieutenants": [
+          {
+            "lieutenant": "andronikos_doukas",
+            "lower_lord": "arisighi"
+          }
+        ]
+      },
+      "reason": "Concentrate Roman forces and march east for Manzikert, supporting the advance with supply.",
+      "after_sha256": "dd733412d93e1decc84c8da0e32329e714686664aa1830df7337b37ec80d389a"
+    },
+    {
+      "action": {
+        "type": "cmd_siege",
+        "lord": "alp_arslan"
+      },
+      "reason": "Increase siege pressure at Aleppo before committing to a costly storm.",
+      "after_sha256": "31a4949ec248a410142b7ef0d4663693a171d8909d001b53a1b62a7e61cbbe9f"
+    },
+    {
+      "action": {
+        "type": "pay",
+        "payer": "artuk_beg",
+        "target": "artuk_beg",
+        "asset": "coin",
+        "amount": 1
+      },
+      "reason": "Extend Artuk's service to keep the southern army together beyond Summer.",
+      "after_sha256": "c72e25c58ba54fe2d79f797bfecd117e9229dc7af363961b5ba9d33d3473ddd5"
+    },
+    {
+      "action": {
+        "type": "fpd_done"
+      },
+      "reason": "Finish Seljuk pay.",
+      "after_sha256": "f85208327879fe25bf6b83bf2fd862b5eca24d351be5ad69542b7c6083f06a12"
+    },
+    {
+      "action": {
+        "type": "fpd_done"
+      },
+      "reason": "Reserve Roman coin until the army needs service or supply.",
+      "after_sha256": "7336c94d853b73080c8d07a5c794e9cba3db1c4b95312ead3fccc51954bb3052"
+    },
+    {
+      "action": {
+        "type": "cmd_march",
+        "lord": "romanos_diogenes",
+        "to": "ankyra",
+        "way_type": "road",
+        "group": [
+          "andronikos_doukas"
+        ]
+      },
+      "reason": "Join Roussel at Ankyra; bring Doukas and his Lower Lord Arisighi as a complete stack.",
+      "after_sha256": "e05666514a871e415d65a1175cf283092a04bd2e551bbab30655e812f8b46f5c"
+    },
+    {
+      "action": {
+        "type": "fpd_done"
+      },
+      "reason": "No additional Seljuk payments.",
+      "after_sha256": "6a3f05750d44728c5616bb5e9457984f3bd7d1a4930857e7fe686b8dfac920c8"
+    },
+    {
+      "action": {
+        "type": "pay",
+        "payer": "andronikos_doukas",
+        "target": "andronikos_doukas",
+        "asset": "coin",
+        "amount": 1
+      },
+      "reason": "Keep Doukas's army in service through the final season.",
+      "after_sha256": "c01d28fcb484634bd1767094823c29078e21af277f935b60b981e6719832d4f5"
+    },
+    {
+      "action": {
+        "type": "fpd_done"
+      },
+      "reason": "Finish Roman pay after arrival at Ankyra.",
+      "after_sha256": "2da6e10c2a6dd159d881951d6c31ad1dc611729fa7dd7871b2ef80b854ed7583"
+    },
+    {
+      "action": {
+        "type": "cmd_supply",
+        "lord": "alp_arslan"
+      },
+      "reason": "Replenish the besieging army's provisions before deciding whether another assault is affordable this activation.",
+      "after_sha256": "c652e0e05f213528f8a66b229f7122437604efdba389da29f5de583047ffc932"
+    },
+    {
+      "action": {
+        "type": "cmd_supply",
+        "lord": "alp_arslan"
+      },
+      "reason": "Build a food reserve for all three besiegers.",
+      "after_sha256": "5a01c1cecf21f6c1badf52c4f8ab83236a50b05cb3dd99cf63c31fa256e07c03"
+    },
+    {
+      "action": {
+        "type": "cmd_ravage",
+        "lord": "alp_arslan",
+        "actions": 2
+      },
+      "reason": "Ravage Aleppo to improve the next surrender attempt and obtain provisions; do not exploit the illegal partial-card Siege.",
+      "after_sha256": "1a2716294213b4fcd1a9253d0d22d2f5e7ab5c67e9b30a1d4496670b12457f0a"
+    },
+    {
+      "action": {
+        "type": "fpd_done"
+      },
+      "reason": "No further service payments needed at this point.",
+      "after_sha256": "3d07d0e8f10f49de5064191b22e059dde7c88e0d4eb4b6f2c752e70d4ca17c71"
+    },
+    {
+      "action": {
+        "type": "fpd_done"
+      },
+      "reason": "No further service payments needed at this point.",
+      "after_sha256": "c0878817cf85ccc4865b432dcbf41e4ef20b950d1ed9eaa19141f5a2c675f9d5"
+    },
+    {
+      "action": {
+        "type": "cmd_supply",
+        "lord": "romanos_diogenes"
+      },
+      "reason": "Stock the combined Roman army before marching away from its supply base.",
+      "after_sha256": "d80bc71cc6c3363f3339b1775fea343ce0105eec929e48bf8bc3b1abc88e92ab"
+    },
+    {
+      "action": {
+        "type": "cmd_forage",
+        "lord": "romanos_diogenes"
+      },
+      "reason": "Gather the fourth ration needed by the four Roman Lords.",
+      "after_sha256": "441200d568f7e97a359cd0d7060b26398824ad62aac1f9e13adf88c4134f1ebc"
+    },
+    {
+      "action": {
+        "type": "cmd_march",
+        "lord": "romanos_diogenes",
+        "to": "charsianon",
+        "way_type": "road",
+        "group": [
+          "andronikos_doukas",
+          "roussel_de_bailleul"
+        ]
+      },
+      "reason": "Advance together toward the eastern objectives.",
+      "after_sha256": "e8df0459b36e98d0049829de6cd94aa59617d61eb7df5a3d2026539f7a253155"
+    },
+    {
+      "action": {
+        "type": "cmd_march",
+        "lord": "romanos_diogenes",
+        "to": "sebasteia",
+        "way_type": "road",
+        "group": [
+          "andronikos_doukas",
+          "roussel_de_bailleul"
+        ]
+      },
+      "reason": "The combined army has enough Carts to remain unladen; advance to Sebasteia without discarding food.",
+      "after_sha256": "d006dcd44718a6e191bc421f5692f14d8f13720666cb023ea96f68876157a6a4"
+    },
+    {
+      "action": {
+        "type": "fpd_done"
+      },
+      "reason": "No further service payments needed at this point.",
+      "after_sha256": "0612ee5e915ea0ea8359e8525c5558b7fc83c2d557116ca3101514eb626c3118"
+    },
+    {
+      "action": {
+        "type": "fpd_done"
+      },
+      "reason": "No further service payments needed at this point.",
+      "after_sha256": "c1240d279cc3016af270ee97dd5d5437bc206539d63705dbbff2780cd06e9f18"
+    },
+    {
+      "action": {
+        "type": "cmd_march",
+        "lord": "sav_tekin",
+        "to": "mempet",
+        "way_type": "road"
+      },
+      "reason": "Bring Sav-Tekin west to contest the Roman approach to Manzikert.",
+      "after_sha256": "a5416f1a0b587d98dd3f9891b652bb6f9f961b2c44f907d66c7aad6ef7704e65"
+    },
+    {
+      "action": {
+        "type": "cmd_march",
+        "lord": "sav_tekin",
+        "to": "theodosiopolis",
+        "way_type": "road"
+      },
+      "reason": "Pressure the Roman stronghold on the northern route to the objective.",
+      "after_sha256": "ada5e9c28940011c27eeccfe6d814633a2cce043eab4b9cba76780873bcb8631"
+    },
+    {
+      "action": {
+        "type": "besiege_bypass",
+        "choice": "besiege"
+      },
+      "reason": "Invest Theodosiopolis to threaten the northern Roman supply and reinforcement route.",
+      "after_sha256": "16b6dde8d6d948624065989831a9fcd11335ab08757bf28b07d939ba9a0dd1aa"
+    },
+    {
+      "action": {
+        "type": "fpd_done"
+      },
+      "reason": "No further service payments needed at this point.",
+      "after_sha256": "b16353873bb8b8156795e7726f490e467e27fe6a572bdbfd75a4f0bff6b70d48"
+    },
+    {
+      "action": {
+        "type": "fpd_done"
+      },
+      "reason": "No further service payments needed at this point.",
+      "after_sha256": "a0fe31c0a474fbd5326642d9f382f6d032d91c7a0c2ad03a9f056ca9764498e4"
+    },
+    {
+      "action": {
+        "type": "cmd_march",
+        "lord": "romanos_diogenes",
+        "to": "tephrike",
+        "way_type": "road",
+        "group": [
+          "roussel_de_bailleul"
+        ]
+      },
+      "reason": "Advance a smaller striking force; leave Doukas and Arisighi together to reduce the forward supply burden.",
+      "after_sha256": "1675e7b3f1c590418cf45bc33566a1c95dc7d17bca81b23fcebbb8485a151376"
+    },
+    {
+      "action": {
+        "type": "cmd_forage",
+        "lord": "romanos_diogenes"
+      },
+      "reason": "Feed Romanos on arrival.",
+      "after_sha256": "927663118f2fb6d8b13472d63491595c16dbf5f587054bcbe89065af9cd6c094"
+    },
+    {
+      "action": {
+        "type": "cmd_forage",
+        "lord": "romanos_diogenes"
+      },
+      "reason": "Provide Roussel's ration too.",
+      "after_sha256": "1f7d9b9610f7596084514157412fc36f4c5b6b97989ef4075166bccb6df39e05"
+    },
+    {
+      "action": {
+        "type": "cmd_recruit",
+        "lord": "romanos_diogenes",
+        "marker_index": 0
+      },
+      "reason": "Recruit two infantry to strengthen the forward force without crossing Romanos's eight-unit feeding threshold.",
+      "after_sha256": "85c16476e411c789448550608a8377f9b51577625e5430ec4fc8b2bb860ac687"
+    },
+    {
+      "action": {
+        "type": "fpd_done"
+      },
+      "reason": "No further service payments needed at this point.",
+      "after_sha256": "51b90b83d4ccce808250356a5d7037af749eea880f07d85d9b14cf50d7fdcb03"
+    },
+    {
+      "action": {
+        "type": "fpd_done"
+      },
+      "reason": "No further service payments needed at this point.",
+      "after_sha256": "5cb39a1f0d1b85c35b02486d52f56f518fa220cdb68b465b9122fa1807ac4a11"
+    },
+    {
+      "action": {
+        "type": "cmd_storm",
+        "lord": "alp_arslan"
+      },
+      "reason": "Storm Aleppo after building siegeworks and provisioning; commit the larger army against the garrison.",
+      "after_sha256": "2ac76ab8b5f05ba95f33f55026d8a6f6dcef3423b822a9af7323705933c9c927"
+    },
+    {
+      "action": {
+        "type": "pay",
+        "payer": "alp_arslan",
+        "target": "alp_arslan",
+        "asset": "loot",
+        "amount": 1
+      },
+      "reason": "Use Aleppo's Loot to extend service and remove the army's Laden movement penalty.",
+      "after_sha256": "0159e703e32c33f3728dba5d20cc8481cdc0a80ec2d5608a273ac221b881e496"
+    },
+    {
+      "action": {
+        "type": "pay",
+        "payer": "alp_arslan",
+        "target": "artuk_beg",
+        "asset": "loot",
+        "amount": 1
+      },
+      "reason": "Use Aleppo's Loot to extend service and remove the army's Laden movement penalty.",
+      "after_sha256": "512ec4efc6a0b9cd9929514b0e0865ee4f8a015fbfa1c2431d7063fc733371d2"
+    },
+    {
+      "action": {
+        "type": "pay",
+        "payer": "alp_arslan",
+        "target": "emir_of_arran",
+        "asset": "loot",
+        "amount": 1
+      },
+      "reason": "Use Aleppo's Loot to extend service and remove the army's Laden movement penalty.",
+      "after_sha256": "d96cbbc156d072c16a746fe296f6f15768d70c0ddae4b3999bcebdbcd2060944"
+    },
+    {
+      "action": {
+        "type": "fpd_done"
+      },
+      "reason": "Finish Seljuk payments.",
+      "after_sha256": "4f35768991efdcddd5cdb403210bee12dc0abd8ade4ba01920e0911414b27288"
+    },
+    {
+      "action": {
+        "type": "pay",
+        "payer": "romanos_diogenes",
+        "target": "roussel_de_bailleul",
+        "asset": "coin",
+        "amount": 1
+      },
+      "reason": "Retain Roussel through Autumn before the coming fighting.",
+      "after_sha256": "0e4ab2ab466c687f6d74eefd5fdfb23bbb08c563f19525e73ec6cb7df1f2115f"
+    },
+    {
+      "action": {
+        "type": "fpd_done"
+      },
+      "reason": "Finish Roman pay.",
+      "after_sha256": "58059dc3d533a554a31288323ff14ee82e84e03c61d9cf6a2f60dac64742a74b"
+    },
+    {
+      "action": {
+        "type": "cmd_march",
+        "lord": "romanos_diogenes",
+        "to": "keltzene",
+        "way_type": "road",
+        "group": [
+          "roussel_de_bailleul"
+        ]
+      },
+      "reason": "Move the forward army toward Sav-Tekin's siege at Theodosiopolis.",
+      "after_sha256": "f4292f559774ad74b5e2d21a6f32e35696c7284f959474067a4487de182fac1d"
+    },
+    {
+      "action": {
+        "type": "cmd_forage",
+        "lord": "romanos_diogenes"
+      },
+      "reason": "Gather Romanos's battle ration.",
+      "after_sha256": "1c1c7b41ae09bda3d958b5b8f2b4da4f217acd2a225f3ee8f64b2f241d81631b"
+    },
+    {
+      "action": {
+        "type": "cmd_forage",
+        "lord": "romanos_diogenes"
+      },
+      "reason": "Gather Roussel's battle ration.",
+      "after_sha256": "d435c614436e60419649e2fed70edcd60eba9777cb4aae9c9f222ecb176a5b05"
+    },
+    {
+      "action": {
+        "type": "cmd_march",
+        "lord": "romanos_diogenes",
+        "to": "theodosiopolis",
+        "way_type": "road",
+        "group": [
+          "roussel_de_bailleul"
+        ]
+      },
+      "reason": "Relieve Theodosiopolis with a numerically superior army.",
+      "after_sha256": "542b0572b36d215f42f34204dce1f12b8e8e1676977798819ab6e55c80036e39"
+    },
+    {
+      "action": {
+        "type": "respond_approach",
+        "choices": {
+          "sav_tekin": {
+            "action": "avoid",
+            "to": "manzikert"
+          }
+        }
+      },
+      "reason": "Outnumbered Sav-Tekin avoids the relief army and falls back to defend the strategic objective instead of risking destruction.",
+      "after_sha256": "147d8dbc722480fce982946f2443712c743b4210621df59470ce46ebb4dbd0b9"
+    },
+    {
+      "action": {
+        "type": "fpd_done"
+      },
+      "reason": "No further service payments needed at this point.",
+      "after_sha256": "2691b75bf0992042ecfa1d2462491147d735c2a19c53bf244df64a4ce981fe87"
+    },
+    {
+      "action": {
+        "type": "fpd_done"
+      },
+      "reason": "No further service payments needed at this point.",
+      "after_sha256": "4d44c5c967986a62ab1323036027b88396f11df7996c7a17973c4f9e188d66a5"
+    },
+    {
+      "action": {
+        "type": "retain_themata",
+        "lord": "romanos_diogenes",
+        "thema": "Sebasteia",
+        "mode": "pay"
+      },
+      "reason": "Pay one Coin to keep the two infantry for the campaign against Manzikert.",
+      "after_sha256": "33b8451559b29407d043cb3194fddb4a2d5171eb0dcd1bcf4c2ff0bd89e97c80"
+    },
+    {
+      "action": {
+        "type": "pay",
+        "payer": "alp_arslan",
+        "target": "sav_tekin",
+        "asset": "coin",
+        "amount": 2
+      },
+      "reason": "Extend isolated Sav-Tekin's service before Summer Disband; he is covering the strategic objective.",
+      "after_sha256": "b22dcbea19eae8f8c039eaf93c2b9a9c4f6b721166d68e8c2cedb76d3e6f3e79"
+    },
+    {
+      "action": {
+        "type": "pass_step"
+      },
+      "reason": "Seljuk Pay complete.",
+      "after_sha256": "72e12fae29ec0355a4ddd76d13f5a2a0f2d035ac4831019d276c79c23c09b313"
+    },
+    {
+      "action": {
+        "type": "pass_step"
+      },
+      "reason": "Romans have no further Coin to spend in Pay.",
+      "after_sha256": "5c6aab4cf69fd7bca38a478cff92edb41c3ef19586bbceef57dd933cc0df3de7"
+    },
+    {
+      "action": {
+        "type": "levy_lord",
+        "levyer": "alp_arslan",
+        "target": "afsin_beg",
+        "seat": "ani"
+      },
+      "reason": "Muster a mobile reinforcement in the east to support Sav-Tekin.",
+      "after_sha256": "a30edb883ec044b96c4157b87d95d3696fccc4c58b8d128c33ffa7b5e671908a"
+    },
+    {
+      "action": {
+        "type": "levy_lord",
+        "levyer": "alp_arslan",
+        "target": "afsin_beg",
+        "seat": "ani"
+      },
+      "reason": "Retry the eastern reinforcement; the first fealty roll failed.",
+      "after_sha256": "f8cc79b9457ad3920486036f2e801771427c711d2d18b1bd799735e86a8798a6"
+    },
+    {
+      "action": {
+        "type": "levy_vassal",
+        "lord": "alp_arslan",
+        "vassal_index": 1
+      },
+      "reason": "Add infantry for assaults without exceeding eight units.",
+      "after_sha256": "45f494bea3e4069d638d0054f671b9c65076054d71422714a3a4e17c45d89eec"
+    },
+    {
+      "action": {
+        "type": "levy_vassal",
+        "lord": "sav_tekin",
+        "vassal_index": 0
+      },
+      "reason": "Add elite cavalry to the exposed defender.",
+      "after_sha256": "0599cdfcdd4f38b988d5112754a2bab03cbf1f760c270f847b23d1c4bf6b2193"
+    },
+    {
+      "action": {
+        "type": "levy_transport",
+        "lord": "sav_tekin"
+      },
+      "reason": "Restore transport for feeding and movement.",
+      "after_sha256": "c653da550b6c08c03ea633466a295f9944cdc72b750f1ff3a01f3ee62d9a279e"
+    },
+    {
+      "action": {
+        "type": "levy_transport",
+        "lord": "artuk_beg"
+      },
+      "reason": "Improve the southern army's supply reach.",
+      "after_sha256": "37ffab438b95fd60ea90f31e50cf9288c89573078d102dd0b56005e0c59289d5"
+    },
+    {
+      "action": {
+        "type": "levy_transport",
+        "lord": "artuk_beg"
+      },
+      "reason": "Add transport rather than exceed an efficient army size.",
+      "after_sha256": "c3032b3f13d73aa7972835e5989595aa08bbefcb1e92d9c44e17ad0253738c19"
+    },
+    {
+      "action": {
+        "type": "levy_lord",
+        "levyer": "emir_of_arran",
+        "target": "sanduq_al_turki"
+      },
+      "reason": "Bring another eastern Lord onto the map.",
+      "after_sha256": "fbadf4ba24fc7be1af5632ef59735905835725628c4699c7edbcf2947fa59432"
+    },
+    {
+      "action": {
+        "type": "levy_transport",
+        "lord": "emir_of_arran"
+      },
+      "reason": "Restore a cart lost to seasonal wastage.",
+      "after_sha256": "8e12d121db49eadf8b58a8dbe9b4d3ebe5a15fb2628ebddcf995f7dcb9cf549f"
+    },
+    {
+      "action": {
+        "type": "pass_step"
+      },
+      "reason": "Seljuk Muster complete.",
+      "after_sha256": "08a3044f33e5baa58333b8cddf3909c149415015520572faf1c00a95f7a419f5"
+    },
+    {
+      "action": {
+        "type": "levy_vassal",
+        "lord": "romanos_diogenes",
+        "vassal_index": 1
+      },
+      "reason": "Muster the Emperor's Retinue for the coming fighting.",
+      "after_sha256": "d43775e9653b230c0d5ad13a5486f97bca90b81816eb46ee55da5ecac65a4a95"
+    },
+    {
+      "action": {
+        "type": "levy_transport",
+        "lord": "romanos_diogenes"
+      },
+      "reason": "Increase transport for the reinforced army.",
+      "after_sha256": "372af330207c421f9c809daa0bb66d60b9c19eab1e29c09ae0d451ce45e3070b"
+    },
+    {
+      "action": {
+        "type": "levy_transport",
+        "lord": "romanos_diogenes"
+      },
+      "reason": "Support the new two-ration feeding threshold.",
+      "after_sha256": "22ae53d3160cb38b959bb71b6852bf806d20e250726d7e6071555645e05be7bf"
+    },
+    {
+      "action": {
+        "type": "levy_transport",
+        "lord": "roussel_de_bailleul"
+      },
+      "reason": "Keep Roussel mobile and supplied.",
+      "after_sha256": "749d6636e8a3b9465c92837650191f2cf5c4a92b9f4d891aeece450a3dede3aa"
+    },
+    {
+      "action": {
+        "type": "levy_transport",
+        "lord": "andronikos_doukas"
+      },
+      "reason": "Prepare the rear army to advance.",
+      "after_sha256": "f7fdb0e612a5773f6aca495cb7c611f80026b620ecfe0931917b96093c4ebace"
+    },
+    {
+      "action": {
+        "type": "levy_transport",
+        "lord": "arisighi"
+      },
+      "reason": "Increase the rear army's food-carrying capacity.",
+      "after_sha256": "9bc76fc84fe577b6d54c75ed55a313775ee3420826659ace2467218d78aaf948"
+    },
+    {
+      "action": {
+        "type": "levy_vassal",
+        "lord": "andronikos_doukas",
+        "vassal_index": 0
+      },
+      "reason": "Strengthen Doukas's supporting army.",
+      "after_sha256": "5d3f5e3ba5803080c9fe535c6bf97d9434f4d45543211e6ea70ffe0b72130ad0"
+    },
+    {
+      "action": {
+        "type": "pass_step"
+      },
+      "reason": "Roman Muster complete.",
+      "after_sha256": "b67d6553ba55309df89e9d35e318c75c4018bf347d5e84c8824a8ab01e80bb9d"
+    },
+    {
+      "action": {
+        "type": "cta_marwanid_bank"
+      },
+      "reason": "Fund a forward supply base at Amid for the Seljuk march north.",
+      "after_sha256": "6c5d645246a969e274243145dd69e60a1721b056183b0106e9fa2fa4825aeed6"
+    },
+    {
+      "action": {
+        "type": "pass_step"
+      },
+      "reason": "Roman Call to Arms complete.",
+      "after_sha256": "88cdfb98a0007018c9e759767d64cf83c351499bac8f3171b97d8820f48ebe2e"
+    },
+    {
+      "action": {
+        "type": "build_plan",
+        "side": "seljuk",
+        "cards": [
+          "sanduq_al_turki",
+          "sanduq_al_turki",
+          "sav_tekin",
+          "alp_arslan",
+          "alp_arslan",
+          "artuk_beg",
+          "alp_arslan",
+          "alp_arslan",
+          "sanduq_al_turki"
+        ],
+        "lieutenants": [
+          {
+            "lieutenant": "artuk_beg",
+            "lower_lord": "emir_of_arran"
+          }
+        ]
+      },
+      "reason": "Send Sanduq around the eastern flank to relieve Manzikert, while the main army advances north from Aleppo.",
+      "after_sha256": "79ed8729c73d823366091c956e911c22a8873ed4596b01a9edac97dc2f8252e2"
+    },
+    {
+      "action": {
+        "type": "build_plan",
+        "side": "roman",
+        "cards": [
+          "romanos_diogenes",
+          "romanos_diogenes",
+          "romanos_diogenes",
+          "romanos_diogenes",
+          "andronikos_doukas",
+          "andronikos_doukas",
+          "andronikos_doukas",
+          "andronikos_doukas",
+          "no_command"
+        ],
+        "lieutenants": [
+          {
+            "lieutenant": "andronikos_doukas",
+            "lower_lord": "arisighi"
+          }
+        ]
+      },
+      "reason": "Take Manzikert with the forward army, then bring up Doukas's supporting force; include the event-mandated No Command.",
+      "after_sha256": "3d6d06c88f0cd965ced201b68f21a033494435dbcf47dd837e7467e2a624b7b5"
+    },
+    {
+      "action": {
+        "type": "cmd_march",
+        "lord": "sanduq_al_turki",
+        "to": "ararat",
+        "way_type": "pass"
+      },
+      "reason": "Use the all-Turkic first-March discount to take the eastern route around the Romans.",
+      "after_sha256": "5e12218b792509ec21538343553570cc387e41eb3f78aa120c30236003f4c352"
+    },
+    {
+      "action": {
+        "type": "cmd_forage",
+        "lord": "sanduq_al_turki"
+      },
+      "reason": "The remaining leg is another Pass, not a Road; gather provisions instead of attempting an unaffordable crossing.",
+      "after_sha256": "33b8647102a34ca5d0a26fae8065cf21e69d02ac708a797327cfa0f24a1c6a4b"
+    },
+    {
+      "action": {
+        "type": "fpd_done"
+      },
+      "reason": "No further service payments needed at this point.",
+      "after_sha256": "815a912ae776f1a7ab873a1ed7b359912779f5fbd74adfd6bdab80bda0ab3012"
+    },
+    {
+      "action": {
+        "type": "cmd_forage",
+        "lord": "romanos_diogenes"
+      },
+      "reason": "Prepare three rations for the reinforced Roman army before contact.",
+      "after_sha256": "e902e2d38cab8db2ad4c03f9714698d788fd50cc4245b4454eac4c42e9decae0"
+    },
+    {
+      "action": {
+        "type": "cmd_forage",
+        "lord": "romanos_diogenes"
+      },
+      "reason": "Prepare three rations for the reinforced Roman army before contact.",
+      "after_sha256": "f960ad25a28a33fcfdebeda9548ee85ab559809e45bd36b1768f6690fecfa77f"
+    },
+    {
+      "action": {
+        "type": "cmd_forage",
+        "lord": "romanos_diogenes"
+      },
+      "reason": "Prepare three rations for the reinforced Roman army before contact.",
+      "after_sha256": "a78a2456dae2de91c6af7b34ce2297e0500fa2bd8307f5d5a5bc59a916b0ff4e"
+    },
+    {
+      "action": {
+        "type": "cmd_march",
+        "lord": "romanos_diogenes",
+        "to": "manzikert",
+        "way_type": "road",
+        "group": [
+          "roussel_de_bailleul"
+        ]
+      },
+      "reason": "Approach the strategic objective with both Roman Lords provisioned.",
+      "after_sha256": "2f4dd70d9a14100b8ee4211e6e48b2b544b2151e7db55770af9fe7ea15ca5517"
+    },
+    {
+      "action": {
+        "type": "respond_approach",
+        "choices": {
+          "sav_tekin": {
+            "action": "withdraw"
+          }
+        }
+      },
+      "reason": "Shelter Sav-Tekin's seven units inside the fort rather than fight the larger Roman army in the open.",
+      "after_sha256": "6f83d216f145dd62f7576c070384bc23bd0fae754b2c3eb2c3abb21069f1da9c"
+    },
+    {
+      "action": {
+        "type": "besiege_bypass",
+        "choice": "besiege"
+      },
+      "reason": "Invest Manzikert rather than bypass the strategic objective.",
+      "after_sha256": "d90ce1b0ccebb436ef548c79ab55e2038b70c55ea0451d6284ad028c059c0305"
+    },
+    {
+      "action": {
+        "type": "fpd_done"
+      },
+      "reason": "No further service payments needed at this point.",
+      "after_sha256": "7aae7298418fc52b8ef4383e44c6503077c6f59b68b5a71104d7887d0d755648"
+    },
+    {
+      "action": {
+        "type": "cmd_march",
+        "lord": "sanduq_al_turki",
+        "to": "arkesh",
+        "way_type": "pass"
+      },
+      "reason": "Cross the second Pass using this card's all-Turkic first-March discount.",
+      "after_sha256": "a0431f6b2ad7cb2dd84eaf408276c2f82a5a3d46d92ff38136c1905a4d55e787"
+    },
+    {
+      "action": {
+        "type": "cmd_march",
+        "lord": "sanduq_al_turki",
+        "to": "manzikert",
+        "way_type": "road"
+      },
+      "reason": "Attempt to relieve Sav-Tekin before the Romans can storm the fort.",
+      "after_sha256": "c421b8274874cc1feb88b7c4c5cbd79e031d53d6323cbeaf2de032f430e8991d"
+    },
+    {
+      "action": {
+        "type": "respond_approach",
+        "choices": {
+          "romanos_diogenes": {
+            "action": "stand"
+          },
+          "roussel_de_bailleul": {
+            "action": "stand"
+          }
+        },
+        "battle_decisions": [
+          [
+            "initial_placement_defender",
+            "romanos_diogenes"
+          ],
+          [
+            "sally_placement",
+            "sav_tekin"
+          ],
+          [
+            "rearguard_placement",
+            "roussel_de_bailleul"
+          ],
+          [
+            "concede",
+            false
+          ],
+          [
+            "concede",
+            false
+          ],
+          [
+            "concede",
+            true
+          ]
+        ]
+      },
+      "reason": "Romans hold the investment: Romanos faces the relief force and Roussel the Sally. The Seljuks allow two rounds, then disengage if the siege is not broken.",
+      "after_sha256": "37166632b9de456fd85b62e02207bcd5a52b2e7914595215e81ea0db90460220"
+    },
+    {
+      "action": {
+        "type": "fpd_done"
+      },
+      "reason": "No further service payments needed at this point.",
+      "after_sha256": "fd94b0a82b4a74d35984f19c9c66ec2606ba8812dabf021af1e56c44a61ddeea"
+    },
+    {
+      "action": {
+        "type": "fpd_done"
+      },
+      "reason": "No further service payments needed at this point.",
+      "after_sha256": "7df8c55cf075f1fa9131063014d3e5cd99f20beb107a1325428435a6b04505aa"
+    },
+    {
+      "action": {
+        "type": "cmd_forage",
+        "lord": "sav_tekin"
+      },
+      "reason": "After the Roman army disbands, stock food and hold the strategic objective rather than pursue.",
+      "after_sha256": "db0b435b64c93103227c9696ed3069324a9623f7f9f278918b81aca77cbb22e7"
+    },
+    {
+      "action": {
+        "type": "cmd_forage",
+        "lord": "sav_tekin"
+      },
+      "reason": "After the Roman army disbands, stock food and hold the strategic objective rather than pursue.",
+      "after_sha256": "caaa8d747f71d4d5bb6af38814a143b5cc4b947ae22a6c29b14f616fe2de4bad"
+    },
+    {
+      "action": {
+        "type": "fpd_done"
+      },
+      "reason": "No further service payments needed at this point.",
+      "after_sha256": "fd04285c29d12157b7cf55052a531f707fac825a8d315b224faad4ba09895932"
+    },
+    {
+      "action": {
+        "type": "fpd_done"
+      },
+      "reason": "No further service payments needed at this point.",
+      "after_sha256": "548d662087c66e87f7f096425451f2793713f9e81202fd1e7f04c832eef8d06a"
+    },
+    {
+      "action": {
+        "type": "cmd_march",
+        "lord": "alp_arslan",
+        "to": "azaz",
+        "way_type": "road",
+        "group": [
+          "artuk_beg"
+        ]
+      },
+      "reason": "Leave ravaged Aleppo before foraging; keep the complete Lieutenant stack together.",
+      "after_sha256": "ba24ec72833f3c16ce232fdc9a964edaab2f42f308106117759685bdeffb1c28"
+    },
+    {
+      "action": {
+        "type": "cmd_forage",
+        "lord": "alp_arslan"
+      },
+      "reason": "Gather three Lords' rations in unravaged Azaz.",
+      "after_sha256": "12c49b61da384a34f55652bd54d513745b8ce9c60649837b57faed87a7f39712"
+    },
+    {
+      "action": {
+        "type": "cmd_forage",
+        "lord": "alp_arslan"
+      },
+      "reason": "Gather three Lords' rations in unravaged Azaz.",
+      "after_sha256": "a1cb70c6bf0af6eec4efd68fa4a09c009c9827ba1fddd5eb0d11321a0cbe5793"
+    },
+    {
+      "action": {
+        "type": "cmd_march",
+        "lord": "alp_arslan",
+        "to": "manbij",
+        "way_type": "road",
+        "group": [
+          "artuk_beg"
+        ]
+      },
+      "reason": "Continue the main army's advance toward Edessa.",
+      "after_sha256": "987438e64f80004df4663f319dead4e7d3696fb6669b643ef46957de00db49b6"
+    },
+    {
+      "action": {
+        "type": "fpd_done"
+      },
+      "reason": "No further service payments needed at this point.",
+      "after_sha256": "35e7ff5313caa3ff5851ceca46f23395b1e20d4173c57da98d16dbb45d91d11d"
+    },
+    {
+      "action": {
+        "type": "fpd_done"
+      },
+      "reason": "No further service payments needed at this point.",
+      "after_sha256": "7ff2c15bec9ece2ead766a889bc2f0374eaf014d81197a3b21b44f4720869ef1"
+    },
+    {
+      "action": {
+        "type": "cmd_forage",
+        "lord": "alp_arslan"
+      },
+      "reason": "Stock one ration per Lord before entering enemy territory at Edessa.",
+      "after_sha256": "b37b9057ae6743d1d19bf643dc794cc5a7fbba55b300427072ed11defa08968a"
+    },
+    {
+      "action": {
+        "type": "cmd_forage",
+        "lord": "alp_arslan"
+      },
+      "reason": "Stock one ration per Lord before entering enemy territory at Edessa.",
+      "after_sha256": "73b2189d4a89e05a74eb3bdd5d43acdc9768efa1dfd67f6d44b45f4c1347b6f9"
+    },
+    {
+      "action": {
+        "type": "cmd_forage",
+        "lord": "alp_arslan"
+      },
+      "reason": "Stock one ration per Lord before entering enemy territory at Edessa.",
+      "after_sha256": "31fd5d454825689a914e119ac85ee3f2a3b76cdf0bd7c45b10aa3affadf0ad20"
+    },
+    {
+      "action": {
+        "type": "cmd_march",
+        "lord": "alp_arslan",
+        "to": "edessa",
+        "way_type": "road",
+        "group": [
+          "artuk_beg"
+        ]
+      },
+      "reason": "Invest Edessa with the full southern army.",
+      "after_sha256": "4c3e0781bed6864abcdd6b3eb51ec04a9799cfa9f19426ad3625d00c8c7c253b"
+    },
+    {
+      "action": {
+        "type": "besiege_bypass",
+        "choice": "besiege"
+      },
+      "reason": "Commit to taking Edessa rather than leave the town behind the army.",
+      "after_sha256": "4e2e86f77d4ac57a0237d2d05a3e2cf30f1fc7f965d66f333f4d6cf69324a049"
+    },
+    {
+      "action": {
+        "type": "assign_themata_defenders",
+        "markers": [
+          0,
+          1
+        ]
+      },
+      "reason": "The Romans commit both available Melitene Themata markers to defend Edessa.",
+      "after_sha256": "0f17ae39a60772a3ec58f72d07657d6fa9ea9c7e257ad507f195f9749e33dfc2"
+    },
+    {
+      "action": {
+        "type": "fpd_done"
+      },
+      "reason": "No further service payments needed at this point.",
+      "after_sha256": "a6806b442e1b90c5e8debbb35d95150c21f36fff6a725a536715fce524040006"
+    },
+    {
+      "action": {
+        "type": "cmd_supply",
+        "lord": "andronikos_doukas"
+      },
+      "reason": "Build a two-Lord food reserve before moving the remaining Roman field army.",
+      "after_sha256": "c2276ab6c69769b7bcb38f65106acf692687eeaabdb24b64cf84693f8e38263a"
+    },
+    {
+      "action": {
+        "type": "cmd_supply",
+        "lord": "andronikos_doukas"
+      },
+      "reason": "Build a two-Lord food reserve before moving the remaining Roman field army.",
+      "after_sha256": "64c3d0c14ddbc9accf7b129b5095fbf98444c73f4fe2a041ed42028f6f289fff"
+    },
+    {
+      "action": {
+        "type": "fpd_done"
+      },
+      "reason": "No further service payments needed at this point.",
+      "after_sha256": "42f7de32151b5955e8a3bb197f9f4422dffeedf5acae27b037c5e3d7fc9bacf4"
+    },
+    {
+      "action": {
+        "type": "cmd_ravage",
+        "lord": "artuk_beg",
+        "actions": 2
+      },
+      "reason": "Ravage Edessa for food and Loot, and increase the surrender threshold for Alp Arslan's next card.",
+      "after_sha256": "1c3c467ccb0c409fa9a4edb352189a6695819eaf47f03b55b36eee80e6c44f6e"
+    },
+    {
+      "action": {
+        "type": "cmd_supply",
+        "lord": "artuk_beg"
+      },
+      "reason": "Use Artuk's remaining action to complete the besieging army's food reserve.",
+      "after_sha256": "6e28bf92837e8896b4d95faea913cc70ad2e477c9649ae30deff3f8a196acdc5"
+    },
+    {
+      "action": {
+        "type": "fpd_done"
+      },
+      "reason": "No further service payments needed at this point.",
+      "after_sha256": "044ffb7e975775151793d5242b64babaf2215eace0f5f8d473d8359871e73c28"
+    },
+    {
+      "action": {
+        "type": "cmd_march",
+        "lord": "andronikos_doukas",
+        "to": "larisa",
+        "way_type": "road"
+      },
+      "reason": "Move the Roman supporting stack toward the southern threat.",
+      "after_sha256": "ec87c9543a1555621e535eb2ef163e39a7335c7dff7928a39bd0326b7eb7befb"
+    },
+    {
+      "action": {
+        "type": "cmd_forage",
+        "lord": "andronikos_doukas"
+      },
+      "reason": "Keep both Doukas and Arisighi fed while advancing.",
+      "after_sha256": "ab6ba736a7ac8c1dc2c6ff711410f0378befc1d8dc20c5fdf4146b75cb95d343"
+    },
+    {
+      "action": {
+        "type": "fpd_done"
+      },
+      "reason": "No further service payments needed at this point.",
+      "after_sha256": "e2e12bbbeb748c8db088fed9d3bb2e5103f3dba9b46e94bfbd8e3e0199b94928"
+    },
+    {
+      "action": {
+        "type": "cmd_siege",
+        "lord": "alp_arslan"
+      },
+      "reason": "Use a fresh whole command card to press the siege of Edessa.",
+      "after_sha256": "6c7a7cc2a44ff20c5af4e438cc954ac3da9a9866f4e937ce939541b190de6d08"
+    },
+    {
+      "action": {
+        "type": "fpd_done"
+      },
+      "reason": "No further service payments needed at this point.",
+      "after_sha256": "e32d2e8a8cf59a6b1f49c0fd1946f3c368c2502473d91d3f2cb92fb0b04eb8da"
+    },
+    {
+      "action": {
+        "type": "play_hold_event",
+        "card": "R4"
+      },
+      "reason": "Play Sultan's Horse to remove one Siege marker at Edessa and shorten a possible Storm.",
+      "after_sha256": "06e6186272119536b4c68bf476c480bcd1154b616f576ce0e87689e1253891ba"
+    },
+    {
+      "action": {
+        "type": "cmd_supply",
+        "lord": "andronikos_doukas"
+      },
+      "reason": "Use the available supply route instead of relying on uncertain Forage in Larisa.",
+      "after_sha256": "bb80c817e73aa0b5ef196d30689efe20c61e027bac8ff386ece7b3b340947411"
+    },
+    {
+      "action": {
+        "type": "cmd_supply",
+        "lord": "andronikos_doukas"
+      },
+      "reason": "Use the available supply route instead of relying on uncertain Forage in Larisa.",
+      "after_sha256": "71c9ea026edea156feb629d06c377e97cf298a3e9bf7cc4940b9babf4497b633"
+    },
+    {
+      "action": {
+        "type": "fpd_done"
+      },
+      "reason": "No further service payments needed at this point.",
+      "after_sha256": "d894926e64905f2323264a77f7b0a7157d71a2d31cf2432b22e750b91582777a"
+    },
+    {
+      "action": {
+        "type": "cmd_storm",
+        "lord": "alp_arslan",
+        "storm_decisions": [
+          [
+            "sack_choice",
+            "ruin"
+          ]
+        ]
+      },
+      "reason": "Attempt to take and ruin Edessa before the campaign ends despite the reduced Storm window.",
+      "after_sha256": "5ee9b3f299d16a7fb37812a629414b477691f83c7e26841610beb0b4b5aaf875"
+    },
+    {
+      "action": {
+        "type": "pay",
+        "payer": "alp_arslan",
+        "target": "sav_tekin",
+        "asset": "coin",
+        "amount": 1
+      },
+      "reason": "Keep the objective's defender in service through the final season.",
+      "after_sha256": "a22116eccaddd8deb62995f27b6ee2e347bcdd5875ca7219d835c585e6aa0267"
+    },
+    {
+      "action": {
+        "type": "pay",
+        "payer": "emir_of_arran",
+        "target": "alp_arslan",
+        "asset": "coin",
+        "amount": 1
+      },
+      "reason": "Keep the main Seljuk commander in service through the final season.",
+      "after_sha256": "4a4b3c02fa05d63621e2b3f779247b303788e3c7a6ca30d60141999492aae178"
+    },
+    {
+      "action": {
+        "type": "fpd_done"
+      },
+      "reason": "No further service payments needed at this point.",
+      "after_sha256": "91b720f9ec4ddabd93b66950a2e91cfe0ef0a93b04f3a91b4636ccf8b0ce3fce"
+    },
+    {
+      "action": {
+        "type": "cmd_march",
+        "lord": "andronikos_doukas",
+        "to": "melitene",
+        "way_type": "road"
+      },
+      "reason": "Advance the remaining Roman army toward the Seljuk force at Edessa.",
+      "after_sha256": "e7dccea04ad393a6a54d0d8e6b796dd2f17d0ae1b03a87c43bd1ae38ca9d0298"
+    },
+    {
+      "action": {
+        "type": "cmd_pass"
+      },
+      "reason": "The Edessa crossing is unaffordable this card; hold Melitene rather than make an illegal march.",
+      "after_sha256": "b41fe23e839697d7176cfb94da9c2128fcd3ff70627672e12f5f933142dec5a8"
+    },
+    {
+      "action": {
+        "type": "resolve_event",
+        "card": "R10",
+        "args": {}
+      },
+      "reason": "Resolve the mandatory Roman Arts-of-War event before Pay.",
+      "after_sha256": "5a4f45c38855c8aab246f6d43946e7a4b160d9fbc967d3b6bd666d8593184a2c"
+    },
+    {
+      "action": {
+        "type": "pass_step"
+      },
+      "reason": "No Seljuk Coin remains for Pay.",
+      "after_sha256": "24301f6acb98f4a719c8492bf5cca18ac2b94307b5944ad65d12541c4b5aee67"
+    },
+    {
+      "action": {
+        "type": "pass_step"
+      },
+      "reason": "No Roman Coin remains for Pay.",
+      "after_sha256": "145717540796cccbf34388dac7799941e1e9755c5314f846bedc0cf987cbc880"
+    },
+    {
+      "action": {
+        "type": "pass_step"
+      },
+      "reason": "With no Roman Lords remaining on the map, retain the two surviving Seljuk positions.",
+      "after_sha256": "afbd28b9084a499778d3a6178bb385885a4de81b08c5c96ec4ab3b585af349c4"
+    },
+    {
+      "action": {
+        "type": "pass_step"
+      },
+      "reason": "There is no Roman Lord available to perform Muster.",
+      "after_sha256": "c6722938007a1514baee0a76d82d6239b62b13e0da361e6435eb641358c117eb"
+    },
+    {
+      "action": {
+        "type": "cta_marwanid",
+        "locales": [
+          "amid"
+        ]
+      },
+      "reason": "Activate the forward Seat funded during Summer.",
+      "after_sha256": "579d65ce6e777d220f16837a7c020747ca295414027bbb7dde5ed2c3377e1e6c"
+    },
+    {
+      "action": {
+        "type": "pass_step"
+      },
+      "reason": "Roman Call to Arms complete.",
+      "after_sha256": "fc1c150afee1c22164e3d03dd971ff35821a83e52c53a628ce9f1f9f4d2be3fd"
+    }
+  ]
+}

@@ -691,6 +691,8 @@ def _hold_summer_heat(gs, args, roller):            # R3/S4 (enemy Command 1 aft
     if campaign.season_index(gs.meta.calendar_box) != 1:
         raise IllegalAction("not_summer", "Summer Heat is played in Summer (R3/S4)")
     gs.meta.actions_remaining = min(gs.meta.actions_remaining, 1)  # that Lord is Command 1
+    # This modifies the fresh card's rating; it does not spend an action.
+    gs.meta.notes["card_full_actions"] = gs.meta.actions_remaining
     gs.meta.pending[:] = [p for p in gs.meta.pending if p["type"] != "summer_heat"]
     return {"command_1": gs.meta.active_lord}
 
@@ -735,6 +737,17 @@ def play_hold_event(gs: GameState, card_id: str, args: dict, roller: DiceRoller)
     if card_id not in _HOLD_RESOLVERS:
         raise IllegalAction("hold_not_implemented",
                             f"{card_id} is a Battle/timing Hold Event without a self-contained hook yet")
+    if card_id in {"R3", "S4"}:
+        # Summer Heat is an enemy-reveal reaction, not a way to reset a partly
+        # spent card to a fresh Command-1 budget. Validate before consuming it.
+        window = next((p for p in gs.meta.pending
+                       if p.get("type") == "summer_heat" and p.get("card") == card_id
+                       and p.get("reactor") == side), None)
+        if (window is None or side == gs.meta.active_player
+                or gs.meta.active_lord is None
+                or gs.meta.actions_remaining != gs.meta.notes.get("card_full_actions")):
+            raise IllegalAction("wrong_timing",
+                                "Summer Heat must be played in its enemy Command reveal window (R3/S4)")
     try:
         result = _HOLD_RESOLVERS[card_id](gs, args or {}, roller)
     except (KeyError, IndexError, TypeError) as e:
