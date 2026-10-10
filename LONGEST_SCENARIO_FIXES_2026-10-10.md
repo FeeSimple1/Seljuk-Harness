@@ -66,10 +66,16 @@ PYTHONPATH=src python scripts/roundtrip_sweep.py --seeds 1,2,3,4,5
 PYTHONPATH=src python scripts/smoke_fuzz.py --rounds 2 --seeds 1,2,3
 ```
 
-## Delivery status
+## GitHub publication
 
-Implemented, tested and committed locally. This session's connected GitHub
-actions provide repository reads but no write/merge action; direct GitHub access
-from the execution environment fails name resolution. The downloadable patch
-and corrected source package contain the changes. **They were not pushed or
-merged into GitHub.**
+The previously local implementation commit
+`24ce98a6cbeb9b7453908163ee7b0bac0a0992b6` was restored exactly on GitHub,
+including source tree `5b3c4b3b27feccdf9a4279394792f802a0eef023`.
+Publication verification run **38070115875** checks both hashes and requires
+all **901 tests**, the **25 scenario/seed move sweeps**, and the **30 smoke
+runs** to pass before advancing the fix branch. The publication workflow and
+transfer files remain on a separate temporary branch, not in the game source.
+
+This publication note supersedes the original local-delivery notice. The
+implementation, 37 regression cases and previously documented replay changes
+are unchanged by publication.
