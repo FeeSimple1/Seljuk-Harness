@@ -65,6 +65,20 @@ class ThemataMarker(_Model):
     unit: str
     symbols: int = 1
     home_thema: Optional[str] = None
+    # Printed symbols never change. While on a mat, strength tracks surviving
+    # units (including Routed), independently of the Commander's own Forces.
+    strength: Optional[int] = Field(default=None, ge=0)
+    routed: int = Field(default=0, ge=0)
+
+    def unit_count(self) -> int:
+        return self.symbols if self.strength is None else self.strength
+
+    def unrouted_count(self) -> int:
+        return self.unit_count() - self.routed
+
+    def reset_units(self) -> None:
+        self.strength = None
+        self.routed = 0
 
 
 class LordState(_Model):
@@ -96,6 +110,22 @@ class LordState(_Model):
     lieutenant_of: Optional[str] = None
     lower_lord: Optional[str] = None
     flags: dict[str, Any] = Field(default_factory=dict)  # ad-hoc per-Lord flags/marks (later phases)
+
+    def unrouted_forces(self) -> dict[str, int]:
+        """All fighting units on this mat, without losing Themata identity."""
+        units = {u: n for u, n in self.forces.items() if n > 0}
+        for marker in self.themata_on_mat:
+            n = marker.unrouted_count()
+            if n > 0:
+                units[marker.unit] = units.get(marker.unit, 0) + n
+        return units
+
+    def routed_forces(self) -> dict[str, int]:
+        units = {unit: count for unit, count in self.routed.items() if count > 0}
+        for marker in self.themata_on_mat:
+            if marker.routed:
+                units[marker.unit] = units.get(marker.unit, 0) + marker.routed
+        return units
 
 
 class LocaleState(_Model):

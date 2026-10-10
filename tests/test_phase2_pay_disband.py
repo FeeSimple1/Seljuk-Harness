@@ -9,6 +9,7 @@ from seljuk.state import IllegalAction
 def _levy_at_pay(scenario="emperor_and_the_lion", seed=1):
     gs = S.load_scenario(scenario, seed=seed)
     engine.start_levy(gs)
+    gs.meta.pending = []  # Isolate this subsystem; opening choices have dedicated tests.
     return gs
 
 

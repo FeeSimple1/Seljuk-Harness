@@ -157,18 +157,41 @@ After some actions the game owes a sub-decision before normal play resumes.
 | `ravage_defence` | `{"type":"resolve_ravage_defence","defend_with":INDEX_or_null}` |
 | `loyalty_check` | `{"type":"resolve_loyalty","target":LORD}` (from `targets`; optional `coins_for`/`coins_against`, see hints) |
 | `basil_response` | `{"type":"basil_response","play":true\|false}` |
+| `retain_themata` | `{"type":"retain_themata","lord":L,"thema":THEMA,"mode":"pay"}`; or `"return"`, or `"pressed_levy"` when offered (4.7.5/R4) |
 | `winter_quarters` | `{"type":"winter_quarters","lord":L,"dest":SEAT}` or `{"lord":L,"stay":true}` (R15/S15; options in the pending's `dests`/`may_stay`) |
 
 Battles, Storms, and Sallies are **auto-resolved** by the engine when you Stand
 (or Storm/Sally); the result is returned by `do`. You don't roll dice — the
-seeded RNG in the save file does, deterministically.
+seeded RNG in the save file does, deterministically. Typed `battle_decisions`
+(and `storm_decisions`) accept JSON arrays, for example `[["concede", true]]`.
+Tuple-valued choices use a nested array, such as
+`[["retreat", ["retreat", "ani"]]]`, subject to the offered destinations.
+
+S11 Javelins fires in one Battle round per Battle, not every round and not in
+Storm. Supply `"javelins_rounds": {"ibn_khan": 2}` on `respond_approach`,
+`cmd_sortie`, or `cmd_sally` to mark round 2 for that Lord. The default is round 1.
+The same syntax applies to `steeled_rounds` for R3 Steeled Resolve.
+
+At a non-final Campaign Reset, the Roman player may retain all of a Thema's
+Levied/Recruited units on a Lord's mat for **one Coin per Thema**, not per unit or
+marker. Resolve each `retain_themata` pending before continuing. `pressed_levy`
+is offered for R4's one free unpaid Thema; `return` declines retention. The save
+file preserves these choices, including a partially completed Reset.
+
+Themata `symbols` are the printed marker capacity. On a Lord's mat, optional
+`strength` records surviving units and `routed` records its routed subset; a
+missing/null strength means full printed strength. Human Lord/summary views
+include the surviving Themata in Forces while displaying their marker identity.
+Older saves without these fields remain loadable.
 
 ## Hidden information
 
 `state --file game.json --side seljuk --json` returns the machine-readable game
 state **filtered for that side**: the opponent's draw deck, held Events, and
 unrevealed Plan cards are masked as `"<hidden>"`. Your own are fully visible, as
-are the opponent's already-revealed Command cards. The human `briefing` and
+are the opponent's already-revealed Command cards. The filtered view exposes
+only action types from replay history and omits the random seed/state; raw
+history includes secret plans and is not a player-safe event log. The human `briefing` and
 `state` (summary) views are for convenience/observing.
 
 ## Winning
@@ -210,8 +233,10 @@ decisions owed by its side, and only `do` actions for its own Lords. The
 `legal-moves` palette is always for the current `active` side, so following "act
 only on your turn" keeps both honest.
 
-Tip: keep a turn log by piping `do` output to a shared file, or use
-`history --file game.json --n 20` to review recent moves.
+For fair head-to-head play, keep private action results private: they can
+contain a Plan or other hidden choices. `history` and unfiltered save files are
+omniscient debugging/replay tools, not public turn logs. Use your side-filtered
+state to review public information.
 
 ## Quick reference — common action types
 

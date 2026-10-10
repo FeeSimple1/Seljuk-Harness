@@ -151,6 +151,11 @@ def h_pass_step(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> di
                     for m in enumerate_muster(gs))):
         raise IllegalAction("imperial_rivalry",
                             "Romans must attempt to Muster Andronikos Doukas this Levy (S9)")
+    if any(p["type"] in {"deploy_capability", "event_pending_resolution", "imperial_coffers"}
+           for p in gs.meta.pending):
+        raise IllegalAction("pending_decision", "resolve opening decisions before passing (3.1)")
+    if gs.meta.subphase not in {"levy.pay", "levy.muster", "levy.call_to_arms"}:
+        raise IllegalAction("wrong_step", "only an interactive Levy step may be passed")
     engine.note_pass(gs)
     return {"ok": True, "passed": side, "now": {"subphase": gs.meta.subphase, "active": gs.meta.active_player}}
 
@@ -176,11 +181,21 @@ def _return_themata_home(gs: GameState, lord: LordState) -> None:
         home = marker.home_thema
         if home and home in gs.themata:
             marker.home_thema = None
+            marker.reset_units()
             gs.themata[home].append(marker)
     lord.themata_on_mat = []
 
 
-def _strip_lord(lord: LordState) -> None:
+def _strip_lord(lord: LordState, gs: GameState | None = None) -> None:
+    if gs is not None:
+        if lord.lieutenant_of in gs.lords:
+            leader = gs.lords[lord.lieutenant_of]
+            if leader.lower_lord == lord.id:
+                leader.lower_lord = None
+        if lord.lower_lord in gs.lords:
+            lower = gs.lords[lord.lower_lord]
+            if lower.lieutenant_of == lord.id:
+                lower.lieutenant_of = None
     lord.forces = {}
     lord.routed = {}
     from .state import Assets
@@ -236,7 +251,7 @@ def _disband_expired_vassals(gs: GameState, side: str) -> list[dict[str, Any]]:
             v.unready = True
             v.service_box = None
             out.append({"lord": lord.id, "vassal_disband": v.special_name or list(v.forces)})
-        if lord.mustered and not lord.forces and lord.service_box is not None:  # 1.6 empty -> Disband
+        if lord.mustered and not lord.unrouted_forces() and lord.service_box is not None:  # 1.6 empty -> Disband
             out.append(_disband_at_limit(gs, lord))
     return out
 
@@ -250,7 +265,7 @@ def _disband_beyond(gs: GameState, lord: LordState) -> dict[str, Any]:
         claimed_so = True
     _return_capabilities_to_deck(gs, lord)
     _return_themata_home(gs, lord)
-    _strip_lord(lord)
+    _strip_lord(lord, gs)
     lord.mustered = False
     lord.cylinder = "removed"
     lord.cylinder_calendar_box = None
@@ -265,7 +280,7 @@ def _disband_at_limit(gs: GameState, lord: LordState) -> dict[str, Any]:
     new_box = min(target, OFF_RIGHT)
     _return_capabilities_to_deck(gs, lord)
     _return_themata_home(gs, lord)
-    _strip_lord(lord)
+    _strip_lord(lord, gs)
     lord.mustered = False
     lord.cylinder = "calendar"
     lord.cylinder_calendar_box = new_box
@@ -383,7 +398,7 @@ def _units_in_play(gs: GameState) -> dict[str, int]:
         for u, n in l.routed.items():
             _add(u, n)
         for tm in l.themata_on_mat:
-            _add(tm.unit, tm.symbols)
+            _add(tm.unit, tm.unit_count())
     for loc in gs.locales.values():
         for tm in loc.themata_defending:
             _add(tm.unit, tm.symbols)
@@ -472,6 +487,8 @@ def h_levy_lord(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> di
         raise IllegalAction("bad_lord", "levyer/target not found")
     if not _can_act_in_muster(gs, levyer):
         raise IllegalAction("cannot_levy", f"{levyer.id} cannot take a Levy action now (3.4)")
+    if target.side != levyer.side:
+        raise IllegalAction("enemy_lord", "a Lord may only Muster another Lord of his side (3.4.1)")
     if target.mustered or target.cylinder != "calendar" or target.cylinder_calendar_box is None:
         raise IllegalAction("target_not_ready", f"{target.id} is not Ready to Muster")
     if target.cylinder_calendar_box > gs.meta.calendar_box:
@@ -516,6 +533,12 @@ def _capability_eligible(gs: GameState, lord: LordState, card_id: str) -> bool:
     if card_id not in gs.side_decks(lord.side).draw_deck:
         return False
     cap = cdata["capability"]
+    if card_id == "S13":
+        from . import map as gmap
+        friends = [l for l in gs.lords.values() if l.side == lord.side and _on_map(l)]
+        enemies = [l for l in gs.lords.values() if l.side != lord.side and _on_map(l)]
+        if not any(e.cylinder in gmap.neighbors(f.cylinder) for f in friends for e in enemies):
+            return False  # Gifts Exchanged: adjacent Friendly and Enemy Lords
     if cap["scope"] == "this_lord":
         elig = cap["eligible_lords"]
         if elig is not None and lord.id not in elig:
@@ -540,15 +563,23 @@ def h_levy_capability(gs: GameState, action: dict[str, Any], roller: DiceRoller)
         raise IllegalAction("ineligible_capability", f"{lord.id} may not Levy {card_id} (3.4.4)")
     _spend_lordship(lord, 1)
     gs.side_decks(lord.side).draw_deck.remove(card_id)
-    cap = sd.card(card_id)["capability"]
-    if cap["scope"] == "this_lord":
-        lord.capabilities.append(card_id)
-        _maybe_add_special_vassal(gs, lord, card_id)  # R2/R7/R17/S20 add the Vassal slot
-        placement = "this_lord_mat"
-    else:
-        gs.side_decks(lord.side).capabilities_in_play.append(card_id)
-        placement = "board_edge"
+    placement = _place_capability(gs, lord.side, card_id, lord)
     return {"ok": True, "action": "levy_capability", "lord": lord.id, "card": card_id, "placement": placement}
+
+
+def _place_capability(gs: GameState, side: str, card_id: str, lord: LordState | None = None) -> str:
+    """Apply placement effects identically for opening deployment and Muster."""
+    if sd.card(card_id)["capability"]["scope"] == "this_lord":
+        if lord is None:
+            raise IllegalAction("ineligible_lord", "This Lord Capability requires a Lord")
+        lord.capabilities.append(card_id)
+        _maybe_add_special_vassal(gs, lord, card_id)
+        return "this_lord_mat"
+    gs.side_decks(side).capabilities_in_play.append(card_id)
+    if card_id == "S13":
+        gs.meta.notes["gifts_coins"] = 4
+        gs.meta.notes["gifts_taken"] = {"seljuk": 0, "roman": 0}
+    return "board_edge"
 
 
 def _vassal_levyable(gs: GameState, lord: LordState, idx: int) -> bool:
@@ -733,7 +764,7 @@ def _eligible_mustered_for_this_lord(gs: GameState, side: str, card_id: str) -> 
 def _deploy_first_levy_capability(gs: GameState, side: str, card_id: str) -> None:
     cap = sd.card(card_id)["capability"]
     if cap["scope"] == "side_wide":
-        gs.side_decks(side).capabilities_in_play.append(card_id)
+        _place_capability(gs, side, card_id)
         return
     # This-Lord: assign to a Mustered eligible Lord, else return to deck (3.1.2/3.4.4).
     eligible = _eligible_mustered_for_this_lord(gs, side, card_id)
@@ -798,10 +829,19 @@ def h_deploy_capability(gs: GameState, action: dict[str, Any], roller: DiceRolle
     pend = next((p for p in gs.meta.pending if p.get("type") == "deploy_capability" and p.get("card") == card_id), None)
     if pend is None:
         raise IllegalAction("no_such_pending", f"no pending deployment for {card_id}")
-    if lord_id not in pend["eligible"]:
+    if lord_id not in _eligible_mustered_for_this_lord(gs, pend["side"], card_id):
         raise IllegalAction("ineligible_lord", f"{lord_id} may not receive {card_id}")
-    gs.lords[lord_id].capabilities.append(card_id)
+    _place_capability(gs, pend["side"], card_id, gs.lords[lord_id])
     gs.meta.pending.remove(pend)
+    # Earlier assignments may fill a mat or give it the same-named Capability.
+    # Refresh every remaining choice; return an unplaceable card to its deck.
+    for other in list(gs.meta.pending):
+        if other["type"] != "deploy_capability":
+            continue
+        other["eligible"] = _eligible_mustered_for_this_lord(gs, other["side"], other["card"])
+        if not other["eligible"]:
+            gs.side_decks(other["side"]).draw_deck.append(other["card"])
+            gs.meta.pending.remove(other)
     return {"ok": True, "deployed": card_id, "lord": lord_id}
 
 
@@ -1176,7 +1216,7 @@ def _switch_side(gs: GameState, lord: LordState) -> None:
     lord.side = "roman" if lord.side == "seljuk" else "seljuk"
     _return_capabilities_to_deck(gs, lord)
     _return_themata_home(gs, lord)
-    _strip_lord(lord)
+    _strip_lord(lord, gs)
     lord.mustered = False
     lord.strategic_objective = False
     if lord.cylinder == "calendar":

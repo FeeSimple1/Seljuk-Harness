@@ -11,6 +11,8 @@ from Phase 0.
 from __future__ import annotations
 
 import random
+from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import dataclass
 
 
@@ -42,3 +44,31 @@ class DiceRoller:
     def set_state(self, state: tuple) -> None:
         """Restore RNG state loaded from a game file."""
         self._rng.setstate(state)
+
+
+_active_roller: ContextVar[tuple | None] = ContextVar("seljuk_active_roller", default=None)
+
+
+def roller_for_state(gs) -> DiceRoller:
+    """Get the current action's stream, or reconstruct a standalone stream."""
+    active = _active_roller.get()
+    if active is not None and active[0] is gs:
+        return active[1]
+    roller = DiceRoller(seed=gs.meta.seed)
+    if gs.meta.rng_state is not None:
+        st = gs.meta.rng_state
+        roller.set_state((st[0], tuple(st[1]), st[2]))
+    return roller
+
+
+@contextmanager
+def action_roller(gs):
+    """Share one stream through nested battle, card, and campaign effects."""
+    roller = roller_for_state(gs)
+    token = _active_roller.set((gs, roller))
+    try:
+        yield roller
+        st = roller.get_state()
+        gs.meta.rng_state = [st[0], list(st[1]), st[2]]
+    finally:
+        _active_roller.reset(token)

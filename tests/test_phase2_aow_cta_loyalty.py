@@ -55,7 +55,7 @@ def test_full_levy_reaches_complete():
     gs = S.load_scenario("emperor_and_the_lion", seed=11)
     gs.meta.notes["first_aow_done"] = True
     engine.start_levy(gs)
-    # clear any pending deploys not relevant here; just pass through all steps
+    gs.meta.pending = []  # Step-machine fixture; immediate Event resolution is tested separately.
     for _ in range(2):  # pay: seljuk, roman
         engine.apply_action(gs, {"type": "pass_step"})
     for _ in range(2):  # muster: seljuk, roman
@@ -69,6 +69,7 @@ def _drive_to_cta(scenario, seed=1):
     gs = S.load_scenario(scenario, seed=seed)
     gs.meta.notes["first_aow_done"] = True
     engine.start_levy(gs)
+    gs.meta.pending = []  # Isolate Call to Arms from unrelated opening Events.
     for _ in range(4):  # pay x2, muster x2
         engine.apply_action(gs, {"type": "pass_step"})
     assert gs.meta.subphase == "levy.call_to_arms"

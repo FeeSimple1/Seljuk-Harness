@@ -8,6 +8,7 @@ from seljuk.state import IllegalAction
 
 def _muster(gs, side):
     engine.start_levy(gs)
+    gs.meta.pending = []  # Isolate this subsystem; opening choices have dedicated tests.
     gs.meta.subphase = "levy.muster"; gs.meta.active_player = side; gs.meta.levy_step_passed = {}
     reset_muster_segment(gs)
 

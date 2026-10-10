@@ -52,8 +52,8 @@ def summary(gs: GameState) -> str:
                 loc = sd.locale(l.cylinder)["name"]
                 status = f"@ {loc} (Service {_box_label(l.service_box) if l.service_box is not None else '?'})"
                 extra = []
-                if l.forces:
-                    extra.append(_forces_str(l.forces))
+                if l.unrouted_forces():
+                    extra.append(_forces_str(l.unrouted_forces()))
                 if l.capabilities:
                     extra.append("caps: " + ",".join(l.capabilities))
                 detail = "  [" + " | ".join(extra) + "]" if extra else ""
@@ -107,8 +107,8 @@ def lord_view(gs: GameState, lord_id: str) -> str:
         f"  Status: {'Mustered' if l.mustered else l.cylinder}"
         + (f" @ {sd.locale(l.cylinder)['name']}" if l.mustered else "")
         + (f"  (Service {_box_label(l.service_box)})" if l.service_box is not None else ""),
-        f"  Forces: {_forces_str(l.forces)}",
-        f"  Routed: {_forces_str(l.routed)}",
+        f"  Forces: {_forces_str(l.unrouted_forces())}",
+        f"  Routed: {_forces_str(l.routed_forces())}",
         f"  Assets: {_assets_str(l.assets)}",
     ]
     if l.vassals:
@@ -121,7 +121,7 @@ def lord_view(gs: GameState, lord_id: str) -> str:
     if l.capabilities:
         out.append("  This-Lord Capabilities: " + ", ".join(l.capabilities))
     if l.themata_on_mat:
-        out.append("  Themata on mat: " + ", ".join(f"{t.unit}x{t.symbols}" for t in l.themata_on_mat))
+        out.append("  Themata on mat: " + ", ".join(f"{t.unit}x{t.unrouted_count()} ({t.routed} routed; marker x{t.symbols})" for t in l.themata_on_mat))
     if l.strategic_objective:
         out.append("  * Roman Strategic Objective marker on this mat")
     return "\n".join(out)

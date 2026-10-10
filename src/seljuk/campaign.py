@@ -201,10 +201,8 @@ def _reveal_next(gs: GameState) -> None:
             return
         lord = gs.lords[card]
         gs.meta.active_lord = card
-        _r = DiceRoller(seed=gs.meta.seed)
-        if gs.meta.rng_state is not None:
-            _st = gs.meta.rng_state
-            _r.set_state((_st[0], tuple(_st[1]), _st[2]))
+        from .rng import roller_for_state
+        _r = roller_for_state(gs)
         gs.meta.actions_remaining = capabilities.command_rating(gs, card, _r)
         # Record the freshly-revealed card's full action budget so the menu can
         # detect the "before any Command action" window for Hold Events such as
@@ -249,11 +247,8 @@ def end_activation(gs: GameState) -> None:
 
 
 def _load_fpd_roller(gs: GameState) -> DiceRoller:
-    roller = DiceRoller(seed=gs.meta.seed)
-    if gs.meta.rng_state is not None:
-        st = gs.meta.rng_state
-        roller.set_state((st[0], tuple(st[1]), st[2]))
-    return roller
+    from .rng import roller_for_state
+    return roller_for_state(gs)
 
 
 def _store_fpd_roller(gs: GameState, roller: DiceRoller) -> None:
@@ -415,7 +410,7 @@ def feed_pay_disband(gs: GameState, roller: DiceRoller) -> dict:
 
 
 def _unit_count(lord: LordState) -> int:
-    return sum(lord.forces.values())
+    return sum(lord.unrouted_forces().values())
 
 
 def _feed_side(gs: GameState, side: str, result: dict) -> None:
@@ -483,15 +478,31 @@ def _set_game_over(gs: GameState, winner: str, reason: str = "") -> None:
 def _end_campaign(gs: GameState) -> None:
     gs.meta.subphase = "campaign.end"
     box = gs.meta.calendar_box
+    # Game End precedes Grow, Repair, Wastage, Reset, and Winter (4.7.1).
+    # None of those later steps may change the final score or create choices.
+    if box >= gs.meta.final_box:
+        gs.meta.vp = scenarios.score(gs)
+        _advance_or_end(gs)
+        return
     _grow(gs)       # 4.7.2 (Spring only)
     _repair(gs)     # 4.7.3
     _wastage(gs)    # 4.7.4
-    _reset(gs)      # 4.7.5 (non-advance parts)
+    if _begin_themata_retention(gs):
+        return
+    _finish_end_campaign(gs)
+
+
+def _finish_end_campaign(gs: GameState) -> None:
+    """Resume after the Roman player's 4.7.5 retention choices."""
+    gs.meta.subphase = "campaign.end"
+    _reset(gs, retained=gs.meta.notes.pop("retained_themata", {}))
+    gs.meta.notes.pop("pressed_levy_used", None)
     gs.meta.vp = scenarios.score(gs)
+    box = gs.meta.calendar_box
     if box in (3, 6, 9):                # 4.7.6 Winter on the first three Autumns
         # Winter Campaign / Winter March (R9/S18): a pre-Bounty activation
         # window. Pause if either side Holds the card; else resolve Winter now.
-        holders = [s for s, c in (("roman", "R9"), ("seljuk", "S18"))
+        holders = [s for s, c in (("seljuk", "S18"), ("roman", "R9"))
                    if c in gs.side_decks(s).held_events]
         if holders:
             gs.meta.phase = "winter"
@@ -642,14 +653,75 @@ def _wastage(gs: GameState) -> None:
         _do_one_wastage(gs, enemy)
 
 
-def _reset(gs: GameState) -> None:
-    """4.7.5 (non-advance parts): return unpaid Themata, unstack Lieutenants,
-    discard This-Campaign Events. (Auto-returns Themata; pay-to-retain is a
-    player choice surfaced in a later phase.)"""
+def _begin_themata_retention(gs: GameState) -> bool:
+    """Offer one-Coin-per-Thema retention, including R4's one free Thema."""
+    gs.meta.notes["retained_themata"] = {}
+    free = capabilities.side_has(gs, "roman", "Pressed Levy Service")
+    for lord in gs.lords.values():
+        if lord.side != "roman" or not on_map(lord):
+            continue
+        homes = list(dict.fromkeys(m.home_thema for m in lord.themata_on_mat
+                                   if m.home_thema and m.unit_count() > 0))
+        if lord.assets.coin > 0 or free:
+            for home in homes:
+                gs.meta.pending.append({"type": "retain_themata", "lord": lord.id,
+                                        "thema": home, "_owed_by": "roman"})
+    if not any(p["type"] == "retain_themata" for p in gs.meta.pending):
+        return False
+    gs.meta.subphase = "campaign.reset"
+    gs.meta.active_player = "roman"
+    gs.meta.active_lord = None
+    return True
+
+
+def _retention_moves(gs: GameState) -> list[dict[str, Any]]:
+    pending = next((p for p in gs.meta.pending if p["type"] == "retain_themata"), None)
+    if pending is None:
+        return []
+    lord = gs.lords[pending["lord"]]
+    base = {"type": "retain_themata", "lord": lord.id, "thema": pending["thema"]}
+    moves = []
+    if lord.assets.coin > 0:
+        moves.append({**base, "mode": "pay", "_desc": "Pay 1 Coin to retain this Thema's units (4.7.5)"})
+    if (capabilities.side_has(gs, "roman", "Pressed Levy Service")
+            and not gs.meta.notes.get("pressed_levy_used")):
+        moves.append({**base, "mode": "pressed_levy", "_desc": "Retain this Thema free with Pressed Levy Service (R4)"})
+    moves.append({**base, "mode": "return", "_desc": "Return this Thema's markers and units home (4.7.5)"})
+    return moves
+
+
+def h_retain_themata(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
+    pending = next((p for p in gs.meta.pending if p["type"] == "retain_themata"), None)
+    if pending is None or gs.meta.subphase != "campaign.reset":
+        raise IllegalAction("wrong_step", "no Themata retention decision is owed (4.7.5)")
+    offered = _retention_moves(gs)
+    if not any(all(action.get(k) == move[k] for k in ("lord", "thema", "mode")) for move in offered):
+        raise IllegalAction("bad_retention", "choose a currently offered Themata retention option (4.7.5)")
+    lord = gs.lords[pending["lord"]]
+    mode = action["mode"]
+    if mode == "pay":
+        lord.assets.coin -= 1
+    elif mode == "pressed_levy":
+        gs.meta.notes["pressed_levy_used"] = True
+    if mode != "return":
+        gs.meta.notes["retained_themata"].setdefault(lord.id, []).append(pending["thema"])
+    gs.meta.pending.remove(pending)
+    result = {"ok": True, "lord": lord.id, "thema": pending["thema"], "mode": mode}
+    if not any(p["type"] == "retain_themata" for p in gs.meta.pending):
+        _finish_end_campaign(gs)
+    return result
+
+
+def _reset(gs: GameState, retained: dict | None = None) -> None:
+    """4.7.5: return unpaid Themata, unstack, and discard seasonal effects.
+
+    Live play supplies the player's retention choices. Standalone callers may
+    omit them to use the deterministic R4 default (the most numerous Thema).
+    """
     # R4 Pressed Levy Service: the Romans may keep 1 Unpaid Thema's Levied
     # Themata. Auto-choice: retain the Thema with the most Levied markers.
     keep_thema = None
-    if capabilities.side_has(gs, "roman", "Pressed Levy Service"):
+    if retained is None and capabilities.side_has(gs, "roman", "Pressed Levy Service"):
         from collections import Counter
         counts: Counter = Counter()
         for l in gs.lords.values():
@@ -663,11 +735,13 @@ def _reset(gs: GameState) -> None:
         kept = []
         for marker in l.themata_on_mat:
             home = marker.home_thema
-            if keep_thema is not None and l.side == "roman" and home == keep_thema:
+            if l.side == "roman" and ((keep_thema is not None and home == keep_thema)
+                                     or home in (retained or {}).get(l.id, [])):
                 kept.append(marker)  # Pressed Levy: retain this Thema's Levied markers
                 continue
             if home and home in gs.themata:
                 marker.home_thema = None
+                marker.reset_units()
                 gs.themata[home].append(marker)
         l.themata_on_mat = kept
         l.lieutenant_of = None
@@ -678,6 +752,9 @@ def _reset(gs: GameState) -> None:
     gs.meta.notes.pop("peace_offering_season", None)
     gs.meta.notes.pop("gifts_coins", None)
     gs.meta.notes.pop("gifts_taken", None)
+    if "S13" in gs.seljuk.capabilities_in_play:
+        gs.seljuk.capabilities_in_play.remove("S13")
+        gs.seljuk.draw_deck.append("S13")  # Gifts Exchanged expires even if empty
     for _wk in ("weather_pass_block", "weather_plan9", "weather_no_command_side"):
         gs.meta.notes.pop(_wk, None)
 
@@ -801,6 +878,7 @@ def _apply_winter_quarters(gs: GameState, lord: LordState, dest: str | None) -> 
     return to Seat in Winter"); a staying Lord keeps his position and state."""
     if dest is None:
         return
+    origin = lord.cylinder
     lord.cylinder = dest
     lord.assets.loot = 0  # Unladen: discard Loot
     # Unladen also requires Provender <= Carts; this is checked against the
@@ -809,6 +887,8 @@ def _apply_winter_quarters(gs: GameState, lord: LordState, dest: str | None) -> 
     lord.assets.carts = -(-lord.assets.carts // 2)  # halve, round up
     lord.besieged = False
     lord.bypassed = False
+    if origin != dest:
+        _refresh_invest(gs, origin)  # the last besieger leaving ends Siege/Bypass
 
 
 def _begin_winter_quarters(gs: GameState) -> bool:
@@ -870,10 +950,8 @@ def h_winter_quarters(gs: GameState, action: dict[str, Any], roller: DiceRoller)
 def _aleppo_diplomacy(gs: GameState) -> None:
     if not gs.meta.independent_aleppo_on_map:
         return
-    roller = DiceRoller(seed=gs.meta.seed)
-    if gs.meta.rng_state is not None:
-        s = gs.meta.rng_state
-        roller.set_state((s[0], tuple(s[1]), s[2]))
+    from .rng import roller_for_state
+    roller = roller_for_state(gs)
     roll = roller.d6()
     st = roller.get_state()
     gs.meta.rng_state = [st[0], list(st[1]), st[2]]
@@ -910,6 +988,8 @@ def h_end_activation(gs: GameState, action: dict[str, Any], roller: DiceRoller) 
 
 
 def legal_moves_campaign(gs: GameState) -> list[dict[str, Any]]:
+    if any(p["type"] == "retain_themata" for p in gs.meta.pending):
+        return _retention_moves(gs)
     if gs.meta.subphase == "winter.activation":
         if gs.meta.active_lord is not None:
             return command_menu(gs) + [{"type": "end_activation", "_desc": "End the Winter activation"}]
@@ -972,6 +1052,7 @@ def legal_moves_campaign(gs: GameState) -> list[dict[str, Any]]:
                  "defender": sorted(set(gs.side_decks(_enemy(att_side)).held_events) & battle._BATTLE_HOLDS)}
         return [{"type": "respond_approach", "_defenders": ap["defenders"], "_locale": ap["locale"],
                  "_battle_holds_available": holds,
+                 "_javelins_rounds": "Optional {lord_id: round} for S11; default round 1",
                  "_desc": "Each defending Lord: Avoid Battle / Withdraw / Stand (4.3.4); "
                           "either side may pass in-Battle Held Events via battle_events"}]
     bb = next((p for p in gs.meta.pending if p["type"] == "besiege_or_bypass"), None)
@@ -1072,8 +1153,6 @@ def command_menu(gs: GameState) -> list[dict[str, Any]]:
                             and not lord.lieutenant_of and capabilities.lord_has(gs, lord.id, "Mules")
                             and not lord.flags.get("mules_used_this_card")):
                         cost = min(cost, 1)  # Mules: first Pass March = 1 (no state mutation here)
-                    if cost > gs.meta.actions_remaining:
-                        continue
                 mv = {"type": "cmd_march", "lord": lid, "to": to, "way_type": edge["type"],
                       "_desc": f"March to {sd.locale(to)['name']} via {edge['type']} (4.3)"}
                 if over:
@@ -1093,6 +1172,10 @@ def command_menu(gs: GameState) -> list[dict[str, Any]]:
                         if co_marchers:
                             umv["_co_marchers"] = list(co_marchers); umv["_co_marcher_max"] = co_max
                         out.append(umv)
+                # Price the discard-to-Unladen alternative BEFORE rejecting the
+                # ordinary Laden March for insufficient actions (4.3.3).
+                if cost != "whole_card" and cost > gs.meta.actions_remaining:
+                    continue
                 if co_marchers:
                     # Optional Group March (4.3.1): add a "group" subset of these
                     # (<= co_marcher_max) to bring co-located Lords; the handler
@@ -1268,6 +1351,9 @@ def command_menu(gs: GameState) -> list[dict[str, Any]]:
                             "_desc": f"Build a Fort at {_fti['name']} (R1 Imperial Fortress Construction)"})
     except (KeyError, AttributeError):  # pragma: no cover - suppress over offer
         return out
+    for move in out:
+        if move["type"] in ("cmd_sally", "cmd_sortie"):
+            move["_javelins_rounds"] = "Optional {lord_id: round} for S11; default round 1"
     return out
 
 
@@ -1691,9 +1777,10 @@ def _enemy_in_open_at(gs: GameState, locale_id: str, side: str) -> bool:
 
 def _all_turkic(lords: list[LordState]) -> bool:
     for l in lords:
-        if not l.forces:
+        units = l.unrouted_forces()
+        if not units:
             return False
-        if any(u != "turkic_horse" and n > 0 for u, n in l.forces.items()):
+        if any(u != "turkic_horse" and n > 0 for u, n in units.items()):
             return False
     return True
 
@@ -1837,30 +1924,32 @@ def march_cost(gs: GameState, lords: list[LordState], way: dict, first_march: bo
 
 
 def _marching_group(gs: GameState, lord: LordState, co_marchers: list[str]) -> list[LordState]:
-    """The set of Lords that move together (4.3.1 Group March + 4.1.3 stack)."""
-    group = [lord]
-    # A Lieutenant brings his Lower Lord; a Lower Lord cannot be the active card.
-    if lord.lower_lord and lord.lower_lord in gs.lords:
-        group.append(gs.lords[lord.lower_lord])
-    if co_marchers:
-        # S7 Trusted Commander: a non-Commander Lord may March with 1 (only) other
-        # Seljuk Lord (for March only; no Commander status).
-        trusted = capabilities.lord_has(gs, lord.id, "Trusted Commander")
-        if not actions.is_commander(gs, lord.id) and not trusted:
-            raise IllegalAction("not_commander_group", "only a Commander may lead a Group March (4.3.1)")
-        if trusted and not actions.is_commander(gs, lord.id) and len(co_marchers) > 1:
-            raise IllegalAction("trusted_commander_one_only",
-                                "Trusted Commander may March with 1 (only) other Seljuk Lord (S7)")
-        for cid in co_marchers:
-            other = gs.lords.get(cid)
-            if other is None or other.side != lord.side or not on_map(other) or other.cylinder != lord.cylinder:
-                raise IllegalAction("bad_co_marcher", f"{cid} cannot Group-March with {lord.id}")
-            if other.besieged:
-                raise IllegalAction("besieged", f"{cid} is Besieged")
-            group.append(other)
-            if other.lower_lord and other.lower_lord in gs.lords:
-                group.append(gs.lords[other.lower_lord])
-    return group
+    """Build whole, co-located stacks without counting any Lord twice (4.1.3/4.3.1)."""
+    if lord.lieutenant_of:
+        raise IllegalAction("lower_lord", "a Lower Lord cannot lead a March (4.1.3)")
+    trusted = capabilities.lord_has(gs, lord.id, "Trusted Commander")
+    commander = actions.is_commander(gs, lord.id)
+    if co_marchers and not commander and not trusted:
+        raise IllegalAction("not_commander_group", "only a Commander may lead a Group March (4.3.1)")
+    ids = list(dict.fromkeys([lord.id] + list(co_marchers)))
+    for lid in list(ids):
+        other = gs.lords.get(lid)
+        if other is None:
+            raise IllegalAction("bad_co_marcher", f"unknown Lord {lid}")
+        if other.lower_lord and other.lower_lord not in ids:
+            ids.append(other.lower_lord)
+    for lid in ids:
+        other = gs.lords[lid]
+        if other.side != lord.side or not on_map(other) or other.cylinder != lord.cylinder:
+            raise IllegalAction("bad_co_marcher", f"{lid} cannot Group-March with {lord.id}")
+        if other.besieged:
+            raise IllegalAction("besieged", f"{lid} is Besieged")
+        if other.lieutenant_of and other.lieutenant_of not in ids:
+            raise IllegalAction("split_stack", "a Lower Lord must March with his Lieutenant (4.1.3)")
+    if trusted and not commander and co_marchers and len(ids) > 2:
+        raise IllegalAction("trusted_commander_one_only",
+                            "Trusted Commander may March with 1 (only) other Seljuk Lord (S7)")
+    return [gs.lords[lid] for lid in ids]
 
 
 def h_cmd_march(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
@@ -2107,7 +2196,8 @@ def h_respond_approach(gs: GameState, action: dict[str, Any], roller: DiceRoller
                                   sallying=set(sallying),
                                   siegeworks=gs.locales[to].siege_markers if sallying else 0,
                                   approach_origin=approach_origin,
-                                  steeled_rounds=action.get("steeled_rounds"))
+                                  steeled_rounds=action.get("steeled_rounds"),
+                              javelins_rounds=action.get("javelins_rounds"))
         if sallying:
             res["relief_sally"] = list(sallying)
             for lid in sallying:                       # Sallying Lords withdraw back inside
@@ -2473,7 +2563,8 @@ def h_cmd_sortie(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> d
     res = battle.begin_battle(gs, sortie, enemy, loc,
                               scripted=action.get("battle_decisions"),
                               events=action.get("battle_events"),
-                              steeled_rounds=action.get("steeled_rounds"))
+                              steeled_rounds=action.get("steeled_rounds"),
+                              javelins_rounds=action.get("javelins_rounds"))
     gs.meta.actions_remaining = 0
     _after_card(gs)  # _refresh_invest clears the Bypass marker only if the bypasser is gone
     return {"ok": True, "action": "cmd_sortie", "locale": loc, "battle": res}
@@ -2524,6 +2615,7 @@ def h_cmd_sally(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> di
     for _sl in _inv:
         if _sl in gs.lords:
             gs.lords[_sl].flags["steeled_resolve_round"] = int((action.get("steeled_rounds") or {}).get(_sl, 1))
+            gs.lords[_sl].flags["javelins_round"] = int((action.get("javelins_rounds") or {}).get(_sl, 1))
     played, _cc, _chg = battle._consume_battle_events(
         gs, action.get("battle_events"), locale=locale)
     ctx = battle.DecisionContext(action.get("battle_decisions"))
@@ -2532,6 +2624,7 @@ def h_cmd_sally(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> di
     for _sl in _inv:
         if _sl in gs.lords:
             gs.lords[_sl].flags.pop("steeled_resolve_round", None)
+            gs.lords[_sl].flags.pop("javelins_round", None)
     gs.meta.actions_remaining = 0  # Sally ends the card (4.8.6)
     _after_card(gs)
     return {"ok": True, "action": "cmd_sally", "sally": res}

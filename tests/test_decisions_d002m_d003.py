@@ -8,6 +8,7 @@ from seljuk.legal_moves import legal_moves
 def _to_muster(scenario="emperor_and_the_lion", seed=1):
     gs = S.load_scenario(scenario, seed=seed)
     engine.start_levy(gs)
+    gs.meta.pending = []  # Isolated Muster fixture, not an opening-sequence test.
     engine.apply_action(gs, {"type": "pass_step"})
     engine.apply_action(gs, {"type": "pass_step"})
     assert gs.meta.subphase == "levy.muster"
