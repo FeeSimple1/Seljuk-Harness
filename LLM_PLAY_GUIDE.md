@@ -246,3 +246,18 @@ Levy: `pay`, `levy_lord`, `levy_vassal`, `levy_transport`, `levy_capability`,
 Campaign: `build_plan`, `cmd_march`, `cmd_tax`, `cmd_forage`, `cmd_ravage`,
 `cmd_supply`, `cmd_recruit`, `cmd_siege`, `cmd_storm`, `cmd_sally`, `cmd_pass`,
 `end_activation`, `play_hold_event`, `winter_activate`, `winter_proceed`.
+
+## Longest-scenario corrections (2026-10-10)
+
+After an Approach Battle, resolve any `besiege_or_bypass` decision and subsequent
+`assign_themata_defenders` decision before recovery. This applies in Winter as
+well as normal Campaigns. Battle leaves no further Command actions, including
+when Bypass is selected; `end_activation` cannot skip the mandatory decision.
+
+The `build_plan` hint `_no_command_required` covers both Treachery's compulsory
+opponent No Command and Unpredictable Weather. Supply at least one `no_command`
+when it is true, within the displayed `_plan_size`.
+
+This-Campaign cards return to their decks at Reset. S13 Peace Offering becomes
+Gifts Exchanged in the Capability area; its Event effect is tracked by the
+seasonal flag, not a second physical card in `this_campaign_events`.

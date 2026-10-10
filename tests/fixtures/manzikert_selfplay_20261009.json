@@ -431,14 +431,14 @@
         }
       },
       "reason": "Outnumbered Sav-Tekin avoids the relief army and falls back to defend the strategic objective instead of risking destruction.",
-      "after_sha256": "147d8dbc722480fce982946f2443712c743b4210621df59470ce46ebb4dbd0b9"
+      "after_sha256": "e88c24aae722c468d3f4787ba8c99fc76070e3a8846b49535b260e6107a72d07"
     },
     {
       "action": {
         "type": "fpd_done"
       },
       "reason": "No further service payments needed at this point.",
-      "after_sha256": "2691b75bf0992042ecfa1d2462491147d735c2a19c53bf244df64a4ce981fe87"
+      "after_sha256": "9a1cbead77074f23926369126aa8ef44af015f34d628b8ebc4f794190982ee7a"
     },
     {
       "action": {
@@ -1186,7 +1186,7 @@
         "type": "cmd_pass"
       },
       "reason": "The Edessa crossing is unaffordable this card; hold Melitene rather than make an illegal march.",
-      "after_sha256": "b41fe23e839697d7176cfb94da9c2128fcd3ff70627672e12f5f933142dec5a8"
+      "after_sha256": "064735c018423aec2138ba8f5e3b1bc096c4b91ff8a49472b27f83fcfcfd7c97"
     },
     {
       "action": {
@@ -1195,35 +1195,35 @@
         "args": {}
       },
       "reason": "Resolve the mandatory Roman Arts-of-War event before Pay.",
-      "after_sha256": "5a4f45c38855c8aab246f6d43946e7a4b160d9fbc967d3b6bd666d8593184a2c"
+      "after_sha256": "f8da6a3bdebb6530490efedd4a1cc6057d5938d4a6fb9109894a4728ef150a79"
     },
     {
       "action": {
         "type": "pass_step"
       },
       "reason": "No Seljuk Coin remains for Pay.",
-      "after_sha256": "24301f6acb98f4a719c8492bf5cca18ac2b94307b5944ad65d12541c4b5aee67"
+      "after_sha256": "dc6a9002aa62ab81bac6843dacb0eb7f726288465af52d7102b846134e7912b6"
     },
     {
       "action": {
         "type": "pass_step"
       },
       "reason": "No Roman Coin remains for Pay.",
-      "after_sha256": "145717540796cccbf34388dac7799941e1e9755c5314f846bedc0cf987cbc880"
+      "after_sha256": "3c0afe26ce6954d9016bda650176b822c3bf5378aa56bae27b5ba49c941b8e01"
     },
     {
       "action": {
         "type": "pass_step"
       },
       "reason": "With no Roman Lords remaining on the map, retain the two surviving Seljuk positions.",
-      "after_sha256": "afbd28b9084a499778d3a6178bb385885a4de81b08c5c96ec4ab3b585af349c4"
+      "after_sha256": "1dd95cf94f9e9ba7704261eb57e224d43055640779bfed570621e224bf141aef"
     },
     {
       "action": {
         "type": "pass_step"
       },
       "reason": "There is no Roman Lord available to perform Muster.",
-      "after_sha256": "c6722938007a1514baee0a76d82d6239b62b13e0da361e6435eb641358c117eb"
+      "after_sha256": "0df7f350e5e2402583bcb6d7d34b88567ae45e8f0d1a8d3306be291aaaa74f04"
     },
     {
       "action": {
@@ -1233,14 +1233,15 @@
         ]
       },
       "reason": "Activate the forward Seat funded during Summer.",
-      "after_sha256": "579d65ce6e777d220f16837a7c020747ca295414027bbb7dde5ed2c3377e1e6c"
+      "after_sha256": "cf5ced09372b00a89071931e123d57f4ecbd9e0ed5e338b7dd03dc4b399e19f1"
     },
     {
       "action": {
         "type": "pass_step"
       },
       "reason": "Roman Call to Arms complete.",
-      "after_sha256": "fc1c150afee1c22164e3d03dd971ff35821a83e52c53a628ce9f1f9f4d2be3fd"
+      "after_sha256": "87254e9fc623eb20e441480f005cde54e04dc1ccf941e718187662325630f66b"
     }
-  ]
+  ],
+  "hash_baseline_note": "Rebased for longest-scenario EL-04 (immediate relief at indices 43-44) and EL-03 (returned S17 changes Autumn draw at 124-131). All 132 actions, rationales, winner and score are unchanged."
 }

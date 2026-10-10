@@ -144,7 +144,9 @@ def test_r25_honors_of_war_offered_in_siege_menu_451():
     menu only offered the plain Siege.)"""
     from seljuk import campaign as C, static_data as sd
     gs = S.load_scenario("emperor_and_the_lion")
-    fort = next(l for l in sd.all_locale_ids() if sd.locale(l)["type"] == "fort")
+    # Honors of War still requires an ENEMY Fort; a friendly one is not a Siege.
+    fort = next(l for l in sd.all_locale_ids()
+                if sd.locale(l)["type"] == "fort" and C.actions.current_allegiance(gs, l) == "seljuk")
     rl = "romanos_diogenes"
     lord = gs.lords[rl]; lord.cylinder = fort; lord.mustered = True; lord.forces = {"tagmata": 3}
     gs.locales[fort].siege_markers = 1

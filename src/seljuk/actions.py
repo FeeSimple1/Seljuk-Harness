@@ -787,6 +787,11 @@ def _classify_drawn_event(gs: GameState, side: str, card_id: str, roller: DiceRo
         from . import events as _events
         if card_id in _events._RESOLVERS:
             _events._RESOLVERS[card_id](gs, {}, roller)
+        # S13 Peace Offering puts this same physical card into play as Gifts
+        # Exchanged. Its seasonal flag tracks the Event; do not also retain a
+        # second physical copy in the This-Campaign pile (S13 / 4.7.5).
+        if card_id in decks.capabilities_in_play:
+            decks.this_campaign_events.remove(card_id)
     else:
         # immediate / treachery / asterisk: effect resolution is Phase 4.
         gs.meta.pending.append({"type": "event_pending_resolution", "side": side, "card": card_id, "tags": tags})
