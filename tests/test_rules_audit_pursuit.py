@@ -38,9 +38,12 @@ def test_turkic_only_conceder_halves_both_sides():
     assert _final_round_defender_melee(turkic_only) < _final_round_defender_melee(mixed)
 
 
-def test_pursuit_flag_both_sides_via_strike_phase():
+def test_pursuit_flag_both_sides_via_strike_phase(monkeypatch):
     """Unit-level: with both pursuit flags set, the defender's Hits are halved
     in _emit (mirrors the Turkic-only exception outcome)."""
+    # Isolate halving arithmetic: otherwise an early rout suppresses later
+    # strikes, making whole-round totals incomparable across the two cases.
+    monkeypatch.setattr(DiceRoller, "d6", lambda self: 1)
     gs = S.load_scenario("emperor_and_the_lion", seed=1)
     aa = gs.lords["alp_arslan"]; aa.side = "seljuk"; aa.forces = {"turkic_horse": 2}
     ch = gs.lords["chatatourios"]; ch.side = "roman"; ch.forces = {"tagmata": 4}
@@ -61,7 +64,8 @@ def test_pursuit_flag_both_sides_via_strike_phase():
     def def_hits(log):
         return sum(e["hits"] for e in log if e["by"] == "defender")
     # Defender Hits are strictly lower when BOTH sides are halved.
-    assert def_hits(log_both) <= def_hits(log_def_only)
+    assert def_hits(log_both) == 3
+    assert def_hits(log_def_only) == 6
 
 
 def test_two_lords_per_side_no_both_halving():

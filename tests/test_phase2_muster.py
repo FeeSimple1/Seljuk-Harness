@@ -9,13 +9,10 @@ from seljuk.state import IllegalAction
 def _to_muster(scenario="emperor_and_the_lion", seed=1):
     gs = S.load_scenario(scenario, seed=seed)
     engine.start_levy(gs)
+    gs.meta.pending = []  # Isolate this subsystem; opening choices have dedicated tests.
     engine.apply_action(gs, {"type": "pass_step"})  # Seljuk done Pay
     engine.apply_action(gs, {"type": "pass_step"})  # Roman done Pay -> Disband -> Muster
     assert gs.meta.subphase == "levy.muster"
-    # Drop any owed first-Levy Capability deployments so the Muster menu (not the
-    # AoW pending) is what legal_moves surfaces (SMOKE-008) -- this helper tests
-    # Muster, so we discard rather than deploy to keep a clean capability slate.
-    gs.meta.pending = [p for p in gs.meta.pending if p["type"] != "deploy_capability"]
     return gs
 
 
@@ -115,6 +112,7 @@ def test_levy_themata_roman_commander_only_345():
     # Manuel (Commander) is at Constantinople (Paphlagonia has no Themata box);
     # put a friendly Roman Commander in a Thema with markers to exercise the rule.
     engine.start_levy(gs)
+    gs.meta.pending = []  # Isolate this subsystem; opening choices have dedicated tests.
     # advance to muster
     engine.apply_action(gs, {"type": "pass_step"})
     engine.apply_action(gs, {"type": "pass_step"})
@@ -133,6 +131,7 @@ def test_levy_themata_roman_commander_only_345():
 def test_non_commander_cannot_levy_themata_345():
     gs = S.load_scenario("emperor_and_the_lion")
     engine.start_levy(gs)
+    gs.meta.pending = []  # Isolate this subsystem; opening choices have dedicated tests.
     engine.apply_action(gs, {"type": "pass_step"})
     engine.apply_action(gs, {"type": "pass_step"})
     gs.meta.active_player = "roman"

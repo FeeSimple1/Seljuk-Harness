@@ -39,8 +39,10 @@ def test_no_unaffordable_march_with_one_action():
     aa.assets.loot = 1   # Laden -> Road March costs 2, Pass costs 3
     _active_campaign(gs, "alp_arslan", actions=1)
     moves = C.command_menu(gs)
-    # No March should be offered (every Way costs >= 2 while Laden, only 1 action).
-    assert not any(m["type"] == "cmd_march" for m in moves)
+    # A laden March is unaffordable, but explicitly discarding to go unladen
+    # remains legal and must be offered (1.7.2/4.3.2).
+    marches = [m for m in moves if m["type"] == "cmd_march"]
+    assert marches and all(m.get("discard_to_unladen") for m in marches)
     assert _all_enumerated_moves_apply(gs) == []
 
 

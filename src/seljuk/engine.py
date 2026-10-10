@@ -29,13 +29,8 @@ SIDES = ["seljuk", "roman"]  # Seljuk first (2.2.4)
 
 
 def roller_for(gs: GameState) -> DiceRoller:
-    r = DiceRoller(seed=gs.meta.seed)
-    if gs.meta.rng_state is not None:
-        # JSON round-trips tuples to lists; Random.setstate needs the nested
-        # element to be a tuple.
-        st = gs.meta.rng_state
-        r.set_state((st[0], tuple(st[1]), st[2]))
-    return r
+    from .rng import roller_for_state
+    return roller_for_state(gs)
 
 
 def _save_roller(gs: GameState, r: DiceRoller) -> None:
@@ -100,6 +95,7 @@ _CAMPAIGN_HANDLERS: dict[str, Callable[[GameState, dict, DiceRoller], dict]] = {
     "winter_activate": campaign.h_winter_activate,
     "winter_proceed": campaign.h_winter_proceed,
     "winter_quarters": campaign.h_winter_quarters,
+    "retain_themata": campaign.h_retain_themata,
     "discard_imperial_coffers": campaign.h_discard_imperial_coffers,
     "play_hold_event": actions.h_play_hold_event,
 }
@@ -119,9 +115,24 @@ def apply_action(gs: GameState, action: dict[str, Any]) -> dict[str, Any]:
     if atype not in table:
         raise IllegalAction("unknown_action",
                             f"no handler for action type {atype!r} in phase {gs.meta.phase}")
-    roller = roller_for(gs)
-    result = table[atype](gs, action, roller)
-    _save_roller(gs, roller)
+    # Opening assignments and Events are mandatory, even when callers submit
+    # actions directly instead of choosing from the palette (3.1.2-.3).
+    if gs.meta.phase == "levy":
+        for pending_type, required in (("deploy_capability", "deploy_capability"),
+                                       ("event_pending_resolution", "resolve_event"),
+                                       ("imperial_coffers", None)):
+            pending = next((p for p in gs.meta.pending if p["type"] == pending_type), None)
+            if pending is None:
+                continue
+            permitted = {required} if required else {"discard_imperial_coffers", "pass_imperial_coffers"}
+            if atype not in permitted or (required and action.get("card") != pending["card"]):
+                raise IllegalAction("pending_decision", f"resolve {pending_type} before continuing (3.1)")
+            break
+    if any(p["type"] == "retain_themata" for p in gs.meta.pending) and atype != "retain_themata":
+        raise IllegalAction("pending_decision", "resolve Themata retention before continuing (4.7.5)")
+    from .rng import action_roller
+    with action_roller(gs) as roller:
+        result = table[atype](gs, action, roller)
     gs.history.append({"action": action, "result": result})
     return result
 

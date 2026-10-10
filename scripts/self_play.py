@@ -26,7 +26,10 @@ def _resolve_pending(s: LLMSession) -> bool:
     p = pend[0]
     t = p["type"]
     try:
-        if t == "deploy_capability":
+        if t == "retain_themata":
+            s.apply({"type": "retain_themata", "lord": p["lord"],
+                           "thema": p["thema"], "mode": "return"})
+        elif t == "deploy_capability":
             s.apply({"type": "deploy_capability", "card": p["card"], "lord": p["eligible"][0]})
         elif t == "event_pending_resolution":
             try:

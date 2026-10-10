@@ -22,6 +22,7 @@ def _drive_to_cta(scenario="emperor_and_the_lion", seed=1):
     gs = S.load_scenario(scenario, seed=seed)
     gs.meta.notes["first_aow_done"] = True
     engine.start_levy(gs)
+    gs.meta.pending = []  # Isolate the Strategic Objective eligibility rule.
     for _ in range(4):
         engine.apply_action(gs, {"type": "pass_step"})
     assert gs.meta.subphase == "levy.call_to_arms"

@@ -37,5 +37,13 @@ def filtered_state(gs: GameState, viewing_side: str) -> dict[str, Any]:
                           "themata_on_mat"):
                 ld[field] = _HIDDEN
             ld["assets"] = _HIDDEN
+    # The replay history is private engine state, not a public event log. It
+    # includes whole build_plan actions/results, future orders, and (with 6.1)
+    # hidden mats. Expose only the public action-type summary, as briefing does.
+    d["history"] = [{"action": {"type": h.get("action", {}).get("type")}}
+                    for h in gs.history]
+    # Revealing the seeded random stream also makes hidden future draws inferable.
+    d["meta"].pop("rng_state", None)
+    d["meta"].pop("seed", None)
     d["_viewing_side"] = viewing_side
     return d

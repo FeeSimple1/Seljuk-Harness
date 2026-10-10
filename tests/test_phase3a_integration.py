@@ -72,8 +72,10 @@ def test_full_turn_levy_then_campaign_for_emperor():
     """End-to-end: a non-skip scenario runs Levy to completion, then a Campaign
     turn, landing in the next Turn's Levy (or game over)."""
     gs = S.load_scenario("emperor_and_the_lion", seed=2)
-    gs.meta.notes["first_aow_done"] = True  # deterministic later-Levy draw path
     engine.start_levy(gs)
+    # Resolve every mandatory opening Capability before entering Pay.
+    while any(p["type"] == "deploy_capability" for p in gs.meta.pending):
+        engine.apply_action(gs, engine.legal_moves(gs)[0])
     # pass through all Levy steps (Pay, Muster, Call to Arms) for both sides
     for _ in range(6):
         engine.apply_action(gs, {"type": "pass_step"})

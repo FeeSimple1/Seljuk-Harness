@@ -35,6 +35,8 @@ def test_legal_actions_and_apply_route_through_engine():
     s = LLMSession.start_new("emperor_and_the_lion", seed=1)
     moves = s.legal_actions()
     assert moves
+    while any(p["type"] == "deploy_capability" for p in s.gs.meta.pending):
+        s.apply(s.legal_actions()[0])
     s.apply({"type": "pass_step"})
     assert s.gs.meta.active_player == "roman"
 

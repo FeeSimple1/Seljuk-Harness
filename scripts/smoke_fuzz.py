@@ -95,6 +95,8 @@ def _rand_resolve_pending(s, rng, findings, tag):
                 s.apply({"type": "resolve_event", "card": p["card"], "args": {}})
             except IllegalAction:
                 s.gs.meta.pending.remove(p)  # needs choices; discard (no effect)
+        elif t == "retain_themata":
+            s.apply(rng.choice(engine.legal_moves(s.gs)))
         elif t == "deploy_capability":
             s.apply({"type": "deploy_capability", "card": p["card"], "lord": p["eligible"][0]})
         elif t == "loyalty_check":

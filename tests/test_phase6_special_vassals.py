@@ -5,6 +5,7 @@ from seljuk.actions import reset_muster_segment
 
 def _muster_ctx(gs, side):
     engine.start_levy(gs)
+    gs.meta.pending = []  # Isolated Muster fixture, not an opening-sequence test.
     gs.meta.subphase = "levy.muster"; gs.meta.active_player = side; gs.meta.levy_step_passed = {}
     reset_muster_segment(gs)
 

@@ -571,37 +571,49 @@ def resolve_event(gs: GameState, card_id: str, args: dict, roller: DiceRoller) -
 # Battle engine via begin_battle/resolve_storm 'events' arguments.
 
 def _remove_turkic_at(gs, locale, count, include_themata=False):
-    """Remove up to ``count`` Turkic Horse at a Locale. ``include_themata`` (S21)
-    also removes Turkic Horse Themata Service Markers (defending + on co-located
-    mats); R21 removes units only. Force keys are popped at zero so a Lord left
-    with no Forces is detectable for Disband (1.6)."""
+    """R21 removes units (including Levied units); S21 may remove whole markers.
+
+    Use the same identity-aware path for standalone Holds and Battle/Storm.
+    Printed marker symbols never shrink when just one of its units is removed.
+    """
     removed = 0
-    for l in gs.lords.values():
-        if removed >= count:
-            break
-        if l.mustered and l.cylinder == locale:
-            while removed < count and l.forces.get("turkic_horse", 0) > 0:
-                l.forces["turkic_horse"] -= 1
-                if l.forces["turkic_horse"] <= 0:
-                    l.forces.pop("turkic_horse", None)
-                removed += 1
+    for lord in gs.lords.values():
+        if not lord.mustered or lord.cylinder != locale:
+            continue
+        take = min(max(0, count - removed), lord.forces.get("turkic_horse", 0))
+        if take:
+            lord.forces["turkic_horse"] -= take
+            if not lord.forces["turkic_horse"]:
+                lord.forces.pop("turkic_horse")
+            removed += take
     if include_themata:
-        deff = gs.locales[locale].themata_defending
-        for i in range(len(deff) - 1, -1, -1):
+        markers = gs.locales[locale].themata_defending
+        for marker in list(reversed(markers)):
             if removed >= count:
                 break
-            if deff[i].unit == "turkic_horse":
-                deff.pop(i); removed += 1
-        for l in gs.lords.values():
+            if marker.unit == "turkic_horse":
+                markers.remove(marker)
+                _record_removed_themata(gs, marker, sd.locale(locale)["thema"])
+                removed += 1
+    for lord in gs.lords.values():
+        if not lord.mustered or lord.cylinder != locale:
+            continue
+        for marker in list(reversed(lord.themata_on_mat)):
             if removed >= count:
                 break
-            if l.mustered and l.cylinder == locale:
-                mat = l.themata_on_mat
-                for i in range(len(mat) - 1, -1, -1):
-                    if removed >= count:
-                        break
-                    if mat[i].unit == "turkic_horse":
-                        mat.pop(i); removed += 1
+            if marker.unit != "turkic_horse":
+                continue
+            if include_themata:
+                take = 1
+                empty = True
+            else:
+                take = min(count - removed, marker.unrouted_count())
+                marker.strength = marker.unit_count() - take
+                empty = marker.unit_count() == 0
+            removed += take
+            if empty:
+                lord.themata_on_mat.remove(marker)
+                _record_removed_themata(gs, marker, sd.locale(locale)["thema"])
     return removed
 
 
@@ -612,7 +624,7 @@ def _disband_forceless_at(gs, locale):
     from . import actions
     out = []
     for l in gs.lords.values():
-        if l.mustered and l.cylinder == locale and not l.forces and l.service_box is not None:
+        if l.mustered and l.cylinder == locale and not l.unrouted_forces() and l.service_box is not None:
             actions._disband_at_limit(gs, l)
             out.append(l.id)
     return out

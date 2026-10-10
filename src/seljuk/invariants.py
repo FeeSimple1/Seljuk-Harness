@@ -63,6 +63,17 @@ def check_invariants(gs: GameState) -> list[str]:
         for u, n in l.routed.items():
             if n < 0:
                 bad.append(f"{lid}.routed[{u}]={n} negative")
+        for marker in l.themata_on_mat:
+            if not 0 <= marker.routed <= marker.unit_count() <= marker.symbols:
+                bad.append(f"{lid}: invalid Themata strength/rout counts")
+        if l.lieutenant_of:
+            lieutenant = gs.lords.get(l.lieutenant_of)
+            if lieutenant is None or lieutenant.lower_lord != lid or lieutenant.cylinder != l.cylinder:
+                bad.append(f"{lid}: broken or separated Lieutenant stack")
+        if l.lower_lord:
+            lower = gs.lords.get(l.lower_lord)
+            if lower is None or lower.lieutenant_of != lid or lower.cylinder != l.cylinder:
+                bad.append(f"{lid}: broken or separated Lower Lord stack")
         if l.service_box is not None and not (0 <= l.service_box <= OFF_RIGHT):
             bad.append(f"{lid}.service_box={l.service_box} out of 0..{OFF_RIGHT}")
         if l.cylinder_calendar_box is not None and not (0 <= l.cylinder_calendar_box <= OFF_RIGHT):
