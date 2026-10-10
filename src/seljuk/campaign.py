@@ -1042,12 +1042,11 @@ def legal_moves_campaign(gs: GameState) -> list[dict[str, Any]]:
     if lc is not None:
         _lmvs = []
         for tgt in lc["targets"]:
-            _for = actions.loyalty_coin_budget(gs, lc["side"], tgt)
-            _agn = 0 if gs.lords[tgt].besieged else actions.loyalty_coin_budget(gs, gs.lords[tgt].side, tgt)
+            _for, _agn = actions.loyalty_coin_budgets(gs, lc["side"], tgt)
             _lmvs.append({"type": "resolve_loyalty", "target": tgt,
                           "_max_coins_for": _for, "_max_coins_against": _agn,
                           "_desc": f"Loyalty Check vs {tgt} (1.4) — optional coins_for (+1 each, max {_for})"
-                                   f" / coins_against (owner resists, -1 each, max {_agn})"})
+                                   f" / coins_against (opponent resists, -1 each, max {_agn})"})
         return _lmvs
     at = next((p for p in gs.meta.pending if p["type"] == "assign_themata_defenders"), None)
     if at is not None:
@@ -2717,8 +2716,8 @@ def h_resolve_loyalty(gs: GameState, action: dict[str, Any], roller: DiceRoller)
     if target not in pend["targets"]:
         raise IllegalAction("bad_target", f"choose one of {pend['targets']}")
     res = actions.resolve_loyalty_check(gs, target, pend["side"], roller,
-                                        coins_for=int(action.get("coins_for", 0)),
-                                        coins_against=int(action.get("coins_against", 0)))
+                                        coins_for=action.get("coins_for", 0),
+                                        coins_against=action.get("coins_against", 0))
     gs.meta.pending.remove(pend)
     gs.meta.actions_remaining = 0  # the Treachery card carries no Command actions
     _after_card(gs)
@@ -2761,11 +2760,12 @@ def h_discard_imperial_coffers(gs: GameState, action: dict[str, Any], roller: Di
     target = action.get("target")
     if target not in imperial_coffers_targets(gs):
         raise IllegalAction("bad_target", "target must be a Mustered Seljuk-allied Robert/Roussel adjacent to a Roman Lord")
+    res = actions.resolve_loyalty_check(gs, target, "roman", roller,
+                                        coins_for=action.get("coins_for", 0),
+                                        coins_against=action.get("coins_against", 0))
+    # Keep the Capability and pending window intact if payment is rejected.
     gs.roman.capabilities_in_play.remove("R14")
     gs.roman.draw_deck.append("R14")
-    res = actions.resolve_loyalty_check(gs, target, "roman", roller,
-                                        coins_for=int(action.get("coins_for", 0)),
-                                        coins_against=int(action.get("coins_against", 0)))
     _clear_imperial_coffers_pending(gs)
     return {"ok": True, "action": "discard_imperial_coffers", "loyalty": res}
 
