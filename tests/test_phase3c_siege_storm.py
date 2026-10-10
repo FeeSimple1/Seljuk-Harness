@@ -151,7 +151,10 @@ def test_r25_honors_of_war_offered_in_siege_menu_451():
     gs.roman.held_events = ["R25"]
     gs.meta.phase = "campaign"; gs.meta.subphase = "campaign.command"
     gs.meta.active_player = "roman"; gs.meta.active_lord = rl; gs.meta.active_card = rl
-    gs.meta.actions_remaining = 3
+    # Honors of War is still a Siege: give Romanos his complete Command card.
+    # Three actions was a partially spent four-action card (self-play SP-01).
+    gs.meta.actions_remaining = sd.lord(rl)["ratings"]["command"]
+    gs.meta.notes["card_full_actions"] = gs.meta.actions_remaining
     gs.roman.command_plan = [rl]; gs.roman.plan_pointer = 1
     gs.seljuk.command_plan = []; gs.seljuk.plan_pointer = 0
     sieges = [m for m in C.command_menu(gs) if m["type"] == "cmd_siege"]
