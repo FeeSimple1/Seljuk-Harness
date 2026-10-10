@@ -1,0 +1,98 @@
+                 coins_for=int(action.get("coins_for", 0)),
+-                                        coins_against=int(action.get("coins_against", 0)))
+     _clear_imperial_coffers_pending(gs)
+     return {"ok": True, "action": "discard_imperial_coffers", "loyalty": res}
+ 
+diff --git a/src/seljuk/engine.py b/src/seljuk/engine.py
+index cf537f0..62e7c7a 100755
+--- a/src/seljuk/engine.py
++++ b/src/seljuk/engine.py
+@@ -201,8 +201,7 @@ def legal_moves(gs: GameState) -> list[dict[str, Any]]:
+         # R14 discard window: after both sides resolved Events, before Pay.
+         moves = []
+         for t in campaign.imperial_coffers_targets(gs):
+-            _for = actions.loyalty_coin_budget(gs, "roman", t)
+-            _agn = 0 if gs.lords[t].besieged else actions.loyalty_coin_budget(gs, gs.lords[t].side, t)
++            _for, _agn = actions.loyalty_coin_budgets(gs, "roman", t)
+             moves.append({"type": "discard_imperial_coffers", "target": t,
+                           "_max_coins_for": _for, "_max_coins_against": _agn,
+                           "_desc": f"Discard Imperial Coffers (R14): Loyalty Check vs {t} (1.4.1)"
+diff --git a/tests/fixtures/new_seed_20261012/README.md b/tests/fixtures/new_seed_20261012/README.md
+new file mode 100644
+index 0000000..370cd3c
+--- /dev/null
++++ b/tests/fixtures/new_seed_20261012/README.md
+@@ -0,0 +1,10 @@
++# Seed 20261012 regression checkpoints
++
++From the recorded Emperor and the Lion game on `b1ace4bb`:
++- `surrender-before.json`: before action 950, Artuk's Melitene Surrender.
++- `loyalty-before.json`: before action 990, the Seljuk Treachery window.
++
++Only the old `history` list is cleared to avoid duplicating hundreds of unrelated
++turn records. Position, pending decisions, RNG state, and all other fields are
++unchanged. The loyalty checkpoint therefore contains the earlier, already
++missing Melitene markers; it is used to test payments, not marker conservation.
+diff --git a/tests/test_new_seed_20261012_fixes.py b/tests/test_new_seed_20261012_fixes.py
+new file mode 100644
+index 0000000..3aeadae
+--- /dev/null
++++ b/tests/test_new_seed_20261012_fixes.py
+@@ -0,0 +1,298 @@
++"""Seed-20261012 fixes: retained Themata counters and atomic Loyalty payments.
++
++Captured checkpoints cover the original seven failures and four controls.
++Additional cases exercise the shared resolver, both action entry points, both
++factions, malformed JSON payment types, and Conquer/Ruin/Sack counter custody.
++"""
++from collections import Counter
++from pathlib import Path
++import pytest
++from seljuk import actions, battle, campaign, engine, events, map as gmap
++from seljuk.llm import LLMSession
++from seljuk.state import GameState, IllegalAction
++from seljuk.rng import DiceRoller
++
++DATA = Path(__file__).resolve().parent / "fixtures" / "new_seed_20261012"
++
++def load(name):
++    return GameState.from_json((DATA / name).read_text())
++
++def inventory(gs):
++    result = Counter()
++    for home, markers in gs.themata.items():
++        for m in markers:
++            result[(home, m.unit, m.symbols)] += 1
++    for lord in gs.lords.values():
++        for m in lord.themata_on_mat:
++            result[(m.home_thema, m.unit, m.symbols)] += 1
++    for loc in gs.locales.values():
++        for m in loc.themata_defending:
++            result[(m.home_thema, m.unit, m.symbols)] += 1
++    for m in gs.meta.themata_removed:
++        result[(m.home_thema, m.unit, m.symbols)] += 1
++    return result
++
++def surrender():
++    session = LLMSession(load('surrender-before.json'))
++    result = session.apply({'type': 'cmd_siege', 'lord': 'artuk_beg'})
++    assert result['seized'] is True
++    assert result['surrender_roll'] == [1, 1]
++    return session.gs, result
++
++# NS-01: Surrender deletes the physical counter records instead of retaining
++# them in the removed-from-play pool that R13 uses.
++def test_ns01_surrender_preserves_removed_themata_inventory():
++    before = load('surrender-before.json')
++    after, _ = surrender()
++    assert inventory(after) == inventory(before)
++
++def test_ns01_r13_can_return_a_surrendered_marker():
++    after, _ = surrender()
++    result = events._ev_thrakion(after, {'thema': 'Melitene', 'unit': 'infantry'},
++                                 engine.roller_for(after))
++    assert result.get('returned') == {'thema': 'Melitene', 'unit': 'infantry'}
++
++# NS-02: The counterpayer is the revealing player's opponent, not necessarily
++# the target Lord's current owner (rules 1.4 and 1.4.1).
++def test_ns02_coun

@@ -1,0 +1,62 @@
+diff --git a/LLM_PLAY_GUIDE.md b/LLM_PLAY_GUIDE.md
+index 09b53a2..049db7a 100644
+--- a/LLM_PLAY_GUIDE.md
++++ b/LLM_PLAY_GUIDE.md
+@@ -132,10 +132,14 @@ parameters (hinted by `_`-prefixed keys):
+   is owed a Themata assignment, that pends FIRST (S1 Clarification) and the
+   2 Siege markers + Storm resume after it.
+ - **Loyalty coin DRMs** (1.4.1). `resolve_loyalty` / `discard_imperial_coffers`
+-  accept `"coins_for"` (checking side, +1 each) and `"coins_against"` (owner
+-  resists, -1 each), bounded by the `_max_coins_for` / `_max_coins_against`
+-  hints (Commander + co-located Unbesieged Lords' Coin; no resisting for a
+-  Besieged target).
++  accept `"coins_for"` (revealing player, +1 each) and `"coins_against"` (that
++  player's opponent, -1 each), bounded by the `_max_coins_for` /
++  `_max_coins_against` hints (Commander + co-located Unbesieged Lords' Coin;
++  no resisting for a Besieged target). The opponent pays even when the target
++  already belongs to the revealing player. Amounts must be nonnegative JSON
++  integers: strings, fractions, booleans, and negative values are rejected.
++  Both payments are validated before any Coin or dice are consumed. Invalid
++  Imperial Coffers payments also leave its card and pending decision intact.
+ - **resolve_event** (an immediate Arts-of-War Event that needs a choice). Pass
+   `args` with the choice the card calls for, e.g.
+   `{"type":"resolve_event","card":"R5","args":{"lord":"alp_arslan","direction":"left"}}`.
+diff --git a/NEW_SEED_FIXES_2026-10-10.md b/NEW_SEED_FIXES_2026-10-10.md
+new file mode 100644
+index 0000000..72b9200
+--- /dev/null
++++ b/NEW_SEED_FIXES_2026-10-10.md
+@@ -0,0 +1,79 @@
++# Seed 20261012: four defect fixes
++
++## Scope and authority
++
++Fixes the four defects reported from the 1,022-action Emperor and the Lion
++playtest on `b1ace4bb2956c44972697349b7386561aadf3cc5`. No house rules,
++scenario setup changes, old-save migrations, or replacement dice are added.
++
++Rules authority remains the repository's references and recorded decisions:
++`source/rules.txt` 1.4/1.4.1 and 4.5.1; `reference/Seljuk Battle and Storm
++Reference.txt` 4.9.1, Remove Themata; `reference/Seljuk Arts of War Reference.txt`
++R13 Thrakion Reinforcements. These rules remove captured defenders from active
++play while retaining physical counters that R13 can return, and assign loyalty
++counterpayment to the revealing player's opponent, not the target's owner.
++
++## Fixes
++
++| Finding | Correction | Regression coverage |
++|---|---|---|
++| NS-01: Surrender loses defending Themata counter records | A shared capture helper transfers defending markers into the removed pool for both Conquer and Ruin. Sack no longer performs a separate transfer, so it cannot duplicate those counters. | Recorded Melitene Surrender; R13 return; all four Conquer/Ruin/Sack paths; double-marker identity; JSON persistence; no transfer when Surrender is declined. |
++| NS-02: Loyalty counterpayment uses the wrong faction | A single pair-of-budgets helper derives the paying sides from the revealing player and opponent. Both planning menus and the resolver use it, independent of the target's current allegiance. | Recorded Robert Crepin position; both revealing factions; already-switched and opposing targets; besieged-target restrictions. |
++| NS-03: Rejected second payment consumes the first | The complete request is validated before either side spends or any die rolls. Imperial Coffers also retains its card and pending window when payment is rejected. | Direct resolver, Treachery, and Imperial Coffers; over-budget first/second payments; unchanged full state and RNG; rejected-request retry matches a fresh valid action. |
++| NS-04: Negative amounts grant free modifiers | Both amounts must be nonnegative integers. Handlers no longer silently coerce malformed values with int(). | Both fields through all three entry points; negative, fractional, floating-point, Boolean, string, null, list, and object values; legal payments and natural-1/natural-6 controls. |
++
++The Imperial Coffers card-preservation check closes the same rejection problem
++at the second caller of the shared loyalty resolver. Successful checks still
++consume the Capability once. The fix is specific to loyalty-payment rejection;
++it is not a claim that every action in the harness is now transactional.
++
++## Reproducible checkpoints and tests
++
++`tests/fixtures/new_seed_20261012/` contains the two original game positions,
++with only their prior history lists omitt

@@ -1,0 +1,91 @@
+terpayment_hint_uses_the_opponent_budget():
++    gs = load('loyalty-before.json')
++    move = next(m for m in engine.legal_moves(gs) if m.get('target') == 'robert_crepin')
++    assert gs.lords['robert_crepin'].side == 'seljuk'
++    assert move['_max_coins_for'] == 1
++    assert move['_max_coins_against'] == 0
++
++def test_ns02_counterpayment_cannot_bill_the_revealing_side():
++    session = LLMSession(load('loyalty-before.json'))
++    before = session.gs.to_json()
++    with pytest.raises(IllegalAction):
++        session.apply({'type': 'resolve_loyalty', 'target': 'robert_crepin',
++                       'coins_for': 0, 'coins_against': 1})
++    assert session.gs.to_json() == before
++
++# NS-03: This independently targets an opposing Lord, so it does not rely on
++# NS-02. Rejecting an unavailable opposing payment must not take the first Coin.
++def test_ns03_rejected_second_payment_does_not_consume_first_payment():
++    session = LLMSession(load('loyalty-before.json'))
++    before = session.gs.to_json()
++    with pytest.raises(IllegalAction, match='insufficient_coin'):
++        session.apply({'type': 'resolve_loyalty', 'target': 'roussel_de_bailleul',
++                       'coins_for': 1, 'coins_against': 1})
++    assert session.gs.to_json() == before
++
++# NS-04: Negative values currently alter the roll without spending any Coin.
++@pytest.mark.parametrize('field', ['coins_for', 'coins_against'])
++def test_ns04_negative_coin_amount_is_rejected(field):
++    session = LLMSession(load('loyalty-before.json'))
++    before = session.gs.to_json()
++    action = {'type': 'resolve_loyalty', 'target': 'roussel_de_bailleul',
++              'coins_for': 0, 'coins_against': 0, field: -2}
++    with pytest.raises(IllegalAction):
++        session.apply(action)
++    assert session.gs.to_json() == before
++
++# Neighboring controls: legitimate payments, ordinary surrender effects, and
++# R13 return of a marker already correctly stored in the removed pool.
++@pytest.mark.parametrize('coins', [0, 1])
++def test_control_valid_loyalty_payment(coins):
++    session = LLMSession(load('loyalty-before.json'))
++    result = session.apply({'type': 'resolve_loyalty', 'target': 'roussel_de_bailleul',
++                            'coins_for': coins, 'coins_against': 0})
++    check = result['loyalty']
++    assert check['natural'] == 3
++    assert check['modified'] == 3 + coins
++    assert check['switched'] is False
++    assert session.gs.lords['alp_arslan'].assets.coin == 1 - coins
++
++def test_control_surrender_cleans_investment_and_sets_allegiance():
++    gs, _ = surrender()
++    loc = gs.locales['melitene']
++    assert loc.conquered_side == 'seljuk'
++    assert loc.conquered_count == 2
++    assert loc.siege_markers == 0
++    assert not loc.bypass
++    assert not loc.themata_defending
++
++def test_control_r13_returns_an_existing_removed_marker():
++    gs = load('surrender-before.json')
++    marker = gs.meta.themata_removed[0]
++    before = inventory(gs)
++    result = events._ev_thrakion(gs, {'thema': marker.home_thema, 'unit': marker.unit},
++                                 engine.roller_for(gs))
++    assert 'returned' in result
++    assert inventory(gs) == before
++
++
++# Every capture path owns one transfer. In particular, Sack must not transfer
++# first and then have Conquer/Ruin duplicate those same physical counters.
++@pytest.mark.parametrize("mode", ["conquer", "ruin", "sack_conquer", "sack_ruin"])
++def test_ns01_each_capture_path_records_each_marker_once(mode):
++    gs = load("surrender-before.json")
++    before = inventory(gs)
++    removed = [m.model_dump() for m in gs.meta.themata_removed]
++    defenders = [m.model_dump() for m in gs.locales["melitene"].themata_defending]
++    assert len(defenders) == 2 and any(m["symbols"] == 2 for m in defenders)
++    if mode == "conquer":
++        battle.conquer(gs, "melitene", "seljuk")
++    elif mode == "ruin":
++        battle.ruin(gs, "melitene")
++    else:
++        battle._sack(gs, ["artuk_beg"], [], "melitene", "seljuk",
++                     battle.DecisionContext([("sack_choice", mode.removeprefix("sack_"))]),
++                     engine.roller_for(gs))
++    assert inventory(gs) == before
++    assert [m.model_dump() for m in gs.meta.themata_removed] == removed + defenders
++    assert gs.locales["melitene"].themata_defending == []
++    # Re-entering capture cleanup cannot record the counters a second time.
++    battle.conquer(gs, "melitene", "seljuk")
++    assert [m.model_dump() for m in gs.meta.themata_remo

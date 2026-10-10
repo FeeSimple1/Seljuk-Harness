@@ -1,0 +1,79 @@
+istent and prevents Storm from recording the
++    same counters twice.
++    """
++    loc = gs.locales[locale]
++    gs.meta.themata_removed.extend(loc.themata_defending)
++    loc.themata_defending = []
++
++
+ def conquer(gs: GameState, locale: str, by_side: str) -> dict[str, Any]:
+     """Set a Stronghold to ``by_side``'s control (1.3.1, 4.5.1/4.9.1)."""
+     loc = gs.locales[locale]
+@@ -1112,7 +1124,7 @@ def conquer(gs: GameState, locale: str, by_side: str) -> dict[str, Any]:
+     if loc.strategic_objective:  # Roman claims a Strategic Objective here (4.5.1/4.9.1)
+         gs.holding_boxes.constantinople_roman_vp_markers += 1
+         loc.strategic_objective = False
+-    loc.themata_defending = []  # garrisoning Themata removed from the game
++    _remove_garrison_themata(gs, locale)
+     return {"conquered_by": by_side, "placed_markers": placed}
+ 
+ 
+@@ -1128,7 +1140,7 @@ def ruin(gs: GameState, locale: str) -> dict[str, Any]:
+     if loc.strategic_objective:
+         gs.holding_boxes.constantinople_roman_vp_markers += 1
+         loc.strategic_objective = False
+-    loc.themata_defending = []
++    _remove_garrison_themata(gs, locale)
+     return {"ruined": locale}
+ 
+ 
+@@ -1513,7 +1525,6 @@ def _sack(gs: GameState, attacker_ids, defender_ids, locale, a_side, ctx, roller
+     choice = "conquer"
+     if can_ruin:
+         choice = ctx.decide("sack_choice", ["conquer", "ruin"], {"locale": locale})
+-    gs.meta.themata_removed.extend(gs.locales[locale].themata_defending)
+     out = ruin(gs, locale) if choice == "ruin" else conquer(gs, locale, a_side)
+     # Reconcile losses before selecting surviving recipients (4.8.3-.5).
+     _storm_losses(gs, attacker_ids, defender_ids, defender_won=False, roller=roller, ctx=ctx, log=out)
+diff --git a/src/seljuk/campaign.py b/src/seljuk/campaign.py
+index 697e131..e531dd2 100644
+--- a/src/seljuk/campaign.py
++++ b/src/seljuk/campaign.py
+@@ -1042,12 +1042,11 @@ def legal_moves_campaign(gs: GameState) -> list[dict[str, Any]]:
+     if lc is not None:
+         _lmvs = []
+         for tgt in lc["targets"]:
+-            _for = actions.loyalty_coin_budget(gs, lc["side"], tgt)
+-            _agn = 0 if gs.lords[tgt].besieged else actions.loyalty_coin_budget(gs, gs.lords[tgt].side, tgt)
++            _for, _agn = actions.loyalty_coin_budgets(gs, lc["side"], tgt)
+             _lmvs.append({"type": "resolve_loyalty", "target": tgt,
+                           "_max_coins_for": _for, "_max_coins_against": _agn,
+                           "_desc": f"Loyalty Check vs {tgt} (1.4) — optional coins_for (+1 each, max {_for})"
+-                                   f" / coins_against (owner resists, -1 each, max {_agn})"})
++                                   f" / coins_against (opponent resists, -1 each, max {_agn})"})
+         return _lmvs
+     at = next((p for p in gs.meta.pending if p["type"] == "assign_themata_defenders"), None)
+     if at is not None:
+@@ -2717,8 +2716,8 @@ def h_resolve_loyalty(gs: GameState, action: dict[str, Any], roller: DiceRoller)
+     if target not in pend["targets"]:
+         raise IllegalAction("bad_target", f"choose one of {pend['targets']}")
+     res = actions.resolve_loyalty_check(gs, target, pend["side"], roller,
+-                                        coins_for=int(action.get("coins_for", 0)),
+-                                        coins_against=int(action.get("coins_against", 0)))
++                                        coins_for=action.get("coins_for", 0),
++                                        coins_against=action.get("coins_against", 0))
+     gs.meta.pending.remove(pend)
+     gs.meta.actions_remaining = 0  # the Treachery card carries no Command actions
+     _after_card(gs)
+@@ -2761,11 +2760,12 @@ def h_discard_imperial_coffers(gs: GameState, action: dict[str, Any], roller: Di
+     target = action.get("target")
+     if target not in imperial_coffers_targets(gs):
+         raise IllegalAction("bad_target", "target must be a Mustered Seljuk-allied Robert/Roussel adjacent to a Roman Lord")
++    res = actions.resolve_loyalty_check(gs, target, "roman", roller,
++                                        coins_for=action.get("coins_for", 0),
++                                        coins_against=action.get("coins_against", 0))
++    # Keep the Capability and pending window intact if payment is rejected.
+     gs.roman.capabilities_in_play.remove("R14")
+     gs.roman.draw_deck.append("R14")
+-    res = actions.resolve_loyalty_check(gs, target, "roman", roller,
+-                       

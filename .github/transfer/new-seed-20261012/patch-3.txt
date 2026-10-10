@@ -1,0 +1,77 @@
+ Lords co-located with the target (Unbesieged).
+-    Used for the palette's _max_coins_for/_max_coins_against hints."""
+-    target = gs.lords[target_id]
+-    return sum(l.assets.coin for lid, l in gs.lords.items()
+-               if l.side == side and _on_map(l) and not l.besieged
+-               and (is_commander(gs, lid) or l.cylinder == target.cylinder))
++    """1.4.1: Coin available from this side's eligible Lord mats."""
++    return sum(l.assets.coin for l in _loyalty_coin_sources(gs, side, target_id))
++
++
++def loyalty_coin_budgets(gs: GameState, revealing_side: str, target_id: str) -> tuple[int, int]:
++    """Budgets for the revealing player and their OPPONENT, not the target owner.
++
++    The named Treachery target remains eligible after changing sides (1.4).
++    Only the revealing player's opponent may counterpay, and only while the
++    target is Unbesieged (1.4.1). Menus and validation use these same budgets.
++    """
++    if revealing_side not in ("seljuk", "roman"):
++        raise IllegalAction("bad_side", f"invalid revealing side {revealing_side!r}")
++    if target_id not in gs.lords:
++        raise IllegalAction("bad_lord", f"no such Lord {target_id}")
++    opposing_side = "roman" if revealing_side == "seljuk" else "seljuk"
++    return (loyalty_coin_budget(gs, revealing_side, target_id),
++            0 if gs.lords[target_id].besieged else loyalty_coin_budget(gs, opposing_side, target_id))
++
++
++def _validate_loyalty_payments(gs: GameState, target_id: str, revealing_side: str,
++                               coins_for: int, coins_against: int) -> None:
++    """Validate the whole request before either side spends or any dice roll."""
++    budget_for, budget_against = loyalty_coin_budgets(gs, revealing_side, target_id)
++    _validate_loyalty_coin_amount(coins_for, "coins_for")
++    _validate_loyalty_coin_amount(coins_against, "coins_against")
++    if coins_against and gs.lords[target_id].besieged:
++        raise IllegalAction("besieged_no_resist", "the opponent may not spend Coin to resist for a Besieged Lord (1.4.1)")
++    opposing_side = "roman" if revealing_side == "seljuk" else "seljuk"
++    for side, amount, budget in ((revealing_side, coins_for, budget_for),
++                                 (opposing_side, coins_against, budget_against)):
++        if amount > budget:
++            raise IllegalAction("insufficient_coin",
++                                f"{side} lacks {amount} Coin from its Commander / co-located Lords (1.4.1)")
+ 
+ 
+ def resolve_loyalty_check(gs: GameState, target_id: str, revealing_side: str,
+@@ -1191,14 +1229,13 @@ def resolve_loyalty_check(gs: GameState, target_id: str, revealing_side: str,
+     """1.4.1: roll d6 + (coins_for - coins_against). Natural 1 always fails,
+     natural 6 always succeeds. If the modified result is GREATER than the
+     target Lord's Fealty, he switches sides (1.4.2)."""
+-    if target_id not in gs.lords:
+-        raise IllegalAction("bad_lord", f"no such Lord {target_id}")
+-    target = gs.lords[target_id]
+-    if coins_against and target.besieged:
+-        raise IllegalAction("besieged_no_resist", "the owner may not spend Coin to resist for a Besieged Lord (1.4.1)")
+-    _spend_loyalty_coins(gs, revealing_side, target_id, coins_for)   # checking side spends +1 each
+-    _spend_loyalty_coins(gs, target.side, target_id, coins_against)  # owner spends -1 each to resist
++    _validate_loyalty_payments(gs, target_id, revealing_side, coins_for, coins_against)
++    opposing_side = "roman" if revealing_side == "seljuk" else "seljuk"
+     fealty = capabilities.fealty_rating(gs, target_id)
++    # The two preflighted pools are disjoint factions. Neither payment can
++    # make the other unaffordable, even if the target already switched sides.
++    _spend_loyalty_coins(gs, revealing_side, target_id, coins_for)
++    _spend_loyalty_coins(gs, opposing_side, target_id, coins_against)
+     nat = roller.d6()
+     modified = nat + coins_for - coins_against
+     if nat == 1:
+diff --git a/src/seljuk/battle.py b/src/seljuk/battle.py
+index 22147fa..6690aca 100644
+--- a/src/seljuk/battle.py
++++ b/src/seljuk/battle.py
+@@ -1084,6 +1084,18 @@ def _eff_profile(gs: GameState, locale: str) -> dict | None:
+     return prof
+ 
+ 
++def _remove_garrison_themata(gs: GameState, locale: str) -> None:
++    """Remove captured defenders from play, retaining their counters for R13.
++
++    Both Surrender (4.5.1) and Sack (4.9.1) remove these markers. Moving them
++    here keeps Conquer/Ruin cons

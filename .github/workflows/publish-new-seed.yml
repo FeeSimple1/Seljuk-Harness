@@ -1,0 +1,118 @@
+name: Verify and publish seed 20261012 fixes
+on:
+  push:
+    branches: [publish/new-seed-20261012-verified]
+permissions:
+  contents: write
+jobs:
+  verify-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Preserve and verify transparent source patch and checkpoint data
+        shell: bash
+        run: |
+          python - <<'PY'
+          import hashlib, os
+          from pathlib import Path
+          source = Path('.github/transfer/new-seed-20261012')
+          temporary = Path(os.environ['RUNNER_TEMP'])
+          for prefix, count, filename, expected in (
+              ('patch', 8, 'source.patch', 'ec40d7ea690d150e8c0c941884e804d79ecf633541f0d038e1cef56ea3db7923'),
+              ('fixtures', 4, 'fixtures.json', '0325cc9eb0b5f0df31868a300d76aead5a068c8dfa1c917e01dd414da7a66fbe'),
+          ):
+              data = b''.join((source / f'{prefix}-{i}.txt').read_bytes() for i in range(1, count + 1))
+              assert hashlib.sha256(data).hexdigest() == expected
+              (temporary / filename).write_bytes(data)
+          PY
+          git checkout --detach b1ace4bb2956c44972697349b7386561aadf3cc5
+          git apply "$RUNNER_TEMP/source.patch"
+      - name: Install
+        run: python -m pip install -e '.[dev]'
+      - name: Restore exact recorded checkpoints and tested commit
+        shell: bash
+        run: |
+          python - <<'PY'
+          import hashlib, json, os, random
+          from pathlib import Path
+          from seljuk import scenarios
+          state = scenarios.load_scenario('emperor_and_the_lion', seed=20261012).model_dump(mode='json')
+          changes = json.loads((Path(os.environ['RUNNER_TEMP']) / 'fixtures.json').read_text())
+          hashes = {
+              'surrender-before': '61c8941e82de89c9dd49e277697a86251a5d476884d23a5691a540c45120a7fe',
+              'loyalty-before': '67f5cf9448ba5d787d32d0ef1c1f57ca6fed70238d0b654becd963676159f67d',
+          }
+          for name, edits in changes.items():
+              for path, value in edits:
+                  if isinstance(value, dict) and 'reconstruct_rng_from_seed' in value:
+                      rng = random.Random(value['reconstruct_rng_from_seed'])
+                      for _ in range(value['words']):
+                          rng.getrandbits(32)
+                      st = rng.getstate()
+                      value = [st[0], list(st[1]), st[2]]
+                  target = state
+                  for key in path[:-1]:
+                      target = target[key]
+                  target[path[-1]] = value
+              data = (json.dumps(state, separators=(',', ':')) + '\n').encode()
+              assert hashlib.sha256(data).hexdigest() == hashes[name], name
+              (Path('tests/fixtures/new_seed_20261012') / f'{name}.json').write_bytes(data)
+          PY
+          git add LLM_PLAY_GUIDE.md NEW_SEED_FIXES_2026-10-10.md src/seljuk/actions.py src/seljuk/battle.py src/seljuk/campaign.py src/seljuk/engine.py tests/test_new_seed_20261012_fixes.py tests/fixtures/new_seed_20261012
+          test "$(git write-tree)" = 'a860e17b4ea741932a5315ce2337fdbd8ef89b1b'
+          git config user.name OpenAI
+          git config user.email noreply@openai.com
+          GIT_AUTHOR_DATE='2026-10-10T18:19:20Z' GIT_COMMITTER_DATE='2026-10-10T18:19:20Z' git commit -m 'Fix surrendered Themata custody and validate atomic opponent loyalty payments' -m 'Resolve NS-01 through NS-04 from seed 20261012; preserve Imperial Coffers on rejected payments. Add 88 regression cases, retain all 901 existing tests, and document the corrected 1022-action replay.'
+          test "$(git rev-parse HEAD)" = 'fe7c973ee18584ca94a86919468d8b7c7ecdc800'
+          git diff --check HEAD^ HEAD
+      - name: Full regression suite
+        shell: bash
+        run: python -m pytest -q --junitxml=publication-tests.xml | tee publication-tests.txt
+      - name: Check all 989 cases passed without skips
+        run: |
+          python - <<'PY'
+          import xml.etree.ElementTree as ET
+          suites = list(ET.parse('publication-tests.xml').getroot().iter('testsuite'))
+          assert sum(int(s.get('tests', 0)) for s in suites) == 989
+          for name in ('failures', 'errors', 'skipped'):
+              assert sum(int(s.get(name, 0)) for s in suites) == 0, name
+          PY
+      - name: Scenario move sweep
+        env:
+          PYTHONPATH: src
+        shell: bash
+        run: python scripts/roundtrip_sweep.py --seeds 1,2,3,4,5 | tee publication-roundtrip.txt
+      - name: Aggressive smoke checks
+        env:
+          PYTHONPATH: src
+        shell: bash
+        run: python scripts/smoke_fuzz.py --rounds 2 --seeds 1,2,3 | tee publication-smoke.txt
+      - name: Push verified fix branch without overwriting other work
+        shell: bash
+        run: |
+          test "$(git rev-parse HEAD)" = 'fe7c973ee18584ca94a86919468d8b7c7ecdc800'
+          test -z "$(git status --porcelain --untracked-files=no)"
+          target='refs/heads/fix/new-seed-20261012'
+          current="$(git ls-remote origin "$target" | cut -f1)"
+          case "$current" in
+            ''|b1ace4bb2956c44972697349b7386561aadf3cc5|fe7c973ee18584ca94a86919468d8b7c7ecdc800) ;;
+            *) echo 'Target branch changed; refusing to overwrite it.' >&2; exit 1 ;;
+          esac
+          git push origin "HEAD:$target"
+          printf '%s\n' 'commit fe7c973ee18584ca94a86919468d8b7c7ecdc800' 'tree a860e17b4ea741932a5315ce2337fdbd8ef89b1b' > publication-source.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: new-seed-publication-verification
+          path: |
+            publication-tests.xml
+            publication-tests.txt
+            publication-roundtrip.txt
+            publication-smoke.txt
+            publication-source.txt
+          retention-days: 7

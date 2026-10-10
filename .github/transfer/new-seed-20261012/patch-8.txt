@@ -1,0 +1,61 @@
+y_entry_point_preflights_both_budgets(entry, payments):
++    gs = coffers_state() if entry == "coffers" else load("loyalty-before.json")
++    roller = engine.roller_for(gs)
++    before, rng = gs.to_json(), roller.get_state()
++    with pytest.raises(IllegalAction, match="insufficient_coin"):
++        invoke(gs, entry, *payments, roller)
++    assert gs.to_json() == before  # includes cards, pending, RNG, and history
++    assert roller.get_state() == rng
++
++
++@pytest.mark.parametrize("entry", ["resolver", "treachery", "coffers"])
++@pytest.mark.parametrize("field", ["coins_for", "coins_against"])
++@pytest.mark.parametrize("bad", [-2, 0.5, 1.0, True, False, "1", None, [], {}])
++def test_ns04_only_nonnegative_integer_coin_counts_are_accepted(entry, field, bad):
++    gs = coffers_state() if entry == "coffers" else load("loyalty-before.json")
++    roller = engine.roller_for(gs)
++    before, rng = gs.to_json(), roller.get_state()
++    payments = {"coins_for": 1, "coins_against": 0, field: bad}
++    with pytest.raises(IllegalAction, match="bad_coin_amount"):
++        invoke(gs, entry, payments["coins_for"], payments["coins_against"], roller)
++    assert gs.to_json() == before
++    assert roller.get_state() == rng
++
++
++def test_coffers_valid_payment_consumes_card_once_and_clears_window():
++    gs = coffers_state()
++    menu = engine.legal_moves(gs)
++    move = next(m for m in menu if m.get("target") == "robert_crepin")
++    assert (move["_max_coins_for"], move["_max_coins_against"]) == (1, 0)
++    result = invoke(gs, "coffers", 1, 0, engine.roller_for(gs))
++    assert result["loyalty"]["modified"] == result["loyalty"]["natural"] + 1
++    assert gs.lords["manuel_komnenos"].assets.coin == 0
++    assert "R14" not in gs.roman.capabilities_in_play
++    assert gs.roman.draw_deck.count("R14") == 1
++    assert not any(p["type"] == "imperial_coffers" for p in gs.meta.pending)
++    assert len(gs.history) == 1
++
++
++def test_rejected_payment_retry_matches_fresh_valid_submission():
++    fresh = load("loyalty-before.json")
++    gs = GameState.from_json(fresh.to_json())
++    with pytest.raises(IllegalAction):
++        invoke(gs, "treachery", 1, 1, engine.roller_for(gs))
++    gs = GameState.from_json(gs.to_json())
++    first = invoke(gs, "treachery", 1, 0, engine.roller_for(gs))
++    control = invoke(fresh, "treachery", 1, 0, engine.roller_for(fresh))
++    assert first == control and gs.to_json() == fresh.to_json()
++
++
++@pytest.mark.parametrize("side", ["roman", "seljuk"])
++@pytest.mark.parametrize("die", [1, 6])
++def test_paid_checks_keep_natural_one_and_six_overrides(side, die):
++    gs, target = funded_loyalty(side)
++    class Roller:
++        def d6(self):
++            return die
++    # Force an otherwise contrary modifier: +2 on a 1, -2 on a 6.
++    for_coins, against = (2, 0) if die == 1 else (0, 2)
++    result = actions.resolve_loyalty_check(gs, target, side, Roller(), for_coins, against)
++    assert result["natural"] == die
++    assert result["switched"] is (die == 6)

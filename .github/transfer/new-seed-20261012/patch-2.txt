@@ -1,0 +1,91 @@
+ed. All position, pending, and RNG
++fields are retained. The accompanying README identifies the recorded actions.
++
++`tests/test_new_seed_20261012_fixes.py` adds **88 cases**. On the original source,
++**70 fail and 18 controls pass**. With the corrections, all **88 pass**.
++The original supplied reproductions separately change from **7 failures and
++4 controls passing** to **all 11 passing**.
++
++No existing tests, assertions, or expected replay hashes were changed.
++The full suite passes **989 tests**: all **901 existing cases** plus the
++**88 new cases**, with no failures, errors, or skips.
++
++## Recorded full-game replay verification
++
++The saved seed-20261012 game was replayed with every original accepted action
++unchanged. This was a replay verification, not another newly played game.
++
++- All **1,022 action results** match the recorded results.
++- Save/load was checked before every action.
++- All **30 physical Themata markers** are conserved after every action.
++- There are no built-in invariant failures.
++- All 12 Campaigns and three Winters complete, with the same Roman **16-2**
++  final-scoring result.
++- Before Melitene's Surrender, state hashes are unchanged. From action 950
++  onward, the only state change is the two newly retained Melitene counter
++  records. All **2,044 before/after state comparisons** match the originals
++  when those exact two records are omitted from a temporary comparison view.
++  They remain present in the real corrected game state throughout.
++
++Corrected terminal SHA-256:
++`c430321135335abc8e2cd21846bb985cc746c895320dc60f6999e554139fb39a`.
++
++The retained counters are one double-Infantry marker and one Tagmata marker,
++both with home Thema Melitene. They are removed from play, not automatically
++returned to the map or a Lord; R13 remains the means to return a removed marker.
++
++## Repeatable checks
++
++```bash
++python -m pytest -q
++PYTHONPATH=src python scripts/roundtrip_sweep.py --seeds 1,2,3,4,5
++PYTHONPATH=src python scripts/smoke_fuzz.py --rounds 2 --seeds 1,2,3
++```
++
++The permanent repository CI runs this suite, the 25 scenario/seed move sweeps,
++and the 30 aggressive smoke checks. Tests support these fixes and neighboring
++behavior; they are not proof that every reachable position is defect-free.
+diff --git a/src/seljuk/actions.py b/src/seljuk/actions.py
+index 92d4692..0ff3ae3 100644
+--- a/src/seljuk/actions.py
++++ b/src/seljuk/actions.py
+@@ -1156,15 +1156,26 @@ def h_cta_empress(gs: GameState, action: dict[str, Any], roller: DiceRoller) ->
+ 
+ # --- Loyalty Check (1.4) ----------------------------------------------------
+ 
++def _loyalty_coin_sources(gs: GameState, side: str, target_id: str) -> list[LordState]:
++    """Eligible Commander / co-located Lord mats for a side's payment (1.4.1)."""
++    target = gs.lords[target_id]
++    return [l for lid, l in gs.lords.items()
++            if l.side == side and _on_map(l) and not l.besieged
++            and (is_commander(gs, lid) or l.cylinder == target.cylinder)]
++
++
++def _validate_loyalty_coin_amount(n: int, field: str) -> None:
++    # JSON booleans are not Coin counts, even though bool subclasses int.
++    if isinstance(n, bool) or not isinstance(n, int) or n < 0:
++        raise IllegalAction("bad_coin_amount", f"{field} must be a nonnegative integer (1.4.1)")
++
++
+ def _spend_loyalty_coins(gs: GameState, side: str, target_id: str, n: int) -> None:
+-    """Spend n Coin for a Loyalty Check from the side's Commander and/or its
+-    Lords co-located with the target (Unbesieged) (1.4.1)."""
+-    if n <= 0:
++    """Spend an already preflighted payment from eligible Lord mats (1.4.1)."""
++    _validate_loyalty_coin_amount(n, "coins")
++    if n == 0:
+         return
+-    target = gs.lords[target_id]
+-    sources = [l for lid, l in gs.lords.items()
+-               if l.side == side and _on_map(l) and not l.besieged
+-               and (is_commander(gs, lid) or l.cylinder == target.cylinder)]
++    sources = _loyalty_coin_sources(gs, side, target_id)
+     if sum(s.assets.coin for s in sources) < n:
+         raise IllegalAction("insufficient_coin",
+                             f"{side} lacks {n} Coin from its Commander / co-located Lords (1.4.1)")
+@@ -1177,13 +1188,40 @@ def _spend_loyalty_coins(gs: GameState, side: str, target_id: str, n: int) -> No
+ 
+ 
+ def loyalty_coin_budget(gs: GameState, side: str, target_id: str) -> int:
+-    """1.4.1: Coin available to a side for a Loyalty Check vs ``target_id`` --
+-    from its Commander and/or its

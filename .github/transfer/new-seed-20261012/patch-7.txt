@@ -1,0 +1,92 @@
+ved] == removed + defenders
++    # Serialized counters retain home, unit type, and double-marker identity.
++    gs = GameState.from_json(gs.to_json())
++    result = events._ev_thrakion(gs, {"thema": "Melitene", "unit": "infantry"}, engine.roller_for(gs))
++    assert result["returned"] == {"thema": "Melitene", "unit": "infantry"}
++    assert any(m.unit == "infantry" and m.symbols == 2 for m in gs.themata["Melitene"])
++    assert inventory(gs) == before
++
++
++def test_ns01_declining_surrender_does_not_remove_garrison():
++    gs = load("surrender-before.json")
++    before = inventory(gs)
++    defenders = list(gs.locales["melitene"].themata_defending)
++    removed = list(gs.meta.themata_removed)
++    result = engine.apply_action(gs, {"type": "cmd_siege", "lord": "artuk_beg", "roll_surrender": False})
++    assert not result.get("seized")
++    assert gs.locales["melitene"].themata_defending == defenders
++    assert gs.meta.themata_removed == removed
++    assert inventory(gs) == before
++
++
++def funded_loyalty(revealing="seljuk", own_target=True):
++    gs = load("loyalty-before.json")
++    opponent = "roman" if revealing == "seljuk" else "seljuk"
++    target = "robert_crepin" if revealing == "seljuk" else "arisighi"
++    gs.lords[target].side = revealing if own_target else opponent
++    gs.lords[target].cylinder = "edessa"
++    gs.lords["alp_arslan"].assets.coin = 3
++    gs.lords["manuel_komnenos"].assets.coin = 2
++    gs.meta.pending = [{"type": "loyalty_check", "side": revealing,
++                        "targets": [target], "_owed_by": revealing}]
++    gs.meta.active_player = revealing
++    return gs, target
++
++
++@pytest.mark.parametrize("side", ["roman", "seljuk"])
++@pytest.mark.parametrize("own_target", [True, False])
++def test_ns02_both_factions_pay_from_distinct_correct_pools(side, own_target):
++    gs, target = funded_loyalty(side, own_target)
++    expected = (3, 2) if side == "seljuk" else (2, 3)
++    raw = gs.to_json()
++    move = next(m for m in engine.legal_moves(gs) if m.get("target") == target)
++    assert (move["_max_coins_for"], move["_max_coins_against"]) == expected
++    assert gs.to_json() == raw  # menus may not spend
++    result = actions.resolve_loyalty_check(gs, target, side, engine.roller_for(gs), 1, 1)
++    assert result["natural"] == result["modified"] == 3
++    assert gs.lords["alp_arslan"].assets.coin == 2
++    assert gs.lords["manuel_komnenos"].assets.coin == 1
++
++
++@pytest.mark.parametrize("side", ["roman", "seljuk"])
++def test_ns02_besieged_target_has_no_counterpayment_and_rejection_is_atomic(side):
++    gs, target = funded_loyalty(side)
++    gs.lords[target].besieged = True
++    move = next(m for m in engine.legal_moves(gs) if m.get("target") == target)
++    assert move["_max_coins_against"] == 0
++    roller = engine.roller_for(gs)
++    before, rng = gs.to_json(), roller.get_state()
++    with pytest.raises(IllegalAction, match="besieged_no_resist"):
++        actions.resolve_loyalty_check(gs, target, side, roller, 1, 1)
++    assert gs.to_json() == before and roller.get_state() == rng
++
++
++def coffers_state():
++    gs = load("loyalty-before.json")
++    # The on-map Roman Commander must be adjacent to the Seljuk target.
++    gs.lords["manuel_komnenos"].cylinder = next(iter(gmap.neighbors("edessa")))
++    gs.lords["manuel_komnenos"].assets.coin = 1
++    gs.lords["alp_arslan"].assets.coin = 0
++    for deck in (gs.roman.draw_deck, gs.roman.held_events,
++                 gs.roman.this_campaign_events, gs.roman.capabilities_in_play):
++        while "R14" in deck:
++            deck.remove("R14")
++    gs.roman.capabilities_in_play.append("R14")
++    gs.meta.phase = "levy"
++    gs.meta.subphase = "levy.pay"
++    gs.meta.pending = [{"type": "imperial_coffers", "_owed_by": "roman"}]
++    assert "robert_crepin" in campaign.imperial_coffers_targets(gs)
++    return gs
++
++
++def invoke(gs, entry, coins_for, coins_against, roller):
++    target = "robert_crepin" if entry == "coffers" else "roussel_de_bailleul"
++    if entry == "resolver":
++        return actions.resolve_loyalty_check(gs, target, "seljuk", roller, coins_for, coins_against)
++    return engine.apply_action(gs, {"type": "discard_imperial_coffers" if entry == "coffers" else "resolve_loyalty",
++                                    "target": target, "coins_for": coins_for, "coins_against": coins_against})
++
++
++@pytest.mark.parametrize("entry", ["resolver", "treachery", "coffers"])
++@pytest.mark.parametrize("payments", [(1, 1), (2, 0)])
++def test_ns03_ever
