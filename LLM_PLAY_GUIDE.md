@@ -132,10 +132,14 @@ parameters (hinted by `_`-prefixed keys):
   is owed a Themata assignment, that pends FIRST (S1 Clarification) and the
   2 Siege markers + Storm resume after it.
 - **Loyalty coin DRMs** (1.4.1). `resolve_loyalty` / `discard_imperial_coffers`
-  accept `"coins_for"` (checking side, +1 each) and `"coins_against"` (owner
-  resists, -1 each), bounded by the `_max_coins_for` / `_max_coins_against`
-  hints (Commander + co-located Unbesieged Lords' Coin; no resisting for a
-  Besieged target).
+  accept `"coins_for"` (revealing player, +1 each) and `"coins_against"` (that
+  player's opponent, -1 each), bounded by the `_max_coins_for` /
+  `_max_coins_against` hints (Commander + co-located Unbesieged Lords' Coin;
+  no resisting for a Besieged target). The opponent pays even when the target
+  already belongs to the revealing player. Amounts must be nonnegative JSON
+  integers: strings, fractions, booleans, and negative values are rejected.
+  Both payments are validated before any Coin or dice are consumed. Invalid
+  Imperial Coffers payments also leave its card and pending decision intact.
 - **resolve_event** (an immediate Arts-of-War Event that needs a choice). Pass
   `args` with the choice the card calls for, e.g.
   `{"type":"resolve_event","card":"R5","args":{"lord":"alp_arslan","direction":"left"}}`.

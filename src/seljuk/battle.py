@@ -1084,6 +1084,18 @@ def _eff_profile(gs: GameState, locale: str) -> dict | None:
     return prof
 
 
+def _remove_garrison_themata(gs: GameState, locale: str) -> None:
+    """Remove captured defenders from play, retaining their counters for R13.
+
+    Both Surrender (4.5.1) and Sack (4.9.1) remove these markers. Moving them
+    here keeps Conquer/Ruin consistent and prevents Storm from recording the
+    same counters twice.
+    """
+    loc = gs.locales[locale]
+    gs.meta.themata_removed.extend(loc.themata_defending)
+    loc.themata_defending = []
+
+
 def conquer(gs: GameState, locale: str, by_side: str) -> dict[str, Any]:
     """Set a Stronghold to ``by_side``'s control (1.3.1, 4.5.1/4.9.1)."""
     loc = gs.locales[locale]
@@ -1112,7 +1124,7 @@ def conquer(gs: GameState, locale: str, by_side: str) -> dict[str, Any]:
     if loc.strategic_objective:  # Roman claims a Strategic Objective here (4.5.1/4.9.1)
         gs.holding_boxes.constantinople_roman_vp_markers += 1
         loc.strategic_objective = False
-    loc.themata_defending = []  # garrisoning Themata removed from the game
+    _remove_garrison_themata(gs, locale)
     return {"conquered_by": by_side, "placed_markers": placed}
 
 
@@ -1128,7 +1140,7 @@ def ruin(gs: GameState, locale: str) -> dict[str, Any]:
     if loc.strategic_objective:
         gs.holding_boxes.constantinople_roman_vp_markers += 1
         loc.strategic_objective = False
-    loc.themata_defending = []
+    _remove_garrison_themata(gs, locale)
     return {"ruined": locale}
 
 
@@ -1513,7 +1525,6 @@ def _sack(gs: GameState, attacker_ids, defender_ids, locale, a_side, ctx, roller
     choice = "conquer"
     if can_ruin:
         choice = ctx.decide("sack_choice", ["conquer", "ruin"], {"locale": locale})
-    gs.meta.themata_removed.extend(gs.locales[locale].themata_defending)
     out = ruin(gs, locale) if choice == "ruin" else conquer(gs, locale, a_side)
     # Reconcile losses before selecting surviving recipients (4.8.3-.5).
     _storm_losses(gs, attacker_ids, defender_ids, defender_won=False, roller=roller, ctx=ctx, log=out)
