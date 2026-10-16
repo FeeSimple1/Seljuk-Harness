@@ -33,6 +33,14 @@ def check_invariants(gs: GameState) -> list[str]:
         if v < 0:
             bad.append(f"holding_box {name} negative: {v}")
 
+    # All three Strategic Objective counters must have a physical home.
+    # The Roman VP holding box also contains unrelated Conquered/Unity markers,
+    # so claimed objectives have a separate count in meta.notes.
+    from . import scenarios
+    remaining_so = scenarios.strategic_objectives_in_supply(gs)
+    if not 0 <= remaining_so <= scenarios.STRATEGIC_OBJECTIVE_MARKERS:
+        bad.append(f"Strategic Objective inventory impossible: supply remainder {remaining_so}")
+
     # VP is never negative (advisory §3: cheap always-on bound). It is a derived
     # sum of non-negative contributions; a negative value signals corruption.
     for side in ("roman", "seljuk"):

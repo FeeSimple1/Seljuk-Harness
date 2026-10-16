@@ -50,7 +50,7 @@ def _stronghold_value(locale_id: str) -> int:
     return {"fort": 1, "town": 2, "city": 3}.get(t, 0)
 
 
-def _themata_box_contents(themata_key: str) -> dict[str, list[ThemataMarker]]:
+def _themata_box_contents(themata_key: str, removed: list[ThemataMarker] | None = None) -> dict[str, list[ThemataMarker]]:
     data = sd.themata()
     baseline = data["baseline_1068"]
     removals = data["scenario_removals"].get(themata_key, {})
@@ -58,10 +58,14 @@ def _themata_box_contents(themata_key: str) -> dict[str, list[ThemataMarker]]:
     for thema, markers in baseline.items():
         pool = [dict(m) for m in markers]
         for rem in removals.get(thema, []):
-            # remove one marker matching (unit, symbols)
+            # A "Remove from Play" setup instruction relocates a physical
+            # counter into the removed pile, not out of the state. R13 can
+            # later return that exact marker to its home Thema.
             for i, mk in enumerate(pool):
                 if mk["unit"] == rem["unit"] and mk["symbols"] == rem["symbols"]:
-                    pool.pop(i)
+                    marker = pool.pop(i)
+                    if removed is not None:
+                        removed.append(ThemataMarker(**marker, home_thema=thema))
                     break
             else:  # pragma: no cover - validated at data-build time
                 raise ValueError(f"{themata_key}: cannot remove {rem} from {thema}")
@@ -129,6 +133,9 @@ def load_scenario(name: str, seed: int = 1, options: dict | None = None) -> Game
             "first_turn_plan_size": s.get("first_turn_plan_size"),
             "nomisma_debased_used": s.get("nomisma_debased_used", False),
             "strategic_objectives_removed_from_play": s.get("strategic_objectives_removed_from_play", 0),
+            # Claims are physical SO counters moved into Constantinople for
+            # VP, not markers recycled into the limited three-marker supply.
+            "strategic_objectives_claimed": 0,
             # SMOKE-003: a skip_first_levy scenario starts mid-campaign with its
             # Capabilities already deployed by setup (board_edge_capabilities +
             # per-Lord). That pre-placement IS the scenario's First Levy Arts of
@@ -165,7 +172,7 @@ def load_scenario(name: str, seed: int = 1, options: dict | None = None) -> Game
         gs.locales[loc].strategic_objective = True
 
     # Themata boxes ----------------------------------------------------------
-    gs.themata = _themata_box_contents(s["themata_key"])
+    gs.themata = _themata_box_contents(s["themata_key"], gs.meta.themata_removed)
 
     # Lords ------------------------------------------------------------------
     mustered = {e["lord"]: e for e in s["mustered"]}
@@ -235,6 +242,35 @@ def load_scenario(name: str, seed: int = 1, options: dict | None = None) -> Game
         constantinople_roman_vp_markers=hb.get("constantinople_roman_vp_markers", 0),
     )
     return gs
+
+
+# --- Physical Strategic Objective counter accounting (3.5.3) ----------------
+
+STRATEGIC_OBJECTIVE_MARKERS = 3
+
+
+def strategic_objectives_in_supply(gs: GameState) -> int:
+    """Physical unclaimed SO markers still in the supply, not in play.
+
+    Distinguish claimed SO counters in Constantinople from generic Roman 1-VP
+    markers earned through conquest and Seljuk Unity (same holding-box total).
+    The setup-removed count covers scenarios beginning after claims/removals;
+    later claims increment a dedicated count without affecting other VPs.
+    """
+    on_lords = sum(bool(l.strategic_objective) for l in gs.lords.values())
+    on_locales = sum(bool(l.strategic_objective) for l in gs.locales.values())
+    return (STRATEGIC_OBJECTIVE_MARKERS
+            - gs.holding_boxes.constantinople_strategic_objectives_available
+            - on_lords - on_locales
+            - int(gs.meta.notes.get("strategic_objectives_removed_from_play", 0))
+            - int(gs.meta.notes.get("strategic_objectives_claimed", 0)))
+
+
+def claim_strategic_objective(gs: GameState) -> None:
+    """Move an earned SO marker to Constantinople, never back to supply."""
+    gs.holding_boxes.constantinople_roman_vp_markers += 1
+    gs.meta.notes["strategic_objectives_claimed"] = (
+        int(gs.meta.notes.get("strategic_objectives_claimed", 0)) + 1)
 
 
 # --- Victory math (5.1-5.3) -------------------------------------------------
