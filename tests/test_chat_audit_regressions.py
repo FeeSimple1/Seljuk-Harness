@@ -163,6 +163,7 @@ def test_03_levied_and_recruited_themata_fight_and_feed(kind):
 def test_03_double_themata_partial_and_total_losses_preserve_identity():
     gs = game()
     lord = place(gs, "romanos_diogenes", {})
+    removed_at_start = len(gs.meta.themata_removed)  # setup removals are physical counters too
     lord.themata_on_mat = [ThemataMarker(unit="militia", symbols=2, home_thema="Charsianon")]
     B._apply_hits(gs, lord.id, 1, "melee", B.DecisionContext(), ConstantDice())
     assert lord.themata_on_mat[0].routed == 1
@@ -176,8 +177,8 @@ def test_03_double_themata_partial_and_total_losses_preserve_identity():
     B._apply_hits(saved, lord.id, 1, "melee", B.DecisionContext(), ConstantDice())
     B._loss_roll(saved, lord, False, ConstantDice())
     assert not lord.themata_on_mat and B._is_routed(lord)
-    assert len(saved.meta.themata_removed) == 1
-    assert saved.meta.themata_removed[0].symbols == 2
+    assert len(saved.meta.themata_removed) == removed_at_start + 1
+    assert saved.meta.themata_removed[-1].symbols == 2
 
 
 def test_03_returned_themata_reset_surviving_marker_strength():
@@ -568,12 +569,13 @@ def test_03_turkic_removal_events_include_levied_units(entry, whole_marker):
     from seljuk import events
     gs = game()
     lord = place(gs, "romanos_diogenes", {})
+    removed_at_start = len(gs.meta.themata_removed)
     lord.themata_on_mat = [ThemataMarker(unit="turkic_horse", symbols=2, home_thema="Charsianon")]
     remove = events._remove_turkic_at if entry == "standalone" else B._remove_turkic_at
     assert remove(gs, "melitene", 1, include_themata=whole_marker) == 1
     if whole_marker:
         assert lord.themata_on_mat == []
-        assert len(gs.meta.themata_removed) == 1
+        assert len(gs.meta.themata_removed) == removed_at_start + 1
     else:
         assert C._unit_count(lord) == 1
         assert len(lord.themata_on_mat) == 1

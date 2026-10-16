@@ -38,10 +38,11 @@ def test_round_trip_removed_then_returned():
     # ensure a marker exists in a border Thema, remove it (S7), then return it (R13)
     thema = "Iberia"
     box_before = len(gs.themata.get(thema, []))
+    setup_removed = list(gs.meta.themata_removed)
     assert box_before >= 1
     E._ev_deserters(gs, {"thema": thema}, _r())                # removes 1 -> pile
-    assert len(gs.meta.themata_removed) == 1
+    assert len(gs.meta.themata_removed) == len(setup_removed) + 1
     assert len(gs.themata[thema]) == box_before - 1
-    E._ev_thrakion(gs, {}, _r())                               # return it home
+    E._ev_thrakion(gs, {"thema": thema}, _r())                  # return that newly removed one
     assert len(gs.themata[thema]) == box_before
-    assert gs.meta.themata_removed == []
+    assert gs.meta.themata_removed == setup_removed

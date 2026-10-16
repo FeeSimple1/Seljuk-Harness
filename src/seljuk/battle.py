@@ -1143,7 +1143,7 @@ def conquer(gs: GameState, locale: str, by_side: str) -> dict[str, Any]:
     if loc.ravaged_side == by_side and printed == by_side:
         loc.ravaged_side = enemy
     if loc.strategic_objective:  # Roman claims a Strategic Objective here (4.5.1/4.9.1)
-        gs.holding_boxes.constantinople_roman_vp_markers += 1
+        scenarios.claim_strategic_objective(gs)
         loc.strategic_objective = False
     _remove_garrison_themata(gs, locale)
     return {"conquered_by": by_side, "placed_markers": placed}
@@ -1159,7 +1159,7 @@ def ruin(gs: GameState, locale: str) -> dict[str, Any]:
     loc.ruins = True
     loc.ruins_color = "seljuk"
     if loc.strategic_objective:
-        gs.holding_boxes.constantinople_roman_vp_markers += 1
+        scenarios.claim_strategic_objective(gs)
         loc.strategic_objective = False
     _remove_garrison_themata(gs, locale)
     return {"ruined": locale}

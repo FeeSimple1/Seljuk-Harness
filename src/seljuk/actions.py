@@ -260,7 +260,7 @@ def _disband_beyond(gs: GameState, lord: LordState) -> dict[str, Any]:
     """3.3.1 Beyond Service Limit: permanent removal."""
     claimed_so = False
     if lord.side == "seljuk" and lord.strategic_objective:
-        gs.holding_boxes.constantinople_roman_vp_markers += 1
+        scenarios.claim_strategic_objective(gs)
         lord.strategic_objective = False
         claimed_so = True
     _return_capabilities_to_deck(gs, lord)
@@ -932,7 +932,7 @@ def enumerate_call_to_arms(gs: GameState) -> list[dict[str, Any]]:
             for l in (rom, man)
         )
         if commander_in_cple:
-            if gs.holding_boxes.constantinople_strategic_objectives_available < 3:
+            if scenarios.strategic_objectives_in_supply(gs) > 0:
                 out.append({"type": "cta_strategic_objective", "mode": "take",
                             "_desc": "Take a Strategic Objective marker from supply (3.5.3)"})
             if gs.holding_boxes.constantinople_strategic_objectives_available > 0:
@@ -983,8 +983,8 @@ def h_cta_strategic_objective(gs: GameState, action: dict[str, Any], roller: Dic
         raise IllegalAction("commander_not_in_constantinople", "Roman Commander must be in Constantinople (3.5.3 errata)")
     mode = action.get("mode")
     if mode == "take":
-        if gs.holding_boxes.constantinople_strategic_objectives_available >= 3:
-            raise IllegalAction("so_supply_empty", "all three Strategic Objective markers are out (3.5.3)")
+        if scenarios.strategic_objectives_in_supply(gs) <= 0:
+            raise IllegalAction("so_supply_empty", "Strategic Objective supply is empty (all three markers accounted for; 3.5.3)")
         gs.holding_boxes.constantinople_strategic_objectives_available += 1
         _cta_done(gs)
         return {"ok": True, "action": "cta_strategic_objective", "mode": "take",
@@ -997,6 +997,8 @@ def h_cta_strategic_objective(gs: GameState, action: dict[str, Any], roller: Dic
             tl = gs.lords[target]
             if tl.side == "roman" or not tl.mustered:
                 raise IllegalAction("bad_so_target", "must place on a Mustered enemy (Seljuk) Lord (3.5.3)")
+            if tl.strategic_objective:
+                raise IllegalAction("already_marked", "this Lord already carries a Strategic Objective (3.5.3)")
             tl.strategic_objective = True
             placed_on = {"lord": target}
         elif target in gs.locales:
@@ -1006,6 +1008,8 @@ def h_cta_strategic_objective(gs: GameState, action: dict[str, Any], roller: Dic
                 raise IllegalAction("bad_so_target", "target must be a Stronghold (3.5.3)")
             if current_allegiance(gs, target) != "seljuk":
                 raise IllegalAction("bad_so_target", "Stronghold is not currently Seljuk-controlled (3.5.3 errata)")
+            if gs.locales[target].strategic_objective:
+                raise IllegalAction("already_marked", "this Stronghold already carries a Strategic Objective (3.5.3)")
             gs.locales[target].strategic_objective = True
             placed_on = {"locale": target}
         else:
