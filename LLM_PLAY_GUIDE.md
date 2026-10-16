@@ -1,10 +1,14 @@
 # Seljuk Harness — LLM Play Guide
 
 This guide lets another agent (or person) play a full game of GMT's *Seljuk*
-through the harness. The harness enforces every rule, auto-resolves dice, and
-tells you the legal moves at every step — you supply the decisions.
+through the harness. The harness implements the rules and auto-resolves dice; you supply the
+decisions. Published rules, errata, and recorded adjudications remain the
+authority, and tests do not establish that every reachable position is bug-free.
 
-You drive the game entirely through the `seljuk.cli` command line against a
+For token-efficient sandbox play, use `scripts/chatgpt_play_helper.py`; see
+`CHATGPT_PLAY.md` for compact overviews, complete action pages, versioned ids,
+private response handoffs, intact references, and explicit Plans. The guide
+below describes the legacy, trusted `seljuk.cli` interface against a
 **save file** (a JSON game state). Every command reads that file; `do` also
 writes it back. Run commands with:
 
@@ -27,13 +31,13 @@ The whole game is this loop. Repeat until the game is over.
 # 1. Start a game (once)
 python -m seljuk.cli new emperor_and_the_lion --seed 1 --out game.json
 
-# 2. Read the situation (human-readable). Note the ACTIVE side.
+# 2. Read the situation (human-readable). Note the DECISION owner (which may differ from the active side).
 python -m seljuk.cli briefing --file game.json
 
 # 3. Resolve any owed sub-decisions FIRST (see "Pending" below).
 python -m seljuk.cli pending --file game.json
 
-# 4. List the active side's legal actions (machine-readable JSON palette).
+# 4. List the decision owner's legal actions (machine-readable JSON palette).
 python -m seljuk.cli legal-moves --file game.json
 
 # 5. Pick ONE action and apply it. This saves the new state back to the file.
@@ -71,8 +75,8 @@ move. (Templated moves — `build_plan`, `resolve_event`, `respond_approach`,
 interactive/agent path, not bulk sweeps.
 
 If you submit an illegal action, `do` prints `IllegalAction: <reason>` and exits
-non-zero **without changing the game** — pick a different move. Every move
-`legal-moves` offers is guaranteed applicable.
+non-zero **without changing the game** — pick a different move. Concrete validated rows are probed in the current state; templates and added
+parameter combinations still require validation. A stale state can change legality.
 
 ### Template actions and optional parameters
 
@@ -82,8 +86,10 @@ parameters (hinted by `_`-prefixed keys):
 - **build_plan** (Campaign Plan step). `legal-moves` gives `_plan_size` (how many
   cards), `_available_lords`, and `_treachery_required`. Build an ordered list
   of that many entries, each a Lord id (whose Command card you play, ≤4 per
-  Lord), `"no_command"` (≤5), or `"treachery"` (exactly one, only if
-  `_treachery_required`). Example:
+  Lord), `"no_command"` (use `_constraints.no_command_max`, normally five,
+  six when Treachery adds the extra card), or `"treachery"` (exactly one, only if
+  `_treachery_required`). `_no_command_required` includes Treachery and Weather;
+  `_constraints` exposes the engine's exact requirements. Example:
   ```bash
   --action '{"type":"build_plan","side":"seljuk","cards":["alp_arslan","alp_arslan","afsin_beg","no_command","no_command","no_command","no_command"]}'
   ```
@@ -114,18 +120,20 @@ parameters (hinted by `_`-prefixed keys):
   Lieutenant then plays his Lower Lord's Command cards.
 - **In-Battle Held Events** (`battle_events`). Moves that start a combat accept
   `"battle_events": {"seljuk": [...], "roman": [...]}` naming Held Event cards
-  EITHER side plays for that combat; the palette hints what is available via
-  `_battle_holds_available` (respond_approach, cmd_sally) or
-  `_storm_events_available` (cmd_storm). Battle (Stand/Sortie) AND Sally
+  EITHER side plays for that combat. Player-facing palettes expose only the
+  viewing player's hand, via `_combat_inputs`. A trusted CLI caller collects
+  both players' choices; the compact helper supplies explicit private handoffs. Battle (Stand/Sortie) AND Sally
   (D-008) honor the full set R2/S2/S3/S6/R24/R21/S21 (S6/R24 entries are
   dicts naming the Roman Lord: `{"card":"R24","lord":...}`); Storm honors
   R21/S21 plus, for the Roman defender, `"play_sultans_horse": true`
-  (R4: Rounds -1, hinted by `_r4_sultans_horse_available`).
+  (R4: Rounds -1, disclosed only to the Roman player).
 - **steeled_rounds** (R3 Steeled Resolve). Any combat-starting move accepts
   `"steeled_rounds": {LORD: N}` — the Round (default 1) in which that Lord's
   Capability applies.
-- **local_scouts** (R18, respond_approach). The Approaching side may force one
-  Avoiding Lord to Stand/Withdraw: `"local_scouts": {"lord": L, "action": "stand"}`.
+- **local_scouts** (R18, respond_approach). The Roman Approaching player declares
+  R18; the avoiding side selects the Lord and Stand/Withdraw. A trusted CLI
+  caller collects that response as `"local_scouts": {"lord": L, "action": "stand"}`.
+  The compact helper separates the declaration and the enemy's selection.
 - **besiege_bypass with surprise** (S1). The menu offers a
   `{"choice":"besiege","surprise":true}` variant when S1 is held and eligible;
   optionally add `storm_decisions` for the immediate Storm. If the Stronghold
@@ -195,8 +203,9 @@ state **filtered for that side**: the opponent's draw deck, held Events, and
 unrevealed Plan cards are masked as `"<hidden>"`. Your own are fully visible, as
 are the opponent's already-revealed Command cards. The filtered view exposes
 only action types from replay history and omits the random seed/state; raw
-history includes secret plans and is not a player-safe event log. The human `briefing` and
-`state` (summary) views are for convenience/observing.
+history includes secret plans and is not a player-safe event log. Human and JSON state/briefing views default to the decision owner and honor
+Hidden Mats. `history --raw`, raw save files, and direct render APIs without a
+viewing side remain trusted omniscient debugging access.
 
 ## Winning
 
@@ -209,8 +218,8 @@ the Seljuk Unity track, or an Aleppo auto-victory — all scored by the engine.
 ## Mode A — Solo / single chat
 
 One chat drives both sides (or plays one side and makes reasonable moves for the
-other). Just run the turn loop; the `active` side in the status line tells you
-who acts. Nothing else to coordinate.
+other). Just run the turn loop; the `decision` side in the status line tells you
+who owes the next input (not necessarily the active Command-card player). Nothing else to coordinate.
 
 ## Mode B — Head-to-head (two chats)
 
@@ -224,7 +233,7 @@ python -m seljuk.cli new <scenario> --out /path/to/shared/game.json
 
 Each chat's turn protocol:
 1. `briefing --file game.json` and read the status line. **Act only when
-   `active=` is your side.** If it's the opponent's turn, wait and re-check.
+   `decision=` is your side.** The inactive defender can owe an immediate response.
 2. View your own state: `state --file game.json --side YOUR_SIDE --json`.
 3. Resolve `pending` decisions that are yours, then `legal-moves`, then `do`.
 4. After your `do`, the status line shows whose turn is next. Hand off (the file
@@ -234,8 +243,10 @@ Honor system: the harness does **not** stop a chat from reading the opponent's
 filtered-out info or applying the opponent's moves. For a fair game, each chat
 should only ever call `state --side ITS_OWN_SIDE`, only resolve pending
 decisions owed by its side, and only `do` actions for its own Lords. The
-`legal-moves` palette is always for the current `active` side, so following "act
-only on your turn" keeps both honest.
+`legal-moves` palette follows the actual decision owner. Do not send an
+actor's private `do` result to the next decision owner. For enforced presentation
+pins and staged joint decisions use the compact helper; the CLI is a trusted
+low-level interface, not an authentication boundary.
 
 For fair head-to-head play, keep private action results private: they can
 contain a Plan or other hidden choices. `history` and unfiltered save files are

@@ -69,8 +69,18 @@ def _strike_table(step: str, round_no: int) -> dict[str, float]:
 class DecisionContext:
     """Resolves Battle choice points (scripted FIFO, else first-option fallback)."""
 
-    def __init__(self, scripted: Optional[list] = None) -> None:
-        self.scripted = list(scripted or [])
+    def __init__(self, scripted: Optional[list | dict[str, list]] = None) -> None:
+        # Optional per-player queues are used by the private LLM handoff.
+        # The existing shared FIFO list remains unchanged for engine clients.
+        self.by_side = None
+        if isinstance(scripted, dict):
+            from .state import IllegalAction
+            if set(scripted) - {"roman", "seljuk"} or any(not isinstance(v, list) for v in scripted.values()):
+                raise IllegalAction("bad_decision_script", "per-player scripts map roman/seljuk to FIFO lists")
+            self.by_side = {side: DecisionContext(scripted.get(side, [])) for side in ("roman", "seljuk")}
+            self.scripted = []
+        else:
+            self.scripted = list(scripted or [])
         self.trace: list[dict] = []
 
     def decide(self, dtype: str, options: list, info: dict | None = None):
@@ -80,6 +90,14 @@ class DecisionContext:
         option."""
         if not options:
             return None
+        if self.by_side is not None:
+            side = (info or {}).get("side")
+            if side not in self.by_side:
+                from .state import IllegalAction
+                raise IllegalAction("decision_owner_missing", f"no owner for {dtype}; cannot consume another player's script")
+            chosen = self.by_side[side].decide(dtype, options, info)
+            self.trace.append({"type": dtype, "choice": chosen, "options": options})
+            return chosen
         # JSON arrays represent both typed entries and tuple-valued choices.
         # Prefer an exact offered value before interpreting a pair as typed.
         def canonical(value):
@@ -115,6 +133,7 @@ class _Side:
     def __init__(self, gs: GameState, lord_ids: list[str], role: str) -> None:
         self.gs = gs
         self.role = role  # "attacker" | "defender"
+        self.faction = gs.lords[lord_ids[0]].side if lord_ids else None
         self.locale = None
         self.mountain_ambush = False
         self.front: dict[str, Optional[str]] = {"left": None, "center": None, "right": None}
@@ -258,6 +277,8 @@ def resolve_battle(gs: GameState, attacker_ids: list[str], defender_ids: list[st
     att_front_pool = [a for a in attacker_ids if a != active and a not in sallying]
     att = _Side(gs, att_front_pool, "attacker")
     deff = _Side(gs, list(defender_ids), "defender")
+    att.faction = gs.lords[attacker_ids[0]].side
+    deff.faction = gs.lords[defender_ids[0]].side
 
     # --- Array (4.8.1): Active attacker at Front center; others fill L/R. ---
     if active in sallying:
@@ -358,7 +379,7 @@ def _fill_front(side: _Side, ctx: DecisionContext, dtype: str) -> None:
     for slot in ("left", "right"):
         if not side.reserve:
             break
-        choice = ctx.decide(dtype, list(side.reserve), {"slot": slot})
+        choice = ctx.decide(dtype, list(side.reserve), {"slot": slot, "side": side.faction})
         side.front[slot] = choice
         side.reserve.remove(choice)
 
@@ -368,7 +389,7 @@ def _fill_defender(att: _Side, deff: _Side, ctx: DecisionContext) -> None:
     for slot in order:
         if not deff.reserve:
             break
-        choice = ctx.decide("initial_placement_defender", list(deff.reserve), {"slot": slot})
+        choice = ctx.decide("initial_placement_defender", list(deff.reserve), {"slot": slot, "side": deff.faction})
         deff.front[slot] = choice
         deff.reserve.remove(choice)
 
@@ -381,7 +402,7 @@ def _fill_row(side: _Side, row: str, pool: list[str], ctx: DecisionContext, dtyp
     for slot in ("center", "left", "right"):
         if not remaining:
             break
-        choice = ctx.decide(dtype, list(remaining), {"slot": slot, "row": row})
+        choice = ctx.decide(dtype, list(remaining), {"slot": slot, "row": row, "side": side.faction})
         rowmap[slot] = choice
         remaining.remove(choice)
     side.reserve.extend(remaining)
@@ -395,13 +416,13 @@ def _fill_rearguard(att: _Side, deff: _Side, ctx: DecisionContext) -> None:
     for slot in order:
         if not deff.reserve:
             break
-        choice = ctx.decide("rearguard_placement", list(deff.reserve), {"slot": slot})
+        choice = ctx.decide("rearguard_placement", list(deff.reserve), {"slot": slot, "side": deff.faction})
         deff.rearguard[slot] = choice
         deff.reserve.remove(choice)
 
 
 def _offer_concede(gs: GameState, side: _Side, ctx: DecisionContext, role: str) -> bool:
-    choice = ctx.decide("concede", [False, True], {"role": role})
+    choice = ctx.decide("concede", [False, True], {"role": role, "side": side.faction})
     return bool(choice)
 
 
@@ -439,7 +460,7 @@ def _reposition(gs: GameState, att: _Side, deff: _Side, ctx: DecisionContext) ->
         for slot in SLOTS:
             if side.front[slot] is None and side.reserve:
                 opts = list(side.reserve)
-                choice = ctx.decide(dtype, opts, {"slot": slot, "role": side.role})
+                choice = ctx.decide(dtype, opts, {"slot": slot, "role": side.role, "side": side.faction})
                 side.front[slot] = choice
                 side.reserve.remove(choice)
     # Center fill: a Left/Right Front Lord must slide to an empty Center.
@@ -447,7 +468,7 @@ def _reposition(gs: GameState, att: _Side, deff: _Side, ctx: DecisionContext) ->
         if side.front["center"] is None:
             wing = [side.front[s] for s in ("left", "right") if side.front[s]]
             if wing:
-                choice = ctx.decide("center_fill", wing, {"role": side.role})
+                choice = ctx.decide("center_fill", wing, {"role": side.role, "side": side.faction})
                 for s in ("left", "right"):
                     if side.front[s] == choice:
                         side.front[s] = None
@@ -470,7 +491,7 @@ def _target_of(striker_slot: str, enemy: _Side, ctx: DecisionContext,
     closest = [s for d, s in present if d == present[0][0]]
     if len(closest) == 1:
         return erow[closest[0]]
-    choice = ctx.decide("flanker_target", [erow[s] for s in closest], {"striker_slot": striker_slot})
+    choice = ctx.decide("flanker_target", [erow[s] for s in closest], {"striker_slot": striker_slot, "side": "roman" if enemy.faction == "seljuk" else "seljuk"})
     return choice
 
 
@@ -715,7 +736,7 @@ def _apply_pools(gs, step, by, contrib, striking: _Side, target_side: _Side, rol
         if not cands:
             return target_id
         return ctx.decide("flank_absorb", [target_id] + cands,
-                          {"target": target_id, "striker": z})
+                          {"target": target_id, "striker": z, "side": gs.lords[target_id].side})
 
     def _emit(target, n_raw, a_raw, s_raw, walls):
         source_slots = contrib.get(target, set())
@@ -730,7 +751,7 @@ def _apply_pools(gs, step, by, contrib, striking: _Side, target_side: _Side, rol
                     candidates.append(candidate)
             if not candidates:
                 return None
-            return ctx.decide("remaining_hits_target", candidates, {"row": target_row})
+            return ctx.decide("remaining_hits_target", candidates, {"row": target_row, "side": striking.faction})
         if _is_routed(gs.lords[target]):
             target = retarget()
             if target is None:
@@ -791,7 +812,7 @@ def _route_unit(lord: LordState, unit: str, ctx: DecisionContext) -> None:
     sources = (["lord"] if lord.forces.get(unit, 0) > 0 else [])
     sources += [f"themata:{i}" for i, m in enumerate(lord.themata_on_mat)
                 if m.unit == unit and m.unrouted_count() > 0]
-    source = (ctx.decide("unit_source", sources, {"lord": lord.id, "unit": unit})
+    source = (ctx.decide("unit_source", sources, {"lord": lord.id, "unit": unit, "side": lord.side})
               if len(sources) > 1 else sources[0])
     if source == "lord":
         lord.forces[unit] -= 1
@@ -822,7 +843,7 @@ def _apply_hits(gs: GameState, target_id: str, hits: int, hit_type: str,
             unit = min(avail, key=lambda u: capabilities.protection_range(
                 gs, target_id, u, hit_type, vs_horse=effective_vs_horse)[1])
         else:
-            unit = ctx.decide("hit_absorption", avail, {"lord": target_id, "hit_type": hit_type})
+            unit = ctx.decide("hit_absorption", avail, {"lord": target_id, "hit_type": hit_type, "side": lord.side})
         lo, hi = capabilities.protection_range(gs, target_id, unit, hit_type,
                                                storm=False, vs_horse=effective_vs_horse)
         if anti_armor and unit not in ("turkic_horse", "militia"):
@@ -943,7 +964,7 @@ def _lord_fate(gs: GameState, lord: LordState, loser_role: str, locale: str,
     if not options:
         choice = "removed"
     else:
-        choice = ctx.decide("retreat", options, {"lord": lord.id})
+        choice = ctx.decide("retreat", options, {"lord": lord.id, "side": lord.side})
     if choice == "withdraw":
         lord.besieged = True
         lord.cylinder = locale
@@ -1238,7 +1259,7 @@ def resolve_storm(gs: GameState, attacker_ids: list[str], locale: str,
     while round_no < max_rounds:
         round_no += 1
         if round_no > 1:
-            if ctx.decide("concede", [False, True], {"role": "attacker"}):  # Attacker only (4.9.1)
+            if ctx.decide("concede", [False, True], {"role": "attacker", "side": a_side}):  # Attacker only (4.9.1)
                 attacker_conceded = True
                 break
             _storm_reposition(gs, att, deff, size, ctx)
@@ -1288,7 +1309,7 @@ def _storm_reposition(gs: GameState, att: _Side, deff: _Side, size: int, ctx: De
         n_front = len(side.front_lords())
         if n_front < size and side.reserve:
             slot = next(s for s in SLOTS if side.front[s] is None)
-            choice = ctx.decide("reserve_advance", list(side.reserve), {"role": side.role})
+            choice = ctx.decide("reserve_advance", list(side.reserve), {"role": side.role, "side": side.faction})
             side.front[slot] = choice
             side.reserve.remove(choice)
 
@@ -1493,7 +1514,7 @@ def _absorb_storm(gs: GameState, lord: LordState, hits: int, anti_armor: bool, a
             u not in ("turkic_horse", "militia") for u in _unrouted_units(l))]
         if armored_first and armored_lords:
             eligible = armored_lords
-        lid = ctx.decide("storm_hit_lord", [l.id for l in eligible])
+        lid = ctx.decide("storm_hit_lord", [l.id for l in eligible], {"side": eligible[0].side})
         lord = gs.lords[lid]
         avail = list(_unrouted_units(lord))
         if armored_first and armored_lords:
@@ -1502,7 +1523,7 @@ def _absorb_storm(gs: GameState, lord: LordState, hits: int, anti_armor: bool, a
             lo, hi = capabilities.protection_range(gs, lord.id, u, htype, storm=True)
             return max(lo, hi - 1) if (anti_armor and u not in ("turkic_horse", "militia")) else hi
         unit = (min(avail, key=eff_hi) if select_target else
-                ctx.decide("hit_absorption", avail, {"lord": lord.id}))
+                ctx.decide("hit_absorption", avail, {"lord": lord.id, "side": lord.side}))
         lo, hi = capabilities.protection_range(gs, lord.id, unit, htype, storm=True)
         if anti_armor and unit not in ("turkic_horse", "militia"):
             hi = max(lo, hi - 1)
@@ -1524,7 +1545,7 @@ def _sack(gs: GameState, attacker_ids, defender_ids, locale, a_side, ctx, roller
     can_ruin = (a_side == "seljuk" and info["allegiance"] == "roman")
     choice = "conquer"
     if can_ruin:
-        choice = ctx.decide("sack_choice", ["conquer", "ruin"], {"locale": locale})
+        choice = ctx.decide("sack_choice", ["conquer", "ruin"], {"locale": locale, "side": a_side})
     out = ruin(gs, locale) if choice == "ruin" else conquer(gs, locale, a_side)
     # Reconcile losses before selecting surviving recipients (4.8.3-.5).
     _storm_losses(gs, attacker_ids, defender_ids, defender_won=False, roller=roller, ctx=ctx, log=out)
@@ -1547,7 +1568,7 @@ def _sack(gs: GameState, attacker_ids, defender_ids, locale, a_side, ctx, roller
             recipients = [lid for lid in survivors if getattr(gs.lords[lid].assets, asset) < 8]
             if not recipients:
                 break  # component/8-Asset limits still apply
-            lid = ctx.decide("spoils_recipient", recipients, {"asset": asset})
+            lid = ctx.decide("spoils_recipient", recipients, {"asset": asset, "side": a_side})
             assets = gs.lords[lid].assets
             take = min(amount, 8 - getattr(assets, asset))
             setattr(assets, asset, getattr(assets, asset) + take)

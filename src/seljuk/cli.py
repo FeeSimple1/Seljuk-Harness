@@ -23,6 +23,7 @@ from pathlib import Path
 from . import __version__, render, scenarios
 from .state import GameState, IllegalAction
 from .llm import LLMSession, view
+from .llm.routing import decision_side
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -64,6 +65,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_hist = sub.add_parser("history", help="Show the last N applied actions.")
     p_hist.add_argument("--file", type=str, default="game.state.json")
     p_hist.add_argument("--n", type=int, default=10)
+    p_hist.add_argument("--raw", action="store_true", help="TRUSTED DEBUG ONLY: include private replay actions.")
     return parser
 
 
@@ -81,7 +83,7 @@ def _terminal_line(s: LLMSession) -> str:
     if s.is_over():
         return f"GAME OVER - winner: {s.winner()}"
     m = s.gs.meta
-    return (f"phase={m.phase}/{m.subphase}  active={m.active_player}  "
+    return (f"phase={m.phase}/{m.subphase}  active={m.active_player}  decision={decision_side(s.gs)}  "
             f"actions_left={m.actions_remaining}  box={m.calendar_box}/{m.final_box}")
 
 
@@ -97,17 +99,18 @@ def main(argv: list[str] | None = None) -> int:
         Path(args.out).write_text(gs.to_json(), encoding="utf-8")
         print(f"Initialized '{args.scenario}' (seed {args.seed}) -> {args.out}")
         print()
-        print(render.summary(gs))
+        print(render.summary(gs, decision_side(gs)))
         return 0
 
     file = getattr(args, "file", None)
     try:
         if args.command == "state":
             gs = _load(file)
+            side = args.side or decision_side(gs)
             if args.json:
-                print(json.dumps(view.filtered_state(gs, args.side or gs.meta.active_player), indent=2))
+                print(json.dumps(view.filtered_state(gs, side), indent=2))
             elif args.lord:
-                print(render.lord_view(gs, args.lord))
+                print(render.lord_view(gs, args.lord, viewing_side=side))
             elif args.locale:
                 print(render.locale_view(gs, args.locale))
             elif args.calendar:
@@ -115,9 +118,9 @@ def main(argv: list[str] | None = None) -> int:
             elif args.themata:
                 print(render.thema_view(gs))
             elif args.mode == "verbose":
-                print(render.verbose(gs))
+                print(render.verbose(gs, viewing_side=side))
             else:
-                print(render.summary(gs))
+                print(render.summary(gs, viewing_side=side))
             return 0
 
         if args.command == "briefing":
@@ -137,7 +140,7 @@ def main(argv: list[str] | None = None) -> int:
                     note += f"; dropped {len(s.palette_diagnostics)} over-enumerated"
                     print("DROPPED (over-enumeration diagnostics):", file=sys.stderr)
                     for d in s.palette_diagnostics:
-                        print(f"  {d['action']} -> {d['code']}: {d['reason']}", file=sys.stderr)
+                        print(f"  {d['action'].get('type')} -> {d['code']} (private diagnostic retained in session)", file=sys.stderr)
                 print(f"\n{note}.  {_terminal_line(s)}", file=sys.stderr)
                 return 0
             moves = s.legal_actions()
@@ -152,6 +155,7 @@ def main(argv: list[str] | None = None) -> int:
             except json.JSONDecodeError as e:
                 print(f"--action is not valid JSON: {e}", file=sys.stderr)
                 return 2
+            recipient = decision_side(s.gs)
             try:
                 result = s.apply(action)
             except IllegalAction as e:
@@ -159,6 +163,7 @@ def main(argv: list[str] | None = None) -> int:
                 return 1
             s.save(file)
             print(json.dumps(result, indent=2))
+            print(f"Result recipient: {recipient} (may contain that player's private information).", file=sys.stderr)
             print(f"\n{_terminal_line(s)}", file=sys.stderr)
             return 0
 
@@ -169,8 +174,9 @@ def main(argv: list[str] | None = None) -> int:
 
         if args.command == "history":
             gs = _load(file)
-            for h in gs.history[-args.n:]:
-                print(json.dumps(h.get("action", h)))
+            for h in gs.history[-max(0, args.n):] if args.n > 0 else []:
+                action = h.get("action", h)
+                print(json.dumps(action if args.raw else {"type": action.get("type")}))
             return 0
     except FileNotFoundError:
         print(f"No state file at {file}; run 'seljuk new <scenario>' first.", file=sys.stderr)

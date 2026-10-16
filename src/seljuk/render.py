@@ -33,7 +33,7 @@ def _assets_str(a) -> str:
     return ", ".join(parts) if parts else "-"
 
 
-def summary(gs: GameState) -> str:
+def summary(gs: GameState, viewing_side: str | None = None) -> str:
     m = gs.meta
     vp = scenarios.score(gs)
     lines = [
@@ -52,9 +52,12 @@ def summary(gs: GameState) -> str:
                 loc = sd.locale(l.cylinder)["name"]
                 status = f"@ {loc} (Service {_box_label(l.service_box) if l.service_box is not None else '?'})"
                 extra = []
-                if l.unrouted_forces():
+                hidden = bool(viewing_side and side != viewing_side and gs.meta.options.get("hidden_mats"))
+                if hidden:
+                    extra.append("mat: <hidden>")
+                if not hidden and l.unrouted_forces():
                     extra.append(_forces_str(l.unrouted_forces()))
-                if l.capabilities:
+                if not hidden and l.capabilities:
                     extra.append("caps: " + ",".join(l.capabilities))
                 detail = "  [" + " | ".join(extra) + "]" if extra else ""
                 lines.append(f"  {sd.lord(lid)['name']:22s} {status}{detail}")
@@ -91,16 +94,23 @@ def summary(gs: GameState) -> str:
     return "\n".join(lines)
 
 
-def verbose(gs: GameState) -> str:
-    return gs.to_json(indent=2)
+def verbose(gs: GameState, viewing_side: str | None = None) -> str:
+    if viewing_side is not None:
+        import json
+        from .llm.view import filtered_state
+        return json.dumps(filtered_state(gs, viewing_side), indent=2)
+    return gs.to_json(indent=2)  # explicitly trusted/raw render API
 
 
-def lord_view(gs: GameState, lord_id: str) -> str:
+def lord_view(gs: GameState, lord_id: str, viewing_side: str | None = None) -> str:
     if lord_id not in gs.lords:
         return f"(no such Lord: {lord_id})"
     l = gs.lords[lord_id]
     info = sd.lord(lord_id)
     r = info["ratings"]
+    if viewing_side and l.side != viewing_side and l.mustered and gs.meta.options.get("hidden_mats"):
+        return (f"{info['name']} [{l.side}] @ {sd.locale(l.cylinder)['name']}"
+                f"  Service {_box_label(l.service_box)}\nMat: <hidden>")
     out = [
         f"{info['name']} — {info['epithet']}  [{l.side}]",
         f"  Fealty {r['fealty']}  Service {r['service']}  Lordship {r['lordship']}  Command {r['command']}",

@@ -10,9 +10,11 @@ from __future__ import annotations
 from typing import Any
 
 from ..state import GameState
+from .routing import check_side, visible_pending
 
 
 def filtered_state(gs: GameState, viewing_side: str) -> dict[str, Any]:
+    check_side(viewing_side)
     d = gs.model_dump()
     enemy = "roman" if viewing_side == "seljuk" else "seljuk"
     es = d[enemy]
@@ -34,7 +36,7 @@ def filtered_state(gs: GameState, viewing_side: str) -> dict[str, Any]:
             if ld["side"] != enemy or not ld["mustered"]:
                 continue
             for field in ("forces", "routed", "lost", "vassals", "capabilities",
-                          "themata_on_mat"):
+                          "themata_on_mat", "flags"):
                 ld[field] = _HIDDEN
             ld["assets"] = _HIDDEN
     # The replay history is private engine state, not a public event log. It
@@ -45,5 +47,18 @@ def filtered_state(gs: GameState, viewing_side: str) -> dict[str, Any]:
     # Revealing the seeded random stream also makes hidden future draws inferable.
     d["meta"].pop("rng_state", None)
     d["meta"].pop("seed", None)
+    d["meta"]["pending"] = visible_pending(gs, viewing_side)
+    # Deferred scripts and Winter holders are private engine bookkeeping, not
+    # public notes. Known ongoing effects remain intact and inspectable.
+    notes = d["meta"]["notes"]
+    for key in list(notes):
+        if key.startswith("_"):
+            del notes[key]
+    if "winter_holders" in notes:
+        notes["winter_holders"] = [s for s in notes["winter_holders"] if s == viewing_side]
+    if gs.meta.options.get("hidden_mats") and viewing_side != "roman":
+        for key in ("retained_themata", "pressed_levy_used"):
+            if key in notes:
+                notes[key] = "<hidden>"
     d["_viewing_side"] = viewing_side
     return d
