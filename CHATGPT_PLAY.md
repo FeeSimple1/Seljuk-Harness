@@ -1,107 +1,208 @@
-# Playing the Seljuk harness with ChatGPT (bug-hunt setup)
+# Playing Seljuk through the compact LLM interface
 
-Zip this repo, upload it to a ChatGPT Project (GPT-5.x), and let ChatGPT play
-Seljuk in its own Python sandbox — no API key, no network. A baked-in
-instrumentation layer (`scripts/chatgpt_play_helper.py`) auto-captures every
-engine anomaly (illegal action, crash, stall, broken invariant). A different
-model walking different trajectories surfaces bugs scripted sweeps miss.
-
-The only dependency is the engine's own (`pydantic`), which the ChatGPT sandbox
-has. Runtime essentials in the zip: the `src/` package + `scripts/` (for
-`chatgpt_play_helper.py` and `self_play.py`); `tests/` and PDFs are not needed.
-
-## Project custom instructions (paste verbatim)
-
-> You are playtesting GMT's *Seljuk* (Levy & Campaign Vol. V) via a Python rules
-> engine in this project, working in your Python tool. Unzip the uploaded repo if
-> needed, then run:
->
-> ```python
-> import sys; sys.path.insert(0, "src"); sys.path.insert(0, "scripts")
-> import chatgpt_play_helper as nv
-> nv.start("manzikert", seed=1)          # shortest scenario; see nv.SCENARIOS
-> ```
->
-> Play turn by turn:
-> - `nv.show()` prints the active side's briefing and a NUMBERED list of legal
->   actions. You control BOTH sides; play each turn to win for whichever side is
->   active. You only see the active side's information.
-> - Decide, then `nv.apply(N)` to play action number N.
-> - Some actions are **templates** (shown `<template>`): `build_plan`,
->   `resolve_event`, `respond_approach`, `assign_themata_defenders`. They need
->   parameters you supply — build them as a FLAT dict and pass it to `nv.apply`,
->   e.g.:
->   - `nv.apply({"type":"build_plan","side":"seljuk","cards":["alp_arslan","alp_arslan","no_command","no_command"]})`
->     (an ordered list of `_plan_size` entries: a Lord id ≤4× each, `"no_command"`
->     ≤5×, exactly one `"treachery"` only if `_treachery_required`).
->   - `nv.apply({"type":"respond_approach","choices":{"<lord>":{"action":"stand"}}})`
->     (each defending Lord: `"stand"`, `"withdraw"`, or `{"action":"avoid","to":"<locale>"}`).
->   - `nv.apply({"type":"assign_themata_defenders","markers":[]})` (indices from the hint, or `[]`).
-> - Seljuk actions are FLAT dicts, e.g.
->   `nv.apply({"type":"cmd_march","lord":"alp_arslan","to":"ani","way_type":"road"})`.
-> - `nv.auto()` fast-forwards purely-forced turns; call it between decisions to
->   skip boilerplate.
-> - Play to win: advance on objectives, March into contact / Siege / Storm, keep
->   Lords supplied (Forage/Supply or you starve and Disband), use Capabilities;
->   Pass only when best.
->
-> The harness auto-records any engine anomaly. Periodically and at the end, run
-> `nv.findings_report()` and paste its output back to the maintainer — that list
-> is the goal of the exercise. `nv.save("game.json")` checkpoints (the sandbox is
-> ephemeral; re-run the setup cell if it resets).
-
-## Inspecting state & building the Plan (helpers)
-
-Beyond the per-turn briefing, the helper exposes on-demand detail and a Plan
-builder so you don't hand-assemble the trickiest action:
-
-- `nv.state()` / `nv.state("roman")` — structured, hidden-info-filtered state
-  for the side to act (or a named side).
-- `nv.pending()` — sub-decisions owed right now (resolve these first).
-- `nv.lookup_card("S1")` / `nv.lookup_lord("alp_arslan")` — full card text / Lord stats.
-- `nv.map("ani")` — Ways out of a Locale (each `{to, type, ...}`) for routing a
-  March; `nv.map()` lists every Locale's neighbors.
-- `nv.plan_help()` — what the current Campaign Plan needs (size, available Lords, caps).
-- `nv.plan(["alp_arslan","alp_arslan","no_command","no_command"])` — build & apply
-  the Plan from an ordered list (Lord ids ≤4× each, `"no_command"` ≤5, exactly one
-  `"treachery"` iff required); it pre-checks size/caps and explains any mistake
-  instead of failing as a "finding".
-
-## Scenarios
-
-`manzikert` (3 turns, shortest — start here), `specter_of_norman_betrayal` (3),
-`year_of_treacherous_ambition` (3, Learning), `showdown_in_anatolia` (6),
-`emperor_and_the_lion` (12, full campaign). Vary `seed` and re-run; try more than
-one model.
-
-## What you get back
-
-`nv.findings_report()` prints `N total, M notable`. Each notable entry is a real
-engine defect to triage:
-- `over_enum_filtered` / `illegal_action` — the menu offered a move the executor
-  rejects (enumerator/handler asymmetry — the dominant class).
-- `exception` / `exception_in_probe` — applying an offered move crashed.
-- `no_legal_moves` — a stall/deadlock.
-- `invariant` / `invariant_crash` — an illegal board state slipped through
-  (e.g. co-located enemies).
-
-For each: fix the root and add a **negative enumerator test** (assert the menu
-does not offer the bad move, not only that the handler rejects it).
-
-## How it works (and why it's safe)
-
-The menu is the validated palette (`engine.validated_legal_moves`): every
-concrete candidate is probed on a throwaway `GameState.from_json(gs.to_json())`
-copy and dropped if the handler rejects it, so the model never sees an illegal
-move and each drop is logged. This is safe because the RNG lives in the state —
-probing advances only the copy's `rng_state`, never the real game's dice.
-
-Smoke-test the wiring locally (no ChatGPT needed):
+The rules engine makes rulings and rolls dice; the player supplies all choices.
+The helper does not rank, prune, construct a Plan, or select a strategic policy.
+Copy `src/` and `scripts/` into the sandbox; install `pydantic>=2`. Packaged
+reference text is included, so inspection does not need a network or PDFs.
 
 ```python
-import sys; sys.path.insert(0, "src"); sys.path.insert(0, "scripts")
+import sys
+sys.path[:0] = ["src", "scripts"]
 import chatgpt_play_helper as nv
-nv.start("manzikert", seed=1)
-nv.show(); nv.auto()    # then nv.apply(N) at each real choice ...
-nv.findings_report()
+status = nv.start("manzikert", seed=1)
 ```
+
+`show()` prints a briefing and counts by action category, not every action.
+The useful existing public action-type summary and last-three-action history
+remain. Each response identifies `viewer`, `decision_owner`, and `version`.
+Use the **decision owner**, not merely the active Command-card player: the
+inactive defender, Roman Themata allocator, and reaction-card holder can owe
+an immediate decision. With `player=None`, one trusted operator routes both
+sides. For a dedicated player context, use `player="roman"` or `"seljuk"`;
+that context cannot inspect or apply the other player's menu.
+
+## Browse before deciding
+
+```python
+page = nv.actions(type="cmd_march", lord="alp_arslan", limit=6)
+# Review the rows, then inspect one of their ids:
+# detail = nv.details(page["entries"][chosen_index]["id"])
+# More rows: nv.actions(cursor=page["next_cursor"])
+```
+
+Filters `type`, `kind`, `lord`, `card`, `target`, and `to` match exactly; `q`
+searches only player-visible text. `kind` is `"action"` or `"template"`.
+Pages state their total, offset, remaining count, and `next_cursor`; follow the
+cursor without changing query or page size. Default page size is 6, maximum
+100. Every engine-validated row remains in the private menu in original order,
+including duplicates and variants. Filtering/pagination do not choose which
+options are worthwhile. Template rows retain `_unvalidated`: their supplied
+parameters must still pass the engine. Validation is cached once per state.
+
+`details(id)` preserves every visible engine hint and exposes optional fields,
+handler help, reference locations, and applicable template constraints. Ready
+rows with optional parameters are not mistaken for forced decisions. Group
+March, for example, retains group membership and discard choices; group Carts
+can change cost. The versioned flat-dictionary path below also accepts legal
+combinations not represented by a default concrete row.
+
+## Execute with a state-bound selection
+
+```python
+# Use an id copied from the current page, never a bare integer index:
+# nv.apply(action_id)
+# nv.apply(template_id, parameters={...})
+
+# Advanced/manual combinations remain available, with an explicit version:
+# nv.apply({"type":"cmd_march", "lord":"alp_arslan", "to":"ararat",
+#           "way_type":"pass", "group":["arisighi"]}, version=status["version"])
+```
+
+Ids stay stable across filters and pages while the state is unchanged. They
+and all cursors expire after a game action, a staged response, or an external
+state edit. Stale submissions fail **before game-state mutation, dice, or
+history changes**. Selected fixed fields cannot be silently overwritten by
+`parameters`; construct a flat action explicitly for a different combination.
+Rejected actions execute on discarded copies, never a partially modified game.
+
+A response is printed once as complete JSON. Assign its return value to inspect
+keys; the notebook representation does not echo the entire response again.
+
+## Plans and templates are player decisions
+
+```python
+help_ = nv.plan_help()
+# At the standard four-card opening of Manzikert, an explicit example is:
+nv.plan(["alp_arslan", "sav_tekin", "no_command", "no_command"],
+        version=help_["version"])
+```
+
+Use the displayed `constraints`, not a remembered hardcoded rule: exact Plan
+size, physical Lord cards (maximum four each), required Treachery, compulsory
+opponent No Command, Weather, and the applicable No Command cap (normally five;
+six when the Treachery-added card applies). On-map Lords are identified for
+convenience but do not exclude physically available off-map Command cards.
+Optional `lieutenants` are explicit eligible, disjoint pairs. There is no
+automatic Plan construction.
+
+Other templates require `args` for immediate Events, a choice for **every**
+defending Lord in an Approach, and explicit Themata marker indices (including
+`[]` to decline). Details give Avoid destinations, shared withdrawal capacity,
+all marker identities including double markers, and the relevant limits.
+Full card text and the engine remain the authority for combinations.
+
+## Multi-player inputs, without shared private hands
+
+A Storm, Sally, Sortie, Approach response, Surprise, or Loyalty action can need
+inputs from more than one player. The helper stages the first player's declared
+action, then routes `supply_inputs`/`decline_inputs` to the other player before
+committing dice or game effects. Inspect that response's `details(id)` even
+when declining: its own held cards, constraints, and optional fields are there.
+
+```python
+# Response template examples (use the currently displayed id):
+# nv.apply(response_id, parameters={"inputs":{"coins_against":1}})
+# nv.apply(response_id, parameters={"inputs":{
+#     "battle_events":{"roman":["R21"]},
+#     "battle_decisions":[["concede", True]]}})
+```
+
+A player cannot submit the other side's cards, counterpayment, or scripted
+choices. Per-player combat FIFOs are kept separate; neither replaces or answers
+the other player's decisions. `battle_decisions`/`storm_decisions` retain typed
+choices and the engine's existing fallback for unscripted internal choices.
+Combat remains **atomic**, not a new per-strike interactive engine. Round
+choices, events, and complete public combat traces remain obtainable.
+
+Local Scouts is a three-stage interaction: the defenders choose Avoid, the
+Roman attacker declares R18, then the avoiding side chooses the affected Lord
+and Stand/Withdraw. Bad Omens may be declared without `args.order`: the Seljuk
+player then inspects the two cards privately and explicitly chooses keep/swap.
+After inspection or a mandatory Event response, it cannot be cancelled. An
+explicit preselected Bad Omens order remains supported. `cancel_inputs` is a
+recovery operation only if the underlying game was externally changed; ordinary
+responses must be completed or explicitly declined when decline is legal.
+
+## Results and intact inspection
+
+`apply()` returns public outcomes, a page of consequential changes, the next
+decision, and category counts. It does not repeat the full briefing or menu.
+Follow `changes(cursor=...)` until `remaining` is zero, or request a specific
+receipt with `result(receipt=N, full=True)`. Full decision results stay available
+to their submitting player; public combat details are available to both. Secret
+plans and event-granted intelligence do not become an opponent's turn log.
+
+```python
+nv.state()                              # structured root catalog
+nv.state(path="/lords/alp_arslan/assets", full=True)
+nv.pending(full=True)
+nv.lookup_card("S1")                    # full data AND curated clarification
+nv.lookup_lord("alp_arslan")            # full static data + filtered current mat
+nv.map("ani")                           # all Ways + locale mechanics/markers
+page = nv.map(limit=6)                  # all Locales, explicit pages
+# nv.map(cursor=page["next_cursor"])
+nv.result(path="/combat_detail", full=True)
+nv.reference()                          # original-text catalog
+page = nv.reference("rules", limit=40)
+# nv.reference("rules", cursor=page["next_cursor"])
+nv.reference("errata", full=True)
+nv.implementation("cmd_march")          # optional full handler-source inspection
+```
+
+Structured catalogs name every expandable JSON-pointer path; retrieve that
+path with the **same function**, or `full=True`. Card/Lord lookups default to
+full; when requesting their paginated catalogs use `full=False` on subsequent
+cursor calls too. No string, JSON object, card, or Way is character-sliced.
+Reference pagination uses complete numbered lines; even a very long line is
+returned intact. Full originals carry source paths and SHA-256 provenance.
+`reference("decisions")` and `reference("errata")` remain accessible alongside
+card text. Rebuild packaged references after source changes with
+`python scripts/build_llm_references.py`.
+
+## Saves, diagnostics, and the trust boundary
+
+```python
+nv.save("game.json")
+nv.resume("game.json")
+nv.findings_report(full=True)
+```
+
+Saves include state, staged inputs, ids/cursors, receipts, and diagnostics.
+Unchanged save/resume preserves selections; later edits invalidate them. Old
+raw/LLMSession/helper saves can be resumed, but old unversioned integer menu
+indices do not gain authority. Dedicated-player saves retain their player pin.
+
+Save bytes and Python internals are **trusted, omniscient** storage. Do not give
+them to an opponent or treat this presentation layer as operating-system
+access control. A trusted host may switch player contexts, but must deliver
+each response only to its named viewer. Self-play in one chat is not independent
+information isolation. Player-facing diagnostics give safe classifications;
+complete private reproduction details remain in the save for trusted review.
+
+`auto()` advances only a single concrete action with no optional parameters;
+it never builds Plans or crosses an unacknowledged player-input handoff.
+
+The legacy CLI remains an explicit full-palette/raw-action interface. Its
+briefing, default state views, menus, and pending display use the decision
+owner. `history` defaults to public action types; `history --raw` is an explicit
+trusted-debug command. CLI `do` labels its result recipient on stderr because
+that result may include private information; unlike the compact helper, it
+assumes a trusted caller has already collected joint inputs.
+
+## Reproducible output measurements
+
+```bash
+git worktree add /tmp/seljuk-interface-baseline 18d03047effb527dced80679cefcdd01341a2e9c
+python scripts/benchmark_llm_interface.py \
+  --baseline-root /tmp/seljuk-interface-baseline --output /tmp/interface-metrics
+```
+
+The benchmark replays fixed complete Manzikert and Showdown games, includes
+navigation, template/Plan help, lookups, every result-change continuation, and
+combat details. It checks unchanged results and positions, not just text size.
+It reports actual UTF-8 bytes/characters, and exact `o200k_base` token counts
+when optional `tiktoken` is installed; it never relabels characters as tokens.
+Raw legacy output and separately counted completions of incomplete legacy
+lookups are both reported. The reference executions are regression oracles,
+not player strategy or new playtests. Transcripts combine both players and
+must be treated as trusted test evidence.

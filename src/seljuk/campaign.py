@@ -95,6 +95,26 @@ def _capability_discard(gs: GameState) -> None:
             excess -= 1
 
 
+def plan_constraints(gs: GameState, side: str) -> dict[str, Any]:
+    """Shared, descriptive Plan constraints; no strategy or auto-filled orders.
+
+    Command cards for off-map Lords are legal but reveal as Pass (4.2.3).
+    ``available_lords`` in the existing palette is the useful on-map subset,
+    not a restriction that the interface may impose on the engine's choices.
+    """
+    return {
+        "size": plan_size(gs, side), "lord_card_max": 4,
+        "command_lords": list(sd.command_decks()[side]["lords_with_cards"]),
+        "no_command_min": int(no_command_required(gs, side)),
+        "no_command_max": 5 + int(gs.meta.notes.get("treachery_no_command_side") == side),
+        "treachery_count": int(gs.meta.notes.get("treachery_side") == side),
+        "no_command_reasons": [name for key, name in (
+            ("treachery_no_command_side", "Treachery"),
+            ("weather_no_command_side", "Unpredictable Weather"))
+            if gs.meta.notes.get(key) == side],
+    }
+
+
 def build_plan(gs: GameState, side: str, cards: list[str], lieutenants: list[dict] | None = None) -> dict:
     """4.1: build a side's ordered, face-down Plan stack of Command cards.
 
@@ -105,13 +125,14 @@ def build_plan(gs: GameState, side: str, cards: list[str], lieutenants: list[dic
         raise IllegalAction("wrong_step", "Plan is built in the Campaign Plan step (4.1)")
     if gs.meta.plan_submitted.get(side):
         raise IllegalAction("already_planned", f"{side} already built its Plan")
-    need = plan_size(gs, side)
+    constraints = plan_constraints(gs, side)
+    need = constraints["size"]
     if len(cards) != need:
         raise IllegalAction("bad_plan_size", f"{side} Plan must have {need} cards this turn (4.1)")
     counts: dict[str, int] = {}
     for c in cards:
         counts[c] = counts.get(c, 0) + 1
-    nc_cap = 5 + (1 if gs.meta.notes.get("treachery_no_command_side") == side else 0)
+    nc_cap = constraints["no_command_max"]
     if gs.meta.notes.get("treachery_side") == side and counts.get("treachery", 0) != 1:
         raise IllegalAction("treachery_required", f"{side} must include exactly one Treachery card (1.4)")
     if no_command_required(gs, side) and counts.get("no_command", 0) < 1:
@@ -132,7 +153,7 @@ def build_plan(gs: GameState, side: str, cards: list[str], lieutenants: list[dic
             raise IllegalAction("bad_plan_card", f"no such Lord {c}")
         if c not in sd.command_decks()[side]["lords_with_cards"]:
             raise IllegalAction("lord_not_on_side", f"{c} has no Command cards in the {side} deck")
-        if n > 4:
+        if n > constraints["lord_card_max"]:
             raise IllegalAction("too_many_lord_cards", f"at most 4 Command cards for {c} (1.9.2)")
     decks = gs.side_decks(side)
     decks.command_plan = list(cards)
@@ -1114,6 +1135,7 @@ def legal_moves_campaign(gs: GameState) -> list[dict[str, Any]]:
                  "_lieutenant_options": _lieutenant_options(gs, side),
                  "_treachery_required": treachery_required, "_treachery": "treachery",
                  "_no_command_required": no_command_required(gs, side),
+                 "_constraints": plan_constraints(gs, side),
                  "_desc": f"Build the {side} Campaign Plan: {need} ordered cards (4.1)"
                           + (" incl. one Treachery card" if treachery_required else "")
                           + ("; must include one No Command" if no_command_required(gs, side) else "")}]

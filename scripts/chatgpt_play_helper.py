@@ -1,306 +1,195 @@
-"""ChatGPT-in-sandbox play helper for the Seljuk harness.
+"""Compact ChatGPT sandbox play helper; all rules remain in the engine.
 
-Lets ChatGPT (GPT-5.x) play Seljuk in its own Python sandbox -- no API key, no
-network -- while a baked-in instrumentation layer auto-captures every engine
-anomaly (illegal action, crash, stall, broken invariant). Adapted from the
-Nevsky cross-harness "ChatGPT plays your harness" template.
+    status = nv.start("manzikert", seed=1)
+    page = nv.actions(type="cmd_march", limit=6)
+    help_ = nv.details(page["entries"][0]["id"])
+    result = nv.apply(page["entries"][0]["id"], parameters={"group": [...]})
 
-ChatGPT IS the player: it calls nv.show() to see the active side's briefing and
-a NUMBERED legal-action list, decides, calls nv.apply(N), and loops. The menu is
-the validated palette (engine.validated_legal_moves): every concrete move is
-probed on a throwaway deep copy, handler-rejected moves are dropped AND logged as
-over-enumeration diagnostics, so the model never sees an illegal move.
+show() is an overview, NOT a full menu. actions() pages every validated option;
+templates are explicitly labelled and require supplied parameters. Versioned
+ids and cursors cannot be used after a state change. Direct actions are still
+supported via apply({...}, version=status["version"]). No strategy pruning,
+Plan construction, or opponent decision-making happens in this helper.
 
-Quick start (in the ChatGPT sandbox / locally):
-    import sys; sys.path.insert(0, "src"); sys.path.insert(0, "scripts")
-    import chatgpt_play_helper as nv
-    nv.start("manzikert", seed=1)      # shortest scenario; see nv.SCENARIOS
-    nv.show(); nv.apply(0); nv.auto()  # ... play to a terminal state ...
-    nv.findings_report()
-
-NOTE: Seljuk actions are FLAT dicts -- {"type": "cmd_march", "lord": "alp_arslan",
-"to": "ani", "way_type": "road"} -- not {"type","args"}. Pass raw actions to
-nv.apply() in that flat shape. Four moves are TEMPLATES the consumer must build:
-build_plan, resolve_event, respond_approach, assign_themata_defenders (shown with
-"<template>"); construct them with nv.apply({...}) using the hint fields.
+Return values contain exactly the printed public payload, not a hidden full
+menu. Assign the return value for programmatic access. In notebooks the custom
+representation avoids echoing the full payload a second time.
 """
 from __future__ import annotations
 
 import json
-import traceback
-
-# ===================== Seljuk wiring =====================
+from seljuk import scenarios
 from seljuk.llm import LLMSession
-from seljuk import engine, scenarios
+from seljuk.llm.compact import CompactInterface, InterfaceError
 from seljuk.state import IllegalAction
-from seljuk.invariants import check_invariants
 
 SCENARIOS = list(scenarios.SCENARIOS)
-_TEMPLATES = engine._PALETTE_TEMPLATES  # build_plan / resolve_event / respond_approach / assign_themata_defenders
-
+_UI: CompactInterface | None = None
+# Retained for trusted instrumentation, NOT for player-visible menu access.
 _S = {"session": None, "scenario": None, "history": [], "findings": [], "turn": 0}
 
 
+class DisplayResult(dict):
+    def __repr__(self):
+        return "<Seljuk response already printed; use its keys for programmatic access>"
+
+    def _repr_pretty_(self, printer, cycle):
+        printer.text("")
+
+
+def _interface():
+    if _UI is None:
+        raise InterfaceError("no_game", "Call start(scenario) or resume(path) first.")
+    return _UI
+
+
+def _emit(payload):
+    print(json.dumps(payload, ensure_ascii=False, separators=(",", ":")))
+    return DisplayResult(payload)
+
+
+def _call(fn, *args, **kwargs):
+    try:
+        return _emit(fn(*args, **kwargs))
+    except (InterfaceError, IllegalAction) as exc:
+        # Input/stale errors do not trigger another full briefing or menu.
+        return _emit({"error": getattr(exc, "code", type(exc).__name__), "message": str(exc),
+                      "recovery": "show() refreshes the version; actions() and details(id) expose choices/constraints."})
+
+
 def _active_side():
-    """Whose decision is owed: a pending sub-decision's owner, else the active
-    player (a March's Approach is answered by the inactive defender)."""
-    gs = _S["session"].gs
-    if gs.meta.pending:
-        p = gs.meta.pending[0]
-        return p.get("_owed_by") or p.get("side") or gs.meta.active_player
-    return gs.meta.active_player
+    return _interface().owed
 
 
 def _menu(log_drops=True):
-    """Validated palette via the engine's §2 probe-and-drop. Returns kept moves
-    (templates flagged _unvalidated); records each drop as an over_enum finding."""
-    gs = _S["session"].gs
-    moves, dropped = engine.validated_legal_moves(gs)
-    if log_drops:
-        for d in dropped:
-            _S["findings"].append({"kind": "over_enum_filtered", "turn": _S["turn"], **d})
-    return moves
+    """Trusted instrumentation only; public retrieval goes through actions()."""
+    from copy import deepcopy
+    return deepcopy(_interface()._menu())
 
 
-def _strip(move):
-    """A ready-to-apply flat action: the move minus its _-prefixed hint fields."""
-    return {k: v for k, v in move.items() if not k.startswith("_")}
+def start(scenario, seed=1, *, options=None, player=None):
+    """Start with explicit optional rules; player=None routes both sides.
 
-
-def _record_invariants():
-    try:
-        bad = check_invariants(_S["session"].gs) or []
-    except Exception as e:  # noqa: BLE001
-        _S["findings"].append({"kind": "invariant_crash", "turn": _S["turn"],
-                               "error": f"{type(e).__name__}: {e}"[:200]})
-        return ["<crash>"]
-    for v in bad:
-        _S["findings"].append({"kind": "invariant", "turn": _S["turn"], "violation": v})
-    return bad
-
-
-def start(scenario, seed=1):
-    if scenario not in SCENARIOS:
-        raise ValueError(f"unknown scenario {scenario!r}; choose from {SCENARIOS}")
-    _S.update(session=LLMSession.start_new(scenario, seed), scenario=scenario,
-              history=[], findings=[], turn=0)
-    print(f"started {scenario} (seed={seed}). You play BOTH sides. Call nv.show().")
+    Pin player='roman' or 'seljuk' for a separate player context. A pinned
+    player cannot fetch the opponent's menus or execute its decisions.
+    """
+    global _UI
+    _UI = CompactInterface(LLMSession.start_new(scenario, seed, options=options), player)
+    _S.update(session=_UI.session, scenario=scenario, history=[], findings=_UI.findings, turn=0)
     return show()
 
 
 def show():
-    s = _S["session"]
-    if s.is_over():
-        print("GAME OVER:", s.winner())
-        return []
-    side = _active_side()
-    moves = _menu()
-    gs = s.meta if False else s.gs
-    print(f"\n===== turn {_S['turn']} | active: {side} | "
-          f"{gs.meta.subphase} | box {gs.meta.calendar_box}/{gs.meta.final_box} =====")
-    print(s.briefing())
-    print(f"\nLEGAL ACTIONS ({len(moves)}):")
-    for i, m in enumerate(moves):
-        params = {k: v for k, v in m.items() if not k.startswith("_") and k != "type"}
-        if m.get("type") == "build_plan":
-            tag = "  <template: nv.plan([...]) -- see nv.plan_help()>"
-        elif m.get("_unvalidated"):
-            tag = "  <template: build with nv.apply({...})>"
-        else:
-            tag = ""
-        hint = m.get("_desc", "")
-        print(f"  [{i}] {m.get('type','?')}  {json.dumps(params, default=str)}{tag}"
-              + (f"   // {hint}" if hint else ""))
-    if not moves:
-        _S["findings"].append({"kind": "no_legal_moves", "turn": _S["turn"], "side": side,
-                               "subphase": gs.meta.subphase})
-        print("!! no legal moves (stall) -- recorded")
-    return moves
+    """Compact briefing, current decision owner, categories and retrieval hints."""
+    return _call(_interface().overview)
 
 
-def apply(choice):
-    s = _S["session"]
-    side = _active_side()
-    moves = _menu(log_drops=False)
-    if isinstance(choice, int):
-        if not (0 <= choice < len(moves)):
-            print(f"index {choice} out of range (0..{len(moves)-1}); pass a valid index or a flat action dict")
-            return show()
-        m = moves[choice]
-        if m.get("_unvalidated"):
-            params = {k: v for k, v in m.items() if not k.startswith("_") and k != "type"}
-            print(f"[{choice}] {m['type']} is a TEMPLATE -- it needs parameters you supply. "
-                  f"Build it with nv.apply({{'type': '{m['type']}', ...}}). Hints: "
-                  f"{json.dumps({k: v for k, v in m.items() if k.startswith('_') and k != '_desc'}, default=str)}")
-            return moves
-        action = _strip(m)
-        raw_dict = False
-    elif isinstance(choice, dict):
-        action = dict(choice)
-        raw_dict = True
-    else:
-        raise TypeError("choice must be an int index or a flat action dict")
-    try:
-        result = s.apply(action)
-    except IllegalAction as e:
-        # A rejected raw-dict build of a TEMPLATE action (build_plan / resolve_event
-        # / respond_approach / assign_themata_defenders) is the consumer supplying
-        # wrong/insufficient params -- a player build mistake, NOT an engine
-        # over-enumeration. Classify it non-notable so it doesn't pollute the
-        # findings triage (cross-harness "classify the helper's rejections").
-        if raw_dict and action.get("type") in engine._PALETTE_TEMPLATES:
-            _S["findings"].append({"kind": "template_build_rejected", "turn": _S["turn"], "side": side,
-                                   "action": action, "code": e.code, "reason": e.message[:160]})
-            print(f"!! template build rejected ({e.code}): supply valid args; not an engine bug")
-            return show()
-        _S["findings"].append({"kind": "illegal_action", "turn": _S["turn"], "side": side,
-                               "action": action, "code": e.code, "reason": e.message[:160]})
-        print(f"!! ILLEGAL (recorded): {e.code}: {e.message[:160]}")
-        return show()
-    except Exception as e:  # noqa: BLE001
-        _S["findings"].append({"kind": "exception", "turn": _S["turn"], "side": side,
-                               "action": action, "etype": type(e).__name__,
-                               "msg": str(e)[:200], "tb": traceback.format_exc()[-700:]})
-        print(f"!! EXCEPTION (recorded): {type(e).__name__}: {e}")
-        return
-    _S["history"].append({"turn": _S["turn"], "side": side, "action": action})
-    _S["turn"] += 1
-    if _record_invariants():
-        print("!! INVARIANT VIOLATION (recorded)")
-    print(f"applied: {action['type']} ({side})")
-    return show()
+def actions(*, type=None, kind=None, lord=None, card=None, target=None, to=None,
+            q=None, cursor=None, limit=None):
+    """All validated rows are discoverable. Filters are exact, except q search.
+
+    kind is 'action' or 'template'. Follow next_cursor without changing filters.
+    IDs stay the same across filters/pages, but expire when the state changes.
+    """
+    return _call(_interface().actions, type=type, kind=kind, lord=lord, card=card,
+                 target=target, to=to, q=q, cursor=cursor, limit=limit)
 
 
-def auto(max_steps=300):
-    """Auto-apply purely-forced turns (exactly one concrete legal action) so you
-    skip boilerplate; stop at the next real choice, a template, or game end."""
-    s = _S["session"]
-    n = 0
-    while n < max_steps and not s.is_over():
-        moves = _menu(log_drops=False)
-        concrete = [m for m in moves if not m.get("_unvalidated")]
-        if len(moves) != 1 or len(concrete) != 1:
-            break
-        try:
-            s.apply(_strip(concrete[0]))
-        except Exception as e:  # noqa: BLE001
-            _S["findings"].append({"kind": "exception", "turn": _S["turn"],
-                                   "action": _strip(concrete[0]), "etype": type(e).__name__,
-                                   "msg": str(e)[:200], "tb": traceback.format_exc()[-700:]})
-            print(f"!! EXCEPTION during auto (recorded): {type(e).__name__}: {e}")
-            return
-        _S["turn"] += 1
-        n += 1
-        _record_invariants()
-    print(f"auto-advanced {n} forced turn(s).")
-    return show()
+def details(action_id):
+    """Complete action/template hints, optional parameters and decision contract."""
+    return _call(_interface().details, action_id)
 
 
-def findings_report():
-    notable_kinds = ("illegal_action", "over_enum_filtered", "exception", "exception_in_probe",
-                     "no_legal_moves", "invariant", "invariant_crash")
-    notable = [f for f in _S["findings"] if f["kind"] in notable_kinds]
-    print(f"\n===== FINDINGS: {len(_S['findings'])} total, {len(notable)} notable =====")
-    for f in notable:
-        print("  ", json.dumps(f, default=str)[:240])
-    if not notable:
-        print("  (none -- no engine anomalies on this trajectory)")
-    return _S["findings"]
+def apply(choice, *, parameters=None, version=None):
+    """Use a versioned ID, or a flat action dict with an explicit version.
 
-
-# --- detail lookups & a build_plan helper (ease-of-use; no game effect) ------
-
-def state(side=None):
-    """Structured, hidden-information-filtered state for `side` (default: the
-    side currently to act). Opponent deck/hand/unrevealed Plan are masked."""
-    st = _S["session"].state(side or _active_side())
-    print(json.dumps(st, default=str, indent=2)[:4000])
-    return st
-
-
-def pending():
-    """The sub-decisions owed right now (resolve these before normal moves)."""
-    p = list(_S["session"].gs.meta.pending)
-    print(json.dumps(p, default=str, indent=2) if p else "no pending sub-decisions")
-    return p
-
-
-def lookup_card(card_id):
-    """Full text/data for an Arts of War card (e.g. 'S1', 'R14')."""
-    d = _S["session"].lookup_card(card_id)
-    print(json.dumps(d, default=str, indent=2)[:2500])
-    return d
-
-
-def lookup_lord(lord_id):
-    """Full stats for a Lord (ratings, seats, starting Forces/Assets, etc.)."""
-    d = _S["session"].lookup_lord(lord_id)
-    print(json.dumps(d, default=str, indent=2)[:2500])
-    return d
-
-
-def map(locale=None):  # noqa: A001 -- intentional nv.map() convenience name
-    """Adjacency peek for routing Marches: ways_from(locale) (each {to,type,...}),
-    or every Locale's neighbor list when called with no argument."""
-    from seljuk import map as gmap, static_data as sd
-    out = gmap.ways_from(locale) if locale is not None else {lid: gmap.neighbors(lid)
-                                                             for lid in sd.all_locale_ids()}
-    print(json.dumps(out, default=str, indent=2)[:3500])
-    return out
+    Never defaults a template. Joint actions first route an input/decline window
+    to the other player; only then does the unchanged engine resolve the action.
+    """
+    result = _call(_interface().apply, choice, parameters=parameters, version=version)
+    _S["session"] = _interface().session
+    _S["turn"] = len(_interface().gs.history)
+    return result
 
 
 def plan_help():
-    """Show what the current Campaign Plan requires (size, available Lords, caps)."""
-    t = next((m for m in engine.legal_moves(_S["session"].gs) if m["type"] == "build_plan"), None)
-    if not t:
-        print("No Campaign Plan is owed right now -- call nv.show().")
-        return None
-    treach = ("exactly one 'treachery' REQUIRED" if t["_treachery_required"]
-              else "'treachery' NOT allowed this turn")
-    print(f"Build a {t['_plan_size']}-card ordered Plan for {t['side']} (play order):")
-    print(f"  - Lord ids (<=4 cards each): {t['_available_lords']}")
-    print(f"  - 'no_command' (<=5);  {treach}")
-    print(f"  Then: nv.plan([...])   # {t['_plan_size']} entries")
-    return t
+    return _call(_interface().plan_help)
 
 
-def plan(cards):
-    """Build & apply the current Campaign Plan from an ordered list of entries
-    (Lord ids / 'no_command' / 'treachery'). Pre-validates the common mistakes
-    (size, unknown Lord, >4 per Lord, the treachery rule) with a clear message,
-    so a planning slip is not mistaken for an engine bug."""
-    from collections import Counter
-    t = next((m for m in engine.legal_moves(_S["session"].gs) if m["type"] == "build_plan"), None)
-    if not t:
-        print("No build_plan is owed right now -- call nv.show().")
-        return show()
-    cards = list(cards)
-    need, avail = t["_plan_size"], set(t["_available_lords"])
-    errs = []
-    if len(cards) != need:
-        errs.append(f"need exactly {need} cards, got {len(cards)}")
-    c = Counter(cards)
-    if t["_treachery_required"] and c.get("treachery", 0) != 1:
-        errs.append("exactly one 'treachery' is required this turn")
-    if not t["_treachery_required"] and c.get("treachery", 0):
-        errs.append("'treachery' is not allowed this turn")
-    for k, n in c.items():
-        if k in ("no_command", "treachery"):
-            continue
-        if k not in avail:
-            errs.append(f"{k!r} is not an available Lord (choose from {sorted(avail)})")
-        elif n > 4:
-            errs.append(f"at most 4 cards per Lord ({n} given for {k})")
-    if errs:
-        print("Plan invalid: " + "; ".join(errs))
-        return plan_help()
-    return apply({"type": "build_plan", "side": t["side"], "cards": cards})
+def plan(cards, *, version, lieutenants=None):
+    """Explicit ordered Plan plus optional Lieutenant pairs; engine validates."""
+    return _call(_interface().plan, cards, version=version, lieutenants=lieutenants)
+
+
+def auto(max_steps=300):
+    """Advance only truly forced rows with no optional decisions; stop at handoff."""
+    return _call(_interface().auto, max_steps=max_steps)
+
+
+def state(*, path="", full=False, cursor=None, limit=None):
+    """Filtered state catalog/subtree for the owed or pinned player.
+
+    Example: state(path='/lords/alp_arslan/assets', full=True).
+    Each expandable entry gives its path. No string or JSON is cut mid-field.
+    """
+    return _call(_interface().inspect, "state", path=path, full=full, cursor=cursor, limit=limit)
+
+
+def pending(*, full=False, cursor=None, limit=None):
+    return _call(_interface().inspect, "pending", full=full, cursor=cursor, limit=limit)
+
+
+def lookup_card(card_id, *, path="", full=True, cursor=None, limit=None):
+    """Full short data AND complete curated mechanics/clarifications by default."""
+    return _call(_interface().inspect, "card", card_id, path=path, full=full, cursor=cursor, limit=limit)
+
+
+def lookup_lord(lord_id, *, path="", full=True, cursor=None, limit=None):
+    """Full static stats plus the current player-filtered mat, never clipped."""
+    return _call(_interface().inspect, "lord", lord_id, path=path, full=full, cursor=cursor, limit=limit)
+
+
+def map(locale=None, *, path="", full=False, cursor=None, limit=None):
+    """Complete Way rows, paged by Locale; locale=X also includes its rules data."""
+    return _call(_interface().inspect, "map", locale, path=path,
+                 full=full or locale is not None and cursor is None, cursor=cursor, limit=limit)
+
+
+def result(*, receipt=None, path="", full=False, cursor=None, limit=None):
+    """Public outcomes and every visible state change; never raw private history."""
+    return _call(_interface().inspect, "result", receipt, path=path, full=full, cursor=cursor, limit=limit)
+
+
+def changes(cursor):
+    return _call(_interface().changes, cursor)
+
+
+def reference(source=None, *, start_line=1, limit=None, cursor=None, full=False):
+    """Packaged original rules, card/Lord references, errata and adjudications."""
+    return _call(_interface().reference, source, start_line=start_line, limit=limit, cursor=cursor, full=full)
+
+
+def implementation(action_type):
+    return _call(_interface().implementation, action_type)
+
+
+def findings_report(*, full=False, cursor=None, limit=None):
+    """Player-safe diagnostic classifications; full private records are saved."""
+    return _call(_interface().inspect, "diagnostics", full=full, cursor=cursor, limit=limit)
+
+
+def cancel_inputs(*, version):
+    return _call(_interface().cancel_inputs, version=version)
 
 
 def save(path="chatgpt_game.json"):
-    import pathlib
-    s = _S["session"]
-    data = {"scenario": _S["scenario"], "history": _S["history"], "findings": _S["findings"],
-            "state_json": s.gs.to_json()}
-    pathlib.Path(path).write_text(json.dumps(data, indent=2, default=str))
-    print("saved ->", path)
+    return _call(_interface().save, path)
+
+
+def resume(path="chatgpt_game.json", *, player=None):
+    """Restore game, staged inputs, IDs/cursors, receipts and private diagnostics."""
+    global _UI
+    _UI = CompactInterface.load(path, player=player)
+    _S.update(session=_UI.session, scenario=_UI.gs.meta.scenario, findings=_UI.findings,
+              history=[], turn=len(_UI.gs.history))
+    return show()

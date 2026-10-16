@@ -13,6 +13,7 @@ from typing import Any, Optional
 from .. import engine, campaign, scenarios, options as _options
 from ..state import GameState
 from . import view, briefing as _briefing, tools
+from .routing import decision_side, visible_pending, check_side
 
 
 class LLMSession:
@@ -55,22 +56,27 @@ class LLMSession:
 
     # --- consumer API ---
     def state(self, side: Optional[str] = None) -> dict[str, Any]:
-        return view.filtered_state(self.gs, side or self.gs.meta.active_player)
+        return view.filtered_state(self.gs, side or decision_side(self.gs))
 
-    def briefing(self) -> str:
-        return _briefing.briefing(self.gs)
+    def briefing(self, side: Optional[str] = None) -> str:
+        return _briefing.briefing(self.gs, side or decision_side(self.gs))
 
-    def legal_actions(self, validated: bool = False) -> list[dict[str, Any]]:
+    def legal_actions(self, validated: bool = False, side: Optional[str] = None) -> list[dict[str, Any]]:
         """Legal-move palette. With ``validated=True`` (the agent-facing path),
         probe-and-drop handler-rejected moves and record any drops on
         ``self.palette_diagnostics`` (Nevsky advisory §2)."""
+        from .contracts import visible_move
+        side = check_side(side or decision_side(self.gs))
+        if side != decision_side(self.gs):
+            return []
         if not validated:
-            return engine.legal_moves(self.gs)
-        moves, self.palette_diagnostics = engine.validated_legal_moves(self.gs)
-        return moves
+            moves = engine.legal_moves(self.gs)
+        else:
+            moves, self.palette_diagnostics = engine.validated_legal_moves(self.gs)
+        return [visible_move(self.gs, move, side) for move in moves]
 
-    def pending(self) -> list[dict[str, Any]]:
-        return list(self.gs.meta.pending)
+    def pending(self, side: Optional[str] = None) -> list[dict[str, Any]]:
+        return visible_pending(self.gs, side or decision_side(self.gs))
 
     def apply(self, action: dict[str, Any]) -> dict[str, Any]:
         res = engine.apply_action(self.gs, action)
