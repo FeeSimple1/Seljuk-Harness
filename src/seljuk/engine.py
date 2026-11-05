@@ -42,6 +42,8 @@ def _save_roller(gs: GameState, r: DiceRoller) -> None:
 # --- dispatch table ---------------------------------------------------------
 # Each handler: fn(gs, action, roller) -> dict result. Handlers mutate gs.
 _HANDLERS: dict[str, Callable[[GameState, dict, DiceRoller], dict]] = {
+    "wastage": campaign.h_wastage,
+    "wastage_target": campaign.h_wastage,
     "pay": actions.h_pay,
     "levy_lord": actions.h_levy_lord,
     "levy_transport": actions.h_levy_transport,
@@ -65,6 +67,8 @@ _HANDLERS: dict[str, Callable[[GameState, dict, DiceRoller], dict]] = {
 }
 
 _CAMPAIGN_HANDLERS: dict[str, Callable[[GameState, dict, DiceRoller], dict]] = {
+    "wastage": campaign.h_wastage,
+    "wastage_target": campaign.h_wastage,
     "build_plan": campaign.h_build_plan,
     "cmd_pass": campaign.h_cmd_pass,
     "cmd_take_gift_coin": campaign.h_cmd_take_gift_coin,
@@ -128,7 +132,10 @@ def _apply_action(gs: GameState, action: dict[str, Any]) -> dict[str, Any]:
                             f"no handler for action type {atype!r} in phase {gs.meta.phase}")
     # Opening assignments and Events are mandatory, even when callers submit
     # actions directly instead of choosing from the palette (3.1.2-.3).
-    if gs.meta.phase == "levy":
+    waste = campaign.wastage_moves(gs)
+    if waste is not None and atype not in {move["type"] for move in waste}:
+        raise IllegalAction("pending_decision", "resolve Wastage before continuing (4.7.4)")
+    if gs.meta.phase == "levy" and waste is None:
         for pending_type, required in (("deploy_capability", "deploy_capability"),
                                        ("event_pending_resolution", "resolve_event"),
                                        ("imperial_coffers", None)):
@@ -190,6 +197,9 @@ def validated_legal_moves(gs: GameState) -> tuple[list[dict[str, Any]], list[dic
 
 
 def legal_moves(gs: GameState) -> list[dict[str, Any]]:
+    waste = campaign.wastage_moves(gs)
+    if waste is not None:
+        return waste
     if gs.meta.phase in ("campaign", "winter"):
         return campaign.legal_moves_campaign(gs)
     if gs.meta.phase != "levy":

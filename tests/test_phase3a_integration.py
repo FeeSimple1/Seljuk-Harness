@@ -43,7 +43,7 @@ def test_campaign_drives_to_turn_end_with_roundtrip_sweep(scenario):
     assert gs.meta.subphase == "campaign.command"
 
     guard = 0
-    while gs.meta.phase == "campaign" and gs.meta.subphase in ("campaign.command", "campaign.fpd_pay") and guard < 400:
+    while gs.meta.phase == "campaign" and (gs.meta.subphase in ("campaign.command", "campaign.fpd_pay") or campaign.wastage_moves(gs) is not None) and guard < 400:
         guard += 1
         moves = engine.legal_moves(gs)
         # Every emitted move must apply cleanly on a fresh snapshot.
@@ -56,7 +56,9 @@ def test_campaign_drives_to_turn_end_with_roundtrip_sweep(scenario):
         # Advance the real game deterministically: resolve any pending, finish the
         # FPD Pay step if in it, else end the card.
         pend = [m for m in moves if m["type"] == "resolve_ravage_defence"]
-        if gs.meta.subphase == "campaign.fpd_pay":
+        if campaign.wastage_moves(gs) is not None:
+            chosen = moves[0]
+        elif gs.meta.subphase == "campaign.fpd_pay":
             chosen = {"type": "fpd_done"}
         elif pend:
             chosen = pend[0]
@@ -84,8 +86,11 @@ def test_full_turn_levy_then_campaign_for_emperor():
     campaign.start_campaign(gs)
     _build_simple_plans(gs)
     guard = 0
-    while gs.meta.phase == "campaign" and gs.meta.subphase in ("campaign.command", "campaign.fpd_pay") and guard < 400:
+    while gs.meta.phase == "campaign" and (gs.meta.subphase in ("campaign.command", "campaign.fpd_pay") or campaign.wastage_moves(gs) is not None) and guard < 400:
         guard += 1
+        if campaign.wastage_moves(gs) is not None:
+            engine.apply_action(gs, engine.legal_moves(gs)[0])
+            continue
         if gs.meta.subphase == "campaign.fpd_pay":
             engine.apply_action(gs, {"type": "fpd_done"})  # 4.6.2 Pay step (decline)
             continue

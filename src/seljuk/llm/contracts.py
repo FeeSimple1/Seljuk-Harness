@@ -152,7 +152,8 @@ def contract(gs, move, side):
         out.update(required={"choices": "Object mapping each defender id to an explicit choice"},
                    choices=choices, max_total_withdrawals=max(0, campaign._stronghold_size(gs, loc)-inside),
                    notes=["Withdrawal capacity is shared, not a separate allowance per Lord.",
-                          "Avoid discards Loot/excess Provender. The opponent can supply Local Scouts and combat inputs."])
+                          "Lords Avoiding to the same destination share spare Carts. Food stays on its mat, with own Carts used first. Loot and excess Provender become Spoils.",
+                          "The opponent can supply Local Scouts and combat inputs."])
     elif kind == "cmd_march":
         out["notes"] = ["Optional group uses _co_marchers / _co_marcher_max; the engine recomputes group cost.",
                         "Discard variants remain distinct menu rows; no variant is silently selected.",

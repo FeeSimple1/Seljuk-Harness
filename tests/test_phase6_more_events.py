@@ -13,7 +13,10 @@ def test_flooded_river_wastages_alp_arslan_r1():
     gs.lords["alp_arslan"].assets.carts = 3  # excess to discard
     _q(gs, "R1", "roman")
     r = engine.apply_action(gs, {"type": "resolve_event", "card": "R1", "args": {}})
-    assert r["alp_arslan_wastage_times"] >= 1
+    assert r["wastage_pending"]
+    while campaign.wastage_moves(gs) is not None:
+        engine.apply_action(gs, engine.legal_moves(gs)[0])
+    assert gs.lords["alp_arslan"].assets.carts < 3
     assert "R1" in gs.meta.asterisks_used
 
 
@@ -72,7 +75,10 @@ def test_mercenary_discipline_wastages_roman_at_ravaged_s25():
     gs.locales["larisa"].ravaged_side = "seljuk"
     _q(gs, "S25", "seljuk")
     r = engine.apply_action(gs, {"type": "resolve_event", "card": "S25", "args": {}})
-    assert r["roman_wastage"] >= 1
+    assert r["wastage_pending"] >= 1
+    while campaign.wastage_moves(gs) is not None:
+        engine.apply_action(gs, engine.legal_moves(gs)[0])
+    assert ch.assets.provender < 3
 
 
 def test_peace_offering_adds_gifts_exchanged_s13():

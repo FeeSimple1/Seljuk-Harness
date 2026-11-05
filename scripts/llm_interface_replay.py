@@ -23,7 +23,8 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def records():
     man = json.loads((ROOT/'tests/fixtures/manzikert_selfplay_20261009.json').read_text())
-    man['actions'] = [step['action'] for step in man['steps']]
+    man['actions'] = [action for step in man['steps']
+                      for action in [step['action'], *step.get('followup_actions', [])]]
     show = json.loads((ROOT/'tests/fixtures/interface_showdown_20261016.json').read_text())
     return {'manzikert': man, 'showdown': show}
 

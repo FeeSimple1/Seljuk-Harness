@@ -1,11 +1,9 @@
-"""Regressions from a 132-action, deliberately chosen two-sided Manzikert game.
+"""Regressions from a deliberately chosen two-sided Manzikert game.
 
-The recorded game avoids the SP-01 exploit. All 132 actions are unchanged.
-Ten state hashes were rebaselined by the longest-scenario fixes: relief clears
-immediately, and the returned S17 card changes the later Autumn draw. Exact
-state and save/load assertions still cover every action. The cross-game
-Spoils fixes refresh 100 hashes because history now records owner allocation
-choices and results; all 132 board/RNG states, actions and outcomes are unchanged.
+The fixture preserves 132 original moves and their checkpoint indices. Ten
+explicit Wastage choices follow their triggering moves. Exact state hashes
+and serialized continuation cover every checkpoint. The player-interface
+replay independently executes all 142 actions.
 """
 from __future__ import annotations
 
@@ -41,6 +39,9 @@ def replayed_game():
         if i in (11, 16, 130):
             checkpoints[i] = session.gs.to_json()
         session.apply(entry["action"])
+        for followup in entry.get("followup_actions", []):
+            session.apply(followup)
+            assert not check_invariants(session.gs), f"invariants after Wastage at {i}"
         assert not check_invariants(session.gs), f"invariants after action {i}"
         assert _hash(session.gs) == entry["after_sha256"], f"replay mismatch at {i}"
         # Continue from the serialized state, not merely inspect its contents.
@@ -52,6 +53,7 @@ def replayed_game():
 def test_complete_game_replays_all_132_actions_and_save_loads(replayed_game):
     session, _, record = replayed_game
     assert len(record["steps"]) == 132
+    assert sum(len(step.get("followup_actions", [])) for step in record["steps"]) == 10
     assert session.is_over() and session.winner() == record["expected_winner"]
     assert session.gs.meta.notes["win_reason"] == record["expected_win_reason"]
     assert session.gs.meta.calendar_box == 12

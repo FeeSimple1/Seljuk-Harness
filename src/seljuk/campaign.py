@@ -215,7 +215,7 @@ def _reveal_next(gs: GameState) -> None:
     exhausted. Auto-resolves No Command / off-map / Lower-Lord cards (4.2.3)."""
     for _ in range(len(SIDES) + 1):
         if _plan_exhausted(gs, "seljuk") and _plan_exhausted(gs, "roman"):
-            _end_campaign(gs)
+            _end_campaign(gs, interactive=True)
             return
         side = gs.meta.active_player
         if _plan_exhausted(gs, side):
@@ -509,7 +509,7 @@ def _set_game_over(gs: GameState, winner: str, reason: str = "") -> None:
     gs.meta.notes["win_reason"] = reason
 
 
-def _end_campaign(gs: GameState) -> None:
+def _end_campaign(gs: GameState, *, interactive: bool = False) -> None:
     gs.meta.subphase = "campaign.end"
     box = gs.meta.calendar_box
     # Game End precedes Grow, Repair, Wastage, Reset, and Winter (4.7.1).
@@ -520,7 +520,20 @@ def _end_campaign(gs: GameState) -> None:
         return
     _grow(gs)       # 4.7.2 (Spring only)
     _repair(gs)     # 4.7.3
-    _wastage(gs)    # 4.7.4
+    if interactive:
+        gs.meta.notes["_wastage_end"] = "normal"
+        for side in SIDES:
+            for lord in gs.lords.values():
+                if lord.side == side and lord.mustered:
+                    _queue_wastage(gs, lord, source="end_campaign")
+        _continue_wastage(gs)
+        return
+    _wastage(gs)    # 4.7.4, deterministic standalone-helper default
+    _after_wastage(gs)
+
+
+def _after_wastage(gs: GameState) -> None:
+    """Continue End Campaign once all Wastage elections have resolved."""
     if _begin_themata_retention(gs):
         return
     _finish_end_campaign(gs)
@@ -645,20 +658,109 @@ def _repair(gs: GameState) -> None:
             l.siege_markers -= 1
 
 
-def _do_one_wastage(gs: GameState, l: LordState) -> bool:
-    """Discard one excess Asset (or a This-Lord Capability) from a Lord (4.7.4).
-    Returns False if the Lord did not qualify (<=1 of each, <=1 Capability)."""
+def wastage_options(l: LordState) -> list[dict]:
+    """Qualification and the full legal discard set are separate (4.7.4)."""
     assets = {"carts": l.assets.carts, "provender": l.assets.provender,
               "coin": l.assets.coin, "loot": l.assets.loot}
     top = max(assets, key=lambda k: assets[k])
-    if assets[top] > 1:
-        setattr(l.assets, top, assets[top] - 1)
-        return True
-    if len(l.capabilities) > 1:
-        _cid = l.capabilities.pop()
-        gs.side_decks(sd.card(_cid)["side"]).draw_deck.append(_cid)  # route by printed side
-        return True
-    return False
+    if assets[top] <= 1 and len(l.capabilities) <= 1:
+        return []
+    options = [{"asset": asset} for asset, count in assets.items() if count > 0]
+    options += [{"card": card} for card in l.capabilities]
+    default = {"asset": top} if assets[top] > 1 else {"card": l.capabilities[-1]}
+    options.remove(default)
+    return [default, *options]
+
+
+def _do_one_wastage(gs: GameState, l: LordState, choice: dict | None = None) -> bool:
+    """Discard any Asset or This Lord card from a qualified Lord (4.7.4)."""
+    options = wastage_options(l)
+    if not options:
+        return False
+    choice = options[0] if choice is None else choice
+    if choice not in options:
+        raise IllegalAction("bad_wastage", "choose a currently held Asset or This Lord Capability (4.7.4)")
+    if "asset" in choice:
+        asset = choice["asset"]
+        setattr(l.assets, asset, getattr(l.assets, asset) - 1)
+    else:
+        card = choice["card"]
+        l.capabilities.remove(card)
+        gs.side_decks(sd.card(card)["side"]).draw_deck.append(card)
+    return True
+
+
+def _queue_wastage(gs: GameState, lord: LordState, *, times: int = 1, source: str) -> bool:
+    if not wastage_options(lord):
+        return False
+    gs.meta.pending.append({"type": "wastage", "lord": lord.id,
+                            "remaining": times, "source": source, "_owed_by": lord.side})
+    return True
+
+
+def _wastage_targets(gs: GameState, raider: LordState) -> list[str]:
+    return [lord.id for adj in gmap.neighbors(raider.cylinder) for lord in gs.lords.values()
+            if lord.mustered and lord.cylinder == adj and lord.side != raider.side]
+
+
+def _continue_wastage(gs: GameState) -> None:
+    # Each repeated occurrence rechecks qualification after the previous loss.
+    for pending in list(gs.meta.pending):
+        if (pending["type"] == "wastage"
+                and (pending["remaining"] <= 0 or not wastage_options(gs.lords[pending["lord"]]))):
+            gs.meta.pending.remove(pending)
+    if any(p["type"] in ("wastage", "wastage_target") for p in gs.meta.pending):
+        return
+    stage = gs.meta.notes.get("_wastage_end")
+    if stage == "normal":
+        gs.meta.notes["_wastage_end"] = "raiders"
+        for lord in gs.lords.values():
+            if not (lord.mustered and lord.cylinder in gs.locales):
+                continue
+            if not (capabilities.lord_has(gs, lord.id, "Cavalry Supply Line Raiders")
+                    or capabilities.lord_has(gs, lord.id, "Turkmen Skirmishers")):
+                continue
+            targets = _wastage_targets(gs, lord)
+            if any(wastage_options(gs.lords[lid]) for lid in targets):
+                gs.meta.pending.append({"type": "wastage_target", "raider": lord.id,
+                                        "targets": targets, "_owed_by": lord.side})
+        if any(p["type"] == "wastage_target" for p in gs.meta.pending):
+            return
+    if stage:
+        gs.meta.notes.pop("_wastage_end")
+        _after_wastage(gs)
+
+
+def wastage_moves(gs: GameState) -> list[dict] | None:
+    for kind in ("wastage", "wastage_target"):
+        pending = next((p for p in gs.meta.pending if p["type"] == kind), None)
+        if pending is None:
+            continue
+        if kind == "wastage":
+            return [{"type": "wastage", "lord": pending["lord"], "discard": choice,
+                     "_desc": f"{pending['lord']} discards {choice} to Wastage (4.7.4)"}
+                    for choice in wastage_options(gs.lords[pending["lord"]])]
+        return [{"type": "wastage_target", "raider": pending["raider"], "target": target,
+                 "_desc": f"{pending['raider']} causes extra Wastage on {target} (R22/S22)"}
+                for target in pending["targets"]]
+    return None
+
+
+def h_wastage(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict:
+    """Resolve the current owner's discard or R22/S22 target selection."""
+    offered = wastage_moves(gs) or []
+    selected = {k: v for k, v in action.items() if not k.startswith("_")}
+    if selected not in [{k: v for k, v in move.items() if not k.startswith("_")} for move in offered]:
+        raise IllegalAction("bad_wastage", "select a currently offered Wastage action (4.7.4)")
+    pending = next(p for p in gs.meta.pending if p["type"] == action["type"])
+    if action["type"] == "wastage_target":
+        gs.meta.pending.remove(pending)
+        _queue_wastage(gs, gs.lords[action["target"]], source=pending["raider"])
+    else:
+        _do_one_wastage(gs, gs.lords[pending["lord"]], action["discard"])
+        pending["remaining"] -= 1
+    _continue_wastage(gs)
+    return {"ok": True, "action": action["type"], **selected}
 
 
 def _wastage(gs: GameState) -> None:
@@ -1032,6 +1134,9 @@ def h_end_activation(gs: GameState, action: dict[str, Any], roller: DiceRoller) 
 
 
 def legal_moves_campaign(gs: GameState) -> list[dict[str, Any]]:
+    waste = wastage_moves(gs)
+    if waste is not None:
+        return waste
     if any(p["type"] == "retain_themata" for p in gs.meta.pending):
         return _retention_moves(gs)
     kl = next((p for p in gs.meta.pending if p["type"] == "kleisourai"), None)
@@ -2213,6 +2318,24 @@ def h_respond_approach(gs: GameState, action: dict[str, Any], roller: DiceRoller
             gs.side_decks(att_side).draw_deck.append("R18")
     standers, avoided, withdrew = [], [], []
     approach_origin = pend.get("from")  # SMOKE-006: Locale the Attackers Approached from
+    # Co-Avoiders share spare Carts only along their common destination.
+    # Provender stays on its original mat, with own Carts used first.
+    avoid_groups: dict[str, list[str]] = {}
+    for did in pend["defenders"]:
+        ch = choices.get(did, {})
+        if ch.get("action") == "avoid":
+            dest = ch.get("to")
+            _validate_avoid(gs, gs.lords[did], to, dest, side, approach_origin)
+            avoid_groups.setdefault(dest, []).append(did)
+    keep_provender = {}
+    for group in avoid_groups.values():
+        spare = sum(max(0, gs.lords[did].assets.carts - gs.lords[did].assets.provender)
+                    for did in group)
+        for did in group:
+            assets = gs.lords[did].assets
+            borrowed = min(spare, max(0, assets.provender - assets.carts))
+            spare -= borrowed
+            keep_provender[did] = min(assets.provender, assets.carts + borrowed)
     # 4.3.4: Withdraw is limited to the Stronghold's Size (incl. Lords already inside).
     inside = sum(1 for l in gs.lords.values()
                  if l.mustered and l.cylinder == to and l.besieged and l.side == side)
@@ -2227,13 +2350,12 @@ def h_respond_approach(gs: GameState, action: dict[str, Any], roller: DiceRoller
         lord = gs.lords[did]
         if kind == "avoid":
             dest = ch.get("to")
-            _validate_avoid(gs, lord, to, dest, side, approach_origin)
             # 4.3.4: discard Loot and excess Provender to become Unladen; the
             # Approaching Enemy Lords receive and divide the discarded Assets.
             disc_loot = lord.assets.loot
-            disc_prov = max(0, lord.assets.provender - lord.assets.carts)
+            disc_prov = lord.assets.provender - keep_provender[did]
             lord.assets.loot = 0
-            lord.assets.provender = min(lord.assets.provender, lord.assets.carts)
+            lord.assets.provender = keep_provender[did]
             _award_avoid_spoils(gs, pend["attackers"], disc_loot, disc_prov)
             if (lord.side == "seljuk"
                     and any(w["type"] == "pass" for w in gmap.ways_between(to, dest))):

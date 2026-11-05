@@ -163,6 +163,8 @@ After some actions the game owes a sub-decision before normal play resumes.
 |----------------|---------------------|
 | `deploy_capability` | `{"type":"deploy_capability","card":C,"lord":L}` (L from `eligible`) |
 | `event_pending_resolution` | `{"type":"resolve_event","card":C,"args":{...}}` |
+| `wastage` | `{"type":"wastage","lord":L,"discard":{"asset":"loot"}}` or `{"discard":{"card":C}}` with the same `type` and `lord` |
+| `wastage_target` | `{"type":"wastage_target","raider":L,"target":ENEMY_LORD}` (R22/S22) |
 | `approach_response` | `{"type":"respond_approach","choices":{LORD:{"action":"stand"\|"withdraw"\|"avoid","to":LOCALE}}}` |
 | `besiege_or_bypass` | `{"type":"besiege_bypass","choice":"besiege"\|"bypass"}` |
 | `assign_themata_defenders` | `{"type":"assign_themata_defenders","markers":[...]}` |
@@ -189,6 +191,26 @@ Levied/Recruited units on a Lord's mat for **one Coin per Thema**, not per unit 
 marker. Resolve each `retain_themata` pending before continuing. `pressed_levy`
 is offered for R4's one free unpaid Thema; `return` declines retention. The save
 file preserves these choices, including a partially completed Reset.
+
+Wastage precedes Reset and pauses for the affected Lord's owner. Once a Lord
+qualifies under 4.7.4, every positive Asset type and every This Lord Capability
+on his mat is offered, including singleton Loot or a singleton card. Select
+one complete action from the menu. The engine rechecks eligibility after
+each occurrence of repeated Wastage. R1 Flooded River routes Alp Arslan's
+choices to the Seljuk player, and S25 Mercenary Discipline routes each
+affected Roman Lord's choices to the Roman player. Finish these choices
+before the next drawn Event or normal play continues. Saves preserve the
+pending owner and remaining occurrences.
+
+For R22/S22, the raider's owner selects an adjacent Enemy Lord, then that
+Lord's owner selects the discard if he still qualifies. All normal End
+Campaign Wastage resolves before these additional occurrences and Themata
+retention. Returned Capability cards go to their printed side's deck.
+
+Lords Avoiding to the same destination share spare Carts. Each Lord uses
+his own Carts first, then the group's spare capacity. Provender stays on its
+original mat. Loot and excess Provender become the Approaching Lords'
+Spoils. Carts are pooled only within the group that Avoids together.
 
 Themata `symbols` are the printed marker capacity. On a Lord's mat, optional
 `strength` records surviving units and `routed` records its routed subset; a

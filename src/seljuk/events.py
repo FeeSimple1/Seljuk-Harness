@@ -63,18 +63,9 @@ def _remove_themata(gs: GameState, thema: str, unit: str | None = None) -> dict:
 # --- per-card resolvers (immediate Events) ----------------------------------
 
 def _wastage_once(gs, lord) -> bool:
-    """Discard one excess Asset (or a This-Lord Capability) if the Lord qualifies (4.7.4)."""
-    assets = {"carts": lord.assets.carts, "provender": lord.assets.provender,
-              "coin": lord.assets.coin, "loot": lord.assets.loot}
-    top = max(assets, key=lambda k: assets[k])
-    if assets[top] > 1:
-        setattr(lord.assets, top, assets[top] - 1)
-        return True
-    if len(lord.capabilities) > 1:
-        card = lord.capabilities.pop()
-        gs.side_decks(sd.card(card)["side"]).draw_deck.append(card)  # route by printed side (4.7.4/3.4.4)
-        return True
-    return False
+    """Use the same qualification, choices and deck routing as Campaign Wastage."""
+    from .campaign import _do_one_wastage
+    return _do_one_wastage(gs, lord)
 
 
 def _discard_random_held(gs, side, roller):
@@ -143,6 +134,11 @@ def _ev_flooded_river(gs, args, roller):          # R1*
     if "R1" in gs.meta.asterisks_used:
         return _seljuk_lord_minus1_lordship(gs, args)
     aa = gs.lords["alp_arslan"]
+    if args.get("_interactive_wastage"):
+        from .campaign import _queue_wastage
+        pending = _queue_wastage(gs, aa, times=3, source="R1")
+        gs.meta.asterisks_used.append("R1")
+        return {"alp_arslan_wastage_times": 0, "wastage_pending": pending}
     n = sum(1 for _ in range(3) if _wastage_once(gs, aa))
     gs.meta.asterisks_used.append("R1")
     return {"alp_arslan_wastage_times": n}
@@ -190,8 +186,14 @@ def _ev_mercenary_discipline(gs, args, roller):   # S25
     n = 0
     for l in gs.lords.values():
         if l.side == "roman" and l.mustered and gs.locales[l.cylinder].ravaged_side is not None:
+            if args.get("_interactive_wastage"):
+                from .campaign import _queue_wastage
+                n += int(_queue_wastage(gs, l, source="S25"))
+                continue
             if _wastage_once(gs, l):
                 n += 1
+    if args.get("_interactive_wastage"):
+        return {"roman_wastage": 0, "wastage_pending": n}
     return {"roman_wastage": n}
 
 
@@ -554,7 +556,7 @@ def resolve_event(gs: GameState, card_id: str, args: dict, roller: DiceRoller) -
         gs.meta.pending.remove(pend)
         return {"ok": True, "card": card_id, "no_op": True, "reason": "resolver not yet implemented (Phase 4 remainder)"}
     try:
-        result = _RESOLVERS[card_id](gs, args or {}, roller)
+        result = _RESOLVERS[card_id](gs, {**(args or {}), "_interactive_wastage": True}, roller)
     except (KeyError, IndexError, TypeError) as e:
         raise IllegalAction("missing_or_bad_arg", f"Event {card_id} needs a valid argument ({e})")
     gs.meta.pending.remove(pend)

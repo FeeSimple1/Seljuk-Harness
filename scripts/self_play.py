@@ -20,6 +20,12 @@ from seljuk.state import IllegalAction
 
 
 def _resolve_pending(s: LLMSession) -> bool:
+    # Wastage may interrupt an Event while other Events remain queued.
+    # Use the same priority as the engine and submit an actual legal choice.
+    waste = campaign.wastage_moves(s.gs)
+    if waste is not None:
+        s.apply({k: v for k, v in waste[0].items() if not k.startswith("_")})
+        return True
     pend = s.gs.meta.pending
     if not pend:
         return False
