@@ -12,6 +12,7 @@ from seljuk import scenarios as S, static_data as sd, map as gmap
 from seljuk.llm.view import filtered_state
 from seljuk.rng import DiceRoller
 from seljuk.state import Assets, GameState, IllegalAction, ThemataMarker
+from tests.reset_helpers import keep_reset_cards
 
 
 class ConstantDice:
@@ -544,6 +545,7 @@ def test_20_winter_events_resolve_seljuk_then_roman():
     gs.seljuk.held_events = ["S18"]
     gs.roman.held_events = ["R9"]
     C._end_campaign(gs)
+    keep_reset_cards(gs)
     assert gs.meta.phase == "winter" and gs.meta.subphase == "winter.activation"
     assert gs.meta.notes["winter_holders"] == ["seljuk", "roman"]
     assert gs.meta.active_player == "seljuk"

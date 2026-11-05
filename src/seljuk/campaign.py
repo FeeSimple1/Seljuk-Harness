@@ -607,6 +607,86 @@ def _finish_end_campaign(gs: GameState) -> None:
     gs.meta.vp = scenarios.score(gs)
     if _campaign_5_2_over(gs):
         return
+    for side in SIDES:
+        if reset_discard_candidates(gs, side):
+            gs.meta.pending.append({"type": "reset_discard", "side": side, "_owed_by": side})
+    _continue_reset_discard(gs)
+
+
+def reset_discard_candidates(gs: GameState, side: str) -> list[dict]:
+    """4.7.5: optional Held, board-edge and owned This Lord cards."""
+    decks = gs.side_decks(side)
+    return ([{"card": card, "source": "held_event"} for card in decks.held_events]
+            + [{"card": card, "source": "side_capability"} for card in decks.capabilities_in_play]
+            + [{"card": card, "source": "lord_capability", "lord": lord.id}
+               for lord in gs.lords.values() if lord.side == side for card in lord.capabilities])
+
+
+def _continue_reset_discard(gs: GameState) -> None:
+    if _campaign_5_2_over(gs):
+        gs.meta.pending.clear()
+        return
+    for pending in list(gs.meta.pending):
+        if pending["type"] == "reset_discard" and not reset_discard_candidates(gs, pending["side"]):
+            gs.meta.pending.remove(pending)
+    if any(p["type"] == "reset_discard" for p in gs.meta.pending):
+        gs.meta.subphase = "campaign.reset_discard"
+        return
+    _after_reset_discard(gs)
+
+
+def reset_discard_moves(gs: GameState) -> list[dict] | None:
+    pending = next((p for p in gs.meta.pending if p["type"] == "reset_discard"), None)
+    if pending is None:
+        return None
+    side = pending["side"]
+    return ([{"type": "reset_discard", "side": side, "card": choice["card"],
+              **({"lord": choice["lord"]} if "lord" in choice else {}),
+              "_source": choice["source"], "_desc": f"Return {choice['card']} to its deck (4.7.5)"}
+             for choice in reset_discard_candidates(gs, side)]
+            + [{"type": "reset_done", "side": side, "_desc": "Keep all remaining cards; finish Reset (4.7.5)"}])
+
+
+def h_reset_discard(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict:
+    """4.7.5: return one owned card, or explicitly keep all remaining cards."""
+    pending = next((p for p in gs.meta.pending if p["type"] == "reset_discard"), None)
+    if gs.meta.subphase != "campaign.reset_discard" or pending is None:
+        raise IllegalAction("wrong_step", "voluntary discards occur after mandatory Reset cleanup (4.7.5)")
+    side = action.get("side", pending["side"])
+    if side != pending["side"]:
+        raise IllegalAction("wrong_actor", "Seljuk then Roman may discard their own cards (4.7.5)")
+    result = {"ok": True, "action": action["type"], "side": side}
+    if action["type"] == "reset_done":
+        gs.meta.pending.remove(pending)
+    else:
+        choice = next((c for c in reset_discard_candidates(gs, side) if c["card"] == action.get("card")), None)
+        if choice is None or ("lord" in action and action["lord"] != choice.get("lord")):
+            raise IllegalAction("bad_reset_discard", "select an owned Held Event or deployed Capability (4.7.5)")
+        result.update(choice)
+        card = choice["card"]
+        if choice["source"] == "held_event":
+            gs.side_decks(side).held_events.remove(card)
+            gs.side_decks(sd.card(card)["side"]).draw_deck.append(card)
+        elif choice["source"] == "side_capability":
+            _discard_side_capability(gs, side, card)
+        else:
+            lord = gs.lords[choice["lord"]]
+            specials = [v.special_name or card for v in lord.vassals if v.requires_capability == card]
+            others = [c for c in lord.capabilities if c != card]
+            actions.discard_lord_capability(gs, lord, card)
+            if specials:
+                result["special_vassals_disbanded"] = specials
+            if not lord.mustered:
+                result.update(disbanded=lord.id, calendar_box=lord.cylinder_calendar_box,
+                              also_returned=others)
+        gs.meta.vp = scenarios.score(gs)
+    _continue_reset_discard(gs)
+    return result
+
+
+def _after_reset_discard(gs: GameState) -> None:
+    """Advance or start Winter after both optional discard elections."""
+    gs.meta.subphase = "campaign.end"
     box = gs.meta.calendar_box
     if box in (3, 6, 9):                # 4.7.6 Winter on the first three Autumns
         # Winter Campaign / Winter March (R9/S18): a pre-Bounty activation
@@ -1256,6 +1336,9 @@ def legal_moves_campaign(gs: GameState) -> list[dict[str, Any]]:
     grow = grow_moves(gs)
     if grow is not None:
         return grow
+    reset = reset_discard_moves(gs)
+    if reset is not None:
+        return reset
     if any(p["type"] == "retain_themata" for p in gs.meta.pending):
         return _retention_moves(gs)
     kl = next((p for p in gs.meta.pending if p["type"] == "kleisourai"), None)

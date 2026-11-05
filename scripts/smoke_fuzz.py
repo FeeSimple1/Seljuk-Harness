@@ -71,7 +71,7 @@ def _rand_resolve_pending(s, rng, findings, tag):
     p = s.gs.meta.pending[0]
     t = p["type"]
     try:
-        if t in ("capability_discard", "grow"):
+        if t in ("capability_discard", "grow", "reset_discard"):
             s.apply(rng.choice(engine.legal_moves(s.gs)))
         elif t == "approach_response":
             choices = {}

@@ -6,6 +6,7 @@ import pytest
 from seljuk import actions, campaign, engine, static_data as sd
 from seljuk.llm import LLMSession
 from seljuk.state import Assets, GameState, IllegalAction
+from tests.reset_helpers import keep_reset_cards
 from tests.test_cross_game_avoid_wastage import begin_end, waste
 from tests.test_cross_game_combat import place, position
 
@@ -105,6 +106,7 @@ def test_saved_retention_choice_keeps_or_disbands_the_last_force(mode):
     lord = state.lords[lord.id]
     LLMSession(state).apply({"type": "retain_themata", "lord": lord.id,
                              "thema": "Boukellarion", "mode": mode})
+    keep_reset_cards(state)
     assert lord.mustered == (mode != "return")
     assert bool(lord.themata_on_mat) == (mode != "return")
     if mode == "return":

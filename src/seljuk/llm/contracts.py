@@ -102,7 +102,14 @@ def contract(gs, move, side):
            "validation": "Engine validates the submitted combination; no parameters are chosen here."}
     if fn and inspect.getdoc(fn):
         out["handler_help"] = inspect.getdoc(fn)
-    if kind == "grow":
+    if kind in ("reset_discard", "reset_done"):
+        out.update(parameters=[], all_action_fields=sorted(fixed),
+                   eligible_cards=campaign.reset_discard_candidates(gs, side),
+                   notes=["Discard any subset of your Held Events and deployed Capabilities, one card at a time.",
+                          "reset_done keeps every remaining card; Seljuk finishes before Roman.",
+                          "Mandatory cleanup and Themata retention already happened and do not repeat.",
+                          "A Special-Vassal card also removes its contingent; losing the last Force Disbands its Lord."])
+    elif kind == "grow":
         out.update(remaining=current_pending(gs)["remaining"],
                    enemy_marker_side=other(side),
                    eligible_locales=[move["locale"] for move in campaign.grow_moves(gs)],

@@ -163,6 +163,7 @@ After some actions the game owes a sub-decision before normal play resumes.
 |----------------|---------------------|
 | `capability_discard` | `{"type":"capability_discard","side":SIDE,"card":CARD}`; choose a board-edge Capability from the menu (4.0) |
 | `grow` | `{"type":"grow","side":SIDE,"locale":LOCALE}`; choose an enemy Ravaged marker to remove in Spring (4.7.2) |
+| `reset_discard` | `{"type":"reset_discard","side":SIDE,"card":CARD,"lord":LORD_IF_ON_MAT}` to return a card, or `{"type":"reset_done","side":SIDE}` to keep the rest (4.7.5) |
 | `deploy_capability` | `{"type":"deploy_capability","card":C,"lord":L}` (L from `eligible`) |
 | `event_pending_resolution` | `{"type":"resolve_event","card":C,"args":{...}}` |
 | `wastage` | `{"type":"wastage","lord":L,"discard":{"asset":"loot"}}` or `{"discard":{"card":C}}` with the same `type` and `lord` |
@@ -189,6 +190,15 @@ displayed quota is met. Each side leaves half the enemy's original total,
 rounded up; the quota stays fixed during selection. VP totals update after
 each removal. Repair, Wastage and Reset follow both players' choices. A side
 with zero or one enemy marker has no removal to select.
+
+After Themata retention, unstacking and mandatory seasonal-card cleanup, Reset
+lets Seljuk then Roman return any of their Held Events, board-edge Capabilities
+and This Lord Capabilities. Select one `reset_discard` at a time, or select
+`reset_done` to keep every remaining card. There is no minimum discard; all
+subsets remain available. The menu identifies a mat card's Lord. Special-Vassal
+card discards also Disband that Vassal and can Disband a Lord left without
+Forces. Themata retention does not repeat when cards are discarded. The choices
+survive save/load, and Winter or the next Levy waits until both players finish.
 
 Battles, Storms, and Sallies are **auto-resolved** by the engine when you Stand
 (or Storm/Sally); the result is returned by `do`. You don't roll dice — the

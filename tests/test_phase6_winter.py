@@ -1,5 +1,6 @@
 """Phase 6: Winter Campaign / Winter March (R9/S18) pre-Bounty activation window."""
 from seljuk import scenarios as S, engine, campaign
+from tests.reset_helpers import keep_reset_cards
 
 
 def _settle_winter_quarters(gs):
@@ -15,6 +16,7 @@ def _at_winter_end(seed=1, held_side="roman", card="R9"):
     gs.meta.phase = "campaign"
     gs.side_decks(held_side).held_events = [card]
     campaign._end_campaign(gs)
+    keep_reset_cards(gs)
     return gs
 
 

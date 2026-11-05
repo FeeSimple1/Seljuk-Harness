@@ -9,6 +9,7 @@ from seljuk.llm import LLMSession
 from seljuk.llm.compact import CompactInterface, InterfaceError
 from seljuk.llm.routing import decision_side
 from seljuk.state import Assets, GameState, IllegalAction
+from tests.reset_helpers import keep_reset_cards
 from tests.test_cross_game_combat import place, position
 
 
@@ -141,6 +142,7 @@ def test_end_campaign_offers_singleton_assets_and_card_and_uses_the_selected_ite
         str(d) for d in [{"asset": "carts"}, {"asset": "loot"}, {"card": "S21"}]
     }
     waste(state, "alp_arslan", discard)
+    keep_reset_cards(state)
     lord = state.lords["alp_arslan"]
     assert lord.assets.carts == before["assets"]["carts"] - int(
         discard == {"asset": "carts"}

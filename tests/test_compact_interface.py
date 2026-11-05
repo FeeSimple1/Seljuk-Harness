@@ -483,7 +483,7 @@ def test_full_recorded_games_preserve_all_decisions_results_and_position(name, t
     assert interface.session.is_over()
     assert interface.session.winner() == record['expected_winner']
     assert scenarios.score(interface.gs) == record['expected_score']
-    assert count == {"manzikert": 145, "showdown": 379}[name]
+    assert count == {"manzikert": 149, "showdown": 389}[name]
 
 
 @pytest.mark.parametrize('order', ['keep', 'swap'])

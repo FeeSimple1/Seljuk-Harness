@@ -226,3 +226,48 @@ lint, new-test lint and compile checks passed.
 
 Second-audit progress: **5 of 6 Seljuk groups fixed**. Only SEL2-04 (voluntary
 Reset discard) remains open. All seven original findings remain fixed.
+
+## Second audit, batch 5 — SEL2-04
+
+- **SEL2-04 — Voluntary Reset discards:** after Themata retention and mandatory
+  Reset cleanup, Seljuk then Roman can return any owned Held Event, board-edge
+  Capability or This Lord Capability. Each candidate is explicitly offered;
+  discard cards individually or choose `reset_done` to keep the rest. Any
+  subset remains reachable, with no mandatory voluntary discard. Owners with
+  no candidates need no action.
+
+Cards return to their printed-side decks. Special-Vassal cards use the shared
+contingent cleanup and can cause recyclable Lord Disband; losing the final
+Mustered Lord ends Campaign immediately before another player's election or
+Winter. R4 retention is already complete and is never repeated when its card
+is subsequently discarded. This Campaign cards and Gifts Exchanged expire
+once before the voluntary window. Winter Holds may be kept or discarded
+before their activation window. Game End still precedes all Reset actions.
+
+The dispatcher blocks unrelated actions during the election. Menus, private
+owner handoffs, paginated stable IDs, stale-selection rejection, save/load and
+result details include the new actions. Self-play preserves cards explicitly;
+the randomized smoke driver explores both discarding and keeping. Older
+Campaign/Winter tests now explicitly keep cards before testing later steps.
+
+Thirty-four new regressions cover all eight subsets across the three card
+areas, both owners, mandatory cleanup, all four Special Vassals with optional
+Service, final-Force Disband/victory, R4 retention, Winter Holds, malformed and
+foreign choices, bypass prevention, atomic retry, printed-side deck routing,
+private menus, save/load and Game End. Against preceding main, 31 cases fail
+and three preservation cases pass. The focused suite passed 142 cases.
+
+The recorded Manzikert game adds four keep-all choices and Showdown adds ten.
+At all 132 and 379 preceding checkpoints respectively, every non-history state
+field is identical, including cards, board, RNG, cached VPs and winner. The
+Manzikert hashes from index 46 onward change only for the additional history.
+The full interface replays now execute 149 and 389 actions, preserving every
+original decision and both final scores and winners.
+
+Validation: **1,276 tests passed**. The move round-trip sweep was clean across
+five scenarios and five seeds; 30 randomized smoke runs reported zero findings.
+Focused undefined-name/syntax lint, new-test lint and compile checks passed.
+
+Second-audit progress: **6 of 6 Seljuk groups fixed**. All seven original
+findings remain fixed. Across the five harnesses, all **24 of 24** confirmed
+second-audit groups are now fixed.
