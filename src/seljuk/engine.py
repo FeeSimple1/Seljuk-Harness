@@ -18,6 +18,7 @@ from __future__ import annotations
 from typing import Any, Callable
 
 from . import actions, campaign, events
+from .checkpoint import ActionCheckpoint
 from .rng import DiceRoller
 from .state import GameState, IllegalAction
 
@@ -110,6 +111,16 @@ def _handlers_for_phase(phase: str) -> dict[str, Callable[[GameState, dict, Dice
 
 
 def apply_action(gs: GameState, action: dict[str, Any]) -> dict[str, Any]:
+    """Apply an action atomically, restoring existing references on rejection."""
+    checkpoint = ActionCheckpoint(gs)
+    try:
+        return _apply_action(gs, action)
+    except Exception:
+        checkpoint.restore()
+        raise
+
+
+def _apply_action(gs: GameState, action: dict[str, Any]) -> dict[str, Any]:
     atype = action.get("type")
     table = _handlers_for_phase(gs.meta.phase)
     if atype not in table:
