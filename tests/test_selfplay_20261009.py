@@ -3,7 +3,9 @@
 The recorded game avoids the SP-01 exploit. All 132 actions are unchanged.
 Ten state hashes were rebaselined by the longest-scenario fixes: relief clears
 immediately, and the returned S17 card changes the later Autumn draw. Exact
-state and save/load assertions still cover every action.
+state and save/load assertions still cover every action. The cross-game
+Spoils fixes refresh 100 hashes because history now records owner allocation
+choices and results; all 132 board/RNG states, actions and outcomes are unchanged.
 """
 from __future__ import annotations
 

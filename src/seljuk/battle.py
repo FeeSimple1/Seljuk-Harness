@@ -905,7 +905,7 @@ def _end_battle(gs: GameState, att_ids: list[str], def_ids: list[str], loser: st
         _resolve_losses(gs, lord, harsh, roller, events)
 
     # Spoils (4.8.3) + removal of Lords with no Forces (4.8.5).
-    _spoils_and_removal(gs, att_ids, def_ids, loser, events, conceder)
+    _spoils_and_removal(gs, att_ids, def_ids, loser, events, conceder, ctx)
 
     for lid in att_ids + def_ids:  # Aftermath (4.8.6)
         if lid in gs.lords:
@@ -935,9 +935,13 @@ def _lord_fate(gs: GameState, lord: LordState, loser_role: str, locale: str,
     # Withdraw into a Friendly Stronghold here (Defender only, not Aleppo).
     from . import campaign
     can_withdraw = (loser_role == "defender"
-                    and sd.locale(locale).get("is_stronghold") and not gs.locales[locale].ruins
+                    and campaign._is_stronghold(gs, locale)
                     and campaign.actions.current_allegiance(gs, locale) == lord.side
-                    and locale != "aleppo")
+                    and locale != "aleppo"
+                    and sum(other.mustered and other.side == lord.side
+                            and other.cylinder == locale and other.besieged
+                            for other in gs.lords.values() if other.id != lord.id)
+                    < campaign._stronghold_size(gs, locale))
     # Retreat targets: adjacent Locales free of enemy Lords / unbesieged-unbypassed
     # enemy Strongholds (4.8.3 A).
     from . import map as gmap
@@ -1036,9 +1040,41 @@ def _natural_protection(unit: str) -> tuple[int, int]:
     return _ARMORED[unit]
 
 
+def distribute_spoils(gs: GameState, pool: dict[str, int], recipients: list[str],
+                      ctx: DecisionContext | None = None) -> dict[str, Any]:
+    """Allocate captured Assets with owner choices and the per-type 8 cap.
+
+    Each block chooses spoils_recipient then spoils_amount. The default fills
+    the first eligible mat, spilling into allies with room. Explicit amounts
+    make every legal split reachable without a decision for every marker.
+    """
+    ctx = ctx or DecisionContext()
+    recipients = [lid for lid in dict.fromkeys(recipients)
+                  if lid in gs.lords and gs.lords[lid].mustered
+                  and not _is_routed(gs.lords[lid])]
+    distributed: dict[str, dict[str, int]] = {}
+    lost: dict[str, int] = {}
+    for asset, amount in pool.items():
+        while amount > 0:
+            eligible = [lid for lid in recipients if getattr(gs.lords[lid].assets, asset) < 8]
+            if not eligible:
+                lost[asset] = amount
+                break
+            info = {"asset": asset, "side": gs.lords[eligible[0]].side}
+            lid = ctx.decide("spoils_recipient", eligible, info)
+            assets = gs.lords[lid].assets
+            maximum = min(amount, 8 - getattr(assets, asset))
+            take = ctx.decide("spoils_amount", list(range(maximum, 0, -1)),
+                              {**info, "recipient": lid})
+            setattr(assets, asset, getattr(assets, asset) + take)
+            distributed.setdefault(lid, {})[asset] = distributed.get(lid, {}).get(asset, 0) + take
+            amount -= take
+    return {"distributed": distributed, "lost_to_cap": lost}
+
+
 def _spoils_and_removal(gs: GameState, att_ids: list[str], def_ids: list[str], loser: str,
-                        events: dict, conceder: Optional[str]) -> None:
-    from . import actions
+                        events: dict, conceder: Optional[str],
+                        ctx: DecisionContext | None = None) -> None:
     losing_ids = att_ids if loser == "attacker" else def_ids
     winner_ids = def_ids if loser == "attacker" else att_ids
     winners = [l for l in winner_ids if not _is_routed(gs.lords[l])]
@@ -1048,9 +1084,10 @@ def _spoils_and_removal(gs: GameState, att_ids: list[str], def_ids: list[str], l
     for lid in losing_ids:
         lord = gs.lords[lid]
         fate = next((e["fate"] for e in events["retreat"] if e["lord"] == lid), "removed")
-        if fate == "withdraw":
-            continue  # keep all Assets
-        if fate == "retreat" and conceded:
+        removed_by_losses = _is_routed(lord)
+        if fate == "withdraw" and not removed_by_losses:
+            continue  # surviving Withdrawers keep all Assets
+        if fate == "retreat" and conceded and not removed_by_losses:
             pool["loot"] += lord.assets.loot
             lord.assets.loot = 0
             excess = max(0, lord.assets.provender - lord.assets.carts)
@@ -1060,12 +1097,8 @@ def _spoils_and_removal(gs: GameState, att_ids: list[str], def_ids: list[str], l
             for k in ("coin", "loot", "provender", "carts"):
                 pool[k] += getattr(lord.assets, k)
                 setattr(lord.assets, k, 0)
-    # Distribute Spoils to the first surviving winning Lord (a player choice;
-    # deterministic here).
-    if winners and any(pool.values()):
-        w = gs.lords[winners[0]]
-        for k in ("coin", "loot", "provender", "carts"):
-            setattr(w.assets, k, min(8, getattr(w.assets, k) + pool[k]))
+    allocation = distribute_spoils(gs, pool, winners, ctx)
+    events["spoils"] = {"pool": pool, **allocation}
     # Removal by combat (4.8.5): any Lord (either side) with no Forces after
     # Losses, or a losing Lord who could not Retreat/Withdraw, is removed.
     for lid in att_ids + def_ids:
@@ -1165,16 +1198,14 @@ def ruin(gs: GameState, locale: str) -> dict[str, Any]:
     return {"ruined": locale}
 
 
-def award_spoils(gs: GameState, locale: str, to_lords: list[str]) -> dict[str, int]:
-    """Sack Spoils by Stronghold Value (4.9.1): Coin/Loot/Provender to the first
-    Besieging Lord (a player choice; deterministic here)."""
+def award_spoils(gs: GameState, locale: str, to_lords: list[str],
+                 ctx: DecisionContext | None = None) -> dict[str, int]:
+    """Printed Stronghold Spoils (4.9.1), divided among surviving winners."""
     sh = sd.stronghold_profile(locale)
     if not sh or not to_lords:
         return {}
     spoils = dict(sh["sack_spoils"])
-    w = gs.lords[to_lords[0]]
-    for k in ("coin", "loot", "provender"):
-        setattr(w.assets, k, min(8, getattr(w.assets, k) + spoils.get(k, 0)))
+    distribute_spoils(gs, spoils, to_lords, ctx)
     return spoils
 
 
@@ -1550,7 +1581,7 @@ def _sack(gs: GameState, attacker_ids, defender_ids, locale, a_side, ctx, roller
     # Reconcile losses before selecting surviving recipients (4.8.3-.5).
     _storm_losses(gs, attacker_ids, defender_ids, defender_won=False, roller=roller, ctx=ctx, log=out)
     survivors = [l for l in attacker_ids if not _is_routed(gs.lords[l]) and gs.lords[l].mustered]
-    out["spoils"] = award_spoils(gs, locale, survivors)
+    out["spoils"] = award_spoils(gs, locale, survivors, ctx)
     pool = {asset: 0 for asset in ("coin", "loot", "provender", "carts")}
     for lid in defender_ids:
         lord = gs.lords[lid]
@@ -1563,16 +1594,7 @@ def _sack(gs: GameState, attacker_ids, defender_ids, locale, a_side, ctx, roller
             gs.meta.themata_removed.append(marker)
         lord.themata_on_mat = []
     out["lord_spoils"] = dict(pool)
-    for asset, amount in pool.items():
-        while amount:
-            recipients = [lid for lid in survivors if getattr(gs.lords[lid].assets, asset) < 8]
-            if not recipients:
-                break  # component/8-Asset limits still apply
-            lid = ctx.decide("spoils_recipient", recipients, {"asset": asset, "side": a_side})
-            assets = gs.lords[lid].assets
-            take = min(amount, 8 - getattr(assets, asset))
-            setattr(assets, asset, getattr(assets, asset) + take)
-            amount -= take
+    out["lord_spoils_allocation"] = distribute_spoils(gs, pool, survivors, ctx)
     out["removed"] = []
     from . import actions
     for lid in defender_ids:  # losing Defenders are removed on a Sack

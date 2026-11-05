@@ -162,6 +162,7 @@ def contract(gs, move, side):
             "battle_events": "Each side explicitly supplies its own held card ids (S6/R24: {card, lord}).",
             "rounds": "steeled_rounds / javelins_rounds: {your_lord: round}; existing default is 1.",
             "decisions": "battle_decisions / storm_decisions: your typed FIFO arrays, e.g. [[concede, true]], scoped to your decisions.",
+            "spoils": "Winning owner chooses spoils_recipient (Lord ID), then spoils_amount (positive marker count); repeat to split Assets. Defaults fill the first eligible mat then allies; each Asset type is capped at 8 per Lord.",
             "resolution": "Engine combat is atomic. Preserve scripted choices; unscripted choices use its existing fallback.",
             "opponent_input": "An explicit input/decline handoff occurs before dice. No opponent hand is disclosed.",
         }

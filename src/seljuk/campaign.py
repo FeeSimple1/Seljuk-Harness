@@ -2187,15 +2187,9 @@ def _resolve_arrival(gs: GameState, group: list[LordState], to: str,
 
 def _award_avoid_spoils(gs: GameState, attacker_ids: list[str], loot: int, prov: int) -> None:
     """4.3.4/4.8.3: the Approaching Lords receive and divide Assets a Lord
-    discarded to Avoid Battle (round-robin, 8-cap)."""
-    atts = [gs.lords[a] for a in attacker_ids if a in gs.lords and gs.lords[a].mustered]
-    if not atts:
-        return
-    i = 0
-    for _ in range(loot):
-        atts[i % len(atts)].assets.loot = min(8, atts[i % len(atts)].assets.loot + 1); i += 1
-    for _ in range(prov):
-        atts[i % len(atts)].assets.provender = min(8, atts[i % len(atts)].assets.provender + 1); i += 1
+    discarded to Avoid Battle (capacity-aware default, 8-cap)."""
+    from .battle import distribute_spoils
+    distribute_spoils(gs, {"loot": loot, "provender": prov}, attacker_ids)
 
 
 def h_respond_approach(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
@@ -2322,8 +2316,7 @@ def _validate_avoid(gs: GameState, lord: LordState, battle_loc: str, dest: str, 
 
 
 def _validate_withdraw(gs: GameState, lord: LordState, battle_loc: str) -> None:
-    info = sd.locale(battle_loc)
-    if not info.get("is_stronghold") or gs.locales[battle_loc].ruins:
+    if not _is_stronghold(gs, battle_loc):
         raise IllegalAction("no_stronghold", "Withdraw requires a Friendly Stronghold here (4.3.4)")
     if actions.current_allegiance(gs, battle_loc) != lord.side:
         raise IllegalAction("not_friendly_stronghold", "Withdraw requires a Friendly Stronghold (4.3.4)")
