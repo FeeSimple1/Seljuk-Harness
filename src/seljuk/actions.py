@@ -287,6 +287,38 @@ def _disband_at_limit(gs: GameState, lord: LordState) -> dict[str, Any]:
     return {"lord": lord.id, "disband": "at_limit_recyclable", "placed_calendar_box": new_box}
 
 
+def disband_if_empty(gs: GameState, lord: LordState) -> dict[str, Any] | None:
+    """1.6: losing the last Force outside combat causes recyclable Disband."""
+    if lord.mustered and not lord.unrouted_forces() and not lord.routed_forces():
+        return _disband_at_limit(gs, lord)
+    return None
+
+
+def discard_lord_capability(gs: GameState, lord: LordState, card_id: str) -> None:
+    """Return a This Lord card and set aside its Special Vassal (3.4.2)."""
+    lord.capabilities.remove(card_id)
+    gs.side_decks(sd.card(card_id)["side"]).draw_deck.append(card_id)
+    for vassal in list(lord.vassals):
+        if vassal.requires_capability != card_id:
+            continue
+        if vassal.levied:
+            for unit, count in vassal.forces.items():
+                # Return the printed Forces as able, without touching Themata.
+                # Routed units are still Forces if a trusted caller has any.
+                for pile in (lord.forces, lord.routed):
+                    removed = min(pile.get(unit, 0), count)
+                    if removed:
+                        pile[unit] -= removed
+                        if pile[unit] == 0:
+                            del pile[unit]
+                        count -= removed
+        vassal.levied = False
+        vassal.service_box = None
+        vassal.unready = False
+        lord.vassals.remove(vassal)
+    disband_if_empty(gs, lord)
+
+
 # --- Muster (3.4) -----------------------------------------------------------
 # Each on-map Lord may spend Lordship to Levy other Lords, Vassals, Transport,
 # Capabilities, or (Roman Commander) Themata. Lords brought on this segment may

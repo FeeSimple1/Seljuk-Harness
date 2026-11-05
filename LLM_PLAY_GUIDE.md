@@ -192,6 +192,13 @@ marker. Resolve each `retain_themata` pending before continuing. `pressed_levy`
 is offered for R4's one free unpaid Thema; `return` declines retention. The save
 file preserves these choices, including a partially completed Reset.
 
+Returning a Commander's last Thema immediately Disbands the empty Lord to the
+Calendar, using the current Turn plus his Service rating (1.6/3.3.2).
+Discarding a Special-Vassal Capability also removes its Service marker and
+provided units as able (3.4.2). If that leaves the Lord without Forces, he
+Disbands too. During Campaign, either loss can end the game immediately if
+that side has no Mustered Lords left; Reset and the next Turn then stop.
+
 Wastage precedes Reset and pauses for the affected Lord's owner. Once a Lord
 qualifies under 4.7.4, every positive Asset type and every This Lord Capability
 on his mat is offered, including singleton Loot or a singleton card. Select

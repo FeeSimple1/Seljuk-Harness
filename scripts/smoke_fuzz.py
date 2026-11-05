@@ -17,7 +17,7 @@ import random
 import traceback
 
 from seljuk.llm import LLMSession
-from seljuk import scenarios, engine
+from seljuk import scenarios, engine, campaign
 from seljuk.state import GameState, IllegalAction
 from seljuk.invariants import check_invariants
 from self_play import _build_plan_action  # type: ignore
@@ -62,6 +62,12 @@ def _rand_plan(s, move, rng):
 
 
 def _rand_resolve_pending(s, rng, findings, tag):
+    # Wastage can interrupt other pending Events and must resolve first.
+    # Submit a real owner choice rather than dropping this pending record.
+    waste = campaign.wastage_moves(s.gs)
+    if waste is not None:
+        s.apply({k: v for k, v in rng.choice(waste).items() if not k.startswith("_")})
+        return True
     p = s.gs.meta.pending[0]
     t = p["type"]
     try:

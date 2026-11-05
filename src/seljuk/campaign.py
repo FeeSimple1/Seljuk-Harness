@@ -534,6 +534,8 @@ def _end_campaign(gs: GameState, *, interactive: bool = False) -> None:
 
 def _after_wastage(gs: GameState) -> None:
     """Continue End Campaign once all Wastage elections have resolved."""
+    if _campaign_5_2_over(gs):
+        return
     if _begin_themata_retention(gs):
         return
     _finish_end_campaign(gs)
@@ -545,6 +547,8 @@ def _finish_end_campaign(gs: GameState) -> None:
     _reset(gs, retained=gs.meta.notes.pop("retained_themata", {}))
     gs.meta.notes.pop("pressed_levy_used", None)
     gs.meta.vp = scenarios.score(gs)
+    if _campaign_5_2_over(gs):
+        return
     box = gs.meta.calendar_box
     if box in (3, 6, 9):                # 4.7.6 Winter on the first three Autumns
         # Winter Campaign / Winter March (R9/S18): a pre-Bounty activation
@@ -685,8 +689,7 @@ def _do_one_wastage(gs: GameState, l: LordState, choice: dict | None = None) -> 
         setattr(l.assets, asset, getattr(l.assets, asset) - 1)
     else:
         card = choice["card"]
-        l.capabilities.remove(card)
-        gs.side_decks(sd.card(card)["side"]).draw_deck.append(card)
+        actions.discard_lord_capability(gs, l, card)
     return True
 
 
@@ -704,6 +707,10 @@ def _wastage_targets(gs: GameState, raider: LordState) -> list[str]:
 
 
 def _continue_wastage(gs: GameState) -> None:
+    if gs.meta.phase in ("campaign", "winter") and _campaign_5_2_over(gs):
+        gs.meta.pending.clear()
+        gs.meta.notes.pop("_wastage_end", None)
+        return
     # Each repeated occurrence rechecks qualification after the previous loss.
     for pending in list(gs.meta.pending):
         if (pending["type"] == "wastage"
@@ -882,6 +889,7 @@ def _reset(gs: GameState, retained: dict | None = None) -> None:
                 marker.reset_units()
                 gs.themata[home].append(marker)
         l.themata_on_mat = kept
+        actions.disband_if_empty(gs, l)
         l.lieutenant_of = None
         l.lower_lord = None
     for side in SIDES:

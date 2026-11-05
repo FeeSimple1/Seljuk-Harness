@@ -76,3 +76,41 @@ was clean across five scenarios and five seeds. Thirty smoke games reported
 zero findings.
 
 All seven original Seljuk findings are fixed.
+
+## Second audit, batch 1 — SEL2-01 and SEL2-05
+
+- **SEL2-01 — Final Thema at Reset:** returning the final Force now immediately
+  Disbands the Commander under 1.6/3.3.2. Its cylinder goes to the current
+  Calendar box plus printed Service, including off-right placement, and normal
+  Disband cleanup returns cards, Assets and Vassals and detaches Lieutenants.
+  Retaining the Thema with Coin or R4, or keeping any other Force, preserves
+  the Commander. Final Game End still precedes Reset.
+- **SEL2-05 — Special-Vassal Capability discard:** Wastage routes This Lord
+  cards through a shared discard helper. Discarding R2, R7, R17 or S20 sets
+  aside its Special Vassal and Service marker and returns its provided Forces
+  as able, leaving Themata separate. An unlevied Vassal removes no units.
+  Re-Levying the card creates one fresh Ready marker. Cards return to their
+  printed-side deck, and a Lord losing his final Force receives the same
+  recyclable Disband cleanup.
+
+Both paths recheck the immediate no-Mustered-Lords Campaign victory before
+continuing Wastage, Winter or the next Levy. Game End clears outstanding
+Wastage follow-ups; the Calendar does not advance. Empty-Lord Disband during
+Levy does not itself trigger Campaign victory.
+
+Twenty-four regression cases cover all four cards, optional Vassal Service,
+unlevied and depleted contingents, final-Force removal, mat and stack cleanup,
+retention/return choices, save/load, retry after rejection, current-box timing,
+off-right placement, immediate victory and final Game End. Against the prior
+main, 20 cases fail and four preservation cases pass. The play guide and its
+packaged reference are synchronized. The smoke driver now resolves Wastage
+through actual legal owner choices instead of dropping pending records.
+
+Validation: **1,153 tests passed**. The move round-trip sweep was clean across
+five scenarios and five seeds; focused undefined-name/syntax lint and compile
+checks passed. Thirty randomized smoke runs reported zero findings.
+
+Second-audit progress: **2 of 6 Seljuk groups fixed**. SEL2-02 (excess Capability
+choice), SEL2-03 (Grow choice), SEL2-04 (voluntary Reset discard) and SEL2-06
+(mandatory Approach validation) remain open. All seven original findings
+remain fixed.
