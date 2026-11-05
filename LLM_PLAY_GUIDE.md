@@ -181,6 +181,13 @@ seeded RNG in the save file does, deterministically. Typed `battle_decisions`
 Tuple-valued choices use a nested array, such as
 `[["retreat", ["retreat", "ani"]]]`, subject to the offered destinations.
 
+An `approach_response` is mandatory before another Command or ending the
+activation, during both Campaign and Winter (4.3.4). Submit `respond_approach`
+to resolve the defenders' Avoid, Withdraw or Stand choices. Local Scouts and
+Battle Events remain inputs to that response. Direct commands that skip it
+are rejected without changing the board, RNG or history. Resolve any resulting
+Besiege/Bypass or Themata defender assignment before continuing.
+
 S11 Javelins fires in one Battle round per Battle, not every round and not in
 Storm. Supply `"javelins_rounds": {"ibn_khan": 2}` on `respond_approach`,
 `cmd_sortie`, or `cmd_sally` to mark round 2 for that Lord. The default is round 1.

@@ -114,3 +114,32 @@ Second-audit progress: **2 of 6 Seljuk groups fixed**. SEL2-02 (excess Capabilit
 choice), SEL2-03 (Grow choice), SEL2-04 (voluntary Reset discard) and SEL2-06
 (mandatory Approach validation) remain open. All seven original findings
 remain fixed.
+
+## Second audit, batch 2 — SEL2-06
+
+- **SEL2-06 — Mandatory Approach validation:** the public dispatcher now
+  requires `respond_approach` while an `approach_response` is pending, during
+  both Campaign and Winter. Pass, end activation, another March and other
+  unrelated commands cannot leave an unresolved Battle behind or move its
+  named attacker elsewhere. Rejection preserves the board, command cost,
+  RNG, history and existing object references.
+
+The defender's Avoid, Withdraw and Stand choices remain available. A resolved
+Approach still proceeds to its normal Besiege/Bypass decision, Battle recovery
+or further legal commands. Local Scouts and Battle Events remain inputs to
+the response; the existing compact-interface private handoffs are preserved.
+The play guide and packaged reference describe the mandatory timing.
+
+Twenty-one new regressions exercise both factions and both seasonal activation
+paths, real March-created Approaches, save/load, corrected retries, all three
+defender responses, resumed movement and in-Battle Held Events. Against the
+preceding main, 19 cases fail and two preservation cases pass. The focused
+Approach, atomicity and compact-interface suites pass all 101 cases.
+
+Validation: **1,174 tests passed**. The move round-trip sweep was clean across
+five scenarios and five seeds; 30 randomized smoke runs reported zero
+findings. Focused undefined-name/syntax lint and compile checks passed.
+
+Second-audit progress: **3 of 6 Seljuk groups fixed**. SEL2-02 (excess Capability
+choice), SEL2-03 (Grow choice) and SEL2-04 (voluntary Reset discard) remain
+open. All seven original findings remain fixed.
