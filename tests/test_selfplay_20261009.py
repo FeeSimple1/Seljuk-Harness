@@ -1,9 +1,9 @@
 """Regressions from a deliberately chosen two-sided Manzikert game.
 
 The fixture preserves 132 original moves and their checkpoint indices. Ten
-explicit Wastage choices follow their triggering moves. Exact state hashes
+explicit Wastage and three Grow choices follow their triggering moves. Exact state hashes
 and serialized continuation cover every checkpoint. The player-interface
-replay independently executes all 142 actions.
+replay independently executes all 145 actions.
 """
 from __future__ import annotations
 
@@ -41,7 +41,7 @@ def replayed_game():
         session.apply(entry["action"])
         for followup in entry.get("followup_actions", []):
             session.apply(followup)
-            assert not check_invariants(session.gs), f"invariants after Wastage at {i}"
+            assert not check_invariants(session.gs), f"invariants after follow-up at {i}"
         assert not check_invariants(session.gs), f"invariants after action {i}"
         assert _hash(session.gs) == entry["after_sha256"], f"replay mismatch at {i}"
         # Continue from the serialized state, not merely inspect its contents.
@@ -53,7 +53,9 @@ def replayed_game():
 def test_complete_game_replays_all_132_actions_and_save_loads(replayed_game):
     session, _, record = replayed_game
     assert len(record["steps"]) == 132
-    assert sum(len(step.get("followup_actions", [])) for step in record["steps"]) == 10
+    followups = [action for step in record["steps"] for action in step.get("followup_actions", [])]
+    assert sum(action["type"] == "wastage" for action in followups) == 10
+    assert sum(action["type"] == "grow" for action in followups) == record["grow_followup_count"] == 3
     assert session.is_over() and session.winner() == record["expected_winner"]
     assert session.gs.meta.notes["win_reason"] == record["expected_win_reason"]
     assert session.gs.meta.calendar_box == 12

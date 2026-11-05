@@ -184,3 +184,45 @@ undefined-name/syntax lint, new-test lint and compile checks passed.
 Second-audit progress: **4 of 6 Seljuk groups fixed**. SEL2-03 (Grow selection)
 and SEL2-04 (voluntary Reset discard) remain open. All seven original findings
 remain fixed.
+
+## Second audit, batch 4 — SEL2-03
+
+- **SEL2-03 — Grow selection:** public Spring completion now pauses for
+  Seljuk then Roman to select which enemy Ravaged markers to remove. Every
+  eligible Locale remains reachable. Each selection removes one marker and
+  updates VPs; the original removal quota stays fixed until met, leaving half
+  the original total rounded up. Zero/one-marker cases require no election.
+
+Repair, Wastage and Reset wait for both owners to finish. Game End precedes
+Grow, and non-Spring completion creates no Grow decision. Invalid markers,
+wrong owners, repeated removals and attempts to skip the decision reject
+without state, RNG or history changes. Pending quotas survive save/load;
+the compact interface keeps complete paginated choices, stable IDs, explicit
+owner routing and stale-selection rejection. Both self-play drivers and the
+Campaign integration tests resolve the new selections through real actions.
+Standalone helpers retain the documented deterministic default.
+
+Forty-one new regressions cover all four Springs, both marker owners, counts
+zero through six, every two-of-four retained subset, fixed quotas, Seljuk-first
+handoff, malformed and bypass actions, retry, score changes, ordering against
+Repair/Wastage/Reset, Game End, save/load and private compact-interface use.
+Against preceding main, 34 fail and seven preservation cases pass. The focused
+Grow, integration and Manzikert suites pass all 83 cases.
+
+The Manzikert and Showdown replay fixtures each add three explicit selections
+matching the preceding automatic map-order removals. At all 132 Manzikert and
+376 original Showdown checkpoints, every state field except history and cached
+VPs is identical to preceding main, including RNG. Grow now refreshes VPs
+immediately while later choices remain pending (one Manzikert checkpoint and
+13 Showdown checkpoints). Exact Manzikert hashes are updated from index 45
+onward for the added history/VP refresh; serialized continuation remains
+checked. The interface replays execute 145 and 379 actions respectively.
+All original decisions, final scores and winners are preserved.
+
+Validation: **1,242 tests passed**, including both complete interface replays.
+The move round-trip sweep was clean across five scenarios and five seeds;
+30 randomized smoke runs reported zero findings. Focused undefined-name/syntax
+lint, new-test lint and compile checks passed.
+
+Second-audit progress: **5 of 6 Seljuk groups fixed**. Only SEL2-04 (voluntary
+Reset discard) remains open. All seven original findings remain fixed.

@@ -102,7 +102,14 @@ def contract(gs, move, side):
            "validation": "Engine validates the submitted combination; no parameters are chosen here."}
     if fn and inspect.getdoc(fn):
         out["handler_help"] = inspect.getdoc(fn)
-    if kind == "capability_discard":
+    if kind == "grow":
+        out.update(remaining=current_pending(gs)["remaining"],
+                   enemy_marker_side=other(side),
+                   eligible_locales=[move["locale"] for move in campaign.grow_moves(gs)],
+                   notes=["Remove one enemy Ravaged marker per action, Seljuk first, then Roman.",
+                          "The fixed quota leaves half the original markers, rounded up.",
+                          "Repair, Wastage and Reset wait until both owners finish."])
+    elif kind == "capability_discard":
         out.update(remaining=campaign.capability_excess(gs, side),
                    eligible_cards=list(gs.side_decks(side).capabilities_in_play),
                    notes=["Select one board-edge Capability, repeating until at the Mustered-Lord limit.",

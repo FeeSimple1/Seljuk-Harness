@@ -566,7 +566,17 @@ def _end_campaign(gs: GameState, *, interactive: bool = False) -> None:
         gs.meta.vp = scenarios.score(gs)
         _advance_or_end(gs)
         return
-    _grow(gs)       # 4.7.2 (Spring only)
+    if interactive:
+        if _begin_grow(gs):
+            return
+    else:
+        _grow(gs)   # deterministic standalone-helper default
+    _after_grow(gs, interactive=interactive)
+
+
+def _after_grow(gs: GameState, *, interactive: bool) -> None:
+    """Repair and Wastage follow both players' Spring Grow selections."""
+    gs.meta.subphase = "campaign.end"
     _repair(gs)     # 4.7.3
     if interactive:
         gs.meta.notes["_wastage_end"] = "normal"
@@ -689,6 +699,53 @@ def h_winter_proceed(gs: GameState, action: dict[str, Any], roller: DiceRoller) 
         return {"ok": True, "action": "winter_proceed", "next_holder": holders[0]}
     _finalize_winter(gs)
     return {"ok": True, "action": "winter_proceed", "winter_resolved": True}
+
+
+def _begin_grow(gs: GameState) -> bool:
+    if season_index(gs.meta.calendar_box) != 0:
+        return False
+    for side in SIDES:
+        count = sum(locale.ravaged_side == _enemy(side) for locale in gs.locales.values())
+        if count // 2:
+            gs.meta.pending.append({"type": "grow", "side": side, "remaining": count // 2,
+                                    "_owed_by": side})
+    if any(p["type"] == "grow" for p in gs.meta.pending):
+        gs.meta.subphase = "campaign.grow"
+        return True
+    return False
+
+
+def grow_moves(gs: GameState) -> list[dict] | None:
+    pending = next((p for p in gs.meta.pending if p["type"] == "grow"), None)
+    if pending is None:
+        return None
+    side = pending["side"]
+    return [{"type": "grow", "side": side, "locale": lid, "_remaining": pending["remaining"],
+             "_desc": f"Remove the enemy Ravaged marker at {lid}; {pending['remaining']} left (4.7.2)"}
+            for lid, locale in gs.locales.items() if locale.ravaged_side == _enemy(side)]
+
+
+def h_grow(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict:
+    """4.7.2: choose one enemy Ravaged marker; finish the fixed Spring quota."""
+    pending = next((p for p in gs.meta.pending if p["type"] == "grow"), None)
+    if gs.meta.subphase != "campaign.grow" or pending is None:
+        raise IllegalAction("wrong_step", "Grow selections occur at the end of Spring (4.7.2)")
+    side = action.get("side", pending["side"])
+    if side != pending["side"]:
+        raise IllegalAction("wrong_actor", "Seljuk then Roman select the enemy's Ravaged markers (4.7.2)")
+    lid = action.get("locale")
+    locale = gs.locales.get(lid) if isinstance(lid, str) else None
+    if locale is None or locale.ravaged_side != _enemy(side):
+        raise IllegalAction("bad_grow_choice", "select a current enemy Ravaged marker (4.7.2)")
+    locale.ravaged_side = None
+    pending["remaining"] -= 1
+    remaining = pending["remaining"]
+    if remaining == 0:
+        gs.meta.pending.remove(pending)
+    gs.meta.vp = scenarios.score(gs)
+    if not any(p["type"] == "grow" for p in gs.meta.pending):
+        _after_grow(gs, interactive=True)
+    return {"ok": True, "action": "grow", "side": side, "locale": lid, "remaining": remaining}
 
 
 def _grow(gs: GameState) -> None:
@@ -1196,6 +1253,9 @@ def legal_moves_campaign(gs: GameState) -> list[dict[str, Any]]:
     discard = capability_discard_moves(gs)
     if discard is not None:
         return discard
+    grow = grow_moves(gs)
+    if grow is not None:
+        return grow
     if any(p["type"] == "retain_themata" for p in gs.meta.pending):
         return _retention_moves(gs)
     kl = next((p for p in gs.meta.pending if p["type"] == "kleisourai"), None)

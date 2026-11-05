@@ -162,6 +162,7 @@ After some actions the game owes a sub-decision before normal play resumes.
 | pending `type` | resolve with action |
 |----------------|---------------------|
 | `capability_discard` | `{"type":"capability_discard","side":SIDE,"card":CARD}`; choose a board-edge Capability from the menu (4.0) |
+| `grow` | `{"type":"grow","side":SIDE,"locale":LOCALE}`; choose an enemy Ravaged marker to remove in Spring (4.7.2) |
 | `deploy_capability` | `{"type":"deploy_capability","card":C,"lord":L}` (L from `eligible`) |
 | `event_pending_resolution` | `{"type":"resolve_event","card":C,"args":{...}}` |
 | `wastage` | `{"type":"wastage","lord":L,"discard":{"asset":"loot"}}` or `{"discard":{"card":C}}` with the same `type` and `lord` |
@@ -181,6 +182,13 @@ the complete `capability_discard` menu until the required number is returned.
 This Lord Capabilities and Held Events do not count toward this limit and
 cannot be selected here. Planning begins after both sides finish. The current
 owner, remaining quota and choices survive save/load.
+
+At a non-final Spring Campaign's end, Grow pauses for Seljuk then Roman to
+remove enemy Ravaged markers. Choose one Locale per `grow` action until the
+displayed quota is met. Each side leaves half the enemy's original total,
+rounded up; the quota stays fixed during selection. VP totals update after
+each removal. Repair, Wastage and Reset follow both players' choices. A side
+with zero or one enemy marker has no removal to select.
 
 Battles, Storms, and Sallies are **auto-resolved** by the engine when you Stand
 (or Storm/Sally); the result is returned by `do`. You don't roll dice — the

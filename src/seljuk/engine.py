@@ -67,6 +67,7 @@ _HANDLERS: dict[str, Callable[[GameState, dict, DiceRoller], dict]] = {
 }
 
 _CAMPAIGN_HANDLERS: dict[str, Callable[[GameState, dict, DiceRoller], dict]] = {
+    "grow": campaign.h_grow,
     "capability_discard": campaign.h_capability_discard,
     "wastage": campaign.h_wastage,
     "wastage_target": campaign.h_wastage,
@@ -138,6 +139,8 @@ def _apply_action(gs: GameState, action: dict[str, Any]) -> dict[str, Any]:
         raise IllegalAction("pending_decision", "resolve Wastage before continuing (4.7.4)")
     if any(p["type"] == "capability_discard" for p in gs.meta.pending) and atype != "capability_discard":
         raise IllegalAction("pending_decision", "select excess Capabilities before continuing (4.0)")
+    if any(p["type"] == "grow" for p in gs.meta.pending) and atype != "grow":
+        raise IllegalAction("pending_decision", "finish Grow selections before continuing (4.7.2)")
     if gs.meta.phase == "levy" and waste is None:
         for pending_type, required in (("deploy_capability", "deploy_capability"),
                                        ("event_pending_resolution", "resolve_event"),
