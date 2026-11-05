@@ -143,3 +143,44 @@ findings. Focused undefined-name/syntax lint and compile checks passed.
 Second-audit progress: **3 of 6 Seljuk groups fixed**. SEL2-02 (excess Capability
 choice), SEL2-03 (Grow choice) and SEL2-04 (voluntary Reset discard) remain
 open. All seven original findings remain fixed.
+
+## Second audit, batch 3 — SEL2-02
+
+- **SEL2-02 — Excess Capability election:** entering Campaign now pauses for
+  the Seljuk player and then the Roman player to choose their excess board-edge
+  Capabilities. Every currently deployed card is available at each selection.
+  Choose one card per action until the side reaches its Mustered-Lord limit;
+  any legal retained subset is reachable. This Lord cards and Held Events
+  neither count toward the quota nor qualify for this discard.
+
+The public dispatcher blocks Planning and unrelated actions until both players
+finish. Saved games retain a partially completed election. The compact
+interface supplies the owner's complete paginated menu, remaining quota and
+help, with existing versioned IDs and private-player handoffs. Both self-play
+drivers resolve the choices through actual legal actions. Discarding Gifts
+Exchanged removes its Capability coin pool while preserving the separate
+This Campaign Peace Offering Event effect. Standalone legacy helpers retain
+their documented deterministic default; public play never chooses a card.
+
+Immediate Campaign victory is checked before creating a discard election.
+The Manzikert replay's first 131 checkpoints are exactly unchanged, including
+board, RNG and history. At the final checkpoint only R16 and R25 remain at
+the Roman board edge instead of being discarded after the Romans have already
+lost for having no Mustered Lords. That one expected hash is updated; all 132
+original moves, ten Wastage follow-ups, winner and score remain unchanged.
+
+Twenty-seven new regressions cover either Roman card being retained, every
+two-of-four retained subset, Seljuk-first handoff, all offered moves validating,
+exclusion of This Lord/Held cards, malformed inputs, atomic retry, save/load,
+paginated stable selections, stale-ID rejection, private ownership, quota
+completion, Gifts Exchanged and immediate victory. Against preceding main,
+25 cases fail and two no-excess preservation cases pass.
+
+Validation: **1,201 tests passed**, including the complete Manzikert and Showdown
+interface replays. The move round-trip sweep was clean across five scenarios
+and five seeds; 30 randomized smoke runs reported zero findings. Focused
+undefined-name/syntax lint, new-test lint and compile checks passed.
+
+Second-audit progress: **4 of 6 Seljuk groups fixed**. SEL2-03 (Grow selection)
+and SEL2-04 (voluntary Reset discard) remain open. All seven original findings
+remain fixed.

@@ -161,6 +161,7 @@ After some actions the game owes a sub-decision before normal play resumes.
 
 | pending `type` | resolve with action |
 |----------------|---------------------|
+| `capability_discard` | `{"type":"capability_discard","side":SIDE,"card":CARD}`; choose a board-edge Capability from the menu (4.0) |
 | `deploy_capability` | `{"type":"deploy_capability","card":C,"lord":L}` (L from `eligible`) |
 | `event_pending_resolution` | `{"type":"resolve_event","card":C,"args":{...}}` |
 | `wastage` | `{"type":"wastage","lord":L,"discard":{"asset":"loot"}}` or `{"discard":{"card":C}}` with the same `type` and `lord` |
@@ -173,6 +174,13 @@ After some actions the game owes a sub-decision before normal play resumes.
 | `basil_response` | `{"type":"basil_response","play":true\|false}` |
 | `retain_themata` | `{"type":"retain_themata","lord":L,"thema":THEMA,"mode":"pay"}`; or `"return"`, or `"pressed_levy"` when offered (4.7.5/R4) |
 | `winter_quarters` | `{"type":"winter_quarters","lord":L,"dest":SEAT}` or `{"lord":L,"stay":true}` (R15/S15; options in the pending's `dests`/`may_stay`) |
+
+Before Planning, Seljuk then Roman players must discard board-edge Capabilities
+exceeding their number of Mustered Lords (4.0). Choose one card at a time from
+the complete `capability_discard` menu until the required number is returned.
+This Lord Capabilities and Held Events do not count toward this limit and
+cannot be selected here. Planning begins after both sides finish. The current
+owner, remaining quota and choices survive save/load.
 
 Battles, Storms, and Sallies are **auto-resolved** by the engine when you Stand
 (or Storm/Sally); the result is returned by `do`. You don't roll dice — the

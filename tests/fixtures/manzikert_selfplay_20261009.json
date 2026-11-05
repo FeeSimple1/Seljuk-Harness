@@ -1314,9 +1314,10 @@
         "type": "pass_step"
       },
       "reason": "Roman Call to Arms complete.",
-      "after_sha256": "41e9df51ceb156f09181358ffd3d1819e86208b33053fb66efd769525334ece7"
+      "after_sha256": "2ff3c770383de67fa67bdc97b84046b9cb2d6296472b48232412afbb1025a60a"
     }
   ],
   "hash_baseline_note": "Rebased for longest-scenario EL-04 (immediate relief at indices 43-44) and EL-03 (returned S17 changes Autumn draw at 124-131). All 132 actions, rationales, winner and score are unchanged.",
-  "wastage_followup_count": 10
+  "wastage_followup_count": 10,
+  "capability_discard_note": "SEL2-02 changes only checkpoint 131: immediate Campaign victory precedes Capability discard, leaving R16 and R25 at the Roman board edge. All original actions, RNG, winner and score are unchanged."
 }

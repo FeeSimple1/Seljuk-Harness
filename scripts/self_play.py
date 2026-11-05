@@ -32,7 +32,9 @@ def _resolve_pending(s: LLMSession) -> bool:
     p = pend[0]
     t = p["type"]
     try:
-        if t == "retain_themata":
+        if t == "capability_discard":
+            s.apply(s.legal_actions()[0])
+        elif t == "retain_themata":
             s.apply({"type": "retain_themata", "lord": p["lord"],
                            "thema": p["thema"], "mode": "return"})
         elif t == "deploy_capability":

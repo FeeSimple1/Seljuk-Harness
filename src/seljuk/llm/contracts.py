@@ -102,7 +102,13 @@ def contract(gs, move, side):
            "validation": "Engine validates the submitted combination; no parameters are chosen here."}
     if fn and inspect.getdoc(fn):
         out["handler_help"] = inspect.getdoc(fn)
-    if kind == "build_plan":
+    if kind == "capability_discard":
+        out.update(remaining=campaign.capability_excess(gs, side),
+                   eligible_cards=list(gs.side_decks(side).capabilities_in_play),
+                   notes=["Select one board-edge Capability, repeating until at the Mustered-Lord limit.",
+                          "This Lord Capabilities and Held Events do not count or qualify.",
+                          "Seljuk completes its choices before Roman; Planning waits for both."])
+    elif kind == "build_plan":
         out.update(required={"cards": "Ordered array of Lord ids, no_command, or treachery"},
                    constraints=campaign.plan_constraints(gs, side),
                    on_map_lords=list(move["_available_lords"]),

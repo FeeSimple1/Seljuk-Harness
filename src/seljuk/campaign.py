@@ -69,29 +69,77 @@ def start_campaign(gs: GameState) -> None:
     gs.meta.phase = "campaign"
     for _l in gs.lords.values():
         _l.flags.pop("prov_bureau_used_campaign", None)
-    _capability_discard(gs)
     # 5.2: a side with no Mustered Lords during Campaign loses immediately.
     if not any(l.mustered and l.side == "seljuk" for l in gs.lords.values()):
         _set_game_over(gs, "roman", "5.2: seljuk has no Mustered Lords during Campaign"); return
     if not any(l.mustered and l.side == "roman" for l in gs.lords.values()):
         _set_game_over(gs, "seljuk", "5.2: roman has no Mustered Lords during Campaign"); return
-    gs.meta.subphase = "campaign.plan"
     gs.meta.plan_submitted = {}
+    _continue_capability_discard(gs)
+
+
+def capability_excess(gs: GameState, side: str) -> int:
+    """4.0: board-edge cards above the side's number of Mustered Lord mats."""
+    n_lords = sum(1 for lord in gs.lords.values() if lord.mustered and lord.side == side)
+    return max(0, len(gs.side_decks(side).capabilities_in_play) - n_lords)
+
+
+def _continue_capability_discard(gs: GameState) -> None:
+    gs.meta.pending[:] = [p for p in gs.meta.pending if p["type"] != "capability_discard"]
+    for side in SIDES:
+        if capability_excess(gs, side):
+            gs.meta.subphase = "campaign.capability_discard"
+            gs.meta.active_player = side
+            gs.meta.pending.append({"type": "capability_discard", "side": side, "_owed_by": side})
+            return
+    gs.meta.subphase = "campaign.plan"
     gs.meta.active_player = "seljuk"
 
 
+def capability_discard_moves(gs: GameState) -> list[dict] | None:
+    pending = next((p for p in gs.meta.pending if p["type"] == "capability_discard"), None)
+    if pending is None:
+        return None
+    side = pending["side"]
+    return [{"type": "capability_discard", "side": side, "card": card,
+             "_remaining": capability_excess(gs, side),
+             "_desc": f"Discard {card} from the board edge; {capability_excess(gs, side)} excess (4.0)"}
+            for card in gs.side_decks(side).capabilities_in_play]
+
+
+def _discard_side_capability(gs: GameState, side: str, card: str) -> None:
+    gs.side_decks(side).capabilities_in_play.remove(card)
+    gs.side_decks(sd.card(card)["side"]).draw_deck.append(card)
+    if card == "S13":
+        gs.meta.notes.pop("gifts_coins", None)
+        gs.meta.notes.pop("gifts_taken", None)
+
+
+def h_capability_discard(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict:
+    """4.0: choose one excess board-edge Capability; repeat until at the limit."""
+    pending = next((p for p in gs.meta.pending if p["type"] == "capability_discard"), None)
+    if gs.meta.subphase != "campaign.capability_discard" or pending is None:
+        raise IllegalAction("wrong_step", "excess Capabilities are discarded before Plan (4.0)")
+    side = action.get("side", gs.meta.active_player)
+    if side != pending["side"]:
+        raise IllegalAction("wrong_actor", "the owner selects excess Capabilities, Seljuk first (4.0)")
+    card = action.get("card")
+    if not capability_excess(gs, side) or card not in gs.side_decks(side).capabilities_in_play:
+        raise IllegalAction("bad_capability_discard", "select a currently deployed board-edge Capability (4.0)")
+    _discard_side_capability(gs, side, card)
+    _continue_capability_discard(gs)
+    return {"ok": True, "action": "capability_discard", "side": side, "card": card,
+            "remaining": capability_excess(gs, side)}
+
+
 def _capability_discard(gs: GameState) -> None:
-    """4.0: each side discards side-wide Capabilities exceeding its number of
-    Mustered Lords (This-Lord Capabilities don't count). Seljuk first."""
+    """Deterministic standalone-helper default; public play requires choices."""
     for side in SIDES:
         n_lords = sum(1 for l in gs.lords.values() if l.mustered and l.side == side)
         decks = gs.side_decks(side)
         excess = len(decks.capabilities_in_play) - n_lords
-        # Deterministic auto-discard from the end (a player choice in principle;
-        # surfaced for the consumer in later phases). Returns cards to the deck.
         while excess > 0 and decks.capabilities_in_play:
-            card = decks.capabilities_in_play.pop()
-            decks.draw_deck.append(card)
+            _discard_side_capability(gs, side, decks.capabilities_in_play[-1])
             excess -= 1
 
 
@@ -1145,6 +1193,9 @@ def legal_moves_campaign(gs: GameState) -> list[dict[str, Any]]:
     waste = wastage_moves(gs)
     if waste is not None:
         return waste
+    discard = capability_discard_moves(gs)
+    if discard is not None:
+        return discard
     if any(p["type"] == "retain_themata" for p in gs.meta.pending):
         return _retention_moves(gs)
     kl = next((p for p in gs.meta.pending if p["type"] == "kleisourai"), None)

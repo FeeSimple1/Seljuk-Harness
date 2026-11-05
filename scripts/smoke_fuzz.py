@@ -71,7 +71,9 @@ def _rand_resolve_pending(s, rng, findings, tag):
     p = s.gs.meta.pending[0]
     t = p["type"]
     try:
-        if t == "approach_response":
+        if t == "capability_discard":
+            s.apply(rng.choice(engine.legal_moves(s.gs)))
+        elif t == "approach_response":
             choices = {}
             for d in p["defenders"]:
                 choices[d] = {"action": rng.choice(["stand", "stand", "withdraw"])}

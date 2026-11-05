@@ -13,6 +13,7 @@ SIDES = ("seljuk", "roman")
 LEVY_PRIORITY = ("wastage", "wastage_target", "deploy_capability", "event_pending_resolution", "imperial_coffers")
 CAMPAIGN_PRIORITY = (
     "wastage", "wastage_target",
+    "capability_discard",
     "retain_themata", "kleisourai", "summer_heat", "basil_response",
     "winter_quarters", "loyalty_check", "assign_themata_defenders",
     "approach_response", "besiege_or_bypass", "ravage_defence",
