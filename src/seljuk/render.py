@@ -8,7 +8,7 @@ or a Thema box. Rendering is descriptive only — it never recommends an action
 from __future__ import annotations
 
 from . import scenarios, static_data as sd
-from .state import GameState
+from .state import GameState, LordState, public_vassal_service
 
 _SEASON = {1: "Spring", 2: "Summer", 0: "Autumn"}
 
@@ -31,6 +31,17 @@ def _forces_str(forces: dict[str, int]) -> str:
 def _assets_str(a) -> str:
     parts = [f"{getattr(a, k)} {k}" for k in ("carts", "provender", "coin", "loot") if getattr(a, k)]
     return ", ".join(parts) if parts else "-"
+
+
+def _vassal_marker_name(marker: dict[str, int | str]) -> str:
+    if "special_name" in marker:
+        return str(marker["special_name"]).replace("_", " ")
+    return f"Vassal #{marker['vassal_index']}"
+
+
+def _vassal_service_str(gs: GameState, lord: LordState) -> str:
+    return ", ".join(f"{_vassal_marker_name(marker)} at box {marker['service_box']}"
+                     for marker in public_vassal_service(gs, lord))
 
 
 def summary(gs: GameState, viewing_side: str | None = None) -> str:
@@ -59,6 +70,9 @@ def summary(gs: GameState, viewing_side: str | None = None) -> str:
                     extra.append(_forces_str(l.unrouted_forces()))
                 if not hidden and l.capabilities:
                     extra.append("caps: " + ",".join(l.capabilities))
+                vassal_service = _vassal_service_str(gs, l)
+                if vassal_service:
+                    extra.append(f"Vassal Service: {vassal_service}")
                 detail = "  [" + " | ".join(extra) + "]" if extra else ""
                 lines.append(f"  {sd.lord(lid)['name']:22s} {status}{detail}")
             elif l.cylinder == "calendar":
@@ -108,9 +122,11 @@ def lord_view(gs: GameState, lord_id: str, viewing_side: str | None = None) -> s
     l = gs.lords[lord_id]
     info = sd.lord(lord_id)
     r = info["ratings"]
+    vassal_service = _vassal_service_str(gs, l)
     if viewing_side and l.side != viewing_side and l.mustered and gs.meta.options.get("hidden_mats"):
+        calendar = f"\n  Vassal Service: {vassal_service}" if vassal_service else ""
         return (f"{info['name']} [{l.side}] @ {sd.locale(l.cylinder)['name']}"
-                f"  Service {_box_label(l.service_box)}\nMat: <hidden>")
+                f"  Service {_box_label(l.service_box)}\nMat: <hidden>{calendar}")
     out = [
         f"{info['name']} — {info['epithet']}  [{l.side}]",
         f"  Fealty {r['fealty']}  Service {r['service']}  Lordship {r['lordship']}  Command {r['command']}",
@@ -121,6 +137,8 @@ def lord_view(gs: GameState, lord_id: str, viewing_side: str | None = None) -> s
         f"  Routed: {_forces_str(l.routed_forces())}",
         f"  Assets: {_assets_str(l.assets)}",
     ]
+    if vassal_service:
+        out.append(f"  Vassal Service: {vassal_service}")
     if l.vassals:
         vs = [
             (v.special_name or "Vassal") + f" ({_forces_str(v.forces)})" + (" [levied]" if v.levied else "")
@@ -172,8 +190,13 @@ def locale_view(gs: GameState, locale_id: str) -> str:
 
 
 def calendar_view(gs: GameState) -> str:
+    vassals = {}
+    for lid, lord in gs.lords.items():
+        for marker in public_vassal_service(gs, lord):
+            label = f"{sd.lord(lid)['name']} {_vassal_marker_name(marker)}"
+            vassals.setdefault(marker["service_box"], []).append(label)
     rows = []
-    for box in range(1, 13):
+    for box in sorted(set(range(1, 13)) | vassals.keys()):
         ready = [sd.lord(lid)["name"] for lid, l in gs.lords.items()
                  if not l.mustered and l.cylinder == "calendar" and l.cylinder_calendar_box == box]
         svc = [sd.lord(lid)["name"] for lid, l in gs.lords.items() if l.mustered and l.service_box == box]
@@ -188,6 +211,8 @@ def calendar_view(gs: GameState) -> str:
             line += "  Ready: " + ", ".join(ready)
         if svc:
             line += "  Service: " + ", ".join(svc)
+        if box in vassals:
+            line += "  Vassal Service: " + ", ".join(vassals[box])
         if tags:
             line += "  " + " ".join(tags)
         rows.append(line)

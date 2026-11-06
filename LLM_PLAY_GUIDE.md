@@ -290,8 +290,13 @@ unrevealed Plan cards are masked as `"<hidden>"`. Your own are fully visible, as
 are the opponent's already-revealed Command cards. The filtered view exposes
 only action types from replay history and omits the random seed/state; raw
 history includes secret plans and is not a player-safe event log. Human and JSON state/briefing views default to the decision owner and honor
-Hidden Mats. `history --raw`, raw save files, and direct render APIs without a
-viewing side remain trusted omniscient debugging access.
+Hidden Mats. With Vassal Service (6.2) enabled, public Calendar markers appear
+in the briefing and Calendar and Lord views. In filtered JSON and compact
+inspection, look for `public_vassal_service` on Lords with markers. Each
+entry gives the Vassal slot or special name and its Service box, including
+off-edge positions. Hidden Mats masks the opponent's Vassals on the mat.
+`history --raw`, raw save files, and direct render APIs without a viewing side
+remain trusted omniscient debugging access.
 
 ## Winning
 

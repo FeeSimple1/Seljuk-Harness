@@ -357,3 +357,23 @@ Validation: **1,308 tests passed**, including the Manzikert and Showdown
 replays. The move round-trip sweep passed across five scenarios and five seeds.
 
 Third-audit progress is **four of five Seljuk groups** and **22 of 23 overall**.
+
+## Third audit, batch 5 — IF3-02
+
+Vassal Service (6.2) exposes the identity and Service box of each levied
+Vassal whose marker is on or beside the Calendar. Filtered state and compact
+Lord inspection show those markers under `public_vassal_service`. The
+briefing, focused Lord view, and Calendar render the same public information.
+Hidden Mats masks enemy mat data, including Vassals without a
+Calendar marker, current Forces, Assets, and This Lord Capabilities.
+
+The regression starts Emperor and the Lion with both optional rules enabled,
+uses legal actions to Muster Alp Arslan's first Vassal, and checks both
+players' views, compact inspection, and the CLI after save/load. Additional
+checks cover shifted and off-edge markers, Special Vassals, and option gating.
+
+Validation: **1,315 tests passed**, including the Manzikert and Showdown
+replays. The move round-trip sweep passed across five scenarios and five seeds.
+Thirty randomized games reported no findings.
+
+Third-audit progress is **five of five Seljuk groups** and **23 of 23 overall**.

@@ -214,6 +214,20 @@ class GameState(_Model):
         return self.seljuk if side == "seljuk" else self.roman
 
 
+def public_vassal_service(gs: GameState, lord: LordState) -> list[dict[str, int | str]]:
+    """The face-up Vassal Service markers on or beside the Calendar (6.2)."""
+    if not lord.mustered or not gs.meta.options.get("vassal_service"):
+        return []
+    markers = []
+    for index, vassal in enumerate(lord.vassals):
+        if not vassal.levied or vassal.service_box is None:
+            continue
+        identity = ({"special_name": vassal.special_name} if vassal.special_name
+                    else {"vassal_index": index})
+        markers.append({**identity, "service_box": vassal.service_box})
+    return markers
+
+
 def shift_vassal_service(gs: "GameState", lord: "LordState", delta: int) -> None:
     """6.2 Vassal Service: whenever a Lord's Service Marker shifts for any reason,
     shift each of his Mustered Vassals' Markers the same number of boxes (2.2.3

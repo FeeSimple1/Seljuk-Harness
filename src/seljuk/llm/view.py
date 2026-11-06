@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..state import GameState
+from ..state import GameState, public_vassal_service
 from .routing import check_side, visible_pending
 
 
@@ -23,6 +23,11 @@ def filtered_state(gs: GameState, viewing_side: str) -> dict[str, Any]:
     pp = es.get("plan_pointer", 0)
     plan = es["command_plan"]
     es["command_plan"] = plan[:pp] + ["<hidden>"] * max(0, len(plan) - pp)  # only revealed cards shown
+    # Vassal Service markers on the Calendar are public even with Hidden Mats (6.2).
+    for lid, ld in d["lords"].items():
+        markers = public_vassal_service(gs, gs.lords[lid])
+        if markers:
+            ld["public_vassal_service"] = markers
     # The opponent's own card counts remain visible (legal information); only
     # identities of unrevealed/secret cards are masked.
     # 6.1 Hidden Mats: hide the enemy's Mustered Lord mats (Forces, Assets,
@@ -32,7 +37,7 @@ def filtered_state(gs: GameState, viewing_side: str) -> dict[str, Any]:
     # so there is no persistent in-battle window to expose here.)
     if gs.meta.options.get("hidden_mats"):
         _HIDDEN = "<hidden>"
-        for lid, ld in d["lords"].items():
+        for ld in d["lords"].values():
             if ld["side"] != enemy or not ld["mustered"]:
                 continue
             for field in ("forces", "routed", "lost", "vassals", "capabilities",
