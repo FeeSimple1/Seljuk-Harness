@@ -312,3 +312,26 @@ interface replays. The move round-trip sweep was clean across five scenarios
 and five seeds, and 30 randomized games reported no findings.
 
 Third-audit progress is **two of five Seljuk groups** and **20 of 23 overall**.
+
+## Third audit, batch 3 — SEL3-03
+
+Relief Sally (4.8.1) takes the approaching player's `sally_join` selection
+on `respond_approach`. Choose any subset of eligible Besieged Lords at the
+Battle Locale, including an empty list. Only participants enter the Sallying
+row, fight, and trigger the siege reduction after an attacking loss. Omission
+retains the historical all-join behavior for existing actions and replays.
+
+The compact interface presents the choice in the approaching player's input
+window. After playing Local Scouts, the approaching player can wait for the
+defender's response before choosing. Invalid selections reject atomically.
+The choice survives save/load and appears in the public Battle result.
+
+The public-action regressions cover every subset of two Lords, participation,
+Feeding, siege aftermath, ownership, invalid choices, and Local Scouts timing.
+The three cases exercising a strict subset failed on preceding main. The
+all-join case also detected the missing menu hint. The focused suite passed 104
+tests. The full suite passed **1,301 tests**, including the recorded Manzikert
+and Showdown games. The round-trip sweep passed across five scenarios and
+five seeds, and 30 randomized games reported no findings.
+
+Third-audit progress is **three of five Seljuk groups** and **21 of 23 overall**.

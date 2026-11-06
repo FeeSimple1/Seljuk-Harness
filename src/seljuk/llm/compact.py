@@ -17,7 +17,7 @@ from pathlib import Path
 import secrets
 from typing import Any
 
-from .. import engine, scenarios, static_data as sd, map as gmap, events
+from .. import campaign, engine, scenarios, static_data as sd, map as gmap, events
 from ..invariants import check_invariants
 from ..state import GameState, IllegalAction
 from . import briefing, contracts, reference, tools, view
@@ -481,6 +481,8 @@ class CompactInterface:
             raise InterfaceError("opponent_input", "The Roman player chooses whether to play Sultan's Horse.")
         if action.get("local_scouts") and action.get("type") == "respond_approach":
             raise InterfaceError("opponent_input", "The Approaching player supplies Local Scouts in its input window.")
+        if "sally_join" in action and action.get("type") == "respond_approach":
+            raise InterfaceError("opponent_input", "The Approaching player chooses which Lords join the Relief Sally.")
 
     def _public_joint(self):
         j = self._joint
@@ -490,12 +492,28 @@ class CompactInterface:
         # round declarations remain private until the engine resolves combat.
         public = {k: deepcopy(v) for k, v in j["action"].items()
                   if k in ("type", "lord", "target", "choices", "coins_for")}
+        if public["type"] == "respond_approach" and j["action"].get("local_scouts"):
+            public["local_scouts"] = deepcopy(j["action"]["local_scouts"])
         out = {"type": "joint_inputs", "owed_by": j["owed_by"], "committed_action": public,
                "resolution": "No dice committed yet; supply inputs. A decline is offered only when optional."}
         if j.get("bad_omens") and self.viewer == j["actor"]:
             out["inspected_roman_plan_cards"] = deepcopy(j["inspected"])
             out["requirement"] = "Play is declared; order must be chosen before any other action. Cannot cancel after inspection."
         return out
+
+    def _relief_sally_input(self, action, attacker, *, scouts_held=False):
+        scouts = action.get("local_scouts") or {}
+        responses = [scouts["action"] if scouts.get("lord") == lid else choice.get("action", "stand")
+                     for lid, choice in action["choices"].items()]
+        if "stand" not in responses and not (scouts_held and "avoid" in responses):
+            return {}
+        candidates = campaign._relief_sally_candidates(self.gs, current_pending(self.gs)["locale"], attacker)
+        if not candidates:
+            return {}
+        return {"sally_join": {
+            "eligible_lords": candidates,
+            "meaning": "Choose any subset if Battle occurs. [] keeps all inside; omission joins all.",
+        }}
 
     def _input_contract(self):
         action = self._joint["action"]
@@ -512,20 +530,29 @@ class CompactInterface:
             _, budget = actions.loyalty_coin_budgets(self.gs, self._joint["actor"], action["target"])
             return {"required": {"inputs": "Object containing coins_against (nonnegative integer), or {} to decline"},
                     "max_coins_against": budget}
+        if kind == "respond_approach" and action.get("local_scouts"):
+            relief = self._relief_sally_input(action, self.owed)
+            return {"required": {"inputs": "Object with your Relief Sally selection, or {} for the all-join default"},
+                    "parameters": list(relief), **relief}
         from .. import battle
         allowed = {"R21", "S21"} if kind == "cmd_storm" else battle._BATTLE_HOLDS
         recognized = set(contracts.parameter_names(engine._handlers_for_phase(self.gs.meta.phase)[kind]))
         input_fields = [k for k in ("battle_events", "steeled_rounds", "javelins_rounds",
                                    "battle_decisions", "storm_decisions", "local_scouts", "play_sultans_horse")
                         if k in recognized and k != "local_scouts"]
+        relief = {}
+        scouts_held = self.viewer == "roman" and "R18" in self.gs.roman.held_events
         if kind == "respond_approach":
             input_fields.append("play_local_scouts")
+            relief = self._relief_sally_input(action, self.owed, scouts_held=scouts_held)
+            input_fields.extend(relief)
         return {"required": {"inputs": "Object with your optional combat inputs, or {} to decline"},
                 "your_held_events": (sorted(set(self.gs.side_decks(self.viewer).held_events) & allowed)
                                      if "battle_events" in recognized else []),
                 "parameters": input_fields,
                 "your_sultans_horse_held": self.viewer == "roman" and "R4" in self.gs.roman.held_events,
-                "your_local_scouts_held": self.viewer == "roman" and "R18" in self.gs.roman.held_events,
+                "your_local_scouts_held": scouts_held,
+                **relief,
                 "script_contract": "Supply your own FIFO list. Per-player queues stay private and are dispatched only to that decision's owner; no overwrite or heuristic merge.",
                 "notes": "Use only your own events and round declarations. Engine timing/eligibility still applies.",
                 "references": ["battle", "guide", "cards", "decisions", "errata"]}
@@ -555,14 +582,29 @@ class CompactInterface:
                     or selected.get("action") not in ("stand", "withdraw")):
                 raise InterfaceError("bad_scouts_response", "Choose one of your Avoiding Lords and either Stand or Withdraw.")
             combined["local_scouts"] = deepcopy(selected)
+            attacker = other(actor)
+            if "sally_join" not in combined and self._relief_sally_input(combined, attacker):
+                # The Scout response may have changed who Stands. Check it on
+                # a copy before committing the response and handing control back.
+                LLMSession(GameState.from_json(self.gs.to_json())).apply(combined)
+                self._joint.update(action=combined, owed_by=attacker, scouts_requested=False)
+                self._sync()
+                return {"accepted": "awaiting_relief_sally", **self.overview(include_briefing=False)}
             return self._execute(combined, actor)
         loyalty = combined["type"] in ("resolve_loyalty", "discard_imperial_coffers")
-        allowed = {"coins_against"} if loyalty else set(self._input_contract()["parameters"])
+        input_contract = {} if loyalty else self._input_contract()
+        allowed = {"coins_against"} if loyalty else set(input_contract["parameters"])
         if set(inputs) - allowed:
             raise InterfaceError("opponent_input", "Inputs contain a field not owned by this response.")
         if not loyalty:
             self._scope_scripts(inputs, self.owed)
             self._validate_owned_inputs(inputs, self.owed)
+        if "sally_join" in inputs:
+            # Reject bad selections before a Local Scouts handoff commits
+            # the approaching player's inputs.
+            campaign._select_relief_salliers(
+                input_contract["sally_join"]["eligible_lords"], inputs["sally_join"],
+            )
         scouts = inputs.pop("play_local_scouts", False)
         if scouts and (combined["type"] != "respond_approach" or self.owed != "roman"
                        or "R18" not in self.gs.roman.held_events
@@ -596,7 +638,8 @@ class CompactInterface:
         # These are public resolutions, not arbitrary private replay payloads.
         allowed = {"natural", "modified", "fealty", "switched", "new_side", "target",
                    "surrender_roll", "threshold", "seized", "siegeworks_added", "conquered_by",
-                   "ruined", "winner", "rounds", "no_op", "reason", "cost", "avoided", "withdrew", "standers"}
+                   "ruined", "winner", "rounds", "no_op", "reason", "cost", "avoided", "withdrew", "standers",
+                   "relief_sally"}
         out = {k: deepcopy(v) for k, v in result.items() if k in allowed}
         for key in ("battle", "storm", "sally", "loyalty", "conquer"):
             if isinstance(result.get(key), dict):

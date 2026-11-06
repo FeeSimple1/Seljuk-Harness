@@ -1389,8 +1389,10 @@ def legal_moves_campaign(gs: GameState) -> list[dict[str, Any]]:
         att_side = gs.lords[ap["attackers"][0]].side
         holds = {"attacker": sorted(set(gs.side_decks(att_side).held_events) & battle._BATTLE_HOLDS),
                  "defender": sorted(set(gs.side_decks(_enemy(att_side)).held_events) & battle._BATTLE_HOLDS)}
+        salliers = _relief_sally_candidates(gs, ap["locale"], att_side)
         return [{"type": "respond_approach", "_defenders": ap["defenders"], "_locale": ap["locale"],
                  "_battle_holds_available": holds,
+                 **({"_sally_join": salliers} if salliers else {}),
                  "_javelins_rounds": "Optional {lord_id: round} for S11; default round 1",
                  "_desc": "Each defending Lord: Avoid Battle / Withdraw / Stand (4.3.4); "
                           "either side may pass in-Battle Held Events via battle_events"}]
@@ -2513,11 +2515,26 @@ def _award_avoid_spoils(gs: GameState, attacker_ids: list[str], loot: int, prov:
     distribute_spoils(gs, {"loot": loot, "provender": prov}, attacker_ids)
 
 
+def _relief_sally_candidates(gs: GameState, locale: str, side: str) -> list[str]:
+    return [lord.id for lord in gs.lords.values() if lord.mustered and lord.besieged
+            and lord.cylinder == locale and lord.side == side]
+
+
+def _select_relief_salliers(candidates: list[str], chosen: Any) -> list[str]:
+    if (not isinstance(chosen, list)
+            or any(not isinstance(lid, str) or lid not in candidates for lid in chosen)
+            or len(chosen) != len(set(chosen))):
+        raise IllegalAction("bad_sally_join",
+                            "Choose a list of distinct, eligible Besieged Lords for Relief Sally (4.8.1).")
+    return [lid for lid in candidates if lid in chosen]
+
+
 def h_respond_approach(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
     """4.3.4: each Inactive (defending) Lord chooses Avoid Battle, Withdraw, or
     Stand. ``choices`` maps lord_id -> {"action": "avoid"|"withdraw"|"stand",
-    "to": <locale for avoid>}. Standers (if any) trigger a Battle (resolved in
-    the Battle engine)."""
+    "to": <locale for avoid>}. Standers (if any) trigger a Battle. The
+    Approaching player may specify ``sally_join`` with any subset of eligible
+    Besieged Lords, including []. Omission uses the historical all-join default."""
     pend = next((p for p in gs.meta.pending if p["type"] == "approach_response"), None)
     if pend is None:
         raise IllegalAction("no_pending", "no Approach to respond to")
@@ -2525,6 +2542,8 @@ def h_respond_approach(gs: GameState, action: dict[str, Any], roller: DiceRoller
     choices = dict(action.get("choices", {}))
     side = gs.lords[pend["defenders"][0]].side
     att_side = gs.lords[pend["attackers"][0]].side
+    candidates = _relief_sally_candidates(gs, to, att_side)
+    sallying = _select_relief_salliers(candidates, action.get("sally_join", candidates))
     ls = action.get("local_scouts")
     if ls and "R18" in gs.side_decks(att_side).held_events and ls.get("lord") in choices:
         # R18 Local Scouts: the playing side forces one Avoiding Lord to Battle/Withdraw.
@@ -2585,17 +2604,7 @@ def h_respond_approach(gs: GameState, action: dict[str, Any], roller: DiceRoller
     _refresh_invest(gs, to)
     if standers:
         from . import battle
-        attackers = list(pend["attackers"])
-        att_side = gs.lords[attackers[0]].side
-        # Relief Sally (4.8.1): friendly Besieged Lords at this Locale join the
-        # relief Attack for no extra Command actions. The full array (Sallying row
-        # behind the Defenders, a Defending Rearguard row, the no-Rearguard Flank
-        # fallback, and Siegeworks reducing Sallying Strikes only) is resolved in
-        # battle.begin_battle / _fill_rearguard and pinned by
-        # test_phase6_relief_rearguard.py.
-        sallying = [lid for lid, l in gs.lords.items()
-                    if l.mustered and l.cylinder == to and l.side == att_side and l.besieged]
-        attackers += sallying
+        attackers = list(pend["attackers"]) + sallying
         res = battle.begin_battle(gs, attackers, standers, to,
                                   scripted=action.get("battle_decisions"),
                                   events=action.get("battle_events"),
@@ -2603,9 +2612,10 @@ def h_respond_approach(gs: GameState, action: dict[str, Any], roller: DiceRoller
                                   siegeworks=gs.locales[to].siege_markers if sallying else 0,
                                   approach_origin=approach_origin,
                                   steeled_rounds=action.get("steeled_rounds"),
-                              javelins_rounds=action.get("javelins_rounds"))
+                                  javelins_rounds=action.get("javelins_rounds"))
+        if sallying or "sally_join" in action:
+            res["relief_sally"] = sallying
         if sallying:
-            res["relief_sally"] = list(sallying)
             for lid in sallying:                       # Sallying Lords withdraw back inside
                 if lid in gs.lords and gs.lords[lid].mustered:
                     gs.lords[lid].besieged = True

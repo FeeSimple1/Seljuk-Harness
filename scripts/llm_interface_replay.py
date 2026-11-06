@@ -79,6 +79,8 @@ def prepare(gs, action, actor):
                 dest.setdefault(field, {})[key] = deepcopy(val)
     if 'coins_against' in primary:
         extra['coins_against'] = primary.pop('coins_against')
+    if 'sally_join' in primary:
+        extra['sally_join'] = primary.pop('sally_join')
     if primary.get('play_sultans_horse') and actor != 'roman':
         extra['play_sultans_horse'] = primary.pop('play_sultans_horse')
     if primary['type'] == 'resolve_event':
