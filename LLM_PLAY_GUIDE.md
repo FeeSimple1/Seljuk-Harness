@@ -265,6 +265,16 @@ Lords Avoiding to the same destination share spare Carts. Each Lord uses
 his own Carts first, then the group's spare capacity. Provender stays on its
 original mat. Loot and excess Provender become the Approaching Lords'
 Spoils. Carts are pooled only within the group that Avoids together.
+The Approaching player can pass `avoid_spoils_decisions` on a trusted
+`respond_approach` action or in the compact input window. For each Asset in
+order (Loot, then Provender), use `["spoils_recipient", LORD]` followed by
+`["spoils_amount", COUNT]`. Repeat to split the pool. The compact window
+shows the final pool and room on eligible mats after any Local Scouts
+decision. Omitted choices fill the first eligible mats with room, up to
+eight of each Asset per Lord. The receipt shows any excess lost to that cap.
+Use `battle_decisions` for a Battle that follows. In a response with no
+Battle, `battle_decisions` can also supply the Avoid allocation when
+`avoid_spoils_decisions` is omitted.
 
 Themata `symbols` are the printed marker capacity. On a Lord's mat, optional
 `strength` records surviving units and `routed` records its routed subset; a

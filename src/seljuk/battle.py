@@ -1035,6 +1035,11 @@ def _natural_protection(unit: str) -> tuple[int, int]:
     return _ARMORED[unit]
 
 
+def _spoils_recipients(gs: GameState, recipients: list[str]) -> list[str]:
+    return [lid for lid in dict.fromkeys(recipients)
+            if lid in gs.lords and gs.lords[lid].mustered and not _is_routed(gs.lords[lid])]
+
+
 def distribute_spoils(gs: GameState, pool: dict[str, int], recipients: list[str],
                       ctx: DecisionContext | None = None) -> dict[str, Any]:
     """Allocate captured Assets with owner choices and the per-type 8 cap.
@@ -1044,9 +1049,7 @@ def distribute_spoils(gs: GameState, pool: dict[str, int], recipients: list[str]
     make every legal split reachable without a decision for every marker.
     """
     ctx = ctx or DecisionContext()
-    recipients = [lid for lid in dict.fromkeys(recipients)
-                  if lid in gs.lords and gs.lords[lid].mustered
-                  and not _is_routed(gs.lords[lid])]
+    recipients = _spoils_recipients(gs, recipients)
     distributed: dict[str, dict[str, int]] = {}
     lost: dict[str, int] = {}
     for asset, amount in pool.items():

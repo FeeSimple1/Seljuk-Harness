@@ -460,7 +460,7 @@ class CompactInterface:
 
     @staticmethod
     def _scope_scripts(action, actor):
-        for key in ("battle_decisions", "storm_decisions"):
+        for key in ("battle_decisions", "storm_decisions", "avoid_spoils_decisions"):
             if key in action:
                 if isinstance(action[key], list):
                     action[key] = {actor: action[key]}
@@ -483,6 +483,8 @@ class CompactInterface:
             raise InterfaceError("opponent_input", "The Approaching player supplies Local Scouts in its input window.")
         if "sally_join" in action and action.get("type") == "respond_approach":
             raise InterfaceError("opponent_input", "The Approaching player chooses which Lords join the Relief Sally.")
+        if "avoid_spoils_decisions" in action and action.get("type") == "respond_approach":
+            raise InterfaceError("opponent_input", "The Approaching player distributes Avoid Battle Spoils.")
 
     def _public_joint(self):
         j = self._joint
@@ -515,6 +517,31 @@ class CompactInterface:
             "meaning": "Choose any subset if Battle occurs. [] keeps all inside; omission joins all.",
         }}
 
+    def _avoid_spoils_input(self, action):
+        from ..battle import _spoils_recipients
+
+        pending = current_pending(self.gs)
+        choices, _ = campaign._approach_choices(self.gs, pending, action)
+        keep = campaign._approach_avoid_provender(self.gs, pending, choices)
+        pool = campaign._avoid_spoils_pool(self.gs, keep)
+        recipients = _spoils_recipients(self.gs, pending["attackers"])
+        room = {asset: {lid: 8 - getattr(self.gs.lords[lid].assets, asset) for lid in recipients
+                        if getattr(self.gs.lords[lid].assets, asset) < 8}
+                for asset, amount in pool.items() if amount > 0}
+        if not any(len(caps) > 1 and pool[asset] < sum(caps.values()) for asset, caps in room.items()):
+            return {}  # forced distribution, or nothing to allocate
+        return {"avoid_spoils_decisions": {
+            "pool": pool, "recipient_capacity": room, "asset_order": ["loot", "provender"],
+            "meaning": "For each Asset, use [spoils_recipient, LORD] then [spoils_amount, COUNT]. "
+                       "Repeat to split the pool. Omit for the first eligible mats with room.",
+        }}
+
+    def _approach_followup_inputs(self, action, attacker):
+        choices = self._avoid_spoils_input(action)
+        if action.get("local_scouts") and "sally_join" not in action:
+            choices.update(self._relief_sally_input(action, attacker))
+        return choices
+
     def _input_contract(self):
         action = self._joint["action"]
         kind = action["type"]
@@ -530,29 +557,34 @@ class CompactInterface:
             _, budget = actions.loyalty_coin_budgets(self.gs, self._joint["actor"], action["target"])
             return {"required": {"inputs": "Object containing coins_against (nonnegative integer), or {} to decline"},
                     "max_coins_against": budget}
-        if kind == "respond_approach" and action.get("local_scouts"):
-            relief = self._relief_sally_input(action, self.owed)
-            return {"required": {"inputs": "Object with your Relief Sally selection, or {} for the all-join default"},
-                    "parameters": list(relief), **relief}
+        if kind == "respond_approach" and (action.get("local_scouts") or self._joint.get("avoid_spoils_pending")):
+            choices = self._approach_followup_inputs(action, self.owed)
+            return {"required": {"inputs": "Object with your Approach choices, or {} to accept the defaults"},
+                    "parameters": list(choices), **choices}
         from .. import battle
         allowed = {"R21", "S21"} if kind == "cmd_storm" else battle._BATTLE_HOLDS
         recognized = set(contracts.parameter_names(engine._handlers_for_phase(self.gs.meta.phase)[kind]))
         input_fields = [k for k in ("battle_events", "steeled_rounds", "javelins_rounds",
                                    "battle_decisions", "storm_decisions", "local_scouts", "play_sultans_horse")
                         if k in recognized and k != "local_scouts"]
-        relief = {}
+        approach_choices = {}
         scouts_held = self.viewer == "roman" and "R18" in self.gs.roman.held_events
         if kind == "respond_approach":
             input_fields.append("play_local_scouts")
-            relief = self._relief_sally_input(action, self.owed, scouts_held=scouts_held)
-            input_fields.extend(relief)
+            approach_choices = self._relief_sally_input(action, self.owed, scouts_held=scouts_held)
+            if scouts_held and any(choice.get("action") == "avoid" for choice in action["choices"].values()):
+                # Keep hidden discard amounts private until the Scouts decision is final.
+                approach_choices["avoid_spoils_after_scouts"] = True
+            else:
+                approach_choices.update(self._avoid_spoils_input(action))
+            input_fields.extend(k for k in approach_choices if k != "avoid_spoils_after_scouts")
         return {"required": {"inputs": "Object with your optional combat inputs, or {} to decline"},
                 "your_held_events": (sorted(set(self.gs.side_decks(self.viewer).held_events) & allowed)
                                      if "battle_events" in recognized else []),
                 "parameters": input_fields,
                 "your_sultans_horse_held": self.viewer == "roman" and "R4" in self.gs.roman.held_events,
                 "your_local_scouts_held": scouts_held,
-                **relief,
+                **approach_choices,
                 "script_contract": "Supply your own FIFO list. Per-player queues stay private and are dispatched only to that decision's owner; no overwrite or heuristic merge.",
                 "notes": "Use only your own events and round declarations. Engine timing/eligibility still applies.",
                 "references": ["battle", "guide", "cards", "decisions", "errata"]}
@@ -583,13 +615,13 @@ class CompactInterface:
                 raise InterfaceError("bad_scouts_response", "Choose one of your Avoiding Lords and either Stand or Withdraw.")
             combined["local_scouts"] = deepcopy(selected)
             attacker = other(actor)
-            if "sally_join" not in combined and self._relief_sally_input(combined, attacker):
+            if self._approach_followup_inputs(combined, attacker):
                 # The Scout response may have changed who Stands. Check it on
                 # a copy before committing the response and handing control back.
                 LLMSession(GameState.from_json(self.gs.to_json())).apply(combined)
                 self._joint.update(action=combined, owed_by=attacker, scouts_requested=False)
                 self._sync()
-                return {"accepted": "awaiting_relief_sally", **self.overview(include_briefing=False)}
+                return {"accepted": "awaiting_approach_choices", **self.overview(include_briefing=False)}
             return self._execute(combined, actor)
         loyalty = combined["type"] in ("resolve_loyalty", "discard_imperial_coffers")
         input_contract = {} if loyalty else self._input_contract()
@@ -611,7 +643,8 @@ class CompactInterface:
                        or not any(ch.get("action") == "avoid" for ch in combined.get("choices", {}).values())):
             raise InterfaceError("bad_scouts_play", "Local Scouts requires your held R18 and an enemy Avoiding Lord.")
         for key, value in inputs.items():
-            if key in ("battle_events", "steeled_rounds", "javelins_rounds", "battle_decisions", "storm_decisions"):
+            if key in ("battle_events", "steeled_rounds", "javelins_rounds",
+                       "battle_decisions", "storm_decisions", "avoid_spoils_decisions"):
                 combined.setdefault(key, {}).update(deepcopy(value))
             else:
                 combined[key] = deepcopy(value)
@@ -619,6 +652,10 @@ class CompactInterface:
             self._joint.update(action=combined, owed_by=actor, scouts_requested=True)
             self._sync()
             return {"accepted": "Local Scouts; enemy chooses Lord and response", **self.overview(include_briefing=False)}
+        if input_contract.get("avoid_spoils_after_scouts") and self._avoid_spoils_input(combined):
+            self._joint.update(action=combined, avoid_spoils_pending=True)
+            self._sync()
+            return {"accepted": "awaiting_avoid_spoils", **self.overview(include_briefing=False)}
         return self._execute(combined, actor)
 
     def cancel_inputs(self, *, version):
@@ -639,7 +676,7 @@ class CompactInterface:
         allowed = {"natural", "modified", "fealty", "switched", "new_side", "target",
                    "surrender_roll", "threshold", "seized", "siegeworks_added", "conquered_by",
                    "ruined", "winner", "rounds", "no_op", "reason", "cost", "avoided", "withdrew", "standers",
-                   "relief_sally"}
+                   "relief_sally", "avoid_spoils"}
         out = {k: deepcopy(v) for k, v in result.items() if k in allowed}
         for key in ("battle", "storm", "sally", "loyalty", "conquer"):
             if isinstance(result.get(key), dict):

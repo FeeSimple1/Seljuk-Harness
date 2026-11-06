@@ -335,3 +335,25 @@ and Showdown games. The round-trip sweep passed across five scenarios and
 five seeds, and 30 randomized games reported no findings.
 
 Third-audit progress is **three of five Seljuk groups** and **21 of 23 overall**.
+
+## Third audit, batch 4 — SEL3-04
+
+The approaching player can distribute the Loot and excess Provender left
+by Avoiding Lords (4.3.4, 4.8.3). The shared Spoils allocator applies the
+eight-marker cap to each Asset on each eligible approaching Lord's mat.
+The response reports the pool, transfers, and any amount lost to the cap.
+
+Use `avoid_spoils_decisions` for a separate allocation script. A response
+without Battle also accepts the existing `battle_decisions` script for this
+purpose. Omission fills eligible mats in their existing order. If Battle
+follows, its own script and Spoils pool are resolved separately.
+
+The compact input window shows the final pool and eligible capacity to its
+owner. When Local Scouts could change who Avoids, the final pool is shown
+after the card decision and any defender response. Tests cover owner routing,
+save/load, mixed Avoid and Stand, cap overflow, and Hidden Mats timing.
+
+Validation: **1,308 tests passed**, including the Manzikert and Showdown
+replays. The move round-trip sweep passed across five scenarios and five seeds.
+
+Third-audit progress is **four of five Seljuk groups** and **22 of 23 overall**.

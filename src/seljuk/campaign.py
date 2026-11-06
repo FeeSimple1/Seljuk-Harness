@@ -2508,11 +2508,46 @@ def _resolve_arrival(gs: GameState, group: list[LordState], to: str,
     return {}
 
 
-def _award_avoid_spoils(gs: GameState, attacker_ids: list[str], loot: int, prov: int) -> None:
-    """4.3.4/4.8.3: the Approaching Lords receive and divide Assets a Lord
-    discarded to Avoid Battle (capacity-aware default, 8-cap)."""
-    from .battle import distribute_spoils
-    distribute_spoils(gs, {"loot": loot, "provender": prov}, attacker_ids)
+def _award_avoid_spoils(gs: GameState, attacker_ids: list[str], pool: dict[str, int],
+                       scripted: list | dict[str, list] | None = None) -> dict:
+    """4.3.4/4.8.3: the Approaching player distributes Assets discarded to Avoid."""
+    from .battle import DecisionContext, distribute_spoils
+    return {"pool": pool, **distribute_spoils(gs, pool, attacker_ids, DecisionContext(scripted))}
+
+
+def _approach_choices(gs: GameState, pend: dict, action: dict) -> tuple[dict, bool]:
+    """Resolve the effective responses without spending Local Scouts."""
+    choices = dict(action.get("choices", {}))
+    att_side = gs.lords[pend["attackers"][0]].side
+    scouts = action.get("local_scouts")
+    if scouts and "R18" in gs.side_decks(att_side).held_events:
+        lid = scouts.get("lord")
+        if choices.get(lid, {}).get("action") == "avoid":
+            choices[lid] = {"action": scouts.get("action", "stand")}
+            return choices, True
+    return choices, False
+
+
+def _approach_avoid_provender(gs: GameState, pend: dict, choices: dict) -> dict[str, int]:
+    """Validate Avoid destinations and determine how much food each Lord keeps."""
+    groups: dict[str, list[str]] = {}
+    for lid in pend["defenders"]:
+        choice = choices.get(lid, {})
+        if choice.get("action") == "avoid":
+            dest = choice.get("to")
+            lord = gs.lords[lid]
+            _validate_avoid(gs, lord, pend["locale"], dest, lord.side, pend.get("from"))
+            groups.setdefault(dest, []).append(lid)
+    keep = {}
+    for group in groups.values():
+        keep.update(_shared_unladen_provender(gs, group))
+    return keep
+
+
+def _avoid_spoils_pool(gs: GameState, keep_provender: dict[str, int]) -> dict[str, int]:
+    return {"loot": sum(gs.lords[lid].assets.loot for lid in keep_provender),
+            "provender": sum(gs.lords[lid].assets.provender - kept
+                             for lid, kept in keep_provender.items())}
 
 
 def _relief_sally_candidates(gs: GameState, locale: str, side: str) -> list[str]:
@@ -2534,37 +2569,25 @@ def h_respond_approach(gs: GameState, action: dict[str, Any], roller: DiceRoller
     Stand. ``choices`` maps lord_id -> {"action": "avoid"|"withdraw"|"stand",
     "to": <locale for avoid>}. Standers (if any) trigger a Battle. The
     Approaching player may specify ``sally_join`` with any subset of eligible
-    Besieged Lords, including []. Omission uses the historical all-join default."""
+    Besieged Lords, including []. Omission uses the historical all-join default.
+    ``avoid_spoils_decisions`` allocates Avoid discards before Battle, using the
+    usual Spoils choices. In an Avoid-only response, ``battle_decisions`` also works."""
     pend = next((p for p in gs.meta.pending if p["type"] == "approach_response"), None)
     if pend is None:
         raise IllegalAction("no_pending", "no Approach to respond to")
     to = pend["locale"]
-    choices = dict(action.get("choices", {}))
+    choices, scouts_played = _approach_choices(gs, pend, action)
     side = gs.lords[pend["defenders"][0]].side
     att_side = gs.lords[pend["attackers"][0]].side
     candidates = _relief_sally_candidates(gs, to, att_side)
     sallying = _select_relief_salliers(candidates, action.get("sally_join", candidates))
-    ls = action.get("local_scouts")
-    if ls and "R18" in gs.side_decks(att_side).held_events and ls.get("lord") in choices:
-        # R18 Local Scouts: the playing side forces one Avoiding Lord to Battle/Withdraw.
-        if choices[ls["lord"]].get("action") == "avoid":
-            choices[ls["lord"]] = {"action": ls.get("action", "stand")}
-            gs.side_decks(att_side).held_events.remove("R18")
-            gs.side_decks(att_side).draw_deck.append("R18")
+    if scouts_played:
+        gs.side_decks(att_side).held_events.remove("R18")
+        gs.side_decks(att_side).draw_deck.append("R18")
     standers, avoided, withdrew = [], [], []
     approach_origin = pend.get("from")  # SMOKE-006: Locale the Attackers Approached from
-    # Co-Avoiders share spare Carts only along their common destination.
-    # Provender stays on its original mat, with own Carts used first.
-    avoid_groups: dict[str, list[str]] = {}
-    for did in pend["defenders"]:
-        ch = choices.get(did, {})
-        if ch.get("action") == "avoid":
-            dest = ch.get("to")
-            _validate_avoid(gs, gs.lords[did], to, dest, side, approach_origin)
-            avoid_groups.setdefault(dest, []).append(did)
-    keep_provender = {}
-    for group in avoid_groups.values():
-        keep_provender.update(_shared_unladen_provender(gs, group))
+    keep_provender = _approach_avoid_provender(gs, pend, choices)
+    pool = _avoid_spoils_pool(gs, keep_provender)
     # 4.3.4: Withdraw is limited to the Stronghold's Size (incl. Lords already inside).
     inside = sum(1 for l in gs.lords.values()
                  if l.mustered and l.cylinder == to and l.besieged and l.side == side)
@@ -2581,11 +2604,8 @@ def h_respond_approach(gs: GameState, action: dict[str, Any], roller: DiceRoller
             dest = ch.get("to")
             # 4.3.4: discard Loot and excess Provender to become Unladen; the
             # Approaching Enemy Lords receive and divide the discarded Assets.
-            disc_loot = lord.assets.loot
-            disc_prov = lord.assets.provender - keep_provender[did]
             lord.assets.loot = 0
             lord.assets.provender = keep_provender[did]
-            _award_avoid_spoils(gs, pend["attackers"], disc_loot, disc_prov)
             if (lord.side == "seljuk"
                     and any(w["type"] == "pass" for w in gmap.ways_between(to, dest))):
                 gs.meta.notes.setdefault("_kleisourai_crossers", []).append(did)  # R23: Avoid across Pass
@@ -2598,6 +2618,11 @@ def h_respond_approach(gs: GameState, action: dict[str, Any], roller: DiceRoller
             withdrew.append(did)
         else:
             standers.append(did)
+    result = {"ok": True, "action": "respond_approach"}
+    if any(pool.values()):
+        # A separate queue leaves any ensuing Battle script untouched.
+        scripted = action.get("avoid_spoils_decisions", None if standers else action.get("battle_decisions"))
+        result["avoid_spoils"] = _award_avoid_spoils(gs, pend["attackers"], pool, scripted)
     gs.meta.pending.remove(pend)
     # 4.3.5: relief is immediate when the last besieger Avoids. Waiting until
     # end-of-card Disband exposes stale Siege/Storm actions and trapped Lords.
@@ -2628,20 +2653,20 @@ def h_respond_approach(gs: GameState, action: dict[str, Any], roller: DiceRoller
         _refresh_invest(gs, to)
         gs.meta.actions_remaining = 0
         if gs.meta.phase == "campaign" and _campaign_5_2_over(gs):
-            return {"ok": True, "action": "respond_approach", "battle": res}
+            return {**result, "battle": res}
         outside = [l for l in gs.lords.values()
                    if on_map(l) and l.cylinder == to and not l.besieged]
         arrival = _resolve_arrival(gs, outside, to) if outside else {}
         # Battle has ended the card, even when the winner chooses Bypass.
         if not arrival.get("pending"):
             _after_card(gs)
-        return {"ok": True, "action": "respond_approach", "battle": res, **arrival}
+        return {**result, "battle": res, **arrival}
     # No defenders left to fight -> the attacker may now Besiege/Bypass if a
     # Stronghold remains, else the card continues.
     arrival = _resolve_arrival(gs, [gs.lords[a] for a in pend["attackers"]], to)
     if not arrival.get("pending") and gs.meta.actions_remaining <= 0:
         _after_card(gs)
-    return {"ok": True, "action": "respond_approach", "avoided": avoided,
+    return {**result, "avoided": avoided,
             "withdrew": withdrew, "standers": standers, **arrival}
 
 

@@ -98,6 +98,136 @@ def test_bad_group_avoid_is_atomic_and_retry_matches_a_pristine_save():
     assert state.to_json() == retry.to_json()
 
 
+def grouped_approach():
+    state = position()
+    first = place(state, "alp_arslan", "edessa")
+    second = place(state, "afsin_beg", "edessa")
+    defender = place(state, "chatatourios", loot=2, provender=2)
+    engine.apply_action(state, {"type": "cmd_march", "lord": first.id, "to": "melitene",
+                                "group": [second.id]})
+    return state, first, second, defender, {
+        "type": "respond_approach", "choices": {defender.id: {"action": "avoid", "to": "larisa"}},
+    }
+
+
+def spoils_script(*allocations):
+    return [entry for lid, amount in allocations
+            for entry in (["spoils_recipient", lid], ["spoils_amount", amount])]
+
+
+@pytest.mark.parametrize("key", ["avoid_spoils_decisions", "battle_decisions"])
+def test_approaching_player_can_send_all_avoid_spoils_to_a_second_lord(key):
+    state, first, second, defender, action = grouped_approach()
+    result = engine.apply_action(state, {
+        **action, key: {"seljuk": spoils_script((second.id, 2), (second.id, 2))},
+    })
+    assert defender.cylinder == "larisa" and defender.assets == Assets()
+    assert first.assets == Assets()
+    assert second.assets == Assets(loot=2, provender=2)
+    assert result["pending"] == "besiege_or_bypass"
+    assert result["avoid_spoils"] == {
+        "pool": {"loot": 2, "provender": 2},
+        "distributed": {second.id: {"loot": 2, "provender": 2}},
+        "lost_to_cap": {},
+    }
+
+
+def test_avoid_spoils_respects_caps_and_reports_unplaceable_excess():
+    state, first, second, _, action = grouped_approach()
+    first.assets.provender, first.assets.loot = 8, 7
+    second.assets.provender, second.assets.loot = 7, 7
+    result = engine.apply_action(state, {
+        **action, "avoid_spoils_decisions": spoils_script((second.id, 1), (first.id, 1), (second.id, 1)),
+    })["avoid_spoils"]
+    assert first.assets.loot == first.assets.provender == 8
+    assert second.assets.loot == second.assets.provender == 8
+    assert result["distributed"] == {second.id: {"loot": 1, "provender": 1}, first.id: {"loot": 1}}
+    assert result["lost_to_cap"] == {"provender": 1}
+
+
+def test_avoid_and_battle_spoils_have_independent_owner_queues():
+    state, first, second, _, action = grouped_approach()
+    first.forces = {"infantry": 4}
+    second.forces = {"infantry": 4}
+    stander = place(state, "romanos_diogenes", loot=3)
+    stander.forces = {"infantry": 4}
+    state.meta.pending[0]["defenders"].append(stander.id)
+    action["choices"][stander.id] = {"action": "stand"}
+    result = engine.apply_action(state, {
+        **action,
+        "avoid_spoils_decisions": {"seljuk": spoils_script((second.id, 1), (first.id, 1), (second.id, 2))},
+        "battle_decisions": {
+            "seljuk": [["concede", False], *spoils_script((second.id, 3))],
+            "roman": [["concede", True], ["retreat", ["retreat", "larisa"]]],
+        },
+    })
+    assert result["avoid_spoils"]["distributed"] == {
+        second.id: {"loot": 1, "provender": 2}, first.id: {"loot": 1},
+    }
+    assert result["battle"]["conceder"] == "defender"
+    assert result["battle"]["ending"]["spoils"]["distributed"] == {second.id: {"loot": 3}}
+
+
+def test_compact_avoid_spoils_owner_can_preview_split_and_resume(tmp_path):
+    state, first, second, _, action = grouped_approach()
+    state.meta.options["hidden_mats"] = True
+    ui = CompactInterface(LLMSession(state))
+    before = state.to_json()
+    script = spoils_script((second.id, 1), (first.id, 1), (second.id, 2))
+    with pytest.raises(InterfaceError, match="Approaching player distributes"):
+        ui.apply({**action, "avoid_spoils_decisions": script}, version=ui.version)
+    assert ui.owed == "roman" and ui.gs.to_json() == before
+    ui.apply(action, version=ui.version)
+    row = ui.actions(type="supply_inputs")["entries"][0]
+    details = ui.details(row["id"])["help"]["avoid_spoils_decisions"]
+    assert ui.owed == "seljuk" and ui.gs.to_json() == before
+    assert details["pool"] == {"loot": 2, "provender": 2}
+    assert details["recipient_capacity"] == {asset: {first.id: 8, second.id: 8}
+                                             for asset in ("loot", "provender")}
+    saved = tmp_path / "avoid-spoils.json"
+    ui.save(saved)
+    ui = CompactInterface.load(saved)
+    with pytest.raises(InterfaceError, match="own combat script"):
+        ui.apply(row["id"], parameters={"inputs": {"avoid_spoils_decisions": {"roman": script}}})
+    receipt = ui.apply(row["id"], parameters={"inputs": {"avoid_spoils_decisions": script}})
+    assert receipt["outcome"]["avoid_spoils"]["distributed"] == {
+        second.id: {"loot": 1, "provender": 2}, first.id: {"loot": 1},
+    }
+
+
+@pytest.mark.parametrize("use_scouts", [False, True])
+def test_hidden_avoid_spoils_are_revealed_only_after_local_scouts_choice(use_scouts):
+    state = position()
+    state.meta.options["hidden_mats"] = True
+    state.meta.active_player = "roman"
+    first = place(state, "romanos_diogenes", "laodikeia")
+    second = place(state, "chatatourios", "laodikeia")
+    state.meta.active_card = state.meta.active_lord = first.id
+    avoider = place(state, "afsin_beg", "antioch", loot=2)
+    scout_target = place(state, "alp_arslan", "antioch", loot=4)
+    state.roman.draw_deck.remove("R18")
+    state.roman.held_events.append("R18")
+    engine.apply_action(state, {"type": "cmd_march", "lord": first.id, "to": "antioch", "group": [second.id]})
+    ui = CompactInterface(LLMSession(state))
+    ui.apply({"type": "respond_approach",
+              "choices": {lord.id: {"action": "avoid", "to": "artah"} for lord in (avoider, scout_target)}},
+             version=ui.version)
+    row = ui.actions(type="supply_inputs")["entries"][0]
+    assert "avoid_spoils_decisions" not in ui.details(row["id"])["help"]
+    ui.apply(row["id"], parameters={"inputs": {"play_local_scouts": use_scouts,
+                                               "battle_decisions": [["concede", True]]}})
+    if use_scouts:
+        assert ui.owed == "seljuk"
+        ui.apply({"type": "supply_inputs", "inputs": {"local_scouts": {"lord": scout_target.id, "action": "stand"}}},
+                 version=ui.version)
+    assert ui.owed == "roman" and ui.gs.to_json() == state.to_json()
+    row = ui.actions(type="supply_inputs")["entries"][0]
+    loot = 2 if use_scouts else 6
+    assert ui.details(row["id"])["help"]["avoid_spoils_decisions"]["pool"] == {"loot": loot, "provender": 0}
+    result = ui.apply(row["id"], parameters={"inputs": {"avoid_spoils_decisions": spoils_script((second.id, loot))}})
+    assert result["outcome"]["avoid_spoils"]["distributed"] == {second.id: {"loot": loot}}
+
+
 def end_position(*, cap=None):
     state = position()
     state.meta.calendar_box = 1

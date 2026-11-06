@@ -249,7 +249,7 @@ def test_avoid_spoils_overflow_also_reaches_ally_with_room():
     state = position()
     first = place(state, "alp_arslan", provender=8, loot=8)
     second = place(state, "afsin_beg")
-    campaign._award_avoid_spoils(state, [first.id, second.id], loot=3, prov=2)
+    campaign._award_avoid_spoils(state, [first.id, second.id], {"loot": 3, "provender": 2})
     assert second.assets.loot == 3 and second.assets.provender == 2
     assert first.assets.loot == first.assets.provender == 8
 

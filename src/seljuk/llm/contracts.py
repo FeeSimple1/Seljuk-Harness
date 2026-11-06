@@ -147,7 +147,8 @@ def contract(gs, move, side):
                    max_markers=battle._value(loc), locale=loc, thema=home,
                    available=[{"index": i, **m.model_dump()} for i, m in enumerate(gs.themata[home])])
     elif kind == "respond_approach":
-        out["parameters"].remove("sally_join")  # selected in the approaching player's input window
+        out["parameters"] = [key for key in out["parameters"]
+                             if key not in ("sally_join", "avoid_spoils_decisions")]
         pending = current_pending(gs)
         loc = pending["locale"]
         defenders = pending["defenders"]
@@ -174,7 +175,7 @@ def contract(gs, move, side):
                    choices=choices, max_total_withdrawals=max(0, campaign._stronghold_size(gs, loc)-inside),
                    notes=["Withdrawal capacity is shared, not a separate allowance per Lord.",
                           "Lords Avoiding to the same destination share spare Carts. Food stays on its mat, with own Carts used first. Loot and excess Provender become Spoils.",
-                          "The opponent can supply Local Scouts, combat inputs, and any Relief Sally selection."])
+                          "The opponent controls Local Scouts, Avoid Spoils, Relief Sally, and its own combat inputs."])
     elif kind == "cmd_march":
         out["notes"] = ["Optional group uses _co_marchers / _co_marcher_max; the engine recomputes group cost.",
                         "Discard variants remain distinct menu rows; no variant is silently selected.",
