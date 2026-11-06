@@ -126,6 +126,74 @@ def test_conceding_retreat_removed_by_losses_transfers_all_assets():
     assert winner.assets.coin == 3 and winner.assets.carts == 2
 
 
+@pytest.mark.parametrize(
+    "first_transport,second_transport,second_fate,kept",
+    [
+        ((2, 0), (0, 2), ["retreat", "larisa"], (2, 0)),
+        ((4, 1), (1, 2), ["retreat", "larisa"], (2, 1)),
+        ((1, 3), (4, 0), ["retreat", "larisa"], (1, 2)),
+        ((2, 2), (0, 0), ["retreat", "larisa"], (2, 0)),
+        ((2, 0), (0, 2), ["retreat", "lykandos"], (0, 0)),
+        ((2, 0), (0, 2), "withdraw", (0, 0)),
+    ],
+)
+def test_conceding_retreaters_share_carts_only_to_the_same_destination(
+    first_transport, second_transport, second_fate, kept,
+):
+    state = position()
+    attacker = place(state, "alp_arslan", "edessa")
+    attacker.forces = {"ghulam_cavalry": 4, "turkic_horse": 2}
+    first = place(state, "chatatourios", provender=first_transport[0],
+                  carts=first_transport[1], coin=1, loot=1)
+    second = place(state, "romanos_diogenes", provender=second_transport[0],
+                   carts=second_transport[1])
+    first.forces = {"infantry": 4, "tagmata": 2}
+    second.forces = {"infantry": 4, "tagmata": 2}
+    engine.apply_action(state, {"type": "cmd_march", "lord": attacker.id,
+                                "to": "melitene", "way_type": "pass"})
+    fates = {first.id: ["retreat", "larisa"], second.id: second_fate}
+    retreat_choices = [["retreat", fates[lid]] for lid in state.meta.pending[0]["defenders"]]
+    result = engine.apply_action(state, {
+        "type": "respond_approach",
+        "choices": {first.id: {"action": "stand"}, second.id: {"action": "stand"}},
+        "battle_decisions": {
+            "seljuk": [["concede", False]],
+            "roman": [["concede", True], *retreat_choices],
+        },
+    })["battle"]
+    assert result["conceder"] == "defender"
+    assert first.cylinder == "larisa"
+    assert second.cylinder == ("melitene" if second_fate == "withdraw" else second_fate[1])
+    assert result["ending"]["removed"] == []
+    assert (first.assets.provender, second.assets.provender) == kept
+    assert first.assets.carts == first_transport[1]
+    assert second.assets.carts == second_transport[1]
+    assert first.assets.coin == 1 and first.assets.loot == 0
+    excess = first_transport[0] + second_transport[0] - sum(kept)
+    assert result["ending"]["spoils"]["pool"] == {
+        "coin": 0, "loot": 1, "provender": excess, "carts": 0,
+    }
+    assert attacker.assets.loot == 1 and attacker.assets.provender == excess
+
+
+def test_retreating_lord_removed_by_losses_does_not_lend_carts():
+    state = position()
+    winner = place(state, "alp_arslan")
+    first = place(state, "chatatourios", provender=2)
+    second = place(state, "romanos_diogenes", carts=2)
+    second.forces = {}
+    second.routed = {"militia": 1}
+    ctx = battle.DecisionContext([["retreat", ["retreat", "larisa"]]] * 2)
+    result = battle._end_battle(state, [winner.id], [first.id, second.id], "defender",
+                               "defender", "melitene", ctx, Sixes())
+    assert result["retreat"] == [
+        {"lord": first.id, "fate": "retreat"}, {"lord": second.id, "fate": "retreat"},
+    ]
+    assert result["removed"] == [second.id]
+    assert first.assets.provender == 0
+    assert winner.assets.provender == winner.assets.carts == 2
+
+
 def test_surviving_withdrawer_keeps_assets():
     state = position()
     winner = place(state, "alp_arslan")

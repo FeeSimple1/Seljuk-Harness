@@ -292,3 +292,23 @@ package passed that check and the 38-case focused rerun. The move
 round-trip sweep was clean across five scenarios and five seeds.
 
 Third-audit progress is **one of five Seljuk groups** and **19 of 23 overall**.
+
+## Third audit, batch 2 — SEL3-02
+
+Conceding Lords who survive Losses and Retreat to the same Locale Share spare
+Carts under 1.5.2, 4.3.2, and 4.8.3. The calculation uses each Lord's own Carts
+first, then shares spare capacity in group order, as in Avoid Battle. Retained
+Provender stays on its original mat. Only excess Provender and all Loot become
+Spoils for these Lords. Lords who Withdraw, are removed, or Retreat to a
+different Locale do not contribute to the group's Carts.
+
+Six public Approach cases cover both directions of sharing, partial capacity,
+own Carts, separate destinations, and Withdrawal. A seventh case covers a Lord
+removed by Losses. The three shared-capacity cases failed on preceding main,
+and all 75 focused tests passed after the fix.
+
+Validation: **1,286 tests passed**, including the Manzikert and Showdown
+interface replays. The move round-trip sweep was clean across five scenarios
+and five seeds, and 30 randomized games reported no findings.
+
+Third-audit progress is **two of five Seljuk groups** and **20 of 23 overall**.

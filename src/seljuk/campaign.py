@@ -2174,6 +2174,20 @@ def group_laden(gs: GameState, lords: list[LordState]) -> bool:
     return loot > 0 or prov > carts
 
 
+def _shared_unladen_provender(gs: GameState, group: list[str]) -> dict[str, int]:
+    """Keep Provender on its own mat, using own Carts first and sharing spare
+    Carts in group order (1.5.2, 4.3.2). The callers group Lords by destination."""
+    spare = sum(max(0, gs.lords[lid].assets.carts - gs.lords[lid].assets.provender)
+                for lid in group)
+    kept = {}
+    for lid in group:
+        assets = gs.lords[lid].assets
+        borrowed = min(spare, max(0, assets.provender - assets.carts))
+        spare -= borrowed
+        kept[lid] = min(assets.provender, assets.carts + borrowed)
+    return kept
+
+
 def _over_laden(gs: GameState, lords: list[LordState]) -> bool:
     prov = sum(l.assets.provender for l in lords)
     carts = sum(l.assets.carts for l in lords)
@@ -2531,13 +2545,7 @@ def h_respond_approach(gs: GameState, action: dict[str, Any], roller: DiceRoller
             avoid_groups.setdefault(dest, []).append(did)
     keep_provender = {}
     for group in avoid_groups.values():
-        spare = sum(max(0, gs.lords[did].assets.carts - gs.lords[did].assets.provender)
-                    for did in group)
-        for did in group:
-            assets = gs.lords[did].assets
-            borrowed = min(spare, max(0, assets.provender - assets.carts))
-            spare -= borrowed
-            keep_provender[did] = min(assets.provender, assets.carts + borrowed)
+        keep_provender.update(_shared_unladen_provender(gs, group))
     # 4.3.4: Withdraw is limited to the Stronghold's Size (incl. Lords already inside).
     inside = sum(1 for l in gs.lords.values()
                  if l.mustered and l.cylinder == to and l.besieged and l.side == side)

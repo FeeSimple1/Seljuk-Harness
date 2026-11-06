@@ -1073,21 +1073,31 @@ def _spoils_and_removal(gs: GameState, att_ids: list[str], def_ids: list[str], l
     losing_ids = att_ids if loser == "attacker" else def_ids
     winner_ids = def_ids if loser == "attacker" else att_ids
     winners = [l for l in winner_ids if not _is_routed(gs.lords[l])]
-    conceded = (conceder == loser)
+    fates = {entry["lord"]: entry["fate"] for entry in events["retreat"]}
+    keep_provender = {}
+    if conceder == loser:
+        from .campaign import _shared_unladen_provender
+
+        # Only Lords that survived Losses and Retreat together can Share Carts.
+        retreat_groups: dict[str, list[str]] = {}
+        for lid in losing_ids:
+            lord = gs.lords[lid]
+            if fates.get(lid) == "retreat" and not _is_routed(lord):
+                retreat_groups.setdefault(lord.cylinder, []).append(lid)
+        for group in retreat_groups.values():
+            keep_provender.update(_shared_unladen_provender(gs, group))
+
     pool = {"coin": 0, "loot": 0, "provender": 0, "carts": 0}
     # Spoils transfer by fate (4.8.3).
     for lid in losing_ids:
         lord = gs.lords[lid]
-        fate = next((e["fate"] for e in events["retreat"] if e["lord"] == lid), "removed")
-        removed_by_losses = _is_routed(lord)
-        if fate == "withdraw" and not removed_by_losses:
+        if fates.get(lid) == "withdraw" and not _is_routed(lord):
             continue  # surviving Withdrawers keep all Assets
-        if fate == "retreat" and conceded and not removed_by_losses:
+        if lid in keep_provender:
             pool["loot"] += lord.assets.loot
             lord.assets.loot = 0
-            excess = max(0, lord.assets.provender - lord.assets.carts)
-            pool["provender"] += excess
-            lord.assets.provender -= excess
+            pool["provender"] += lord.assets.provender - keep_provender[lid]
+            lord.assets.provender = keep_provender[lid]
         else:  # removed, or retreated WITHOUT conceding -> all Assets
             for k in ("coin", "loot", "provender", "carts"):
                 pool[k] += getattr(lord.assets, k)
@@ -1100,8 +1110,7 @@ def _spoils_and_removal(gs: GameState, att_ids: list[str], def_ids: list[str], l
         lord = gs.lords.get(lid)
         if lord is None or not lord.mustered:
             continue
-        fate = next((e["fate"] for e in events["retreat"] if e["lord"] == lid), None)
-        if _is_routed(lord) or fate == "removed":
+        if _is_routed(lord) or fates.get(lid) == "removed":
             _remove_by_combat(gs, lord)
             events["removed"].append(lid)
 
