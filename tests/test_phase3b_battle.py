@@ -66,21 +66,16 @@ def test_apply_hits_conserves_units_and_routs_some():
 
 
 def test_concede_makes_conceder_lose_with_pursuit_482():
-    # Two armored Lords (Norman Knights, Armor 1-4) so Round 1 rarely routs
-    # anyone; the Attacker concedes at the Round 2 offer (typed script).
+    # Both sides fight on in Round 1; the Attacker Concedes in Round 2.
     gs = S.load_scenario("emperor_and_the_lion", seed=1)
-    a = gs.lords["roussel_de_bailleul"]; d = gs.lords["chatatourios"]
+    a = gs.lords["alp_arslan"]; d = gs.lords["chatatourios"]
     a.cylinder = "melitene"; d.cylinder = "melitene"
-    a.forces = {"norman_knights": 3}; d.forces = {"norman_knights": 3}
-    gs.meta.phase = "campaign"; gs.meta.active_lord = "roussel_de_bailleul"
-    res = resolve_battle(gs, ["roussel_de_bailleul"], ["chatatourios"], "melitene",
-                         DecisionContext([("concede", True)]), DiceRoller(1))
-    # If anyone routed in Round 1 the concede offer never arrives; otherwise the
-    # Attacker's concede makes the Attacker the loser (4.8.2-.3).
-    if res["conceder"] == "attacker":
-        assert res["loser"] == "attacker"
-    else:
-        assert res["winner"] in ("attacker", "defender")
+    a.forces = {"ghulam_cavalry": 8}; d.forces = {"tagmata": 8}
+    gs.meta.phase = "campaign"; gs.meta.active_lord = a.id
+    ctx = DecisionContext([("concede", False), ("concede", False), ("concede", True)])
+    res = resolve_battle(gs, [a.id], [d.id], "melitene", ctx, DiceRoller(1))
+    assert res["conceder"] == res["loser"] == "attacker"
+    assert res["rounds"] == 2
 
 
 def test_retreat_shifts_service_withdraw_does_not_483():
@@ -128,7 +123,7 @@ def test_conceding_loser_relocates_no_colocation_4_8_3():
         res = resolve_battle(gs, ["alp_arslan"], ["chatatourios"], "melitene",
                              DecisionContext([("concede", True)]), DiceRoller(seed))
         if res["conceder"] != "attacker" or sum(a.forces.values()) == 0:
-            continue  # round-1 rout pre-empted the concede, or pursuit wiped him
+            continue  # the conceder was wiped out during strikes or Losses
         assert a.mustered is True, f"seed {seed}: surviving conceder un-mustered"
         assert a.cylinder != "melitene", f"seed {seed}: loser not relocated (advisory bug)"
         assert check_invariants(gs) == [], f"seed {seed}: {check_invariants(gs)}"

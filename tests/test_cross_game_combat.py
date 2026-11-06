@@ -184,3 +184,48 @@ def test_avoid_spoils_overflow_also_reaches_ally_with_room():
     campaign._award_avoid_spoils(state, [first.id, second.id], loot=3, prov=2)
     assert second.assets.loot == 3 and second.assets.provender == 2
     assert first.assets.loot == first.assets.provender == 8
+
+
+def test_first_round_attacker_concede_resolves_a_public_approach():
+    state = position()
+    attacker = place(state, "alp_arslan", locale="edessa")
+    defender = place(state, "chatatourios")
+    attacker.forces = {"ghulam_cavalry": 8}
+    defender.forces = {"tagmata": 8}
+    engine.apply_action(state, {"type": "cmd_march", "lord": attacker.id, "to": "melitene"})
+    result = engine.apply_action(state, {
+        "type": "respond_approach", "choices": {defender.id: {"action": "stand"}},
+        "battle_decisions": {"seljuk": [["concede", True]], "roman": [["concede", True]]},
+    })["battle"]
+    assert result["conceder"] == result["loser"] == "attacker"
+    assert result["rounds"] == 1
+    assert {step["round"] for step in result["strikes"]} == {1}
+    assert [d["choice"] for d in result["decisions"] if d["type"] == "concede"] == [True]
+
+
+@pytest.mark.parametrize("engagement, winner", [("battle", "attacker"), ("sally", "sally")])
+def test_first_round_defender_concede_loses_even_when_its_strikes_rout_attacker(
+    engagement, winner,
+):
+    state = position()
+    attacker = place(state, "alp_arslan", locale="edessa" if engagement == "battle" else "melitene")
+    defender = place(state, "chatatourios")
+    defender.forces = {"tagmata": 8}
+    if engagement == "battle":
+        engine.apply_action(state, {"type": "cmd_march", "lord": attacker.id, "to": "melitene"})
+        action = {"type": "respond_approach", "choices": {defender.id: {"action": "stand"}}}
+    else:
+        attacker.besieged = True
+        loc = state.locales["melitene"]
+        loc.conquered_side = "seljuk"
+        loc.conquered_count = campaign._stronghold_size(state, "melitene")
+        loc.siege_markers = 2
+        action = {"type": "cmd_sally", "lord": attacker.id}
+    action["battle_decisions"] = {"seljuk": [["concede", False]], "roman": [["concede", True]]}
+    result = engine.apply_action(state, action)[engagement]
+    assert result["conceder"] == "defender"
+    assert result["winner"] == winner
+    assert result["rounds"] == 1
+    assert [d["choice"] for d in result["decisions"] if d["type"] == "concede"] == [False, True]
+    assert any(step["target"] == attacker.id and step["routed_units"] == ["infantry"]
+               for step in result["strikes"])

@@ -24,8 +24,8 @@ def test_sally_attacker_concede_resolves_final_halved_round():
     r = battle.resolve_sally(gs, [sal], [bes], loc, ctx, DiceRoller(1))
     assert r["conceder"] == "attacker"
     assert r["winner"] == "besiegers"          # the conceding Sallying side loses
-    assert r["rounds"] == 2
-    assert any(e.get("round") == 2 for e in r["strikes"]), r["strikes"]
+    assert r["rounds"] == 1
+    assert {e["round"] for e in r["strikes"]} == {1}
 
 
 def test_sally_defender_besiegers_concede_ends_siege():
@@ -36,7 +36,8 @@ def test_sally_defender_besiegers_concede_ends_siege():
     assert r["conceder"] == "defender"
     assert r["winner"] == "sally"              # besiegers conceded -> Sally succeeds
     assert gs.locales[loc].siege_markers == 0  # losing Besiegers Retreat; Siege ends
-    assert any(e.get("round") == 2 for e in r["strikes"])
+    assert r["rounds"] == 1
+    assert {e["round"] for e in r["strikes"]} == {1}
 
 
 def test_sally_turkic_only_concede_halves_both_sides():
@@ -46,7 +47,7 @@ def test_sally_turkic_only_concede_halves_both_sides():
     ctx = battle.DecisionContext(scripted=[("concede", True)])
     r = battle.resolve_sally(gs, [sal], [bes], loc, ctx, DiceRoller(1))
     assert r["conceder"] == "attacker"
-    assert r["rounds"] == 2  # resolves the final (mutually-halved) Round, then ends
+    assert r["rounds"] == 1  # resolves the final (mutually-halved) Round, then ends
 
 
 def test_sally_no_concede_runs_normally():

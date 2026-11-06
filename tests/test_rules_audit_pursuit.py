@@ -24,10 +24,10 @@ def test_turkic_only_conceder_halves_both_sides():
     def run(att_forces, seed=1):
         gs = S.load_scenario("emperor_and_the_lion", seed=seed)
         aa = gs.lords["alp_arslan"]; aa.side = "seljuk"
-        aa.forces = dict(att_forces); aa.capabilities = ["S4"]  # Shock Tactics: survive Round 1
+        aa.forces = dict(att_forces); aa.capabilities = ["S4"]
         ch = gs.lords["chatatourios"]; ch.side = "roman"; ch.forces = {"tagmata": 12}
         gs.meta.active_lord = "alp_arslan"
-        ctx = DecisionContext([("concede", True)])  # attacker Concedes at Round 2
+        ctx = DecisionContext([("concede", True)])  # attacker Concedes in Round 1
         return resolve_battle(gs, ["alp_arslan"], ["chatatourios"], "melitene", ctx, DiceRoller(seed=seed))
 
     turkic_only = run({"turkic_horse": 12})

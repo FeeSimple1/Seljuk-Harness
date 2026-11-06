@@ -317,17 +317,18 @@ def resolve_battle(gs: GameState, attacker_ids: list[str], defender_ids: list[st
     MAX = 30
     while round_no < MAX:
         round_no += 1
-        # Concede? (Rounds after the first; Attacker then Defender)
+        # 4.8.2 Concede the Field: each round, Attacker then Defender.
+        for role, side in (("attacker", att), ("defender", deff)):
+            if _offer_concede(gs, side, ctx, role):
+                conceder = role
+                pursuit[role] = True
+                if _solo_battle:
+                    conceding_lid = (attacker_ids if role == "attacker" else defender_ids)[0]
+                    if _turkic_only_start[conceding_lid]:
+                        pursuit["attacker"] = True
+                        pursuit["defender"] = True
+                break
         if round_no > 1:
-            for role, side in (("attacker", att), ("defender", deff)):
-                if conceder is None and _offer_concede(gs, side, ctx, role):
-                    conceder = role
-                    pursuit[role] = True
-                    if _solo_battle:  # 4.8.2 Turkic-only Conceding exception -> halve BOTH
-                        conceding_lid = (attacker_ids if role == "attacker" else defender_ids)[0]
-                        if _turkic_only_start.get(conceding_lid):
-                            pursuit["attacker"] = True
-                            pursuit["defender"] = True
             # Reposition
             _reposition(gs, att, deff, ctx)
             if betrayal_pending:  # S3 Betrayal: move a non-commander Roman Front Lord to Reserve
@@ -354,14 +355,8 @@ def resolve_battle(gs: GameState, attacker_ids: list[str], defender_ids: list[st
         _purge_routed(deff)
 
     # --- Determine loser (4.8.3) ---
-    att_alive = any(not _is_routed(gs.lords[l]) for l in att.all_lords())
-    def_alive = any(not _is_routed(gs.lords[l]) for l in deff.all_lords())
-    if conceder == "attacker" or not att_alive:
-        loser, winner = "attacker", "defender"
-    elif conceder == "defender" or not def_alive:
-        loser, winner = "defender", "attacker"
-    else:
-        loser, winner = "defender", "attacker"  # shouldn't happen; safe default
+    loser = conceder or ("defender" if att_alive else "attacker")
+    winner = "defender" if loser == "attacker" else "attacker"
 
     # Relief Sally (4.8.1): "If Attackers lose, Withdraw Sallying Lords back
     # into the Stronghold (4.8.3)" -- the Sallying subset takes the Withdraw
@@ -1684,17 +1679,17 @@ def resolve_sally(gs: GameState, sallying_ids: list[str], besieger_ids: list[str
     round_no = 0
     while round_no < 30:
         round_no += 1
+        # 4.9.2 uses Battle's Concede step, including in round one.
+        for role, side_obj, ids in (("attacker", att, sallying_ids),
+                                    ("defender", deff, besieger_ids)):
+            if _offer_concede(gs, side_obj, ctx, role):
+                conceder = role
+                pursuit[role] = True
+                if _solo and _turkic_only_start[ids[0]]:
+                    pursuit["attacker"] = True
+                    pursuit["defender"] = True
+                break
         if round_no > 1:
-            # Concede (4.8.3 via 4.9.2): Attacker then Defender, from Round 2;
-            # the Conceding side halves its Hits in this final Round.
-            for role, side_obj, ids in (("attacker", att, sallying_ids),
-                                        ("defender", deff, besieger_ids)):
-                if conceder is None and _offer_concede(gs, side_obj, ctx, role):
-                    conceder = role
-                    pursuit[role] = True
-                    if _solo and _turkic_only_start.get(ids[0]):  # 4.8.2 -> both halve
-                        pursuit["attacker"] = True
-                        pursuit["defender"] = True
             # 4.9.2 REPOSITION "mimics that in Storm": each side may advance one
             # Reserve Lord to Front, up to the Stronghold's Size.
             _storm_reposition(gs, att, deff, size, ctx)
@@ -1718,14 +1713,7 @@ def resolve_sally(gs: GameState, sallying_ids: list[str], besieger_ids: list[str
         _purge_routed(att)
         _purge_routed(deff)
 
-    att_alive = any(not _is_routed(gs.lords[l]) for l in att.all_lords())
-    def_alive = any(not _is_routed(gs.lords[l]) for l in deff.all_lords())
-    if conceder == "attacker" or not att_alive:
-        loser = "attacker"
-    elif conceder == "defender" or not def_alive:
-        loser = "defender"
-    else:
-        loser = "attacker"  # safe default: the Siege goes on
+    loser = conceder or ("defender" if att_alive and not def_alive else "attacker")
     besiegers_lose = (loser == "defender")
     winner = "sally" if besiegers_lose else "besiegers"
 

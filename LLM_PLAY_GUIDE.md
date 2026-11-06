@@ -204,6 +204,12 @@ Battles, Storms, and Sallies are **auto-resolved** by the engine when you Stand
 (or Storm/Sally); the result is returned by `do`. You don't roll dice — the
 seeded RNG in the save file does, deterministically. Typed `battle_decisions`
 (and `storm_decisions`) accept JSON arrays, for example `[["concede", true]]`.
+In Battle and Sally, the attacker may Concede from Round 1. The defender
+gets the choice if the attacker fights on. Both sides still fight that
+round, with Pursuit, before the concession ends combat. To Concede in a
+later round, put a `["concede", false]` in your queue for each earlier
+round. A shared script needs both sides' declines. In Storm the attacker
+first gets the choice in Round 2.
 Tuple-valued choices use a nested array, such as
 `[["retreat", ["retreat", "ani"]]]`, subject to the offered destinations.
 

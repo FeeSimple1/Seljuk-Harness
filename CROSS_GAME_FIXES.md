@@ -271,3 +271,24 @@ Focused undefined-name/syntax lint, new-test lint and compile checks passed.
 Second-audit progress: **6 of 6 Seljuk groups fixed**. All seven original
 findings remain fixed. Across the five harnesses, all **24 of 24** confirmed
 second-audit groups are now fixed.
+
+## Third audit, batch 1 — SEL3-01
+
+Battle and Sally now offer Concede at the start of every round, attacker
+first. The first concession resolves that round's Strikes with Pursuit and
+determines the losing side even if the opponent Routs. Reposition begins
+after the first round. Storm offers its own attacker-only Concede from
+Round 2 under 4.9.1.
+
+Manzikert's recorded shared script adds two Round 1 declines to preserve
+the intended later concession. All 149 checkpoints match the preceding
+non-history state, including RNG, score, and winner. Checkpoint hashes
+reflect the new decision traces. The packaged guide explains the queue order.
+
+Three new public-action regressions fail on preceding main and pass here.
+The full run passed 1,278 tests, including both recorded interface games.
+The sole failure was the stale packaged guide checksum. Regenerating the
+package passed that check and the 38-case focused rerun. The move
+round-trip sweep was clean across five scenarios and five seeds.
+
+Third-audit progress is **one of five Seljuk groups** and **19 of 23 overall**.
