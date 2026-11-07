@@ -10,7 +10,7 @@ Phases 3b/3c; until then the enumerator simply does not offer them.
 """
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from . import scenarios, static_data as sd, map as gmap
 from . import actions
@@ -1556,21 +1556,12 @@ def command_menu(gs: GameState) -> list[dict[str, Any]]:
                     _smv["_desc"] = (f"March to {sd.locale(to)['name']} via {edge['type']} and Bypass "
                                      f"without stopping (S18 Unstoppable Turkmen)")
                     out.append(_smv)
-        # Forage (4.5.4): available unless Ravaged, or Besieged by >= Size (a Lord
-        # Besieged by fewer, or at a friendly Gardens Town/City, may still Forage).
-        if st.ravaged_side is None:
-            _g = info.get("gardens") and info["type"] in ("town", "city") and actions.is_friendly_locale(gs, loc_id, lord.side)
-            _sz = {"fort": 1, "town": 2, "city": 3}.get(info["type"], 0)
-            _heavy = info.get("is_stronghold") and not st.ruins and _enemy_lords_at(gs, loc_id, lord.side) >= _sz and _sz > 0
-            if not _heavy or _g:
-                out.append({"type": "cmd_forage", "lord": lid, "_desc": "Forage for Provender (4.5.4)"})
+        if st.ravaged_side is None and _forage_procedure(gs, lord) != "blocked":
+            out.append({"type": "cmd_forage", "lord": lid, "_desc": "Forage for Provender (4.5.4)"})
         # Tax (4.5.6): own Seat, or Roman Commander Friendly Empire Stronghold.
         if not lord.besieged:
             at_seat = loc_id in sd.lord(lid).get("seats", [])
-            empire_tax = (actions.is_commander(gs, lid) and lord.side == "roman"
-                          and info.get("is_stronghold") and info["allegiance"] == "roman"
-                          and actions.is_friendly_locale(gs, loc_id, "roman")
-                          and st.ravaged_side is None)
+            empire_tax = st.ravaged_side is None and _can_tax_empire_stronghold(gs, lord)
             nomisma_blocks = (lord.side == "roman" and not actions.is_commander(gs, lid)
                               and gs.meta.notes.get("nomisma_debased_used"))
             if (at_seat or empire_tax) and not nomisma_blocks and _full_card_available(gs):
@@ -1765,6 +1756,14 @@ def _enemy_lords_at(gs: GameState, locale_id: str, side: str) -> int:
 
 # --- Tax (4.5.6) ------------------------------------------------------------
 
+def _can_tax_empire_stronghold(gs: GameState, lord: LordState) -> bool:
+    loc_id = lord.cylinder
+    return (lord.side == "roman" and actions.is_commander(gs, lord.id)
+            and sd.locale(loc_id)["allegiance"] == "roman"
+            and actions.is_friendly_locale(gs, loc_id, "roman")
+            and _is_stronghold(gs, loc_id))
+
+
 def h_cmd_tax(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
     lord = _require(action.get("lord"), gs)
     if lord.besieged:
@@ -1778,18 +1777,11 @@ def h_cmd_tax(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict
         raise IllegalAction("marwanid_no_tax", "Lords may not Tax an activated Marwanid Locale (3.5.1.1)")
     info = sd.lord(lord.id)
     at_own_seat = loc_id in info.get("seats", [])
-    commander_empire_tax = False
-    if not at_own_seat:
-        # Roman Commander may Tax any Friendly Stronghold in the Roman Empire (not his Seat).
-        if actions.is_commander(gs, lord.id) and lord.side == "roman":
-            loc = sd.locale(loc_id)
-            if loc.get("is_stronghold") and loc["allegiance"] == "roman" \
-                    and actions.is_friendly_locale(gs, loc_id, "roman"):
-                if gs.locales[loc_id].ravaged_side is not None:
-                    raise IllegalAction("already_ravaged", "Roman Commander may not Tax a Ravaged Stronghold (4.5.6)")
-                commander_empire_tax = True
-        if not commander_empire_tax:
-            raise IllegalAction("not_taxable", "Tax requires the Lord's own Seat, or Roman Commander Tax in the Empire (4.5.6)")
+    commander_empire_tax = not at_own_seat and _can_tax_empire_stronghold(gs, lord)
+    if commander_empire_tax and gs.locales[loc_id].ravaged_side is not None:
+        raise IllegalAction("already_ravaged", "Roman Commander may not Tax a Ravaged Stronghold (4.5.6)")
+    if not at_own_seat and not commander_empire_tax:
+        raise IllegalAction("not_taxable", "Tax requires the Lord's own Seat, or Roman Commander Tax in the Empire (4.5.6)")
     _require_full_card(gs, "Tax", "4.2.1, 4.5.6")
     lord.assets.coin = min(lord.assets.coin + 1, 8)
     placed_ravage = False
@@ -1809,26 +1801,30 @@ def h_cmd_tax(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict
 
 # --- Forage (4.5.4) ---------------------------------------------------------
 
+def _forage_procedure(gs: GameState, lord: LordState) -> Literal["blocked", "automatic", "roll"]:
+    loc_id = lord.cylinder
+    size = _stronghold_size(gs, loc_id)
+    friendly = actions.is_friendly_locale(gs, loc_id, lord.side)
+    gardens = friendly and size > 1 and sd.locale(loc_id).get("gardens")
+    if lord.besieged and size > 0 and _enemy_lords_at(gs, loc_id, lord.side) >= size and not gardens:
+        return "blocked"
+    if lord.side == "roman" and loc_id in ("hama", "aleppo"):
+        return "roll"  # Fatimid Caliphate (1.3.1)
+    if gardens or (friendly and size > 0 and not lord.besieged):
+        return "automatic"
+    return "roll"
+
+
 def h_cmd_forage(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
     lord = _require(action.get("lord"), gs)
     loc_id = lord.cylinder
     st = gs.locales[loc_id]
     if st.ravaged_side is not None:
         raise IllegalAction("ravaged", "Ravage blocks Forage (4.5.4)")
-    info = sd.locale(loc_id)
-    friendly = actions.is_friendly_locale(gs, loc_id, lord.side)
-    is_sh = info.get("is_stronghold") and not st.ruins
-    gardens = info.get("gardens") and info["type"] in ("town", "city")
-    # Besieged by >= Size enemy Lords blocks Forage (4.5.4), except Gardens.
-    size = {"fort": 1, "town": 2, "city": 3}.get(info["type"], 0)
-    heavily_besieged = is_sh and _enemy_lords_at(gs, loc_id, lord.side) >= size and size > 0
-    if heavily_besieged and not (friendly and gardens):
+    procedure = _forage_procedure(gs, lord)
+    if procedure == "blocked":
         raise IllegalAction("forage_besieged", "a Lord Besieged by >= the Stronghold's Size may not Forage (4.5.4)")
-    auto = False
-    if friendly and gardens:
-        auto = True  # Gardens: auto even if Besieged (4.5.4)
-    elif friendly and is_sh and not heavily_besieged and not lord.besieged:
-        auto = True
+    auto = procedure == "automatic"
     if auto:
         added = True
         roll = None

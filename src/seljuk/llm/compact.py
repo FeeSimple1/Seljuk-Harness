@@ -740,6 +740,7 @@ class CompactInterface:
             if any(self.gs.lords[lid].side == actor and lid not in self.gs._revealed_combat_lords
                    for lid in fighters):
                 review.append(other(actor))
+            joint.pop("scouts_requested", None)
             joint.update(action=action, owed_by=review[0], combatants=fighters, combat_review=review)
         else:
             return self._execute(action, actor)
@@ -891,6 +892,15 @@ class CompactInterface:
             obj._revision, obj._fingerprint, obj._version = data["revision"], data["fingerprint"], data["version"]
             obj._joint, obj._cursors = data["joint"], data["cursors"]
             obj._receipts, obj.findings = data["receipts"], data["findings"]
+            if obj._joint and obj._joint.get("combat_review") and obj._joint.get("scouts_requested"):
+                # Recover older saves with an already committed Scouts response.
+                obj._joint.pop("scouts_requested")
+                review = obj._joint["combat_review"]
+                defender = obj._joint["actor"]
+                if review[0] != defender:
+                    # Repeating the stale Scouts choice could skip the defender's tactics.
+                    review.insert(0, defender)
+                    obj._joint["owed_by"] = defender
             obj._sync()
             obj._sync_combat_mats()
         return obj
