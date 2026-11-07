@@ -228,9 +228,15 @@ Battle Events remain inputs to that response. Direct commands that skip it
 are rejected without changing the board, RNG or history. Resolve any resulting
 Besiege/Bypass or Themata defender assignment before continuing.
 
+A Sortie from a Bypassed Friendly Stronghold costs one March action and
+opens the same Approach response (4.3.6). Use `group` on `cmd_sortie` to
+select a Commander's allies from the offered `_co_marchers`. A Lieutenant
+brings his Lower Lord automatically. The Bypassing player responds before
+Battle. Supply combat inputs on `respond_approach`.
+
 S11 Javelins fires in one Battle round per Battle, not every round and not in
 Storm. Supply `"javelins_rounds": {"ibn_khan": 2}` on `respond_approach`,
-`cmd_sortie`, or `cmd_sally` to mark round 2 for that Lord. The default is round 1.
+or `cmd_sally` to mark round 2 for that Lord. The default is round 1.
 The same syntax applies to `steeled_rounds` for R3 Steeled Resolve.
 
 At a non-final Campaign Reset, the Roman player may retain all of a Thema's

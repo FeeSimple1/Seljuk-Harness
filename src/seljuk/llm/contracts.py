@@ -69,7 +69,7 @@ def visible_move(gs, move, side):
     """
     out = deepcopy(move)
     kind = move["type"]
-    if kind in ("respond_approach", "cmd_storm", "cmd_sally", "cmd_sortie"):
+    if kind in ("respond_approach", "cmd_storm", "cmd_sally"):
         att = (gs.lords[current_pending(gs)["attackers"][0]].side
                if kind == "respond_approach" else gs.lords[move["lord"]].side)
         own_role = "attacker" if side == att else "defender"
@@ -82,7 +82,6 @@ def visible_move(gs, move, side):
         out["_desc"] = {
             "cmd_storm": "Storm the Stronghold (4.5.2)",
             "cmd_sally": "Sally against the Besiegers (4.5.3)",
-            "cmd_sortie": "Sortie against the Bypassing Enemy (4.3.6)",
             "respond_approach": "Each defending Lord chooses Avoid, Withdraw, or Stand (4.3.4)",
         }[kind]
         if side == "roman" and kind == "cmd_storm":
@@ -180,7 +179,12 @@ def contract(gs, move, side):
         out["notes"] = ["Optional group uses _co_marchers / _co_marcher_max; the engine recomputes group cost.",
                         "Discard variants remain distinct menu rows; no variant is silently selected.",
                         "Group Carts can change cost. For combinations not represented by a default row, submit a flat action with version=; the engine validates it."]
-    if kind in ("respond_approach", "cmd_storm", "cmd_sally", "cmd_sortie"):
+    elif kind == "cmd_sortie":
+        out["notes"] = ["Optional group selects the Commander's allies from _co_marchers.",
+                        "A Lieutenant brings his Lower Lord automatically.",
+                        "Sortie spends one action and hands off to the enemy's Approach response.",
+                        "Supply any combat inputs with respond_approach."]
+    if kind in ("respond_approach", "cmd_storm", "cmd_sally"):
         out["combat"] = {
             "battle_events": "Each side explicitly supplies its own held card ids (S6/R24: {card, lord}).",
             "rounds": "steeled_rounds / javelins_rounds: {your_lord: round}; existing default is 1.",

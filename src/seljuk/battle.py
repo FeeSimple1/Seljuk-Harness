@@ -182,7 +182,8 @@ def begin_battle(gs: GameState, attackers: list[str], defenders: list[str], loca
                  sallying: Optional[set] = None, siegeworks: int = 0,
                  approach_origin: Optional[str] = None,
                  steeled_rounds: Optional[dict] = None,
-                 javelins_rounds: Optional[dict] = None) -> dict[str, Any]:
+                 javelins_rounds: Optional[dict] = None, *,
+                 sortie: bool = False) -> dict[str, Any]:
     """Entry point from the Approach 'Stand' path (4.3.4 -> 4.8). ``events`` maps
     a side to the Held Battle Events it plays; ``sallying``/``siegeworks`` carry
     a Relief Sally (besieged Lords + the Defenders' Siegeworks Walls vs them).
@@ -198,7 +199,8 @@ def begin_battle(gs: GameState, attackers: list[str], defenders: list[str], loca
     ctx = DecisionContext(scripted)
     roller = _roller(gs)
     result = resolve_battle(gs, attackers, defenders, locale, ctx, roller, played, cc, charge,
-                            sallying=sallying, siegeworks=siegeworks, approach_origin=approach_origin)
+                            sallying=sallying, siegeworks=siegeworks,
+                            approach_origin=approach_origin, sortie=sortie)
     _save_roller(gs, roller)
     for lid in involved:                       # the mark resets each Battle (Battle-only, not Storm)
         if lid in gs.lords:
@@ -268,7 +270,8 @@ def resolve_battle(gs: GameState, attacker_ids: list[str], defender_ids: list[st
                    locale: str, ctx: DecisionContext, roller: DiceRoller,
                    played: Optional[dict] = None, cc: Optional[set] = None,
                    charge: Optional[set] = None, sallying: Optional[set] = None,
-                   siegeworks: int = 0, approach_origin: Optional[str] = None) -> dict[str, Any]:
+                   siegeworks: int = 0, approach_origin: Optional[str] = None, *,
+                   sortie: bool = False) -> dict[str, Any]:
     played = played or {"seljuk": [], "roman": []}
     cc = cc or set()
     charge = charge or set()
@@ -374,7 +377,7 @@ def resolve_battle(gs: GameState, attacker_ids: list[str], defender_ids: list[st
     # fate (Assets kept, no Service shift), never a Retreat.
     ending = _end_battle(gs, attacker_ids, defender_ids, loser, conceder, locale, ctx, roller,
                          approach_origin=approach_origin, sallying=sallying,
-                         withdraw_inside=sallying)
+                         withdraw_inside=sallying, sortie=sortie)
     gs.meta.vp = scenarios.score(gs)
     return {"ok": True, "action": "battle", "locale": locale, "winner": winner, "loser": loser,
             "conceder": conceder, "rounds": round_no, "strikes": rounds, "ending": ending,
@@ -871,7 +874,8 @@ def _end_battle(gs: GameState, att_ids: list[str], def_ids: list[str], loser: st
                 conceder: Optional[str], locale: str, ctx: DecisionContext,
                 roller: DiceRoller, approach_origin: Optional[str] = None,
                 sallying: Optional[set] = None,
-                withdraw_inside: Optional[set] = None) -> dict[str, Any]:
+                withdraw_inside: Optional[set] = None, *,
+                sortie: bool = False) -> dict[str, Any]:
     losing_ids = att_ids if loser == "attacker" else def_ids
     loser_role = loser
     conceded = (conceder == loser)
@@ -893,7 +897,8 @@ def _end_battle(gs: GameState, att_ids: list[str], def_ids: list[str], loser: st
         # Locale it Approached from (4.8.3).
         marcher_origin = approach_origin if (loser_role == "attacker" and lid not in sallying) else None
         fate = _lord_fate(gs, lord, loser_role, locale, conceded, ctx,
-                          approach_origin=approach_origin, marcher_origin=marcher_origin)
+                          approach_origin=approach_origin, marcher_origin=marcher_origin,
+                          sortie=sortie)
         events["retreat"].append({"lord": lid, "fate": fate})
         if fate == "retreat" and lord.service_box is not None:  # Service shift (4.8.3)
             roll = roller.d6()
@@ -935,11 +940,12 @@ def _retreat_blocked(gs: GameState, dst: str, lord_side: str) -> bool:
 
 def _lord_fate(gs: GameState, lord: LordState, loser_role: str, locale: str,
                conceded: bool, ctx: DecisionContext, approach_origin: str | None = None,
-               marcher_origin: str | None = None) -> str:
+               marcher_origin: str | None = None, *,
+               sortie: bool = False) -> str:
     """Retreat / Withdraw / Removal for a losing Lord (4.8.3)."""
-    # Withdraw into a Friendly Stronghold here (Defender only).
+    # Defenders and losing Sortie attackers can Withdraw (4.8.3 / 4.3.6).
     from . import campaign
-    can_withdraw = (loser_role == "defender"
+    can_withdraw = ((loser_role == "defender" or sortie)
                     and campaign._is_stronghold(gs, locale)
                     and campaign.actions.current_allegiance(gs, locale) == lord.side
                     and not campaign._fatimid_withdraw_blocked(lord.side, locale)
@@ -984,6 +990,8 @@ def _lord_fate(gs: GameState, lord: LordState, loser_role: str, locale: str,
             gs.meta.notes.setdefault("_kleisourai_crossers", []).append(lord.id)  # R23: Retreat across Pass
         lord.cylinder = choice[1]
         lord.besieged = False
+        lord.bypassed = (gs.locales[choice[1]].bypass
+                         and campaign.actions.current_allegiance(gs, choice[1]) != lord.side)
         return "retreat"
     return "removed"
 

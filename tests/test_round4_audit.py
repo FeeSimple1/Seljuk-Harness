@@ -181,20 +181,15 @@ def test_hidden_mats_reveal_only_committed_combatants_and_resume(tmp_path):
     assert ui.session.state("roman")["lords"][attacker.id]["forces"] == "<hidden>"
 
 
-@pytest.mark.parametrize("kind", ["cmd_storm", "cmd_sally", "cmd_sortie"])
+@pytest.mark.parametrize("kind", ["cmd_storm", "cmd_sally"])
 def test_hidden_mats_reveal_for_committed_combat_commands(kind):
     gs = position()
     gs.meta.options["hidden_mats"] = True
     attacker = place(gs, "alp_arslan")
     defender = place(gs, "chatatourios")
     outsider = place(gs, "romanos_diogenes", "larisa")
-    if kind == "cmd_sortie":
-        gs.locales["melitene"].conquered_side = "seljuk"
-        gs.locales["melitene"].conquered_count = 2
-        gs.locales["melitene"].bypass = defender.bypassed = True
-    else:
-        gs.locales["melitene"].siege_markers = 2
-        gs.lords[attacker.id if kind == "cmd_sally" else defender.id].besieged = True
+    gs.locales["melitene"].siege_markers = 2
+    gs.lords[attacker.id if kind == "cmd_sally" else defender.id].besieged = True
     ui = CompactInterface(LLMSession(gs))
     assert ui.session.state("roman")["lords"][attacker.id]["forces"] == "<hidden>"
     ui.apply({"type": kind, "lord": attacker.id}, version=ui.version)

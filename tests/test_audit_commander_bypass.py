@@ -36,7 +36,7 @@ def test_encamp_converts_bypass_to_siege():
     assert gs.lords["sav_tekin"].bypassed is False
 
 
-def test_sortie_triggers_battle_vs_bypasser():
+def test_sortie_stand_triggers_battle_vs_bypasser():
     gs = S.load_scenario("emperor_and_the_lion")
     loc = "ani"   # Seljuk-allegiance Locale
     defender = gs.lords["afsin_beg"]; defender.mustered = True; defender.cylinder = loc
@@ -49,4 +49,8 @@ def test_sortie_triggers_battle_vs_bypasser():
     gs.meta.active_card = "afsin_beg"; gs.meta.actions_remaining = 2
     gs.seljuk.command_plan = ["afsin_beg"]; gs.seljuk.plan_pointer = 1
     r = engine.apply_action(gs, {"type": "cmd_sortie", "lord": "afsin_beg"})
-    assert r["action"] == "cmd_sortie" and "battle" in r
+    assert r["action"] == "cmd_sortie" and r["pending"] == "approach_response"
+    response = engine.apply_action(gs, {
+        "type": "respond_approach", "choices": {bypasser.id: {"action": "stand"}},
+    })
+    assert "battle" in response

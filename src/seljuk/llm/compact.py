@@ -469,7 +469,7 @@ class CompactInterface:
     @staticmethod
     def _needs_inputs(action):
         kind = action["type"]
-        if kind in ("resolve_loyalty", "discard_imperial_coffers", "cmd_storm", "cmd_sally", "cmd_sortie"):
+        if kind in ("resolve_loyalty", "discard_imperial_coffers", "cmd_storm", "cmd_sally"):
             return True
         if kind == "besiege_bypass" and action.get("surprise"):
             return True
@@ -495,11 +495,9 @@ class CompactInterface:
                     gs, pending["locale"], gs.lords[attackers[0]].side)
                 relief = campaign._select_relief_salliers(candidates, action.get("sally_join", candidates))
             return [*attackers, *standers, *relief]
-        if kind in ("cmd_storm", "cmd_sally", "cmd_sortie"):
+        if kind in ("cmd_storm", "cmd_sally"):
             lord = gs.lords[action["lord"]]
             here = [unit for unit in gs.lords.values() if unit.mustered and unit.cylinder == lord.cylinder]
-            if kind == "cmd_sortie":
-                return [unit.id for unit in here if unit.side == lord.side or unit.bypassed]
             inside = lord.side if kind == "cmd_sally" else other(lord.side)
             return [unit.id for unit in here if unit.besieged == (unit.side == inside)]
         if kind == "besiege_bypass":

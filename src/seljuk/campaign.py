@@ -1606,10 +1606,19 @@ def command_menu(gs: GameState) -> list[dict[str, Any]]:
         # Siege/Storm (4.5.1-.2): a Besieging Lord may advance the Siege or Storm.
         if lord.bypassed and st.bypass and not _enemy_in_open_at(gs, loc_id, lord.side):  # 4.3.6 ENCAMP
             out.append({"type": "cmd_encamp", "lord": lid, "_desc": "Encamp: convert Bypass to Siege (4.3.6)"})
-        if (not lord.bypassed and st.bypass and actions.current_allegiance(gs, loc_id) == lord.side
+        if (not lord.bypassed and not lord.lieutenant_of
+                and st.bypass and st.siege_markers == 0 and _is_stronghold(gs, loc_id)
+                and actions.current_allegiance(gs, loc_id) == lord.side and _peace_can_pay(gs, lord)
                 and any(o.mustered and o.cylinder == loc_id and o.side == _enemy(lord.side) and o.bypassed
                         for o in gs.lords.values())):  # 4.3.6 SORTIE
-            out.append({"type": "cmd_sortie", "lord": lid, "_desc": "Sortie: Approach the Bypassing Enemy (4.3.6)"})
+            move = {"type": "cmd_sortie", "lord": lid, "_desc": "Sortie: Approach the Bypassing Enemy (4.3.6)"}
+            if actions.is_commander(gs, lid):
+                co_sortiers = _eligible_co_marchers(gs, lord, sortie=True)
+                if co_sortiers:
+                    move.update(_co_marchers=co_sortiers, _co_marcher_max=len(co_sortiers))
+            if lord.lower_lord:
+                move["_required_lower_lord"] = lord.lower_lord
+            out.append(move)
         if _besieging(gs, lord) and _peace_can_pay(gs, lord):
             if _full_card_available(gs):
                 out.append({"type": "cmd_siege", "lord": lid, "_desc": "Siege: roll Surrender / add Siegeworks (4.5.1)"})
@@ -1701,7 +1710,7 @@ def command_menu(gs: GameState) -> list[dict[str, Any]]:
     except (KeyError, AttributeError):  # pragma: no cover - suppress over offer
         return out
     for move in out:
-        if move["type"] in ("cmd_sally", "cmd_sortie"):
+        if move["type"] == "cmd_sally":
             move["_javelins_rounds"] = "Optional {lord_id: round} for S11; default round 1"
     return out
 
@@ -2222,7 +2231,7 @@ def _way_between(origin: str, to: str, way_type: str | None):
     return cands[0]
 
 
-def _eligible_co_marchers(gs: GameState, lord: LordState) -> list[str]:
+def _eligible_co_marchers(gs: GameState, lord: LordState, *, sortie: bool = False) -> list[str]:
     """Co-located friendly Lords the active Lord may bring in a Group March
     (4.3.1; S7 Trusted Commander brings exactly one). Probes _marching_group so
     the hint never lists a Lord the handler would reject. Returns Lord ids."""
@@ -2234,7 +2243,7 @@ def _eligible_co_marchers(gs: GameState, lord: LordState) -> list[str]:
         if cid in skip:
             continue
         try:
-            _marching_group(gs, lord, [cid])
+            _marching_group(gs, lord, [cid], sortie=sortie)
         except IllegalAction:
             continue
         out.append(cid)
@@ -2328,12 +2337,17 @@ def march_cost(gs: GameState, lords: list[LordState], way: dict, first_march: bo
     return cost
 
 
-def _marching_group(gs: GameState, lord: LordState, co_marchers: list[str]) -> list[LordState]:
+def _marching_group(gs: GameState, lord: LordState, co_marchers: list[str], *,
+                    sortie: bool = False) -> list[LordState]:
     """Build whole, co-located stacks without counting any Lord twice (4.1.3/4.3.1)."""
     if lord.lieutenant_of:
         raise IllegalAction("lower_lord", "a Lower Lord cannot lead a March (4.1.3)")
-    trusted = capabilities.lord_has(gs, lord.id, "Trusted Commander")
+    trusted = not sortie and capabilities.lord_has(gs, lord.id, "Trusted Commander")
     commander = actions.is_commander(gs, lord.id)
+    if sortie:
+        # A Lieutenant Sorties with his Lower Lord. Other optional allies
+        # require a Commander under 4.3.1 and 4.3.6.
+        co_marchers = [lid for lid in co_marchers if lid != lord.lower_lord]
     if co_marchers and not commander and not trusted:
         raise IllegalAction("not_commander_group", "only a Commander may lead a Group March (4.3.1)")
     ids = list(dict.fromkeys([lord.id] + list(co_marchers)))
@@ -2347,7 +2361,9 @@ def _marching_group(gs: GameState, lord: LordState, co_marchers: list[str]) -> l
         other = gs.lords[lid]
         if other.side != lord.side or not on_map(other) or other.cylinder != lord.cylinder:
             raise IllegalAction("bad_co_marcher", f"{lid} cannot Group-March with {lord.id}")
-        if other.besieged:
+        if sortie and other.bypassed:
+            raise IllegalAction("bad_co_marcher", f"{lid} is Bypassing, not inside the Stronghold")
+        if other.besieged and not sortie:
             raise IllegalAction("besieged", f"{lid} is Besieged")
         if other.lieutenant_of and other.lieutenant_of not in ids:
             raise IllegalAction("split_stack", "a Lower Lord must March with his Lieutenant (4.1.3)")
@@ -2484,6 +2500,19 @@ def _refresh_invest(gs: GameState, locale: str) -> None:
     st.themata_defending = []
 
 
+def _pend_approach(gs: GameState, group: list[LordState], to: str,
+                   defenders: list[str], from_locale: str | None = None, *,
+                   sortie: bool = False) -> dict[str, Any]:
+    pending = {
+        "type": "approach_response", "locale": to, "attackers": [g.id for g in group],
+        "defenders": defenders, "_owed_by": _enemy(group[0].side), "from": from_locale,
+    }
+    if sortie:
+        pending["sortie"] = True
+    gs.meta.pending.append(pending)
+    return {"pending": "approach_response", "defenders": defenders}
+
+
 def _resolve_arrival(gs: GameState, group: list[LordState], to: str,
                      from_locale: str | None = None, unstoppable: bool = False) -> dict[str, Any]:
     """After a March: Approach (enemy Lords present) or Besiege/Bypass (enemy
@@ -2493,11 +2522,7 @@ def _resolve_arrival(gs: GameState, group: list[LordState], to: str,
     if gs.locales[to].bypass:
         enemy_lords = []  # already Bypassing this Locale
     if enemy_lords:
-        gs.meta.pending.append({
-            "type": "approach_response", "locale": to, "attackers": [g.id for g in group],
-            "defenders": enemy_lords, "_owed_by": _enemy(side), "from": from_locale,
-        })
-        return {"pending": "approach_response", "defenders": enemy_lords}
+        return _pend_approach(gs, group, to, enemy_lords, from_locale)
     enemy_sh = _is_stronghold(gs, to) and actions.current_allegiance(gs, to) == _enemy(side)
     if enemy_sh and not gs.locales[to].bypass and gs.locales[to].siege_markers == 0:
         lead = group[0]
@@ -2574,6 +2599,10 @@ def _avoid_spoils_pool(gs: GameState, keep_provender: dict[str, int]) -> dict[st
 
 
 def _relief_sally_candidates(gs: GameState, locale: str, side: str) -> list[str]:
+    # A Lord who previously Withdrew can still have the inside flag
+    # during a Bypass. Relief Sally applies to Besieged Lords (4.8.1).
+    if gs.locales[locale].bypass:
+        return []
     return [lord.id for lord in gs.lords.values() if lord.mustered and lord.besieged
             and lord.cylinder == locale and lord.side == side]
 
@@ -2636,6 +2665,11 @@ def h_respond_approach(gs: GameState, action: dict[str, Any], roller: DiceRoller
                 gs.meta.notes.setdefault("_kleisourai_crossers", []).append(did)  # R23: Avoid across Pass
             lord.cylinder = dest
             lord.moved_fought = True
+            destination = gs.locales[dest]
+            lord.bypassed = (_is_stronghold(gs, dest) and destination.siege_markers == 0
+                             and actions.current_allegiance(gs, dest) == _enemy(side))
+            if lord.bypassed:
+                destination.bypass = True
             avoided.append(did)
         elif kind == "withdraw":
             _validate_withdraw(gs, lord, to)
@@ -2663,6 +2697,7 @@ def h_respond_approach(gs: GameState, action: dict[str, Any], roller: DiceRoller
                                   sallying=set(sallying),
                                   siegeworks=gs.locales[to].siege_markers if sallying else 0,
                                   approach_origin=approach_origin,
+                                  sortie=bool(pend.get("sortie")),
                                   steeled_rounds=action.get("steeled_rounds"),
                                   javelins_rounds=action.get("javelins_rounds"))
         if sallying or "sally_join" in action:
@@ -3031,12 +3066,15 @@ def h_cmd_encamp(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> d
 
 
 def h_cmd_sortie(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
-    """4.3.6 SORTIE: a Lord (group) inside a Bypassed Friendly Stronghold uses one
-    March action to Approach the Bypassing Enemy. On loss they Withdraw/Retreat
-    keeping the Bypass marker (the marker persists while the bypasser remains)."""
+    """Spend one March action to Approach the Bypassing Enemy (4.3.6).
+
+    The optional group lists the Commander's chosen allies. A Lieutenant
+    brings his Lower Lord. Resolve the resulting respond_approach separately.
+    """
     lord = _require(action.get("lord"), gs)
     loc = lord.cylinder
-    if not gs.locales[loc].bypass or actions.current_allegiance(gs, loc) != lord.side:
+    if (not on_map(lord) or not _is_stronghold(gs, loc) or not gs.locales[loc].bypass
+            or gs.locales[loc].siege_markers or actions.current_allegiance(gs, loc) != lord.side):
         raise IllegalAction("not_bypassed_friendly", "Sortie requires a Bypassed Friendly Stronghold (4.3.6)")
     if lord.bypassed:
         raise IllegalAction("bypasser_cannot_sortie", "the Bypassing side cannot Sortie (4.3.6)")
@@ -3044,17 +3082,22 @@ def h_cmd_sortie(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> d
              if l.mustered and l.cylinder == loc and l.side == _enemy(lord.side) and l.bypassed]
     if not enemy:
         raise IllegalAction("no_bypasser", "no Bypassing Enemy to Sortie against (4.3.6)")
-    from . import battle
-    sortie = [lord.id] + [lid for lid, l in gs.lords.items()
-                          if lid != lord.id and l.mustered and l.cylinder == loc and l.side == lord.side]
-    res = battle.begin_battle(gs, sortie, enemy, loc,
-                              scripted=action.get("battle_decisions"),
-                              events=action.get("battle_events"),
-                              steeled_rounds=action.get("steeled_rounds"),
-                              javelins_rounds=action.get("javelins_rounds"))
-    gs.meta.actions_remaining = 0
-    _after_card(gs)  # _refresh_invest clears the Bypass marker only if the bypasser is gone
-    return {"ok": True, "action": "cmd_sortie", "locale": loc, "battle": res}
+    if gs.meta.actions_remaining < 1:
+        raise IllegalAction("insufficient_actions", "Sortie costs one March action (4.3.6)")
+    if {"battle_decisions", "battle_events", "steeled_rounds", "javelins_rounds"} & action.keys():
+        raise IllegalAction("sortie_combat_input", "supply combat inputs on respond_approach")
+    allies = action.get("group", [])
+    if not isinstance(allies, list) or not all(isinstance(lid, str) for lid in allies):
+        raise IllegalAction("bad_co_marcher", "group must be a list of Lord IDs")
+    group = _marching_group(gs, lord, allies, sortie=True)
+    _peace_gate(gs, lord)
+    for member in group:
+        member.besieged = False
+        member.moved_fought = True
+    lord.flags["first_march_used"] = True
+    gs.meta.actions_remaining -= 1
+    return {"ok": True, "action": "cmd_sortie", "locale": loc, "cost": 1,
+            "group": [member.id for member in group], **_pend_approach(gs, group, loc, enemy, sortie=True)}
 
 
 def h_cmd_storm(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
