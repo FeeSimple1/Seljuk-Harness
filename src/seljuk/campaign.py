@@ -2700,6 +2700,7 @@ def h_respond_approach(gs: GameState, action: dict[str, Any], roller: DiceRoller
                                   sortie=bool(pend.get("sortie")),
                                   steeled_rounds=action.get("steeled_rounds"),
                                   javelins_rounds=action.get("javelins_rounds"))
+        sallying = [lid for lid in sallying if lid not in res.get("precombat_disbands", [])]
         if sallying or "sally_join" in action:
             res["relief_sally"] = sallying
         if sallying:
@@ -2713,14 +2714,16 @@ def h_respond_approach(gs: GameState, action: dict[str, Any], roller: DiceRoller
         # feeding. A victorious outside force may still owe Besiege/Bypass
         # after the defenders Retreat or Withdraw; Battle does not waive it.
         _refresh_invest(gs, to)
-        gs.meta.actions_remaining = 0
+        if not res.get("cancelled") or not on_map(gs.lords[pend["attackers"][0]]):
+            gs.meta.actions_remaining = 0
         if gs.meta.phase == "campaign" and _campaign_5_2_over(gs):
             return {**result, "battle": res}
         outside = [l for l in gs.lords.values()
                    if on_map(l) and l.cylinder == to and not l.besieged]
         arrival = _resolve_arrival(gs, outside, to) if outside else {}
-        # Battle has ended the card, even when the winner chooses Bypass.
-        if not arrival.get("pending"):
+        # A fought Battle ends the card. Removal before combat can leave
+        # the approaching Lord with further actions.
+        if not arrival.get("pending") and gs.meta.actions_remaining <= 0:
             _after_card(gs)
         return {**result, "battle": res, **arrival}
     # No defenders left to fight -> the attacker may now Besiege/Bypass if a
@@ -3102,25 +3105,34 @@ def h_cmd_sortie(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> d
 
 def h_cmd_storm(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
     lord = _require(action.get("lord"), gs)
+    locale = lord.cylinder
     if not _besieging(gs, lord):
         raise IllegalAction("not_besieging", "only a Besieging Lord may Storm (4.5.2)")
-    if gs.locales[lord.cylinder].siege_markers <= 0:
+    if gs.locales[locale].siege_markers <= 0:
         raise IllegalAction("no_siege", "no Siege markers to Storm with")
     from . import battle
-    attackers = _besieging_lords_at(gs, lord.cylinder, lord.side)
+    attackers = _besieging_lords_at(gs, locale, lord.side)
     ctx = battle.DecisionContext(action.get("storm_decisions"))
     # R21/S21 ("in Storm"): remove up to 2 Turkic Horse at the Locale before the
     # Storm resolves. Storm honors only these Turkic-removal holds.
     battle._consume_battle_events(gs, action.get("battle_events"),
-                                  locale=lord.cylinder, allow={"R21", "S21"})
+                                  locale=locale, allow={"R21", "S21"})
+    attackers = [lid for lid in attackers if gs.lords[lid].mustered]
+    if not attackers:
+        _refresh_invest(gs, locale)
+        gs.meta.actions_remaining = 0
+        _after_card(gs)
+        return {"ok": True, "action": "cmd_storm", "storm": {
+            "locale": locale, "rounds": 0, "cancelled": "no_combatants",
+        }}
     # R4 Sultan's Horse Is Killed: the Roman defender may play it during a Storm
     # by Alp Arslan at a Locale with >1 Siege marker to reduce the Rounds by 1.
     rounds_reduction = 0
     if (action.get("play_sultans_horse") and "R4" in gs.roman.held_events
-            and "alp_arslan" in attackers and gs.locales[lord.cylinder].siege_markers > 1):
+            and "alp_arslan" in attackers and gs.locales[locale].siege_markers > 1):
         gs.roman.held_events.remove("R4"); gs.roman.draw_deck.append("R4")
         rounds_reduction = 1
-    res = battle.resolve_storm(gs, attackers, lord.cylinder, ctx, roller, rounds_reduction=rounds_reduction)
+    res = battle.resolve_storm(gs, attackers, locale, ctx, roller, rounds_reduction=rounds_reduction)
     gs.meta.actions_remaining = 0  # Storm ends the card (4.5.2)
     _after_card(gs)
     return {"ok": True, "action": "cmd_storm", "storm": res}
@@ -3148,9 +3160,15 @@ def h_cmd_sally(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> di
             gs.lords[_sl].flags["javelins_round"] = int((action.get("javelins_rounds") or {}).get(_sl, 1))
     played, _cc, _chg = battle._consume_battle_events(
         gs, action.get("battle_events"), locale=locale)
+    sallying = [lid for lid in sallying if gs.lords[lid].mustered]
+    besiegers = [lid for lid in besiegers if gs.lords[lid].mustered]
     ctx = battle.DecisionContext(action.get("battle_decisions"))
-    res = battle.resolve_sally(gs, sallying, besiegers, locale, ctx, roller,
-                               played=played, cc=_cc, charge=_chg)
+    if sallying and besiegers:
+        res = battle.resolve_sally(gs, sallying, besiegers, locale, ctx, roller,
+                                   played=played, cc=_cc, charge=_chg)
+    else:
+        _refresh_invest(gs, locale)
+        res = {"locale": locale, "rounds": 0, "cancelled": "no_combatants"}
     for _sl in _inv:
         if _sl in gs.lords:
             gs.lords[_sl].flags.pop("steeled_resolve_round", None)

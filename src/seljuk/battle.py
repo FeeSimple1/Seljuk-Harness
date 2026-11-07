@@ -191,16 +191,29 @@ def begin_battle(gs: GameState, attackers: list[str], defenders: list[str], loca
     Resolve; ``javelins_rounds`` uses the same format for S11. Both default
     to Round 1 when omitted and reset after each Battle."""
     involved = list(attackers) + list(defenders)
+    mustered = {lid for lid in involved if gs.lords[lid].mustered}
     for lid in involved:                       # R3: pre-battle Round declaration (mark)
         if lid in gs.lords:
             gs.lords[lid].flags["steeled_resolve_round"] = int((steeled_rounds or {}).get(lid, 1))
             gs.lords[lid].flags["javelins_round"] = int((javelins_rounds or {}).get(lid, 1))
     played, cc, charge = _consume_battle_events(gs, events, locale=locale)
+    disbanded = {lid for lid in mustered if not gs.lords[lid].mustered}
+    if disbanded:
+        attackers = [lid for lid in attackers if lid not in disbanded]
+        defenders = [lid for lid in defenders if lid not in disbanded]
+        if sallying:
+            sallying = sallying - disbanded
     ctx = DecisionContext(scripted)
     roller = _roller(gs)
-    result = resolve_battle(gs, attackers, defenders, locale, ctx, roller, played, cc, charge,
-                            sallying=sallying, siegeworks=siegeworks,
-                            approach_origin=approach_origin, sortie=sortie)
+    if attackers and defenders:
+        result = resolve_battle(gs, attackers, defenders, locale, ctx, roller, played, cc, charge,
+                                sallying=sallying, siegeworks=siegeworks,
+                                approach_origin=approach_origin, sortie=sortie)
+    else:
+        result = {"ok": True, "action": "battle", "locale": locale,
+                  "rounds": 0, "cancelled": "no_combatants"}
+    if disbanded:
+        result["precombat_disbands"] = sorted(disbanded)
     _save_roller(gs, roller)
     for lid in involved:                       # the mark resets each Battle (Battle-only, not Storm)
         if lid in gs.lords:
@@ -235,7 +248,10 @@ def _consume_battle_events(gs: GameState, events: Optional[dict],
     charge: set = set()
     if not events:
         return played, cc, charge
+    from .events import _apply_turkic_removal, _disband_turkic_targets, _plan_turkic_removal
+
     eligible = (_BATTLE_HOLDS & allow) if allow is not None else _BATTLE_HOLDS
+    removals = []
     for side in ("seljuk", "roman"):
         for entry in events.get(side, []):
             cid = entry["card"] if isinstance(entry, dict) else entry
@@ -243,9 +259,9 @@ def _consume_battle_events(gs: GameState, events: Optional[dict],
                 continue
             gs.side_decks(side).held_events.remove(cid)
             gs.side_decks(side).draw_deck.append(cid)
-            if cid in _TURKIC_REMOVAL_HOLDS:                  # R21/S21 -> remove up to 2 Turkic here
-                if locale is not None:
-                    _remove_turkic_at(gs, locale, 2, include_themata=(cid == "S21"))
+            if cid in _TURKIC_REMOVAL_HOLDS:
+                args = entry if isinstance(entry, dict) else {}
+                removals.append(_plan_turkic_removal(gs, locale, args, include_themata=(cid == "S21"), owner=side))
                 played[side].append(cid)
             elif cid == "S6" and isinstance(entry, dict):     # Command Confusion -> a Roman Lord
                 cc.add(entry["lord"])
@@ -253,6 +269,9 @@ def _consume_battle_events(gs: GameState, events: Optional[dict],
                 charge.add(entry["lord"])
             else:
                 played[side].append(cid)
+    if removals:
+        affected = _apply_turkic_removal(gs, locale, removals)
+        _disband_turkic_targets(gs, affected)
     return played, cc, charge
 
 

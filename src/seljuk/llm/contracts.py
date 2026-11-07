@@ -92,6 +92,37 @@ def visible_move(gs, move, side):
     return out
 
 
+def turkic_target_help(gs, move, side, held):
+    cards = sorted(set(held) & battle._TURKIC_REMOVAL_HOLDS)
+    if not cards:
+        return {}
+    avoiding = set()
+    if move["type"] == "respond_approach":
+        pending = current_pending(gs)
+        locale = pending["locale"]
+        choices, _ = campaign._approach_choices(gs, pending, move)
+        avoiding = {lid for lid, choice in choices.items() if choice.get("action") == "avoid"}
+    else:
+        locale = gs.lords[move["lord"]].cylinder
+    screened = {lid for lid, lord in gs.lords.items()
+                if gs.meta.options.get("hidden_mats") and lord.mustered and lord.cylinder == locale
+                and lord.side != side and lid not in gs._revealed_combat_lords and lid not in avoiding}
+    options = {}
+    for card in cards:
+        options[card] = [
+            {"lord": lid, "index": index, "kind": kind, "available": available}
+            for (lid, index, kind), available in events._turkic_sources(gs, locale, card == "S21").items()
+            if lid not in screened and lid not in avoiding
+        ]
+    return {"turkic_removal": {
+        "visible_targets": options,
+        "screened_lords": sorted(screened),
+        "input": "Use {card, targets: [{lord, index, kind, count}]}. Omit index for ordinary units, "
+                 "omit lord for a defending Themata marker. Count defaults to 1. Select up to two. "
+                 "You may nominate a screened Lord at this Locale.",
+    }}
+
+
 def contract(gs, move, side):
     kind = move["type"]
     fn = engine._handlers_for_phase(gs.meta.phase).get(kind)
@@ -186,13 +217,15 @@ def contract(gs, move, side):
                         "Supply any combat inputs with respond_approach."]
     if kind in ("respond_approach", "cmd_storm", "cmd_sally"):
         out["combat"] = {
-            "battle_events": "Each side explicitly supplies its own held card ids (S6/R24: {card, lord}).",
+            "battle_events": "Each side supplies its own cards. Use {card, lord} for S6/R24 "
+                             "and {card, targets} for R21/S21.",
             "rounds": "steeled_rounds / javelins_rounds: {your_lord: round}; existing default is 1.",
             "decisions": "battle_decisions / storm_decisions: your typed FIFO arrays, e.g. [[concede, true]], scoped to your decisions.",
             "retreat": "Use [retreat, removed] for voluntary removal when losing. For a conceding group Retreat, use [retreat_keep_provender, COUNT] at each contested mat in resolution order.",
             "spoils": "Winning owner chooses spoils_recipient (Lord ID), then spoils_amount (positive marker count); repeat to split Assets. Defaults fill the first eligible mat then allies; each Asset type is capped at 8 per Lord.",
             "resolution": "Engine combat is atomic. Preserve scripted choices; unscripted choices use its existing fallback.",
             "opponent_input": "An explicit input/decline handoff occurs before dice. No opponent hand is disclosed.",
+            **turkic_target_help(gs, move, side, move.get("_combat_inputs", {}).get("your_held_events", [])),
         }
     out["references"] = ["guide", "rules", "decisions", "errata"]
     return out

@@ -33,7 +33,9 @@ def test_r21_consumed_in_battle_removes_two_turkic():
 def test_s21_consumed_removes_turkic():
     gs = _gs(); aa = _seljuk_with_turkic(gs, n=2)
     gs.seljuk.held_events.append("S21")
-    battle._consume_battle_events(gs, {"seljuk": ["S21"]}, locale="ani")
+    battle._consume_battle_events(gs, {
+        "seljuk": [{"card": "S21", "targets": [{"lord": aa.id, "count": 2}]}],
+    }, locale="ani")
     assert aa.forces.get("turkic_horse", 0) == 0                 # both removed (can force a Disband)
     assert "S21" in gs.seljuk.draw_deck
 

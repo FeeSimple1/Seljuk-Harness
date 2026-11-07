@@ -572,64 +572,119 @@ def resolve_event(gs: GameState, card_id: str, args: dict, roller: DiceRoller) -
 # Ambush, Cavalry Charge, Command Confusion, Betrayal) are applied inside the
 # Battle engine via begin_battle/resolve_storm 'events' arguments.
 
-def _remove_turkic_at(gs, locale, count, include_themata=False):
-    """R21 removes units (including Levied units); S21 may remove whole markers.
-
-    Use the same identity-aware path for standalone Holds and Battle/Storm.
-    Printed marker symbols never shrink when just one of its units is removed.
-    """
-    removed = 0
+def _turkic_sources(gs, locale, include_themata):
+    """Map target identities to their available quantities before the Events."""
+    sources = {}
     for lord in gs.lords.values():
         if not lord.mustered or lord.cylinder != locale:
             continue
-        take = min(max(0, count - removed), lord.forces.get("turkic_horse", 0))
-        if take:
-            lord.forces["turkic_horse"] -= take
-            if not lord.forces["turkic_horse"]:
-                lord.forces.pop("turkic_horse")
-            removed += take
-    if include_themata:
-        markers = gs.locales[locale].themata_defending
-        for marker in list(reversed(markers)):
-            if removed >= count:
-                break
-            if marker.unit == "turkic_horse":
-                markers.remove(marker)
-                _record_removed_themata(gs, marker, sd.locale(locale)["thema"])
-                removed += 1
-    for lord in gs.lords.values():
-        if not lord.mustered or lord.cylinder != locale:
-            continue
-        for marker in list(reversed(lord.themata_on_mat)):
-            if removed >= count:
-                break
+        if count := lord.forces.get("turkic_horse", 0):
+            sources[lord.id, None, "unit"] = count
+        for index, marker in enumerate(lord.themata_on_mat):
             if marker.unit != "turkic_horse":
                 continue
+            if marker.unrouted_count() > 0:
+                sources[lord.id, index, "unit"] = marker.unrouted_count()
             if include_themata:
-                take = 1
-                empty = True
-            else:
-                take = min(count - removed, marker.unrouted_count())
-                marker.strength = marker.unit_count() - take
-                empty = marker.unit_count() == 0
-            removed += take
-            if empty:
-                lord.themata_on_mat.remove(marker)
-                _record_removed_themata(gs, marker, sd.locale(locale)["thema"])
-    return removed
+                sources[lord.id, index, "marker"] = 1
+    if include_themata:
+        for index, marker in enumerate(gs.locales[locale].themata_defending):
+            if marker.unit == "turkic_horse":
+                sources[None, index, "marker"] = 1
+    return sources
 
 
-def _disband_forceless_at(gs, locale):
-    """1.6 / S21 clarification: a Lord left with no Forces (e.g. his only Turkic
-    Horse removed) Disbands. Used by the standalone Hold resolvers (NOT mid-Battle,
-    where a 0-Force Lord is handled by Battle resolution)."""
-    from . import actions
-    out = []
-    for l in gs.lords.values():
-        if l.mustered and l.cylinder == locale and not l.unrouted_forces() and l.service_box is not None:
-            actions._disband_at_limit(gs, l)
-            out.append(l.id)
-    return out
+def _plan_turkic_removal(gs, locale, args, include_themata=False, *, owner=None):
+    if not isinstance(locale, str) or locale not in gs.locales:
+        raise IllegalAction("bad_turkic_target", "Choose the combat Locale for Turkic Horse removal.")
+    sources = _turkic_sources(gs, locale, include_themata)
+    count = args.get("count", 2)
+    if type(count) is not int or not 0 <= count <= 2:
+        raise IllegalAction("bad_turkic_count", "Remove zero, one, or two Turkic Horse targets.")
+
+    if "targets" not in args:
+        # Older calls specified a count. Infer targets only when the selection
+        # is forced. For S21 the old indexed target was a whole marker.
+        if include_themata:
+            sources = {key: n for key, n in sources.items() if key[1] is None or key[2] == "marker"}
+        count = min(count, sum(sources.values()))
+        if count == 0:
+            return {}
+        if any(lid is not None and gs.lords[lid].side == owner for lid, _, _ in sources):
+            raise IllegalAction("turkic_targets_required", "Name the targets when friendly Turkic Horse are present.")
+        if len(sources) == 1:
+            return {next(iter(sources)): count}
+        if count == sum(sources.values()):
+            return sources
+        raise IllegalAction("turkic_targets_required", "Choose the Turkic Horse targets explicitly.")
+
+    targets = args["targets"]
+    if not isinstance(targets, list):
+        raise IllegalAction("bad_turkic_target", "Supply a list of Turkic Horse targets.")
+    selected = {}
+    for target in targets:
+        if not isinstance(target, dict) or target.keys() - {"lord", "index", "kind", "count"}:
+            raise IllegalAction("bad_turkic_target", "Specify a Lord and/or Themata index for each target.")
+        lord, index = target.get("lord"), target.get("index")
+        kind = target.get("kind", "marker" if include_themata and index is not None else "unit")
+        quantity = target.get("count", 1)
+        if ((lord is not None and not isinstance(lord, str))
+                or (index is not None and type(index) is not int)
+                or kind not in ("unit", "marker")
+                or type(quantity) is not int or quantity < 1):
+            raise IllegalAction("bad_turkic_target", "Invalid Turkic Horse target.")
+        key = (lord, index, kind)
+        if key in selected or quantity > sources.get(key, 0):
+            raise IllegalAction("bad_turkic_target", "Select distinct eligible targets with available units.")
+        selected[key] = quantity
+    total = sum(selected.values())
+    if total > 2 or ("count" in args and total != count):
+        raise IllegalAction("bad_turkic_count", "The selected quantities must agree with the removal count of up to two.")
+    return selected
+
+
+def _apply_turkic_removal(gs, locale, selections):
+    """Resolve all declarations against their original marker indices."""
+    sources = _turkic_sources(gs, locale, include_themata=True)
+    used = {}
+    for selection in selections:
+        for (lid, index, kind), count in selection.items():
+            old_kind, old_count = used.get((lid, index), (kind, 0))
+            if kind != old_kind or count + old_count > sources[lid, index, kind]:
+                raise IllegalAction("bad_turkic_target", "The Events overlap on the same Turkic Horse target.")
+            used[lid, index] = (kind, count + old_count)
+
+    # Remove higher indices first so removing a marker never retargets a
+    # second declaration. Ordinary forces have no index.
+    for (lid, index), (kind, count) in sorted(
+            used.items(), key=lambda item: -1 if item[0][1] is None else item[0][1], reverse=True):
+        if index is None:
+            forces = gs.lords[lid].forces
+            forces["turkic_horse"] -= count
+            if not forces["turkic_horse"]:
+                del forces["turkic_horse"]
+            continue
+        markers = gs.lords[lid].themata_on_mat if lid is not None else gs.locales[locale].themata_defending
+        marker = markers[index]
+        if kind == "unit":
+            marker.strength = marker.unit_count() - count
+        if kind == "marker" or marker.unit_count() == 0:
+            markers.pop(index)
+            _record_removed_themata(gs, marker, sd.locale(locale)["thema"])
+    return {lid for lid, _ in used if lid is not None}
+
+
+def _remove_turkic_at(gs, locale, count, include_themata=False):
+    """Compatibility entry point for an unambiguous count-only removal."""
+    selection = _plan_turkic_removal(gs, locale, {"count": count}, include_themata)
+    _apply_turkic_removal(gs, locale, [selection])
+    return sum(selection.values())
+
+
+def _disband_turkic_targets(gs, lords):
+    from .actions import disband_if_empty
+
+    return [lid for lid in sorted(lords) if disband_if_empty(gs, gs.lords[lid])]
 
 
 def _hold_michael_attaleiates(gs, args, roller):   # R6 (Muster, on Romanos)
@@ -660,16 +715,23 @@ def _hold_sultans_horse(gs, args, roller):          # R4 (remove 1 Siege where A
     return {"removed_siege_at": aa.cylinder}
 
 
-def _hold_nomadic_tribes(gs, args, roller):         # R21 (remove up to 2 Turkic Horse units)
+def _hold_turkic_removal(gs, args, include_themata):
     loc = args["locale"]
-    n = _remove_turkic_at(gs, loc, min(2, int(args.get("count", 2))))
-    return {"turkic_removed": n, "disbanded": _disband_forceless_at(gs, loc)}
+    active = gs.lords.get(gs.meta.active_lord)
+    if active is not None and active.cylinder != loc:
+        raise IllegalAction("bad_turkic_target", "Choose the Active Lord's Locale.")
+    owner = "seljuk" if include_themata else "roman"
+    selection = _plan_turkic_removal(gs, loc, args, include_themata, owner=owner)
+    affected = _apply_turkic_removal(gs, loc, [selection])
+    return {"turkic_removed": sum(selection.values()), "disbanded": _disband_turkic_targets(gs, affected)}
+
+
+def _hold_nomadic_tribes(gs, args, roller):         # R21 (remove up to 2 Turkic Horse units)
+    return _hold_turkic_removal(gs, args, include_themata=False)
 
 
 def _hold_common_cultural(gs, args, roller):        # S21 (remove up to 2 Turkic Horse markers/units)
-    loc = args["locale"]
-    n = _remove_turkic_at(gs, loc, min(2, int(args.get("count", 2))), include_themata=True)
-    return {"turkic_removed": n, "disbanded": _disband_forceless_at(gs, loc)}
+    return _hold_turkic_removal(gs, args, include_themata=True)
 
 
 def _hold_bad_omens(gs, args, roller):              # S24 (inspect top 2 unrevealed Roman Plan cards)

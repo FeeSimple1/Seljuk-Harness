@@ -127,6 +127,18 @@ parameters (hinted by `_`-prefixed keys):
   dicts naming the Roman Lord: `{"card":"R24","lord":...}`); Storm honors
   R21/S21 plus, for the Roman defender, `"play_sultans_horse": true`
   (R4: Rounds -1, disclosed only to the Roman player).
+- **R21/S21 Turkic Horse removal.** In `battle_events`, name the exact
+  targets, for example `{"card":"R21","targets":[{"lord":"alp_arslan","count":1}]}`.
+  You may split up to two removals among eligible Lords at the combat Locale,
+  including Besieged Lords and other nonparticipants. To select a unit on a
+  Levied Themata marker, add its zero-based `index` on that Lord's mat and
+  `"kind":"unit"`. For S21 a whole marker costs one removal. Use
+  `"kind":"marker"` and the index, omitting `lord` for a marker defending the
+  Stronghold. Compact combat details list visible targets and screen hidden
+  mats. The trusted standalone Hold uses the same `targets` in `args` along
+  with `locale`. Legacy count-only declarations work for unambiguous enemy
+  targets. Name your targets explicitly if friendly Turkic Horse are present.
+  Omit the card to keep it Held.
 - **steeled_rounds** (R3 Steeled Resolve). Any combat-starting move accepts
   `"steeled_rounds": {LORD: N}` — the Round (default 1) in which that Lord's
   Capability applies.

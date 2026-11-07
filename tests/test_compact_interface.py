@@ -360,7 +360,8 @@ def test_private_handoff_no_mutation_before_opponent_and_save_resume(tmp_path):
     interface.gs.roman.held_events.append("R21")
     before = interface.gs.to_json()
     interface.apply(interface.actions()["entries"][0]["id"], parameters={
-        "choices": {did: {"action": "stand"}}, "battle_events": {"roman": ["R21"]},
+        "choices": {did: {"action": "stand"}},
+        "battle_events": {"roman": [{"card": "R21", "targets": [{"lord": "alp_arslan", "count": 1}]}]},
         "battle_decisions": [["concede", False]]})
     assert interface.viewer == "seljuk"
     assert interface.gs.to_json() == before
