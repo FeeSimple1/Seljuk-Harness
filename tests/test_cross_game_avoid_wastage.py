@@ -225,6 +225,11 @@ def test_hidden_avoid_spoils_are_revealed_only_after_local_scouts_choice(use_sco
     loot = 2 if use_scouts else 6
     assert ui.details(row["id"])["help"]["avoid_spoils_decisions"]["pool"] == {"loot": loot, "provender": 0}
     result = ui.apply(row["id"], parameters={"inputs": {"avoid_spoils_decisions": spoils_script((second.id, loot))}})
+    if use_scouts:
+        assert ui.owed == "seljuk" and set(result["pending"]["combatants"]) == {first.id, second.id, scout_target.id}
+        ui.apply({"type": "decline_inputs"}, version=ui.version)
+        assert ui.owed == "roman"
+        result = ui.apply({"type": "decline_inputs"}, version=ui.version)
     assert result["outcome"]["avoid_spoils"]["distributed"] == {second.id: {"loot": loot}}
 
 

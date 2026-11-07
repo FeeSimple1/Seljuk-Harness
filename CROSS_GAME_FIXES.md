@@ -377,3 +377,19 @@ replays. The move round-trip sweep passed across five scenarios and five seeds.
 Thirty randomized games reported no findings.
 
 Third-audit progress is **five of five Seljuk groups** and **23 of 23 overall**.
+
+## Round 4 Seljuk audit
+
+- R1 Forts use the active Fort profile for Siege, Themata assignments, and
+  Storm spoils. Conquest or Ruin clears the constructed Fort marker.
+- Roman Lords cannot Withdraw at Hama or Aleppo during Approach or after
+  Battle. A Seljuk Lord can Withdraw into friendly Aleppo under the normal
+  requirements. Local Scouts retains its specific Aleppo exception.
+- Owners can assign Shared Cart capacity across co-Avoiding Lords or surviving
+  co-Retreaters who conceded and move to the same destination. Food remains on
+  its owner's mat and unallocated food becomes Spoils.
+- Losing owners can elect removal alongside their legal Retreat or Withdrawal
+  options. Mandatory Sally Withdrawal still applies.
+- Hidden Mats reveals the participating Lord mats after combat is committed,
+  before each player finalizes their inputs. The compact interface preserves
+  this window across save and resume.

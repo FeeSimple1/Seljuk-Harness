@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, PrivateAttr
 
 
 class IllegalAction(Exception):
@@ -201,6 +201,15 @@ class GameState(_Model):
     seljuk: SideDecks = Field(default_factory=SideDecks)
     roman: SideDecks = Field(default_factory=SideDecks)
     history: list[dict[str, Any]] = Field(default_factory=list)
+
+    _revealed_combat_lords: frozenset[str] = PrivateAttr(default_factory=frozenset)
+
+    def mat_hidden_from(self, lord: LordState, viewer: str | None) -> bool:
+        return bool(viewer and lord.side != viewer and lord.mustered
+                    and self.meta.options.get("hidden_mats")
+                    and lord.id not in self._revealed_combat_lords
+                    and not any(p.get("_surprise_storm", {}).get("attacker") == lord.id
+                                for p in self.meta.pending))
 
     # ---- persistence ----
     def to_json(self, *, indent: int | None = 1) -> str:

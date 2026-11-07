@@ -1405,8 +1405,9 @@ def legal_moves_campaign(gs: GameState) -> list[dict[str, Any]]:
         # as a Besiege variant when held and eligible (was handler-only).
         _bs = gs.lords[bb["lords"][0]].side
         _bl = bb["locale"]
+        from .battle import _eff_type
         if (_bs == "seljuk" and "S1" in gs.seljuk.held_events
-                and sd.locale(_bl)["type"] in ("fort", "town")
+                and _eff_type(gs, _bl) in ("fort", "town")
                 and sum(1 for l in gs.lords.values() if l.mustered and l.cylinder == _bl) == 1):
             moves.append({"type": "besiege_bypass", "choice": "besiege", "surprise": True,
                           "_desc": "Besiege with Surprise (S1): place 2 Siege markers, then Storm"})
@@ -1628,7 +1629,7 @@ def command_menu(gs: GameState) -> list[dict[str, Any]]:
                 # (enough Besiegers, room for another marker). Offer it then.
                 from . import battle as _b
                 if (not _besieged_enemy_inside(gs, loc_id, lord.side)
-                        and len(_besieging_lords_at(gs, loc_id, lord.side)) >= _b._value(loc_id)
+                        and len(_besieging_lords_at(gs, loc_id, lord.side)) >= _stronghold_size(gs, loc_id)
                         and st.siege_markers < 4):
                     out.append({"type": "cmd_siege", "lord": lid, "roll_surrender": False,
                                 "_desc": "Siege, decline to roll: add a Siegeworks marker without "
@@ -1638,7 +1639,7 @@ def command_menu(gs: GameState) -> list[dict[str, Any]]:
                 # (no Spoils). The active Lord still takes the Siege action, so it is a
                 # variant of cmd_siege — offer it when the card is held and eligible.
                 if (lord.side == "roman" and "R25" in gs.roman.held_events
-                        and sd.locale(loc_id)["type"] == "fort"
+                        and _b._eff_type(gs, loc_id) == "fort"
                         and not _besieged_enemy_inside(gs, loc_id, lord.side)):
                     out.append({"type": "cmd_siege", "lord": lid, "honors_of_war": True,
                                 "_desc": "Siege with Honors of War (R25): Fort auto-Surrenders, no Spoils (4.5.1)"})
@@ -2176,9 +2177,8 @@ def group_laden(gs: GameState, lords: list[LordState]) -> bool:
     return loot > 0 or prov > carts
 
 
-def _shared_unladen_provender(gs: GameState, group: list[str]) -> dict[str, int]:
-    """Keep Provender on its own mat, using own Carts first and sharing spare
-    Carts in group order (1.5.2, 4.3.2). The callers group Lords by destination."""
+def _shared_unladen_provender(gs: GameState, group: list[str], *, decisions=None) -> dict[str, int]:
+    """Keep food on its own mat. Without an election, use own Carts first."""
     spare = sum(max(0, gs.lords[lid].assets.carts - gs.lords[lid].assets.provender)
                 for lid in group)
     kept = {}
@@ -2187,6 +2187,19 @@ def _shared_unladen_provender(gs: GameState, group: list[str]) -> dict[str, int]
         borrowed = min(spare, max(0, assets.provender - assets.carts))
         spare -= borrowed
         kept[lid] = min(assets.provender, assets.carts + borrowed)
+    if decisions is not None:
+        remaining = sum(kept.values())
+        food_remaining = sum(gs.lords[lid].assets.provender for lid in group)
+        for lid in group:
+            lord = gs.lords[lid]
+            food = lord.assets.provender
+            food_remaining -= food
+            lo, hi = max(0, remaining - food_remaining), min(food, remaining)
+            default = min(hi, max(lo, kept[lid]))
+            kept[lid] = default if lo == hi else decisions.decide(
+                "retreat_keep_provender", [default, *(n for n in range(lo, hi + 1) if n != default)],
+                {"lord": lid, "side": lord.side, "destination": lord.cylinder}, typed_only=True)
+            remaining -= kept[lid]
     return kept
 
 
@@ -2528,7 +2541,8 @@ def _approach_choices(gs: GameState, pend: dict, action: dict) -> tuple[dict, bo
     return choices, False
 
 
-def _approach_avoid_provender(gs: GameState, pend: dict, choices: dict) -> dict[str, int]:
+def _approach_avoid_provender(gs: GameState, pend: dict, choices: dict,
+                             requested: dict | None = None) -> dict[str, int]:
     """Validate Avoid destinations and determine how much food each Lord keeps."""
     groups: dict[str, list[str]] = {}
     for lid in pend["defenders"]:
@@ -2538,9 +2552,22 @@ def _approach_avoid_provender(gs: GameState, pend: dict, choices: dict) -> dict[
             lord = gs.lords[lid]
             _validate_avoid(gs, lord, pend["locale"], dest, lord.side, pend.get("from"))
             groups.setdefault(dest, []).append(lid)
+    if requested is None:
+        requested = {}
+    if not isinstance(requested, dict) or set(requested) - {lid for group in groups.values() for lid in group}:
+        raise IllegalAction("bad_avoid_provender", "Select retained Provender only for Lords who Avoid.")
     keep = {}
     for group in groups.values():
-        keep.update(_shared_unladen_provender(gs, group))
+        default = _shared_unladen_provender(gs, group)
+        if not any(lid in requested for lid in group):
+            keep.update(default)
+            continue
+        if (any(type(requested.get(lid)) is not int
+                or not 0 <= requested[lid] <= gs.lords[lid].assets.provender for lid in group)
+                or sum(requested[lid] for lid in group) != sum(default.values())):
+            raise IllegalAction("bad_avoid_provender",
+                                "Specify each co-Avoider's retained food, filling available Shared Carts.")
+        keep.update({lid: requested[lid] for lid in group})
     return keep
 
 
@@ -2570,6 +2597,8 @@ def h_respond_approach(gs: GameState, action: dict[str, Any], roller: DiceRoller
     "to": <locale for avoid>}. Standers (if any) trigger a Battle. The
     Approaching player may specify ``sally_join`` with any subset of eligible
     Besieged Lords, including []. Omission uses the historical all-join default.
+    ``avoid_keep_provender`` maps each Lord in a chosen co-Avoiding group to the
+    food he retains with Shared Carts. Omit to use the usual own-Carts default.
     ``avoid_spoils_decisions`` allocates Avoid discards before Battle, using the
     usual Spoils choices. In an Avoid-only response, ``battle_decisions`` also works."""
     pend = next((p for p in gs.meta.pending if p["type"] == "approach_response"), None)
@@ -2586,7 +2615,7 @@ def h_respond_approach(gs: GameState, action: dict[str, Any], roller: DiceRoller
         gs.side_decks(att_side).draw_deck.append("R18")
     standers, avoided, withdrew = [], [], []
     approach_origin = pend.get("from")  # SMOKE-006: Locale the Attackers Approached from
-    keep_provender = _approach_avoid_provender(gs, pend, choices)
+    keep_provender = _approach_avoid_provender(gs, pend, choices, action.get("avoid_keep_provender"))
     pool = _avoid_spoils_pool(gs, keep_provender)
     # 4.3.4: Withdraw is limited to the Stronghold's Size (incl. Lords already inside).
     inside = sum(1 for l in gs.lords.values()
@@ -2614,6 +2643,8 @@ def h_respond_approach(gs: GameState, action: dict[str, Any], roller: DiceRoller
             avoided.append(did)
         elif kind == "withdraw":
             _validate_withdraw(gs, lord, to)
+            if scouts_played and to == "aleppo" and action["local_scouts"]["lord"] == did:
+                raise IllegalAction("no_withdraw_aleppo", "Local Scouts cannot force Withdrawal at Aleppo (R18)")
             lord.besieged = True  # inside the Stronghold at `to`
             withdrew.append(did)
         else:
@@ -2682,13 +2713,18 @@ def _validate_avoid(gs: GameState, lord: LordState, battle_loc: str, dest: str, 
         raise IllegalAction("avoid_into_enemy", "may not Avoid into a Locale with an Unbesieged Enemy Lord (4.3.4)")
 
 
+def _fatimid_withdraw_blocked(side: str, locale: str) -> bool:
+    return side == "roman" and locale in ("hama", "aleppo")
+
+
 def _validate_withdraw(gs: GameState, lord: LordState, battle_loc: str) -> None:
     if not _is_stronghold(gs, battle_loc):
         raise IllegalAction("no_stronghold", "Withdraw requires a Friendly Stronghold here (4.3.4)")
     if actions.current_allegiance(gs, battle_loc) != lord.side:
         raise IllegalAction("not_friendly_stronghold", "Withdraw requires a Friendly Stronghold (4.3.4)")
-    if battle_loc == "aleppo":
-        raise IllegalAction("no_withdraw_aleppo", "no Lord may Withdraw inside Aleppo (1.3.1)")
+    if _fatimid_withdraw_blocked(lord.side, battle_loc):
+        raise IllegalAction(f"no_withdraw_{battle_loc}",
+                            "Roman Lords may not Withdraw inside Hama or Aleppo (1.3.1)")
 
 
 def h_besiege_bypass(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
@@ -2702,9 +2738,10 @@ def h_besiege_bypass(gs: GameState, action: dict[str, Any], roller: DiceRoller) 
         raise IllegalAction("bad_choice", "choose 'besiege' or 'bypass' (4.3.5)")
     gs.meta.pending.remove(pend)
     if choice == "besiege":
+        from . import battle
         lords_here = [l for l in gs.lords.values() if l.mustered and l.cylinder == to]
         if (action.get("surprise") and side == "seljuk" and "S1" in gs.seljuk.held_events
-                and sd.locale(to)["type"] in ("fort", "town") and len(lords_here) == 1):
+                and battle._eff_type(gs, to) in ("fort", "town") and len(lords_here) == 1):
             # S1 Surprise: place 2 Siege markers (not 1), then immediately Storm.
             # Card Clarification: "The Roman player still gets to place his
             # Themata (if any) as normal" BEFORE the Siege markers are placed --
@@ -2720,7 +2757,6 @@ def h_besiege_bypass(gs: GameState, action: dict[str, Any], roller: DiceRoller) 
                 return {"ok": True, "action": "besiege_surprise", "locale": to,
                         "pending": "assign_themata_defenders"}
             gs.locales[to].siege_markers = 2
-            from . import battle
             res = battle.resolve_storm(gs, [pend["lords"][0]], to,
                                        battle.DecisionContext(action.get("storm_decisions")), roller)
             _after_card(gs)
@@ -2746,18 +2782,14 @@ def h_besiege_bypass(gs: GameState, action: dict[str, Any], roller: DiceRoller) 
 
 def _stronghold_size(gs: GameState, loc: str) -> int:
     """Stronghold Size / Lord capacity: fort=1, town=2, city=3 (R1 Fort = 1)."""
-    info = sd.locale(loc)
-    if info.get("is_stronghold") and not gs.locales[loc].ruins:
-        return {"fort": 1, "town": 2, "city": 3}.get(info["type"], 0)
-    return 1 if gs.locales[loc].fort_marker else 0
+    from .battle import _eff_value
+    return _eff_value(gs, loc)
 
 
 def _is_stronghold(gs: GameState, loc: str) -> bool:
     """A Locale defended as a Stronghold: its printed Stronghold (un-Ruined) OR a
     Fort marker from R1 Imperial Fortress Construction."""
-    info = sd.locale(loc)
-    st = gs.locales[loc]
-    return bool((info.get("is_stronghold") and not st.ruins) or st.fort_marker)
+    return _stronghold_size(gs, loc) > 0
 
 
 def h_cmd_fort(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
@@ -2864,15 +2896,17 @@ def h_cmd_siege(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> di
     loc_id = lord.cylinder
     from . import battle
     info = sd.locale(loc_id)
-    size = battle._value(loc_id)
+    size = _stronghold_size(gs, loc_id)
+    profile = battle._eff_profile(gs, loc_id)
+    if profile is None:
+        raise IllegalAction("not_stronghold", "Siege requires a current Stronghold (4.5.1)")
     siege = gs.locales[loc_id].siege_markers
     result = {"ok": True, "action": "cmd_siege", "lord": lord.id, "locale": loc_id}
     seized = False
     # Honors of War (R25): a Held Roman Event auto-Surrenders a Fort (no Spoils).
     if (action.get("honors_of_war") and "R25" in gs.roman.held_events
-            and sd.locale(loc_id)["type"] == "fort" and lord.side == "roman"
+            and battle._eff_type(gs, loc_id) == "fort" and lord.side == "roman"
             and not _besieged_enemy_inside(gs, loc_id, lord.side)):
-        from . import battle
         result["honors_of_war"] = True
         result["conquer"] = battle.conquer(gs, loc_id, "roman")
         gs.roman.held_events.remove("R25"); gs.roman.draw_deck.append("R25")
@@ -2882,7 +2916,7 @@ def h_cmd_siege(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> di
         _after_card(gs)
         return result
     if not _besieged_enemy_inside(gs, loc_id, lord.side) and action.get("roll_surrender", True):
-        dice_n = sd.stronghold_profile(loc_id)["surrender_dice"]
+        dice_n = profile["surrender_dice"]
         threshold = min(siege, 4) + (1 if gs.locales[loc_id].ravaged_side is not None else 0)
         rolls = roller.roll(dice_n)
         if capabilities.lord_has(gs, lord.id, "Brutal Reputation"):  # S21: reroll 1 Surrender die
@@ -2934,7 +2968,7 @@ def h_assign_themata_defenders(gs: GameState, action: dict[str, Any], roller: Di
         raise IllegalAction("no_pending", "no Themata defenders to assign")
     loc_id = pend["locale"]
     from . import battle
-    size = battle._value(loc_id)
+    size = _stronghold_size(gs, loc_id)
     thema = sd.locale(loc_id)["thema"]
     box = gs.themata[thema]
     idxs = sorted(set(action.get("markers", [])), reverse=True)

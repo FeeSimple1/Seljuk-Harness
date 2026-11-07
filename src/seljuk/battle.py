@@ -83,7 +83,7 @@ class DecisionContext:
             self.scripted = list(scripted or [])
         self.trace: list[dict] = []
 
-    def decide(self, dtype: str, options: list, info: dict | None = None):
+    def decide(self, dtype: str, options: list, info: dict | None = None, *, typed_only=False):
         """Resolve a choice. Scripted entries may be typed ``(dtype, choice)``
         (consumed only at a matching decision) or bare values (consumed in
         order). With nothing applicable scripted, fall back to the first
@@ -95,8 +95,8 @@ class DecisionContext:
             if side not in self.by_side:
                 from .state import IllegalAction
                 raise IllegalAction("decision_owner_missing", f"no owner for {dtype}; cannot consume another player's script")
-            chosen = self.by_side[side].decide(dtype, options, info)
-            self.trace.append({"type": dtype, "choice": chosen, "options": options})
+            chosen = self.by_side[side].decide(dtype, options, info, typed_only=typed_only)
+            self.trace.append(self.by_side[side].trace[-1])
             return chosen
         # JSON arrays represent both typed entries and tuple-valued choices.
         # Prefer an exact offered value before interpreting a pair as typed.
@@ -107,6 +107,17 @@ class DecisionContext:
                 return {k: canonical(v) for k, v in value.items()}
             return value
         choice = None
+        if typed_only:
+            head = self.scripted[0] if self.scripted else None
+            choice = options[0]
+            if isinstance(head, (tuple, list)) and len(head) == 2 and head[0] == dtype:
+                from .state import IllegalAction
+                choice = head[1]
+                if type(choice) is not int or choice not in options:
+                    raise IllegalAction("bad_retreat_provender", f"Choose retained Provender from {options}")
+                self.scripted.pop(0)
+            self.trace.append({"type": dtype, "choice": choice, "options": options, "info": info})
+            return choice
         if self.scripted:
             head = self.scripted[0]
             exact = next((v for v in options if canonical(v) == canonical(head)), None)
@@ -915,8 +926,7 @@ def _retreat_blocked(gs: GameState, dst: str, lord_side: str) -> bool:
     enemy = "roman" if lord_side == "seljuk" else "seljuk"
     if any(o.mustered and o.cylinder == dst and o.side == enemy for o in gs.lords.values()):
         return True
-    info = sd.locale(dst)
-    if info.get("is_stronghold") and not gs.locales[dst].ruins \
+    if campaign._is_stronghold(gs, dst) \
             and campaign.actions.current_allegiance(gs, dst) == enemy \
             and gs.locales[dst].siege_markers == 0 and not gs.locales[dst].bypass:
         return True
@@ -927,12 +937,12 @@ def _lord_fate(gs: GameState, lord: LordState, loser_role: str, locale: str,
                conceded: bool, ctx: DecisionContext, approach_origin: str | None = None,
                marcher_origin: str | None = None) -> str:
     """Retreat / Withdraw / Removal for a losing Lord (4.8.3)."""
-    # Withdraw into a Friendly Stronghold here (Defender only, not Aleppo).
+    # Withdraw into a Friendly Stronghold here (Defender only).
     from . import campaign
     can_withdraw = (loser_role == "defender"
                     and campaign._is_stronghold(gs, locale)
                     and campaign.actions.current_allegiance(gs, locale) == lord.side
-                    and locale != "aleppo"
+                    and not campaign._fatimid_withdraw_blocked(lord.side, locale)
                     and sum(other.mustered and other.side == lord.side
                             and other.cylinder == locale and other.besieged
                             for other in gs.lords.values() if other.id != lord.id)
@@ -963,7 +973,7 @@ def _lord_fate(gs: GameState, lord: LordState, loser_role: str, locale: str,
     if not options:
         choice = "removed"
     else:
-        choice = ctx.decide("retreat", options, {"lord": lord.id, "side": lord.side})
+        choice = ctx.decide("retreat", [*options, "removed"], {"lord": lord.id, "side": lord.side})
     if choice == "withdraw":
         lord.besieged = True
         lord.cylinder = locale
@@ -1088,7 +1098,7 @@ def _spoils_and_removal(gs: GameState, att_ids: list[str], def_ids: list[str], l
             if fates.get(lid) == "retreat" and not _is_routed(lord):
                 retreat_groups.setdefault(lord.cylinder, []).append(lid)
         for group in retreat_groups.values():
-            keep_provender.update(_shared_unladen_provender(gs, group))
+            keep_provender.update(_shared_unladen_provender(gs, group, decisions=ctx))
 
     pool = {"coin": 0, "loot": 0, "provender": 0, "carts": 0}
     # Spoils transfer by fate (4.8.3).
@@ -1132,17 +1142,22 @@ def _value(locale: str) -> int:
 
 def _eff_value(gs: GameState, locale: str) -> int:
     """Stronghold Size: printed value, or 1 for an R1 Fort marker."""
-    if sd.locale(locale).get("is_stronghold") and not gs.locales[locale].ruins:
-        return _value(locale)
-    return 1 if gs.locales[locale].fort_marker else 0
+    return {"fort": 1, "town": 2, "city": 3}.get(_eff_type(gs, locale), 0)
+
+
+def _eff_type(gs: GameState, locale: str) -> str | None:
+    loc = gs.locales[locale]
+    if loc.fort_marker:
+        return "fort"
+    info = sd.locale(locale)
+    return info["type"] if info.get("is_stronghold") and not loc.ruins else None
 
 
 def _eff_profile(gs: GameState, locale: str) -> dict | None:
     """Stronghold profile: the printed one, or the Fort profile for an R1 Fort."""
-    prof = sd.stronghold_profile(locale)
-    if prof is None and gs.locales[locale].fort_marker:
-        prof = dict(sd.strongholds()["types"]["fort"])
-    return prof
+    if gs.locales[locale].fort_marker:
+        return dict(sd.strongholds()["types"]["fort"])
+    return sd.stronghold_profile(locale) if not gs.locales[locale].ruins else None
 
 
 def _remove_garrison_themata(gs: GameState, locale: str) -> None:
@@ -1196,6 +1211,7 @@ def ruin(gs: GameState, locale: str) -> dict[str, Any]:
     loc.bypass = False
     loc.conquered_side = None
     loc.conquered_count = 0
+    loc.fort_marker = False
     loc.ruins = True
     loc.ruins_color = "seljuk"
     if loc.strategic_objective:
@@ -1206,12 +1222,14 @@ def ruin(gs: GameState, locale: str) -> dict[str, Any]:
 
 
 def award_spoils(gs: GameState, locale: str, to_lords: list[str],
-                 ctx: DecisionContext | None = None) -> dict[str, int]:
-    """Printed Stronghold Spoils (4.9.1), divided among surviving winners."""
-    sh = sd.stronghold_profile(locale)
-    if not sh or not to_lords:
+                 ctx: DecisionContext | None = None, *,
+                 spoils: dict[str, int] | None = None) -> dict[str, int]:
+    """Stronghold Spoils (4.9.1), divided among surviving winners."""
+    if spoils is None:
+        sh = _eff_profile(gs, locale)
+        spoils = dict(sh["sack_spoils"]) if sh else {}
+    if not to_lords:
         return {}
-    spoils = dict(sh["sack_spoils"])
     distribute_spoils(gs, spoils, to_lords, ctx)
     return spoils
 
@@ -1584,11 +1602,13 @@ def _sack(gs: GameState, attacker_ids, defender_ids, locale, a_side, ctx, roller
     choice = "conquer"
     if can_ruin:
         choice = ctx.decide("sack_choice", ["conquer", "ruin"], {"locale": locale, "side": a_side})
+    # Conquest and Ruin can clear the Fort marker before the award.
+    spoils = dict(_eff_profile(gs, locale)["sack_spoils"])
     out = ruin(gs, locale) if choice == "ruin" else conquer(gs, locale, a_side)
     # Reconcile losses before selecting surviving recipients (4.8.3-.5).
     _storm_losses(gs, attacker_ids, defender_ids, defender_won=False, roller=roller, ctx=ctx, log=out)
     survivors = [l for l in attacker_ids if not _is_routed(gs.lords[l]) and gs.lords[l].mustered]
-    out["spoils"] = award_spoils(gs, locale, survivors, ctx)
+    out["spoils"] = award_spoils(gs, locale, survivors, ctx, spoils=spoils)
     pool = {asset: 0 for asset in ("coin", "loot", "provender", "carts")}
     for lid in defender_ids:
         lord = gs.lords[lid]

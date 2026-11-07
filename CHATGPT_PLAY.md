@@ -114,6 +114,22 @@ choices and the engine's existing fallback for unscripted internal choices.
 Combat remains **atomic**, not a new per-strike interactive engine. Round
 choices, events, and complete public combat traces remain obtainable.
 
+With Hidden Mats (6.1), inspect the Lords listed in the joint decision's
+`combatants` field before supplying your tactics. Only committed fighters'
+mats are visible. The initiating player gets a response window after the
+opponent's inputs, so either player can choose tactics with the opposing
+fighters visible. If Local Scouts adds a new fighter, the Approaching player
+gets a chance to revise tactics after the reveal. Mats return behind the
+screen after combat. Held Events and unplayed Command cards remain private.
+
+For co-Avoiding Lords, `avoid_keep_provender` may give the retained count for
+each Lord going to a shared destination. The counts must fill available Cart
+capacity up to the group's total food. If Local Scouts redirects one Lord,
+the defender may replace that allocation. During a conceding group Retreat,
+use `["retreat_keep_provender", COUNT]` in your typed script at each mat where
+the amount is contested. Use `["retreat", "removed"]` for voluntary removal
+when the rules allow it.
+
 Local Scouts is a three-stage interaction: the defenders choose Avoid, the
 Roman attacker declares R18, then the avoiding side chooses the affected Lord
 and Stand/Withdraw. Bad Omens may be declared without `args.order`: the Seljuk

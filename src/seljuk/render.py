@@ -63,7 +63,7 @@ def summary(gs: GameState, viewing_side: str | None = None) -> str:
                 loc = sd.locale(l.cylinder)["name"]
                 status = f"@ {loc} (Service {_box_label(l.service_box) if l.service_box is not None else '?'})"
                 extra = []
-                hidden = bool(viewing_side and side != viewing_side and gs.meta.options.get("hidden_mats"))
+                hidden = gs.mat_hidden_from(l, viewing_side)
                 if hidden:
                     extra.append("mat: <hidden>")
                 if not hidden and l.unrouted_forces():
@@ -123,7 +123,7 @@ def lord_view(gs: GameState, lord_id: str, viewing_side: str | None = None) -> s
     info = sd.lord(lord_id)
     r = info["ratings"]
     vassal_service = _vassal_service_str(gs, l)
-    if viewing_side and l.side != viewing_side and l.mustered and gs.meta.options.get("hidden_mats"):
+    if gs.mat_hidden_from(l, viewing_side):
         calendar = f"\n  Vassal Service: {vassal_service}" if vassal_service else ""
         return (f"{info['name']} [{l.side}] @ {sd.locale(l.cylinder)['name']}"
                 f"  Service {_box_label(l.service_box)}\nMat: <hidden>{calendar}")

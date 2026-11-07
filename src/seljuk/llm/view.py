@@ -32,18 +32,17 @@ def filtered_state(gs: GameState, viewing_side: str) -> dict[str, Any]:
     # identities of unrevealed/secret cards are masked.
     # 6.1 Hidden Mats: hide the enemy's Mustered Lord mats (Forces, Assets,
     # Vassals, This-Lord Capabilities). Board-visible state -- the Lord's Locale,
-    # Service marker, Besieged/Bypassed status -- stays public. (Combat reveals
-    # mats during a Battle/Storm, but those resolve atomically inside an action,
-    # so there is no persistent in-battle window to expose here.)
+    # Service marker and Besieged/Bypassed status -- stays public. During a
+    # committed Battle or Storm only participating mats are revealed.
     if gs.meta.options.get("hidden_mats"):
-        _HIDDEN = "<hidden>"
-        for ld in d["lords"].values():
+        for lid, ld in d["lords"].items():
             if ld["side"] != enemy or not ld["mustered"]:
                 continue
-            for field in ("forces", "routed", "lost", "vassals", "capabilities",
-                          "themata_on_mat", "flags"):
-                ld[field] = _HIDDEN
-            ld["assets"] = _HIDDEN
+            ld["flags"] = "<hidden>"
+            if gs.mat_hidden_from(gs.lords[lid], viewing_side):
+                for field in ("forces", "routed", "lost", "vassals", "capabilities",
+                              "themata_on_mat", "assets"):
+                    ld[field] = "<hidden>"
     # The replay history is private engine state, not a public event log. It
     # includes whole build_plan actions/results, future orders, and (with 6.1)
     # hidden mats. Expose only the public action-type summary, as briefing does.

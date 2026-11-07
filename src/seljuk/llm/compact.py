@@ -86,12 +86,29 @@ class CompactInterface:
         raw = _json({"state": self.gs.model_dump(mode="json"), "joint": self._joint})
         fingerprint = hashlib.sha256(raw.encode()).hexdigest()
         if fingerprint != self._fingerprint:
+            self._sync_combat_mats()
             self._revision += 1
             self._fingerprint = fingerprint
             self._version = f"v{self._revision}-" + self._sign(fingerprint + str(self._revision))
             self._cached_menu = None
             self._cursors.clear()
         return self._version
+
+    def _sync_combat_mats(self):
+        joint = self._joint
+        lords = ()
+        if joint and self.gs.meta.options.get("hidden_mats"):
+            snapshot = self.gs.to_json()
+            if joint["base_state"] == hashlib.sha256(snapshot.encode()).hexdigest():
+                lords = joint.get("combatants")
+                if lords is None:
+                    # Older compact saves did not store a reveal list.
+                    action = joint["action"]
+                    result = None
+                    if action["type"] == "besiege_bypass" and action.get("surprise"):
+                        result = LLMSession(GameState.from_json(snapshot)).apply(action)
+                    lords = self._combatants(action, result=result)
+        self.gs._revealed_combat_lords = frozenset(lords)
 
     def _sign(self, value):
         return hmac.new(self._key, value.encode(), hashlib.sha256).hexdigest()[:16]
@@ -272,6 +289,7 @@ class CompactInterface:
         return self.apply(action, version=version)
 
     def _document(self, source, key):
+        self._sync()
         if source == "state":
             return view.filtered_state(self.gs, self.viewer)
         if source == "pending":
@@ -439,9 +457,11 @@ class CompactInterface:
             # Rule validation on a copy before offering the opponent input;
             # never reveal or commit any speculative dice/results.
             probe = LLMSession(GameState.from_json(self.gs.to_json()))
-            probe.apply(action)
+            result = probe.apply(action)
             self._joint = {"action": action, "actor": actor, "owed_by": other(actor),
                            "base_state": hashlib.sha256(self.gs.to_json().encode()).hexdigest()}
+            if self.gs.meta.options.get("hidden_mats"):
+                self._joint["combatants"] = self._combatants(action, result=result)
             self._sync()
             return {"accepted": "awaiting_opponent_inputs", **self.overview(include_briefing=False)}
         return self._execute(action, actor)
@@ -457,6 +477,36 @@ class CompactInterface:
             # Local Scouts may affect Avoid even without a proposed Stand.
             return True
         return False
+
+    def _combatants(self, action, *, final=False, result=None):
+        gs = self.gs
+        kind = action["type"]
+        if kind == "respond_approach":
+            pending = current_pending(gs)
+            choices, _ = campaign._approach_choices(gs, pending, action)
+            standers = [lid for lid in pending["defenders"]
+                        if choices.get(lid, {}).get("action", "stand") == "stand"]
+            if not standers:
+                return []
+            attackers = pending["attackers"]
+            relief = []
+            if final:
+                candidates = campaign._relief_sally_candidates(
+                    gs, pending["locale"], gs.lords[attackers[0]].side)
+                relief = campaign._select_relief_salliers(candidates, action.get("sally_join", candidates))
+            return [*attackers, *standers, *relief]
+        if kind in ("cmd_storm", "cmd_sally", "cmd_sortie"):
+            lord = gs.lords[action["lord"]]
+            here = [unit for unit in gs.lords.values() if unit.mustered and unit.cylinder == lord.cylinder]
+            if kind == "cmd_sortie":
+                return [unit.id for unit in here if unit.side == lord.side or unit.bypassed]
+            inside = lord.side if kind == "cmd_sally" else other(lord.side)
+            return [unit.id for unit in here if unit.besieged == (unit.side == inside)]
+        if kind == "besiege_bypass":
+            if result is not None and result.get("action") == "besiege_surprise":
+                return list(current_pending(gs)["lords"])
+            return self._joint.get("combatants", []) if final else []
+        return []
 
     @staticmethod
     def _scope_scripts(action, actor):
@@ -498,6 +548,8 @@ class CompactInterface:
             public["local_scouts"] = deepcopy(j["action"]["local_scouts"])
         out = {"type": "joint_inputs", "owed_by": j["owed_by"], "committed_action": public,
                "resolution": "No dice committed yet; supply inputs. A decline is offered only when optional."}
+        if self.gs._revealed_combat_lords:
+            out["combatants"] = sorted(self.gs._revealed_combat_lords)
         if j.get("bad_omens") and self.viewer == j["actor"]:
             out["inspected_roman_plan_cards"] = deepcopy(j["inspected"])
             out["requirement"] = "Play is declared; order must be chosen before any other action. Cannot cancel after inspection."
@@ -522,7 +574,8 @@ class CompactInterface:
 
         pending = current_pending(self.gs)
         choices, _ = campaign._approach_choices(self.gs, pending, action)
-        keep = campaign._approach_avoid_provender(self.gs, pending, choices)
+        keep = campaign._approach_avoid_provender(
+            self.gs, pending, choices, action.get("avoid_keep_provender"))
         pool = campaign._avoid_spoils_pool(self.gs, keep)
         recipients = _spoils_recipients(self.gs, pending["attackers"])
         room = {asset: {lid: 8 - getattr(self.gs.lords[lid].assets, asset) for lid in recipients
@@ -551,13 +604,16 @@ class CompactInterface:
         if self._joint.get("scouts_requested"):
             return {"required": {"inputs": "local_scouts: {lord: one of your Avoiding Lords, action: stand or withdraw}"},
                     "avoiding_lords": [lid for lid, ch in action["choices"].items() if ch.get("action") == "avoid"],
-                    "notes": "R18 was played by the opponent. YOU select the Lord and Stand/Withdraw (R18); withdrawal capacity still applies."}
+                    "optional": {"avoid_keep_provender": "Replace retained-food assignments for the remaining Avoid groups."},
+                    "notes": "R18 was played by the opponent. YOU select the Lord and Stand/Withdraw (R18); withdrawal restrictions and capacity still apply."}
         if kind in ("resolve_loyalty", "discard_imperial_coffers"):
             from .. import actions
             _, budget = actions.loyalty_coin_budgets(self.gs, self._joint["actor"], action["target"])
             return {"required": {"inputs": "Object containing coins_against (nonnegative integer), or {} to decline"},
                     "max_coins_against": budget}
-        if kind == "respond_approach" and (action.get("local_scouts") or self._joint.get("avoid_spoils_pending")):
+        reviewing = bool(self._joint.get("combat_review"))
+        if not reviewing and kind == "respond_approach" and (
+                action.get("local_scouts") or self._joint.get("avoid_spoils_pending")):
             choices = self._approach_followup_inputs(action, self.owed)
             return {"required": {"inputs": "Object with your Approach choices, or {} to accept the defaults"},
                     "parameters": list(choices), **choices}
@@ -569,7 +625,7 @@ class CompactInterface:
                         if k in recognized and k != "local_scouts"]
         approach_choices = {}
         scouts_held = self.viewer == "roman" and "R18" in self.gs.roman.held_events
-        if kind == "respond_approach":
+        if kind == "respond_approach" and not reviewing:
             input_fields.append("play_local_scouts")
             approach_choices = self._relief_sally_input(action, self.owed, scouts_held=scouts_held)
             if scouts_held and any(choice.get("action") == "avoid" for choice in action["choices"].values()):
@@ -583,7 +639,7 @@ class CompactInterface:
                                      if "battle_events" in recognized else []),
                 "parameters": input_fields,
                 "your_sultans_horse_held": self.viewer == "roman" and "R4" in self.gs.roman.held_events,
-                "your_local_scouts_held": scouts_held,
+                "your_local_scouts_held": scouts_held and not reviewing,
                 **approach_choices,
                 "script_contract": "Supply your own FIFO list. Per-player queues stay private and are dispatched only to that decision's owner; no overwrite or heuristic merge.",
                 "notes": "Use only your own events and round declarations. Engine timing/eligibility still applies.",
@@ -609,11 +665,20 @@ class CompactInterface:
             return self._execute(combined, actor)
         if self._joint.get("scouts_requested"):
             selected = inputs.get("local_scouts")
-            if (set(inputs) != {"local_scouts"} or not isinstance(selected, dict)
+            if (set(inputs) - {"local_scouts", "avoid_keep_provender"} or not isinstance(selected, dict)
                     or combined["choices"].get(selected.get("lord"), {}).get("action") != "avoid"
                     or selected.get("action") not in ("stand", "withdraw")):
                 raise InterfaceError("bad_scouts_response", "Choose one of your Avoiding Lords and either Stand or Withdraw.")
             combined["local_scouts"] = deepcopy(selected)
+            if "avoid_keep_provender" in inputs:
+                combined["avoid_keep_provender"] = inputs["avoid_keep_provender"]
+            elif combined.get("avoid_keep_provender"):
+                # The redirected Lord leaves the group. Default that group's
+                # allocation unless its owner supplies a replacement.
+                destination = combined["choices"][selected["lord"]].get("to")
+                combined["avoid_keep_provender"] = {
+                    lid: kept for lid, kept in combined["avoid_keep_provender"].items()
+                    if combined["choices"][lid].get("to") != destination}
             attacker = other(actor)
             if self._approach_followup_inputs(combined, attacker):
                 # The Scout response may have changed who Stands. Check it on
@@ -622,7 +687,7 @@ class CompactInterface:
                 self._joint.update(action=combined, owed_by=attacker, scouts_requested=False)
                 self._sync()
                 return {"accepted": "awaiting_approach_choices", **self.overview(include_briefing=False)}
-            return self._execute(combined, actor)
+            return self._finish_joint(combined, actor)
         loyalty = combined["type"] in ("resolve_loyalty", "discard_imperial_coffers")
         input_contract = {} if loyalty else self._input_contract()
         allowed = {"coins_against"} if loyalty else set(input_contract["parameters"])
@@ -656,7 +721,30 @@ class CompactInterface:
             self._joint.update(action=combined, avoid_spoils_pending=True)
             self._sync()
             return {"accepted": "awaiting_avoid_spoils", **self.overview(include_briefing=False)}
-        return self._execute(combined, actor)
+        return self._finish_joint(combined, actor)
+
+    def _finish_joint(self, action, actor):
+        joint = self._joint
+        review = joint.get("combat_review")
+        if review:
+            if len(review) == 1:
+                return self._execute(action, actor)
+            LLMSession(GameState.from_json(self.gs.to_json())).apply(action)
+            joint.update(action=action, owed_by=review[1], combat_review=review[1:])
+        elif self.gs.meta.options.get("hidden_mats") and (fighters := self._combatants(action, final=True)):
+            # Validate late commitments before revealing any new mats. The
+            # initial chooser now sees the opposing fighters, and an R18
+            # redirection to Stand gives the Approaching owner another look.
+            LLMSession(GameState.from_json(self.gs.to_json())).apply(action)
+            review = [actor]
+            if any(self.gs.lords[lid].side == actor and lid not in self.gs._revealed_combat_lords
+                   for lid in fighters):
+                review.append(other(actor))
+            joint.update(action=action, owed_by=review[0], combatants=fighters, combat_review=review)
+        else:
+            return self._execute(action, actor)
+        self._sync()
+        return {"accepted": "awaiting_revealed_combat_inputs", **self.overview(include_briefing=False)}
 
     def cancel_inputs(self, *, version):
         """Recover an externally invalidated staged request; never veto a valid action."""
@@ -684,9 +772,9 @@ class CompactInterface:
         return out
 
     def _execute(self, action, actor):
-        before = {s: view.filtered_state(self.gs, s) for s in ("roman", "seljuk")}
-        # Atomic interface boundary, not a change to rules or the dispatcher.
+        # Keep the temporary mat reveal out of the permanent receipt.
         trial = LLMSession(GameState.from_json(self.gs.to_json()))
+        before = {s: view.filtered_state(trial.gs, s) for s in ("roman", "seljuk")}
         try:
             result = trial.apply(action)
         except IllegalAction:
@@ -804,4 +892,5 @@ class CompactInterface:
             obj._joint, obj._cursors = data["joint"], data["cursors"]
             obj._receipts, obj.findings = data["receipts"], data["findings"]
             obj._sync()
+            obj._sync_combat_mats()
         return obj

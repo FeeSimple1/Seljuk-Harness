@@ -144,7 +144,7 @@ def contract(gs, move, side):
         loc = current_pending(gs)["locale"]
         home = sd.locale(loc)["thema"]
         out.update(required={"markers": "Array of selected reserve indices; [] explicitly declines"},
-                   max_markers=battle._value(loc), locale=loc, thema=home,
+                   max_markers=campaign._stronghold_size(gs, loc), locale=loc, thema=home,
                    available=[{"index": i, **m.model_dump()} for i, m in enumerate(gs.themata[home])])
     elif kind == "respond_approach":
         out["parameters"] = [key for key in out["parameters"]
@@ -174,7 +174,7 @@ def contract(gs, move, side):
         out.update(required={"choices": "Object mapping each defender id to an explicit choice"},
                    choices=choices, max_total_withdrawals=max(0, campaign._stronghold_size(gs, loc)-inside),
                    notes=["Withdrawal capacity is shared, not a separate allowance per Lord.",
-                          "Lords Avoiding to the same destination share spare Carts. Food stays on its mat, with own Carts used first. Loot and excess Provender become Spoils.",
+                          "Lords Avoiding to the same destination share Carts. Optionally use avoid_keep_provender to specify how much food each keeps on its own mat. Defaults use own Carts first. Loot and excess Provender become Spoils.",
                           "The opponent controls Local Scouts, Avoid Spoils, Relief Sally, and its own combat inputs."])
     elif kind == "cmd_march":
         out["notes"] = ["Optional group uses _co_marchers / _co_marcher_max; the engine recomputes group cost.",
@@ -185,6 +185,7 @@ def contract(gs, move, side):
             "battle_events": "Each side explicitly supplies its own held card ids (S6/R24: {card, lord}).",
             "rounds": "steeled_rounds / javelins_rounds: {your_lord: round}; existing default is 1.",
             "decisions": "battle_decisions / storm_decisions: your typed FIFO arrays, e.g. [[concede, true]], scoped to your decisions.",
+            "retreat": "Use [retreat, removed] for voluntary removal when losing. For a conceding group Retreat, use [retreat_keep_provender, COUNT] at each contested mat in resolution order.",
             "spoils": "Winning owner chooses spoils_recipient (Lord ID), then spoils_amount (positive marker count); repeat to split Assets. Defaults fill the first eligible mat then allies; each Asset type is capped at 8 per Lord.",
             "resolution": "Engine combat is atomic. Preserve scripted choices; unscripted choices use its existing fallback.",
             "opponent_input": "An explicit input/decline handoff occurs before dice. No opponent hand is disclosed.",

@@ -915,21 +915,21 @@
         ]
       },
       "reason": "Romans hold the investment: Romanos faces the relief force and Roussel the Sally. The Seljuks allow two rounds, then disengage if the siege is not broken.",
-      "after_sha256": "f1662ba85c7247d235bbeb548d7a994300180980798f5f16723db715ff73145d"
+      "after_sha256": "b25f17b18523bec9ad2a56a4669a3925fbdd430c9b76b0c381165be187cd440c"
     },
     {
       "action": {
         "type": "fpd_done"
       },
       "reason": "No further service payments needed at this point.",
-      "after_sha256": "b5a3ca40c83d8fef515270f4d7dd41e7ba353a18b577f971db82b68d490d1cf7"
+      "after_sha256": "a54e629d61276c76fc34ab55fcd864645c0e74517baf7453d260ad3d032b1d00"
     },
     {
       "action": {
         "type": "fpd_done"
       },
       "reason": "No further service payments needed at this point.",
-      "after_sha256": "c03bc497989b2e7b3bfcec3de7513768dcd418f3a9ef72dc9c639a618aaf8a25"
+      "after_sha256": "271ab4e06bee5eb0441c23e7d002f78264a8df33cf876a148022272b9f5db11c"
     },
     {
       "action": {
@@ -937,7 +937,7 @@
         "lord": "sav_tekin"
       },
       "reason": "After the Roman army disbands, stock food and hold the strategic objective rather than pursue.",
-      "after_sha256": "a048c9d42d9ab166dc1f487668dcaca68adcf4d1c2666bae0b891267234d6438"
+      "after_sha256": "53b58950bfc4191660198337488a39b40bc5b13d5696aa71ab5ddd83bdbffe7c"
     },
     {
       "action": {
@@ -945,21 +945,21 @@
         "lord": "sav_tekin"
       },
       "reason": "After the Roman army disbands, stock food and hold the strategic objective rather than pursue.",
-      "after_sha256": "d904ce1a2f45c502df15f9bcb283e0acd270775aabb7139d08327bb58f23c480"
+      "after_sha256": "3db5e21c5b8e0da047bbdb965e829417b1c6a9c0ad50044508ad1b725ac68e1e"
     },
     {
       "action": {
         "type": "fpd_done"
       },
       "reason": "No further service payments needed at this point.",
-      "after_sha256": "c2927c1aa1f032251879f6275a477304657c2126a85552355e5850b18fb0fb42"
+      "after_sha256": "f703410515ba665615d790933758e1a67a989b199cfb90fad4b75cecaef8f7a1"
     },
     {
       "action": {
         "type": "fpd_done"
       },
       "reason": "No further service payments needed at this point.",
-      "after_sha256": "edf5eb19354f0af1cf52e9751db3b136d67b51919e1f5afefe0b77be884d75cd"
+      "after_sha256": "ae1745c058abb23919d1da35f927ad149db3db273f431a560418b29d9f300bed"
     },
     {
       "action": {
@@ -972,7 +972,7 @@
         ]
       },
       "reason": "Leave ravaged Aleppo before foraging; keep the complete Lieutenant stack together.",
-      "after_sha256": "de5564f57885a61a0c3deede9456b612f7002199b8f458cc6219f473f9cff12f"
+      "after_sha256": "d173c74baef6f79541e8c33118e74b83f9f953511f78cdbcafb47cf003e511c7"
     },
     {
       "action": {
@@ -980,7 +980,7 @@
         "lord": "alp_arslan"
       },
       "reason": "Gather three Lords' rations in unravaged Azaz.",
-      "after_sha256": "14b10a7f190ec8a7d790905267a2d701714529b8a5dacb5334f420b9ed394dce"
+      "after_sha256": "51c7a5965fd0ed697459108342b5b775e0274890d4da0b792a47ed4dc1c996e6"
     },
     {
       "action": {
@@ -988,7 +988,7 @@
         "lord": "alp_arslan"
       },
       "reason": "Gather three Lords' rations in unravaged Azaz.",
-      "after_sha256": "6e29e29100bb7f4e63f79882fdb062ec32a8ea07e00ea994344df5cc909d6b12"
+      "after_sha256": "7b083eba7f136d2989746307934c0ac21a50941ac6143fa74234fc1fa2c2fba6"
     },
     {
       "action": {
@@ -1001,21 +1001,21 @@
         ]
       },
       "reason": "Continue the main army's advance toward Edessa.",
-      "after_sha256": "a1f9cfdb42db6bdc8d65115d5112af879ce41904ac03dd70c7c9a7699e4d5391"
+      "after_sha256": "ca620bfb2e20b09245ed071b68acb2aa42da79a64489858b75608bb2223c746c"
     },
     {
       "action": {
         "type": "fpd_done"
       },
       "reason": "No further service payments needed at this point.",
-      "after_sha256": "09d9f7af9a3e9563cdc2ecae40cf300d8a280de5d8c145448434cfbf15b037c0"
+      "after_sha256": "0a3dae27a1704913d878a694e66b4b3d74b453adfc57e57ce02968abc83f321a"
     },
     {
       "action": {
         "type": "fpd_done"
       },
       "reason": "No further service payments needed at this point.",
-      "after_sha256": "09bcfb3266ae76181aead9a8b9ca28d2f15c73f12e070de69d3c3a3bc468ddc6"
+      "after_sha256": "167ce0f899a94407a1cc46d0058e8888e3e1602db6e7154577323a1fad7e25c8"
     },
     {
       "action": {
@@ -1023,7 +1023,7 @@
         "lord": "alp_arslan"
       },
       "reason": "Stock one ration per Lord before entering enemy territory at Edessa.",
-      "after_sha256": "78bff5aa658ce699908ddaefff2da4256865589819767bb70b09724941c2564b"
+      "after_sha256": "0d6de054b17d7e3f7f325621b67004ebc88c287a99e35bc7797806a8e96485e8"
     },
     {
       "action": {
@@ -1031,7 +1031,7 @@
         "lord": "alp_arslan"
       },
       "reason": "Stock one ration per Lord before entering enemy territory at Edessa.",
-      "after_sha256": "890e0af95006fbb9b2a2074ed9878ad25d188862699e2ab64c5449b13e813024"
+      "after_sha256": "f29265a6545f06d3ddffcb4526efac0792eceb061429112f287bcd71717286db"
     },
     {
       "action": {
@@ -1039,7 +1039,7 @@
         "lord": "alp_arslan"
       },
       "reason": "Stock one ration per Lord before entering enemy territory at Edessa.",
-      "after_sha256": "43e79405e0d658bd820420264975f069dea140006a0eb520cee12691cc300931"
+      "after_sha256": "19eb2d1dec8b8a5378dc85f3a9d74ebe689afbd73e150bff2cd777d6b998000d"
     },
     {
       "action": {
@@ -1052,7 +1052,7 @@
         ]
       },
       "reason": "Invest Edessa with the full southern army.",
-      "after_sha256": "0e81ba8149d3121153bbe05b60b95088fe69f90141c32ff7a00505b11f886b37"
+      "after_sha256": "9120b155158c4a2e964beab6ff62b06dae0956c77e750cf6795d0853c26532ba"
     },
     {
       "action": {
@@ -1060,7 +1060,7 @@
         "choice": "besiege"
       },
       "reason": "Commit to taking Edessa rather than leave the town behind the army.",
-      "after_sha256": "de424ad045e20e1b30956c6f2993c48ce8e5c91639c583cc78a5c2846da8b3b5"
+      "after_sha256": "190b1a08abbcfe0fdc36bf0c98e40427ee4fcf6240714838f6bac3332064a195"
     },
     {
       "action": {
@@ -1071,14 +1071,14 @@
         ]
       },
       "reason": "The Romans commit both available Melitene Themata markers to defend Edessa.",
-      "after_sha256": "400801036ce2d68155176683cbf12c705213dc9038b52a318695d66c9be5712f"
+      "after_sha256": "f1d0b77bdd406e269c59bcf2f7714e225ad566787018b6f2ed003975d28f0ce1"
     },
     {
       "action": {
         "type": "fpd_done"
       },
       "reason": "No further service payments needed at this point.",
-      "after_sha256": "b554849bfbd00eb3d99b665857ff7546db528e9a90344ec816250ab71a2ebbde"
+      "after_sha256": "c08966649ac2ade669dbdfe0a299ac0d54b6b6bf7decc89c73297a14a1cd5576"
     },
     {
       "action": {
@@ -1086,7 +1086,7 @@
         "lord": "andronikos_doukas"
       },
       "reason": "Build a two-Lord food reserve before moving the remaining Roman field army.",
-      "after_sha256": "4132f36d5f8839dca9fef9ba3a4da77411fcb5166f82baf028281faef62abc0d"
+      "after_sha256": "76430aa41fe918154dbb1fdd2b50842c97c9ffec193a3592cf5a187834c4fbe9"
     },
     {
       "action": {
@@ -1094,14 +1094,14 @@
         "lord": "andronikos_doukas"
       },
       "reason": "Build a two-Lord food reserve before moving the remaining Roman field army.",
-      "after_sha256": "6589a6235a4019021b36f26829c007907c156ad0b468091d968ab1c1648c17c6"
+      "after_sha256": "d42cedd25d56b1528d830d9e26d4999c2556c8a0f40919efbfe13bd32492fa14"
     },
     {
       "action": {
         "type": "fpd_done"
       },
       "reason": "No further service payments needed at this point.",
-      "after_sha256": "08a49463aba0a87bff73bec731cfd64e8d311aad1f758a6ed81014877b7fba03"
+      "after_sha256": "437cae2cfc87851177993ba73b440814cf5ba22c4bd69ffbeea4e4b24e14f84b"
     },
     {
       "action": {
@@ -1110,7 +1110,7 @@
         "actions": 2
       },
       "reason": "Ravage Edessa for food and Loot, and increase the surrender threshold for Alp Arslan's next card.",
-      "after_sha256": "956bf9fd95bbbf1318bf80ca5403f2ca3eae382af4ec9ce50b80f4f90b69b548"
+      "after_sha256": "be836cf6e1e48ba7a46cb4ba9aedcb9060663850590c4eebad91fa4f91925b6e"
     },
     {
       "action": {
@@ -1118,14 +1118,14 @@
         "lord": "artuk_beg"
       },
       "reason": "Use Artuk's remaining action to complete the besieging army's food reserve.",
-      "after_sha256": "b2d4dc07fba58233da6e33deb196c570cb501c21b76ff75716ac4863292b24f9"
+      "after_sha256": "10d982326a4828b076479ad4d3cc63c995d976429be0c803d4eeaab848869bc5"
     },
     {
       "action": {
         "type": "fpd_done"
       },
       "reason": "No further service payments needed at this point.",
-      "after_sha256": "aca961ab405d11e81ab9d01c7f6385b91dfe1e7bf17d6a9a8abea1c6d3dfba6f"
+      "after_sha256": "860ca2e433245b2338eb0284519f247fac86091d29b1af864caf2e823a09b85e"
     },
     {
       "action": {
@@ -1135,7 +1135,7 @@
         "way_type": "road"
       },
       "reason": "Move the Roman supporting stack toward the southern threat.",
-      "after_sha256": "5efecf1a22f3e575e445f4900adc69a4b4e85ca3e95afed4fd74dd27ac3ef115"
+      "after_sha256": "2d23181eef1db3f5515076868c0ed492dd5d170b2f53e6fe9e66320a1a555f03"
     },
     {
       "action": {
@@ -1143,14 +1143,14 @@
         "lord": "andronikos_doukas"
       },
       "reason": "Keep both Doukas and Arisighi fed while advancing.",
-      "after_sha256": "317d7b27f5d3be01c08d7f58c4d2cb851f9ddcb4600c4099bba35d9c9bceec9e"
+      "after_sha256": "565b9d04887405c503155d426e9b38529190985d456a0780695a920fd4ed3d5d"
     },
     {
       "action": {
         "type": "fpd_done"
       },
       "reason": "No further service payments needed at this point.",
-      "after_sha256": "07e3f9583345fe8d52e86d119877fd8ab3ba08001735f88762806d71d8d707ea"
+      "after_sha256": "19227cfc433b0b0a5db99a1a2286813cb249b26d6ee5cd8d559118b099748547"
     },
     {
       "action": {
@@ -1158,14 +1158,14 @@
         "lord": "alp_arslan"
       },
       "reason": "Use a fresh whole command card to press the siege of Edessa.",
-      "after_sha256": "6707d474add79a1d8fb395fe537cf53a9a915271c423b49a8254f9aecb148975"
+      "after_sha256": "9165eee6794c937362f0db8f545b581564807a6fd6b086b81124f8131acd590c"
     },
     {
       "action": {
         "type": "fpd_done"
       },
       "reason": "No further service payments needed at this point.",
-      "after_sha256": "a7487d68f6b9175204ebd049e0b1f490dca0b7b8e5c0c17ceed241ae944a5a30"
+      "after_sha256": "5f22a0533b46a34cf25560270d2716777485c0044ba3432e722b73470a9b2100"
     },
     {
       "action": {
@@ -1173,7 +1173,7 @@
         "card": "R4"
       },
       "reason": "Play Sultan's Horse to remove one Siege marker at Edessa and shorten a possible Storm.",
-      "after_sha256": "5743a20b5c3c851c3686eb1e82d0fdd6b44e812e6894a124f38e2971ff0d96a7"
+      "after_sha256": "fb8a8e50fd2563b5fa71dca605e9a0c7f780ba0f3321793c4726f0193c38ae1e"
     },
     {
       "action": {
@@ -1181,7 +1181,7 @@
         "lord": "andronikos_doukas"
       },
       "reason": "Use the available supply route instead of relying on uncertain Forage in Larisa.",
-      "after_sha256": "6803357197074f2015aeb9c0535010b3adf350e840215e65cb38a774821032e7"
+      "after_sha256": "bcbea216ef36dbe0568f5e8a5d8217c27751bd75e95eec71ed313228ee265470"
     },
     {
       "action": {
@@ -1189,14 +1189,14 @@
         "lord": "andronikos_doukas"
       },
       "reason": "Use the available supply route instead of relying on uncertain Forage in Larisa.",
-      "after_sha256": "e370bc536ea540d01e6aa5a949d0cc898fc07360cb9e94c9f70c02a3dc5c41e5"
+      "after_sha256": "e7a89d916040e334ae71c60b0eb99b4db6e5e708d65ad269e502711b06f5d4c2"
     },
     {
       "action": {
         "type": "fpd_done"
       },
       "reason": "No further service payments needed at this point.",
-      "after_sha256": "71d0d8b6d75e5643a64ee61dc5d05950c75931ae622e40bb33468c1f5f2812e2"
+      "after_sha256": "f69a42b5fb00791a369b675ed10910624b76f724d9f41e62894b5b00611bac5f"
     },
     {
       "action": {
@@ -1210,7 +1210,7 @@
         ]
       },
       "reason": "Attempt to take and ruin Edessa before the campaign ends despite the reduced Storm window.",
-      "after_sha256": "d2e32fa84db1510c52110d0dafc5a9fe66f779fe0bfd1ab27eb624e6a2b4d7e7"
+      "after_sha256": "0150c2eefcb4decebb6c919def8f2fc438908af269f2443ebcff2f0467cbb9c7"
     },
     {
       "action": {
@@ -1221,7 +1221,7 @@
         "amount": 1
       },
       "reason": "Keep the objective's defender in service through the final season.",
-      "after_sha256": "fce43dbfb00ab9eb1d2285225ba2de261ebffcf629355c8394bc46f4c8706e8a"
+      "after_sha256": "b1a57a8e94cb4f7b95f71a42d1518c2cd9c664b750ccb8e51670841420eb4f5c"
     },
     {
       "action": {
@@ -1232,14 +1232,14 @@
         "amount": 1
       },
       "reason": "Keep the main Seljuk commander in service through the final season.",
-      "after_sha256": "9895e5cf6afa91b56946f62c8e5f58a10208eab4fae8ae36f32c5c48c3b79cdf"
+      "after_sha256": "925cd76fd15af83caead73254ac2aec1af277bc497ff4575430c6874c2bd1569"
     },
     {
       "action": {
         "type": "fpd_done"
       },
       "reason": "No further service payments needed at this point.",
-      "after_sha256": "7fa6c870e3d3fe53dd36e277528b3d07829fe809ce709418e58481a2f3ddce78"
+      "after_sha256": "c8a1e7cac83bfd3cc13b918ef16ffdd9df35f88a9a1330c74871daa59e4d51ff"
     },
     {
       "action": {
@@ -1249,14 +1249,14 @@
         "way_type": "road"
       },
       "reason": "Advance the remaining Roman army toward the Seljuk force at Edessa.",
-      "after_sha256": "f5ab951e53f0cc106d23cb5ef47113e8d16c8ae78d4f34fc232dec052947a1e5"
+      "after_sha256": "321d2075d230c25cf291616d41da937c67039b47741425d95e306c3780d7e262"
     },
     {
       "action": {
         "type": "cmd_pass"
       },
       "reason": "The Edessa crossing is unaffordable this card; hold Melitene rather than make an illegal march.",
-      "after_sha256": "148d1968a31dbcca16f441cbceeef795f7063b456fc1c8014c0d9f9d353645f7",
+      "after_sha256": "8972bc9c8b929dcbfee04149a910b31a7f3bd36e510fdbe47e9988bbb6307165",
       "followup_actions": [
         {
           "type": "wastage",
@@ -1310,35 +1310,35 @@
         "args": {}
       },
       "reason": "Resolve the mandatory Roman Arts-of-War event before Pay.",
-      "after_sha256": "f2b6d78024bf2760a649814259208c69516f5aaafe5b966b6fc373acb4bc8f1f"
+      "after_sha256": "b0eed4cec488ee36f3ab747cfe9976695790e7ac6ffce9ed797c197c78fabfa7"
     },
     {
       "action": {
         "type": "pass_step"
       },
       "reason": "No Seljuk Coin remains for Pay.",
-      "after_sha256": "54701ae79e50610112f7f6d78e338e8333b0e50298150671e7214576a928a338"
+      "after_sha256": "2dcd0a9f361ec666d12f1e81b533ef373cd5f218bea76b8f7efe30d6b6400f5a"
     },
     {
       "action": {
         "type": "pass_step"
       },
       "reason": "No Roman Coin remains for Pay.",
-      "after_sha256": "24ebfdc38edd7df0ccd72d30ddb8f07c2390f464928f3718c972d7ccb439fdef"
+      "after_sha256": "119f3981962f6e4d9d95e89e2593163639581d0d23868cd2e1e91790ed68a15c"
     },
     {
       "action": {
         "type": "pass_step"
       },
       "reason": "With no Roman Lords remaining on the map, retain the two surviving Seljuk positions.",
-      "after_sha256": "99a3ccd88950b296e11a6ebb06c8bc6f21f1308cb6c60568bc430d6530c049b2"
+      "after_sha256": "00591e2cc3fd8123ebd170b3aedc0f5694f6ce6b755237c82ee51350d50cb50a"
     },
     {
       "action": {
         "type": "pass_step"
       },
       "reason": "There is no Roman Lord available to perform Muster.",
-      "after_sha256": "9c2d23ca020e500a70c463e86c8e7022149cdd91649325fedcf3c5c01f39d915"
+      "after_sha256": "6c858678b38859c4778507cd1c18d804c20beeb0f3cfb76bf7e7a7f844becfd3"
     },
     {
       "action": {
@@ -1348,14 +1348,14 @@
         ]
       },
       "reason": "Activate the forward Seat funded during Summer.",
-      "after_sha256": "428e3e9171c510160787f0c7cd3a4eef51de923e79364bc7ee8f256739c93ab6"
+      "after_sha256": "650c68276e321fe7ecde95d8d6689be80ee2136c88b54df7b5093494c27bcf4d"
     },
     {
       "action": {
         "type": "pass_step"
       },
       "reason": "Roman Call to Arms complete.",
-      "after_sha256": "1fef2920308493c676837af29b61398f194e3295851dc8dde60a59ebca75a96c"
+      "after_sha256": "e761f5cb87ab11f20def13d67abbfc6ca4f612f6570674ffd02eb0a49e19479b"
     }
   ],
   "hash_baseline_note": "Rebased for longest-scenario EL-04 (immediate relief at indices 43-44) and EL-03 (returned S17 changes Autumn draw at 124-131). All 132 actions, rationales, winner and score are unchanged.",
