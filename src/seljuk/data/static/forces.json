@@ -161,7 +161,11 @@
    "category": "foot",
    "allegiance": "both",
    "strikes": {
-    "missile": 0.5,
+    "missile": {
+     "value": 0.5,
+     "requires_capability": "PSILOI",
+     "applies_to": "non-garrison Roman Militia"
+    },
     "melee": 0.5
    },
    "protection": {

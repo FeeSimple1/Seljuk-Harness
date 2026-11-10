@@ -12,6 +12,12 @@ from ..state import IllegalAction
 from .routing import current_pending, other
 
 HIT_DECISION_HELP = {
+    "hit_absorption": 'The receiving player can use ["hit_absorption", "unit_id"] '
+                      'for a Lord or Storm Garrison. Garrison units must absorb before Lords.',
+    "protection_type": 'Against an Armor penalty in field Melee, the Turkic Horse owner '
+                       'can choose ["protection_type", "evade"] or '
+                       '["protection_type", "armor"] while Lamellar Armor is active. '
+                       'Evade is unavailable against Missiles and in Storm.',
     "select_target_unit": 'The striking player can use ["select_target_unit", "unit_id"] '
                           'for Parthian Shot in Battle or Garrison Missiles in Storm.',
     "norman_reroll": 'The Norman owner can use ["norman_reroll", false] after a failed '

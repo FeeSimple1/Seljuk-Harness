@@ -139,6 +139,9 @@ def test_sally_betrayal_keeps_card_and_strikes_against_a_single_enemy():
 @pytest.mark.parametrize("target", ["andronikos_doukas", "chatatourios"])
 def test_march_battle_betrayal_moves_the_named_lord(target):
     gs = _betrayal_position(seed=2)
+    # Preserve the Missile exchange that keeps both targets eligible in Round 2.
+    gs.roman.draw_deck.remove("R25")
+    gs.roman.capabilities_in_play.append("R25")
     for lid in ("alp_arslan", "artuk_beg"):
         _muster_siege_lord(gs, lid).cylinder = "laodikeia"
     defenders = {"andronikos_doukas", "chatatourios"}

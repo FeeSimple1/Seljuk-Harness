@@ -81,7 +81,13 @@ def lordship_rating(gs, lord_id: str) -> int:
     return base + bonus
 
 
-# --- combat Protection modifiers (Battle/Storm) -----------------------------
+# --- combat Strike and Protection modifiers (Battle/Storm) -----------------
+
+def militia_missile_rate(gs, lord_id: str) -> float:
+    """Only non-Garrison Roman Militia with board-edge Psiloi fire Missiles."""
+    lord = gs.lords[lord_id]
+    return 0.5 if lord.side == "roman" and side_has(gs, "roman", "Psiloi") else 0.0
+
 
 _ARMORED = {"tagmata": (1, 3), "norman_knights": (1, 4), "scholai_hetaireia": (1, 4),
             "ghulam_cavalry": (1, 4), "varangian_guard": (1, 4), "infantry": (1, 3)}

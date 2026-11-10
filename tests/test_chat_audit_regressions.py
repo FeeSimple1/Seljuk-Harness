@@ -150,6 +150,9 @@ def test_03_levied_and_recruited_themata_fight_and_feed(kind):
     E.apply_action(gs, {"type": kind, "lord": lord.id, "marker_index": 0})
     assert C._unit_count(lord) == 9
     assert C._feed_requirement(C._unit_count(lord)) == 2
+    assert B._lord_step_hits_caps(gs, lord.id, "missile", 1)[0] == 0
+    gs.roman.draw_deck.remove("R25")
+    gs.roman.capabilities_in_play.append("R25")
     assert B._lord_step_hits_caps(gs, lord.id, "missile", 1)[0] == 4.5
     lord.moved_fought = True
     lord.assets.provender = 2

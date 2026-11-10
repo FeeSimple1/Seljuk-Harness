@@ -28,10 +28,10 @@ from .state import GameState, LordState
 SLOTS = ["left", "center", "right"]
 
 # Base Strike values (no Capabilities). Missile: Infantry needs JAVELINS (0
-# here); Norman/Varangian have no Missiles. Foot Melee: Varangian Strikes in
-# Round 1 only.
+# here); non-Garrison Roman Militia need PSILOI; Norman/Varangian have no
+# Missiles. Foot Melee: Varangian Strikes in Round 1 only.
 _MISSILE = {"tagmata": 0.5, "scholai_hetaireia": 1.0, "ghulam_cavalry": 0.5,
-            "turkic_horse": 1.0, "militia": 0.5}
+            "turkic_horse": 1.0}
 _HORSE_MELEE = {"tagmata": 1.0, "norman_knights": 2.0, "scholai_hetaireia": 1.0,
                 "ghulam_cavalry": 1.0}  # Turkic Horse base Melee 0 (Shock Tactics grants it; Q-002)
 _FOOT_MELEE = {"varangian_guard": 3.0, "infantry": 1.0, "militia": 0.5}
@@ -583,6 +583,7 @@ def _lord_step_hits_caps(gs, lid, step, round_no, cat=None):
                 continue
             normal += _MISSILE.get(u, 0.0) * n
         if cat in (None, "foot"):
+            normal += units.get("militia", 0) * capabilities.militia_missile_rate(gs, lid)
             if "Javelins" in names and round_no == int(lord.flags.get("javelins_round", 1)):
                 # S11: the owner's chosen Battle round only, renewed each Battle.
                 normal += units.get("infantry", 0) * 1.0
@@ -956,8 +957,19 @@ def _apply_hits(gs: GameState, target_id: str, hits: int, hit_type: str,
             unit = ctx.decide("hit_absorption", avail, {"lord": target_id, "hit_type": hit_type, "side": lord.side})
         lo, hi = capabilities.protection_range(gs, target_id, unit, hit_type,
                                                storm=False, vs_horse=effective_vs_horse)
-        if anti_armor and unit not in ("turkic_horse", "militia"):
-            hi = max(lo, hi - 1)
+        if anti_armor:
+            # Reduce effective Armor, including Lamellar and Syndosis. Melee
+            # Evade is a separate Protection option and takes no Armor penalty.
+            if unit == "turkic_horse" and hit_type == "melee":
+                if capabilities.lamellar_active(gs, target_id):
+                    protection = ctx.decide(
+                        "protection_type", ["evade", "armor"],
+                        {"lord": target_id, "unit": unit, "hit_type": hit_type,
+                         "side": lord.side}, allow_bare=False)
+                    if protection == "armor":
+                        hi = max(lo, hi - 1)
+            else:
+                hi = max(lo, hi - 1)
         if not _roll_protection(gs, lord, unit, hit_type, (lo, hi), ctx, roller, rerolls_used):
             _route_unit(lord, unit, ctx)
             routed_units.append(unit)
@@ -1411,6 +1423,8 @@ def resolve_storm(gs: GameState, attacker_ids: list[str], locale: str,
         gs.lords[_lid].flags["turkic_routed_battle"] = 0
     att = _Side(gs, list(attacker_ids), "attacker")
     deff = _Side(gs, list(defender_ids), "defender")
+    # A Garrison still has an owner when no defending Lord is present.
+    deff.faction, deff.locale = d_side, locale
     _siege_array(att, deff, ctx)
 
     log = []
@@ -1600,8 +1614,11 @@ def _lord_step_hits(gs: GameState, side: _Side, step: str, round_no: int) -> flo
     table = _strike_table(step, round_no)
     total = 0.0
     for lid in side.front_lords():
-        for u, n in _unrouted_units(gs.lords[lid]).items():
+        units = _unrouted_units(gs.lords[lid])
+        for u, n in units.items():
             total += table.get(u, 0.0) * n
+        if step == "missile":
+            total += units.get("militia", 0) * capabilities.militia_missile_rate(gs, lid)
     return total
 
 
@@ -1659,7 +1676,10 @@ def _hit_defender(gs, deff: _Side, garrison, garrison_routed, hits, hit_type, wa
     hits = _roll_walls(roller, hits, walls)
     # Garrison absorbs first.
     while hits > 0 and any(n > 0 for n in garrison.values()):
-        unit = next(u for u, n in garrison.items() if n > 0)
+        unit = ctx.decide(
+            "hit_absorption", [u for u, n in garrison.items() if n > 0],
+            {"garrison": True, "locale": deff.locale, "side": deff.faction,
+             "hit_type": hit_type}, allow_bare=False)
         lo, hi = _storm_protection(unit)
         if not (lo <= roller.d6() <= hi):
             garrison[unit] -= 1

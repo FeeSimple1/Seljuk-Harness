@@ -245,6 +245,20 @@ The Storm attacker must assign Hits to Armored units first, including
 Turkic Horse with active Lamellar Armor. Unscripted Select Target choices
 use the weakest eligible protection.
 
+For ordinary Hits, the receiving player uses `["hit_absorption", "unit_id"]`.
+This also chooses among live Storm Garrison unit types, even when no defending
+Lord is present. Garrison units must absorb before any defending Lord. New
+Garrison choices accept typed entries and leave legacy bare Lord choices queued.
+
+An Armor penalty reduces active Lamellar Armor, including against Missiles.
+In field Melee, Turkic Horse with Lamellar may instead Evade without the Armor
+penalty. When these ranges differ, the owner can choose
+`["protection_type", "evade"]` (the default) or `["protection_type", "armor"]`
+before each roll. Evade is unavailable against Missiles and in Storm.
+
+Non-Garrison Roman Militia have Missile Strikes only while Psiloi (R25) is in
+play at the board edge. Garrison Militia retain their own Missile Strikes.
+
 Norman Heavy Cavalry allows one failed Armor reroll against Missiles and one
 against either Horse or Foot Melee per Lord per Round. Use
 `["norman_reroll", false]` to decline a reroll and keep that allowance
