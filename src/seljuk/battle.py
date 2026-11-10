@@ -1302,6 +1302,8 @@ def _build_garrison(gs: GameState, locale: str, attacker_side: str = "seljuk") -
     defender wins and are removed on a Sack. Capabilities: Armenian Garrisons
     (R16) adds both columns; Fortified Garrisons (S23) swaps a Garrison Militia
     for Infantry on a Roman Storm."""
+    from .actions import _alloc_from_pool
+
     prof = _eff_profile(gs, locale)
     info = sd.locale(locale)
     col = _garrison_column(gs, locale)
@@ -1320,6 +1322,9 @@ def _build_garrison(gs: GameState, locale: str, attacker_side: str = "seljuk") -
     if attacker_side == "roman" and capabilities.side_has(gs, "seljuk", "Fortified Garrisons") and g.get("militia", 0) > 0:
         g["militia"] -= 1
         g["infantry"] = g.get("infantry", 0) + 1
+    # Rule 4.9.1 limits new Garrison pieces to the physical pool.
+    # Assigned Themata are already in play and counted by the allocator.
+    g = _alloc_from_pool(gs, g)
     for marker in gs.locales[locale].themata_defending:
         g[marker.unit] = g.get(marker.unit, 0) + marker.symbols
     return g

@@ -3,9 +3,12 @@ Vassal (3.4.2) -- "if too few unit pieces remain in the pool, the Lord does not
 receive those units." Pool manifest (Rules 1.6): Ghulam 6, Scholai 2, Varangian
 2, Norman Knights 5, Turkic Horse 47, Tagmata 25, Infantry 52, Militia 11."""
 import pytest
-from seljuk import scenarios as S, actions, static_data as sd
-from seljuk.state import ThemataMarker, IllegalAction
+
+from seljuk import actions, battle, engine, scenarios as S, static_data as sd
 from seljuk.rng import DiceRoller
+from seljuk.state import ThemataMarker
+from tests.test_cross_game_combat import position
+from tests.test_decisions_d008_sally import _cmd, _muster_siege_lord
 
 
 def test_pool_manifest_totals():
@@ -57,3 +60,50 @@ def test_muster_uncapped_when_pool_has_room():
     st = gs.lords["sav_tekin"]; st.mustered = False; st.forces = {}
     actions._muster_lord_onto_map(gs, st, "amid")
     assert st.forces == {"infantry": 2, "ghulam_cavalry": 2}   # full starting Forces
+
+
+@pytest.mark.parametrize("remaining, foot_hits", [(3, 0), (4, 1)])
+def test_storm_limits_armenian_garrisons_to_available_militia(remaining, foot_hits):
+    gs = position()
+    gs.meta.rng_state = DiceRoller(3).get_state()
+    _cmd(gs, "alp_arslan", "seljuk")
+    _muster_siege_lord(gs, "alp_arslan").cylinder = "ani"
+    _muster_siege_lord(gs, "andronikos_doukas", {"militia": 3}).cylinder = "antioch"
+    chatatourios = _muster_siege_lord(gs, "chatatourios", {"infantry": 2})
+    chatatourios.cylinder = "antioch"
+    if remaining == 3:
+        chatatourios.forces["militia"] = 1
+    romanos = _muster_siege_lord(gs, "romanos_diogenes", {"infantry": 1})
+    romanos.cylinder = "antioch"
+    for home in ("Anatolikon", "Charsianon", "Lykandos", "Melitene"):
+        box = gs.themata[home]
+        marker = next(marker for marker in box if marker.unit == "militia")
+        box.remove(marker)
+        romanos.themata_on_mat.append(marker.model_copy(update={"home_thema": home}))
+
+    gs.roman.draw_deck.remove("R16")
+    gs.roman.capabilities_in_play.append("R16")
+    ani = gs.locales["ani"]
+    ani.conquered_side = "roman"
+    ani.conquered_count = 3
+    ani.siege_markers = 2
+
+    assert actions._pool_remaining(gs, "militia") == remaining
+    assert battle._build_garrison(gs, "ani") == {"infantry": 2, "militia": remaining}
+    result = engine.apply_action(gs, {"type": "cmd_storm", "lord": "alp_arslan"})
+    assert result["ok"]
+    strikes = result["storm"]["strikes"]
+    assert [strike["hits"] for strike in strikes
+            if strike["round"] == 1 and strike["step"] == "def_foot_melee"] == [foot_hits]
+
+
+def test_storm_keeps_assigned_themata_when_no_fresh_militia_is_available(monkeypatch):
+    gs = position()
+    box = gs.themata["Melitene"]
+    marker = next(marker for marker in box if marker.unit == "militia")
+    box.remove(marker)
+    gs.locales["melitene"].themata_defending.append(marker)
+    monkeypatch.setitem(actions._UNIT_POOL, "militia", actions._units_in_play(gs)["militia"])
+
+    assert actions._pool_remaining(gs, "militia") == 0
+    assert battle._build_garrison(gs, "melitene") == {"militia": 1}
