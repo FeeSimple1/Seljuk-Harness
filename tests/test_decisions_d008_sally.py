@@ -3,9 +3,15 @@ per-Lord Battle machinery. Pins the 4.9.2 exceptions and the newly-exact
 behaviors: one-Front-Lord Array with Size-capped Reserve advances, S6/R24/S3
 Hold Events playable in a Sally, Withdraw-inside for losing Attackers with no
 Service shift, Retreat + Service shifts for losing Besiegers."""
+import pytest
+
 from seljuk import scenarios as S, engine, battle, campaign
+from seljuk import static_data as sd
 from seljuk.battle import DecisionContext
+from seljuk.llm import LLMSession
+from seljuk.llm.compact import CompactInterface
 from seljuk.rng import DiceRoller
+from tests.test_cross_game_combat import place, position
 
 
 def _cmd(gs, lord, side, actions_n=4):
@@ -29,6 +35,119 @@ def _sally_setup(loc="melitene", siege=2, second_sallier=None):
         s2.mustered = True; s2.cylinder = loc; s2.besieged = True
         s2.forces = {"turkic_horse": 3}
     return gs, loc
+
+
+def _muster_siege_lord(gs, lid, forces=None, *, inside=False):
+    lord = place(gs, lid, carts=8, provender=8)
+    lord.besieged = inside
+    printed = sd.lord(lid)
+    full = dict(printed["starting_forces"])
+    for vassal in printed["vassals"]:
+        for unit, count in vassal["forces"].items():
+            full[unit] = full.get(unit, 0) + count
+    lord.forces = full if forces is None else forces
+    for vassal in lord.vassals:
+        if not vassal.special_name:
+            vassal.levied = True
+            vassal.service_box = 10
+    return lord
+
+
+def _front_choices(gs, *, sally=False):
+    _cmd(gs, "alp_arslan", "seljuk")
+    _muster_siege_lord(gs, "alp_arslan", inside=sally)
+    _muster_siege_lord(gs, "romanos_diogenes", {"tagmata": 2}, inside=not sally)
+    _muster_siege_lord(gs, "chatatourios", {"infantry": 2}, inside=not sally)
+    gs.locales["melitene"].siege_markers = 2 if sally else 1
+    if sally:
+        gs.locales["melitene"].conquered_side = "seljuk"
+    return gs
+
+
+@pytest.mark.parametrize("reorder", [False, True])
+def test_storm_defender_chooses_initial_front_in_the_private_handoff(reorder):
+    gs = _front_choices(position())
+    if reorder:
+        gs.lords = dict(reversed(list(gs.lords.items())))
+    ui = CompactInterface(LLMSession(gs))
+    row, = ui.actions(type="cmd_storm")["entries"]
+    assert ui.details(row["id"])["help"]["combat"]["formation"]["your_role"] == "attacker"
+    before = gs.to_json()
+    ui.apply(row["id"])
+    assert ui.viewer == "roman" and gs.to_json() == before
+    response, = ui.actions(type="supply_inputs")["entries"]
+    help_ = ui.details(response["id"])["help"]["formation"]
+    assert help_["your_role"] == "defender" and help_["script"] == "storm_decisions"
+    assert set(help_["your_lords"]) == {"romanos_diogenes", "chatatourios"}
+    ui.apply(response["id"], parameters={"inputs": {
+        "storm_decisions": [["initial_placement_defender", "chatatourios"]],
+    }})
+    storm = ui.gs.history[-1]["result"]["storm"]
+    first, = [row for row in storm["decisions"] if row["type"] == "initial_placement_defender"]
+    assert first["choice"] == "chatatourios"
+    assert set(first["options"]) == {"romanos_diogenes", "chatatourios"}
+    assert all(row["step"] != "def_horse_melee" for row in storm["strikes"])
+
+
+def test_sally_defender_chooses_initial_front():
+    gs = _front_choices(position(), sally=True)
+    result = engine.apply_action(gs, {"type": "cmd_sally", "lord": "alp_arslan",
+                                      "battle_decisions": {
+        "roman": [["initial_placement_defender", "chatatourios"]],
+        "seljuk": [["concede", True]],
+    }})["sally"]
+    first, = [row for row in result["decisions"] if row["type"] == "initial_placement_defender"]
+    assert first["choice"] == "chatatourios"
+    assert any(row.get("target") == "chatatourios" for row in result["strikes"])
+    assert all(row.get("target") != "romanos_diogenes" for row in result["strikes"])
+
+
+def test_storm_can_decline_optional_reserve_advance():
+    gs = position()
+    _cmd(gs, "alp_arslan", "seljuk")
+    _muster_siege_lord(gs, "alp_arslan")
+    _muster_siege_lord(gs, "artuk_beg")
+    _muster_siege_lord(gs, "romanos_diogenes", inside=True)
+    gs.locales["melitene"].siege_markers = 2
+    storm = engine.apply_action(gs, {"type": "cmd_storm", "lord": "alp_arslan",
+                                     "storm_decisions": {"seljuk": [["reserve_advance", None]]}})["storm"]
+    assert storm["rounds"] == 2
+    advances = [row for row in storm["decisions"] if row["type"] == "reserve_advance"]
+    assert advances == [{"type": "reserve_advance", "options": ["artuk_beg", None], "choice": None}]
+    assert all(row.get("target") != "artuk_beg" for row in storm["strikes"])
+
+
+@pytest.mark.parametrize("storm", [False, True])
+def test_reposition_forces_opposing_match_only_in_storm(storm):
+    gs = position()
+    for lid in ("alp_arslan", "artuk_beg", "romanos_diogenes", "chatatourios"):
+        _muster_siege_lord(gs, lid)
+    att = battle._Side(gs, ["alp_arslan", "artuk_beg"], "attacker")
+    deff = battle._Side(gs, ["romanos_diogenes", "chatatourios"], "defender")
+    ctx = DecisionContext({"seljuk": [["reserve_advance", "artuk_beg"]], "roman": [None]})
+    battle._siege_array(att, deff, ctx)
+    assert ctx.by_side["roman"].scripted == [None]
+    battle._storm_reposition(gs, att, deff, 2, ctx, match_enemy=storm)
+    assert att.front["left"] == "artuk_beg"
+    assert deff.front["left"] == ("chatatourios" if storm else None)
+    assert ctx.trace[-1]["options"] == (["chatatourios"] if storm else ["chatatourios", None])
+
+
+@pytest.mark.parametrize("storm", [False, True])
+def test_reposition_requires_replacement_when_front_routs_even_at_size_one(storm):
+    gs = position()
+    for lid in ("alp_arslan", "artuk_beg", "romanos_diogenes"):
+        _muster_siege_lord(gs, lid)
+    att = battle._Side(gs, ["alp_arslan", "artuk_beg"], "attacker")
+    deff = battle._Side(gs, ["romanos_diogenes"], "defender")
+    ctx = DecisionContext([["reserve_advance", None]])
+    battle._siege_array(att, deff, ctx)
+    front = gs.lords["alp_arslan"]
+    front.routed = dict(front.forces)
+    front.forces.clear()
+    battle._storm_reposition(gs, att, deff, 1, ctx, match_enemy=storm)
+    assert att.front_lords() == ["artuk_beg"] and att.front["center"] == "artuk_beg"
+    assert ctx.trace[-1]["options"] == ["artuk_beg"]
 
 
 # --- 4.9.2 ARRAY: one Front Lord each; Reserve advances capped by Size -------

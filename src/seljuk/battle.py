@@ -83,11 +83,13 @@ class DecisionContext:
             self.scripted = list(scripted or [])
         self.trace: list[dict] = []
 
-    def decide(self, dtype: str, options: list, info: dict | None = None, *, typed_only=False):
+    def decide(self, dtype: str, options: list, info: dict | None = None, *,
+               typed_only=False, consume_unmatched=True):
         """Resolve a choice. Scripted entries may be typed ``(dtype, choice)``
         (consumed only at a matching decision) or bare values (consumed in
         order). With nothing applicable scripted, fall back to the first
-        option."""
+        option. A newly inserted choice can leave unrelated bare values queued
+        with ``consume_unmatched=False``."""
         if not options:
             return None
         if self.by_side is not None:
@@ -95,7 +97,8 @@ class DecisionContext:
             if side not in self.by_side:
                 from .state import IllegalAction
                 raise IllegalAction("decision_owner_missing", f"no owner for {dtype}; cannot consume another player's script")
-            chosen = self.by_side[side].decide(dtype, options, info, typed_only=typed_only)
+            chosen = self.by_side[side].decide(dtype, options, info, typed_only=typed_only,
+                                               consume_unmatched=consume_unmatched)
             self.trace.append(self.by_side[side].trace[-1])
             return chosen
         # JSON arrays represent both typed entries and tuple-valued choices.
@@ -106,10 +109,9 @@ class DecisionContext:
             if isinstance(value, dict):
                 return {k: canonical(v) for k, v in value.items()}
             return value
-        choice = None
+        choice = options[0]
         if typed_only:
             head = self.scripted[0] if self.scripted else None
-            choice = options[0]
             if isinstance(head, (tuple, list)) and len(head) == 2 and head[0] == dtype:
                 from .state import IllegalAction
                 choice = head[1]
@@ -120,22 +122,19 @@ class DecisionContext:
             return choice
         if self.scripted:
             head = self.scripted[0]
-            exact = next((v for v in options if canonical(v) == canonical(head)), None)
+            exact = next((i for i, v in enumerate(options) if canonical(v) == canonical(head)), None)
             if exact is not None:
                 self.scripted.pop(0)
-                choice = exact
+                choice = options[exact]
             elif isinstance(head, (tuple, list)) and len(head) == 2 and isinstance(head[0], str):
                 if head[0] == dtype:
                     self.scripted.pop(0)
                     choice = head[1]
                 # A typed entry for another decision remains queued.
-            else:
+            elif consume_unmatched:
                 self.scripted.pop(0)
                 choice = head
-        if choice is not None:
-            choice = next((v for v in options if canonical(v) == canonical(choice)), None)
-        if choice is None:
-            choice = options[0]
+            choice = next((v for v in options if canonical(v) == canonical(choice)), options[0])
         self.trace.append({"type": dtype, "choice": choice, "options": options})
         return choice
 
@@ -420,6 +419,19 @@ def _fill_defender(att: _Side, deff: _Side, ctx: DecisionContext) -> None:
         choice = ctx.decide("initial_placement_defender", list(deff.reserve), {"slot": slot, "side": deff.faction})
         deff.front[slot] = choice
         deff.reserve.remove(choice)
+
+
+def _siege_array(att: _Side, deff: _Side, ctx: DecisionContext) -> None:
+    """Start Storm or Sally with the Active Lord and one chosen Defender."""
+    att.front["center"] = att.reserve.pop(0)
+    if deff.reserve:
+        defender = deff.reserve[0]
+        if len(deff.reserve) > 1:
+            defender = ctx.decide("initial_placement_defender", list(deff.reserve),
+                                  {"slot": "center", "side": deff.faction},
+                                  consume_unmatched=False)
+        deff.front["center"] = defender
+        deff.reserve.remove(defender)
 
 
 def _fill_row(side: _Side, row: str, pool: list[str], ctx: DecisionContext, dtype: str) -> None:
@@ -1329,11 +1341,7 @@ def resolve_storm(gs: GameState, attacker_ids: list[str], locale: str,
         gs.lords[_lid].flags["turkic_routed_battle"] = 0
     att = _Side(gs, list(attacker_ids), "attacker")
     deff = _Side(gs, list(defender_ids), "defender")
-    # Storm Array: at most one Lord in Front; the rest in Reserve.
-    if att.reserve:
-        att.front["center"] = att.reserve.pop(0)
-    if deff.reserve:
-        deff.front["center"] = deff.reserve.pop(0)
+    _siege_array(att, deff, ctx)
 
     log = []
     attacker_conceded = False
@@ -1386,15 +1394,26 @@ def _garrison_and_lords_routed(gs: GameState, deff: _Side, garrison: dict[str, i
     return all(_is_routed(gs.lords[l]) for l in lords) if lords else True
 
 
-def _storm_reposition(gs: GameState, att: _Side, deff: _Side, size: int, ctx: DecisionContext) -> None:
-    _purge_routed(att); _purge_routed(deff)
-    for side in (att, deff):
+def _storm_reposition(gs: GameState, att: _Side, deff: _Side, size: int,
+                      ctx: DecisionContext, *, match_enemy: bool = True) -> None:
+    _purge_routed(att)
+    _purge_routed(deff)
+    for side, enemy in ((att, deff), (deff, att)):
         n_front = len(side.front_lords())
-        if n_front < size and side.reserve:
-            slot = next(s for s in SLOTS if side.front[s] is None)
-            choice = ctx.decide("reserve_advance", list(side.reserve), {"role": side.role, "side": side.faction})
-            side.front[slot] = choice
-            side.reserve.remove(choice)
+        if n_front >= size or not side.reserve:
+            continue
+        matching_slot = (next((s for s in ("center", "left", "right")
+                               if side.front[s] is None and enemy.front[s]), None)
+                         if match_enemy else None)
+        options: list[str | None] = list(side.reserve)
+        if n_front and matching_slot is None:
+            options.append(None)
+        choice = ctx.decide("reserve_advance", options, {"role": side.role, "side": side.faction})
+        if choice is None:
+            continue
+        slot = matching_slot or next(s for s in ("center", "left", "right") if side.front[s] is None)
+        side.front[slot] = choice
+        side.reserve.remove(choice)
 
 
 def _storm_strike(gs, att, deff, garrison, garrison_routed, walls, siege, round_no, ctx, roller, log):
@@ -1716,10 +1735,7 @@ def resolve_sally(gs: GameState, sallying_ids: list[str], besieger_ids: list[str
     _solo = len(sallying_ids) == 1 and len(besieger_ids) == 1
     att = _Side(gs, list(sallying_ids), "attacker")   # Sallying side attacks
     deff = _Side(gs, list(besieger_ids), "defender")  # Besiegers defend
-    # 4.9.2 ARRAY: each side begins with ONE Lord in Front (Attacker: the
-    # Active Lord, list head); every other Lord starts in Reserve.
-    att.front["center"] = att.reserve.pop(0)
-    deff.front["center"] = deff.reserve.pop(0)
+    _siege_array(att, deff, ctx)
     # Mountain Ambush (R2/S2): Round-1 Walls 1-3 vs Missiles for the playing
     # side, if the Locale is adjacent to a Pass (Battle rules apply).
     for _so, _ids in ((att, sallying_ids), (deff, besieger_ids)):
@@ -1751,7 +1767,7 @@ def resolve_sally(gs: GameState, sallying_ids: list[str], besieger_ids: list[str
         if round_no > 1:
             # 4.9.2 REPOSITION "mimics that in Storm": each side may advance one
             # Reserve Lord to Front, up to the Stronghold's Size.
-            _storm_reposition(gs, att, deff, size, ctx)
+            _storm_reposition(gs, att, deff, size, ctx, match_enemy=False)
             if betrayal_pending:  # S3 Betrayal: a non-Commander Roman Front Lord to Reserve
                 for _sd_obj in (att, deff):
                     for _slot in SLOTS:

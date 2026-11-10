@@ -233,6 +233,16 @@ first gets the choice in Round 2.
 Tuple-valued choices use a nested array, such as
 `[["retreat", ["retreat", "ani"]]]`, subject to the offered destinations.
 
+In Storm and Sally, the defending player can use
+`["initial_placement_defender", "lord_id"]` to choose the initial Front Lord.
+Use the defender's private `storm_decisions` or `battle_decisions` input,
+respectively. From Round 2, `["reserve_advance", "lord_id"]` advances one
+Reserve Lord within the Stronghold's Size. `["reserve_advance", null]`
+keeps the Reserve back when the advance is optional. An empty Front
+requires a replacement when Reserve remains. In Storm a side must also
+match an open opposing Front position when it can during its advance.
+Omitted choices use the first eligible Lord.
+
 An `approach_response` is mandatory before another Command or ending the
 activation, during both Campaign and Winter (4.3.4). Submit `respond_approach`
 to resolve the defenders' Avoid, Withdraw or Stand choices. Local Scouts and

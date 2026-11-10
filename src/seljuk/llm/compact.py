@@ -636,6 +636,7 @@ class CompactInterface:
                 if "battle_events" in recognized else [])
         return {"required": {"inputs": "Object with your optional combat inputs, or {} to decline"},
                 "your_held_events": held,
+                **contracts.siege_formation_help(self.gs, action, self.viewer),
                 **contracts.turkic_target_help(self.gs, action, self.viewer, held),
                 "parameters": input_fields,
                 "your_sultans_horse_held": self.viewer == "roman" and "R4" in self.gs.roman.held_events,

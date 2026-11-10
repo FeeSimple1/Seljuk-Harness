@@ -92,6 +92,28 @@ def visible_move(gs, move, side):
     return out
 
 
+def siege_formation_help(gs, move, side):
+    kind = move.get("type")
+    if kind not in ("cmd_storm", "cmd_sally"):
+        return {}
+    lord = gs.lords[move["lord"]]
+    storm = kind == "cmd_storm"
+    inside = other(lord.side) if storm else lord.side
+    return {"formation": {
+        "your_role": "attacker" if lord.side == side else "defender",
+        "your_lords": [ld.id for ld in gs.lords.values() if ld.side == side and ld.mustered
+                       and ld.cylinder == lord.cylinder and ld.besieged == (side == inside)],
+        "script": "storm_decisions" if storm else "battle_decisions",
+        "initial_placement_defender": 'The Defender can choose the initial Front with '
+                                      '["initial_placement_defender", "lord_id"].',
+        "reserve_advance": 'From Round 2, use ["reserve_advance", "lord_id"] to advance one '
+                           'Lord within Stronghold Size. Use ["reserve_advance", null] to '
+                           'decline when optional.',
+        "mandatory_advance": ("Fill an empty Front or match an open opposing Front position."
+                              if storm else "Replace a wholly Routed Front when Reserve remains."),
+    }}
+
+
 def turkic_target_help(gs, move, side, held):
     cards = sorted(set(held) & battle._TURKIC_REMOVAL_HOLDS)
     if not cards:
@@ -225,6 +247,7 @@ def contract(gs, move, side):
             "spoils": "Winning owner chooses spoils_recipient (Lord ID), then spoils_amount (positive marker count); repeat to split Assets. Defaults fill the first eligible mat then allies; each Asset type is capped at 8 per Lord.",
             "resolution": "Engine combat is atomic. Preserve scripted choices; unscripted choices use its existing fallback.",
             "opponent_input": "An explicit input/decline handoff occurs before dice. No opponent hand is disclosed.",
+            **siege_formation_help(gs, move, side),
             **turkic_target_help(gs, move, side, move.get("_combat_inputs", {}).get("your_held_events", [])),
         }
     out["references"] = ["guide", "rules", "decisions", "errata"]
