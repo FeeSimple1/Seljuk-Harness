@@ -238,6 +238,18 @@ first gets the choice in Round 2.
 Tuple-valued choices use a nested array, such as
 `[["retreat", ["retreat", "ani"]]]`, subject to the offered destinations.
 
+For Parthian Shot in Battle or Garrison Missiles in Storm, the receiving
+player chooses the affected Lord where applicable, then the striker uses
+`["select_target_unit", "unit_id"]` for each choice among eligible units.
+The Storm attacker must assign Hits to Armored units first, including
+Turkic Horse with active Lamellar Armor. Unscripted Select Target choices
+use the weakest eligible protection.
+
+Norman Heavy Cavalry allows one failed Armor reroll against Missiles and one
+against either Horse or Foot Melee per Lord per Round. Use
+`["norman_reroll", false]` to decline a reroll and keep that allowance
+for a later Hit in the same phase. The default is to use it.
+
 In Storm and Sally, the defending player can use
 `["initial_placement_defender", "lord_id"]` to choose the initial Front Lord.
 Use the defender's private `storm_decisions` or `battle_decisions` input,

@@ -11,6 +11,14 @@ from .. import battle, campaign, engine, events, map as gmap, static_data as sd
 from ..state import IllegalAction
 from .routing import current_pending, other
 
+HIT_DECISION_HELP = {
+    "select_target_unit": 'The striking player can use ["select_target_unit", "unit_id"] '
+                          'for Parthian Shot in Battle or Garrison Missiles in Storm.',
+    "norman_reroll": 'The Norman owner can use ["norman_reroll", false] after a failed '
+                    'Armor roll to save the reroll for a later Hit. R5 allows one Missile and '
+                    'one Melee reroll per Lord per Round.',
+}
+
 
 @lru_cache(maxsize=None)
 def parameter_names(fn, argument="action") -> list[str]:
@@ -254,6 +262,7 @@ def contract(gs, move, side):
             "spoils": "Winning owner chooses spoils_recipient (Lord ID), then spoils_amount (positive marker count); repeat to split Assets. Defaults fill the first eligible mat then allies; each Asset type is capped at 8 per Lord.",
             "resolution": "Engine combat is atomic. Preserve scripted choices; unscripted choices use its existing fallback.",
             "opponent_input": "An explicit input/decline handoff occurs before dice. No opponent hand is disclosed.",
+            **HIT_DECISION_HELP,
             **siege_formation_help(gs, move, side),
             **combat_event_help(gs, move, side, move.get("_combat_inputs", {}).get("your_held_events", [])),
         }

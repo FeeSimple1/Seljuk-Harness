@@ -11,8 +11,8 @@ class Sixes:
         return 6
 
 
-def position():
-    state = scenarios.load_scenario("emperor_and_the_lion", seed=1)
+def position(seed=1):
+    state = scenarios.load_scenario("emperor_and_the_lion", seed=seed)
     for lord in state.lords.values():
         lord.mustered = False
         lord.cylinder = "offboard"

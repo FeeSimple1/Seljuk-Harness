@@ -84,12 +84,13 @@ class DecisionContext:
         self.trace: list[dict] = []
 
     def decide(self, dtype: str, options: list, info: dict | None = None, *,
-               typed_only=False, consume_unmatched=True):
+               typed_only=False, consume_unmatched=True, allow_bare=True):
         """Resolve a choice. Scripted entries may be typed ``(dtype, choice)``
         (consumed only at a matching decision) or bare values (consumed in
         order). With nothing applicable scripted, fall back to the first
         option. A newly inserted choice can leave unrelated bare values queued
-        with ``consume_unmatched=False``."""
+        with ``consume_unmatched=False``. Set ``allow_bare=False`` to leave
+        all bare entries for pre-existing choices."""
         if not options:
             return None
         if self.by_side is not None:
@@ -98,7 +99,8 @@ class DecisionContext:
                 from .state import IllegalAction
                 raise IllegalAction("decision_owner_missing", f"no owner for {dtype}; cannot consume another player's script")
             chosen = self.by_side[side].decide(dtype, options, info, typed_only=typed_only,
-                                               consume_unmatched=consume_unmatched)
+                                               consume_unmatched=consume_unmatched,
+                                               allow_bare=allow_bare)
             self.trace.append(self.by_side[side].trace[-1])
             return chosen
         # JSON arrays represent both typed entries and tuple-valued choices.
@@ -122,7 +124,8 @@ class DecisionContext:
             return choice
         if self.scripted:
             head = self.scripted[0]
-            exact = next((i for i, v in enumerate(options) if canonical(v) == canonical(head)), None)
+            exact = (next((i for i, v in enumerate(options) if canonical(v) == canonical(head)), None)
+                     if allow_bare else None)
             if exact is not None:
                 self.scripted.pop(0)
                 choice = options[exact]
@@ -131,7 +134,7 @@ class DecisionContext:
                     self.scripted.pop(0)
                     choice = head[1]
                 # A typed entry for another decision remains queued.
-            elif consume_unmatched:
+            elif allow_bare and consume_unmatched:
                 self.scripted.pop(0)
                 choice = head
             choice = next((v for v in options if canonical(v) == canonical(choice)), options[0])
@@ -620,6 +623,7 @@ def _strike_phase(gs: GameState, att: _Side, deff: _Side, pursuit: dict, round_n
     cc = cc or set()
     charge = charge or set()
     sides = ((deff, att, "defender"), (att, deff, "attacker"))
+    rerolls_used: set[tuple[str, str]] = set()
 
     def _w(role):
         """4.9.2 SIEGEWORKS (pure Sally): the Besiegers roll Walls equal to the
@@ -654,11 +658,11 @@ def _strike_phase(gs: GameState, att: _Side, deff: _Side, pursuit: dict, round_n
             tr = "rearguard" if target_side.rearguard_lords() else "front"
             _resolve_step(gs, step, striking, target_side, role, pursuit, round_no,
                           ctx, roller, log, striker_row="sally", target_row=tr,
-                          step_walls=siegeworks)
+                          step_walls=siegeworks, rerolls_used=rerolls_used)
         if role == "defender" and striking.rearguard_lords():
             _resolve_step(gs, step, striking, target_side, role, pursuit, round_no,
                           ctx, roller, log, striker_row="rearguard", target_row="sally",
-                          step_walls=0)
+                          step_walls=0, rerolls_used=rerolls_used)
 
     # Cavalry Charge (R24): Round 1, charged Lords' Horse Melee strikes before
     # all Missiles; those Horse skip the normal Horse-Melee step this Round.
@@ -668,7 +672,8 @@ def _strike_phase(gs: GameState, att: _Side, deff: _Side, pursuit: dict, round_n
             ids = _front_set(striking) & charge
             if ids:
                 _resolve_step(gs, "horse_melee", striking, target_side, role, pursuit, round_no,
-                              ctx, roller, log, restrict=ids, step_walls=_w(role))
+                              ctx, roller, log, restrict=ids, step_walls=_w(role),
+                              rerolls_used=rerolls_used)
                 charged |= ids
     cc_eff = cc - charge  # Cavalry Charge takes precedence over Command Confusion
     msides = _missile_sides()
@@ -685,21 +690,24 @@ def _strike_phase(gs: GameState, att: _Side, deff: _Side, pursuit: dict, round_n
             pooled.append((by, ctb, striking, target_side, role))
         for by, ctb, striking, target_side, role in pooled:
             _apply_pools(gs, "missile", by, ctb, striking, target_side, role, pursuit,
-                         round_no, ctx, roller, log, "front", "front", _w(role))
+                         round_no, ctx, roller, log, "front", "front", _w(role),
+                         rerolls_used=rerolls_used)
         for striking, target_side, role in msides:
             _resolve_step(gs, "missile", striking, target_side, role, pursuit, round_no, ctx, roller, log,
-                          restrict=_front_set(striking) - cc_eff, cat="foot", step_walls=_w(role))
+                          restrict=_front_set(striking) - cc_eff, cat="foot", step_walls=_w(role),
+                          rerolls_used=rerolls_used)
             _secondary(striking, target_side, role, "missile")
     else:
         for striking, target_side, role in msides:
             _resolve_step(gs, "missile", striking, target_side, role, pursuit, round_no, ctx, roller, log,
-                          restrict=_front_set(striking) - cc_eff, step_walls=_w(role))
+                          restrict=_front_set(striking) - cc_eff, step_walls=_w(role),
+                          rerolls_used=rerolls_used)
             _secondary(striking, target_side, role, "missile")
     for striking, target_side, role in msides:
         ids = _front_set(striking) & cc_eff
         if ids:
             _resolve_step(gs, "missile", striking, target_side, role, pursuit, round_no, ctx, roller, log,
-                          restrict=ids, step_walls=_w(role))
+                          restrict=ids, step_walls=_w(role), rerolls_used=rerolls_used)
     # Melee (Horse then Foot, Defending then Attacking): non-CC Front Lords plus
     # the Relief-Sally rows first.
     for mstep in ("horse_melee", "foot_melee"):
@@ -712,13 +720,15 @@ def _strike_phase(gs: GameState, att: _Side, deff: _Side, pursuit: dict, round_n
                 pooled.append((by, ctb, striking, target_side, role))
             for by, ctb, striking, target_side, role in pooled:
                 _apply_pools(gs, "horse_melee", by, ctb, striking, target_side, role, pursuit,
-                             round_no, ctx, roller, log, "front", "front", _w(role))
+                             round_no, ctx, roller, log, "front", "front", _w(role),
+                             rerolls_used=rerolls_used)
             for striking, target_side, role in sides:
                 _secondary(striking, target_side, role, "horse_melee")
         else:
             for striking, target_side, role in sides:
                 _resolve_step(gs, mstep, striking, target_side, role, pursuit, round_no, ctx, roller, log,
-                              restrict=_front_set(striking) - cc_eff, skip_charge=charged, step_walls=_w(role))
+                              restrict=_front_set(striking) - cc_eff, skip_charge=charged,
+                              step_walls=_w(role), rerolls_used=rerolls_used)
                 _secondary(striking, target_side, role, mstep)
     # Then the CC Lords' Melee (strike second).
     for mstep in ("horse_melee", "foot_melee"):
@@ -726,7 +736,8 @@ def _strike_phase(gs: GameState, att: _Side, deff: _Side, pursuit: dict, round_n
             ids = _front_set(striking) & cc_eff
             if ids:
                 _resolve_step(gs, mstep, striking, target_side, role, pursuit, round_no, ctx, roller, log,
-                              restrict=ids, skip_charge=charged, step_walls=_w(role))
+                              restrict=ids, skip_charge=charged, step_walls=_w(role),
+                              rerolls_used=rerolls_used)
 
 
 def _compute_pools(gs, step, striking: _Side, target_side: _Side, round_no, ctx,
@@ -760,12 +771,13 @@ def _compute_pools(gs, step, striking: _Side, target_side: _Side, round_no, ctx,
 
 def _apply_pools(gs, step, by, contrib, striking: _Side, target_side: _Side, role,
                  pursuit, round_no, ctx: DecisionContext, roller: DiceRoller, log: list,
-                 striker_row, target_row, step_walls):
+                 striker_row, target_row, step_walls, *, rerolls_used=None):
     """Apply previously-computed Hit pools (see _compute_pools) to the target
     Lords, including the Flank-absorb choice (4.8.2), Pursuit halving, Mountain
     Ambush / Siegeworks Walls, and Parthian-Shot Select Target."""
     hit_type = "missile" if step == "missile" else "melee"
     srow = getattr(striking, striker_row)
+    rerolls_used = set() if rerolls_used is None else rerolls_used
 
     def _absorb_target(target_id):
         """4.8.2 APPLY HITS TO LORDS: Hits land on the opposed, Flanked, or
@@ -846,13 +858,14 @@ def _apply_pools(gs, step, by, contrib, striking: _Side, target_side: _Side, rol
         vs_horse = (step in ("horse_melee", "missile")) and round_no == _sr_round
         applied = []
         hit_options = {"retarget": retarget, "horse_attack": step in ("horse_melee", "missile"),
-                       "round_no": round_no, "rerolls_used": set()}
+                       "round_no": round_no, "rerolls_used": rerolls_used}
+        if s_hits:  # 4.8.2: the striker selects units for these Hits before ordinary Hits.
+            applied += _apply_hits(gs, target, s_hits, hit_type, ctx, roller, vs_horse=vs_horse,
+                                   select_target=True, **hit_options)
         if n_hits:
             applied += _apply_hits(gs, target, n_hits, hit_type, ctx, roller, vs_horse=vs_horse, **hit_options)
         if a_hits:
             applied += _apply_hits(gs, target, a_hits, hit_type, ctx, roller, anti_armor=True, vs_horse=vs_horse, **hit_options)
-        if s_hits:  # S16 Parthian Shot: the striker selects which unit absorbs
-            applied += _apply_hits(gs, target, s_hits, hit_type, ctx, roller, vs_horse=vs_horse, select_target=True, **hit_options)
         if n_hits or a_hits or s_hits:
             log.append({"round": round_no, "step": step, "by": role, "target": target,
                         "hits": n_hits + a_hits + s_hits, "routed_units": applied,
@@ -865,11 +878,13 @@ def _apply_pools(gs, step, by, contrib, striking: _Side, target_side: _Side, rol
 def _resolve_step(gs, step, striking: _Side, target_side: _Side, role, pursuit, round_no,
                   ctx: DecisionContext, roller: DiceRoller, log: list,
                   restrict=None, skip_charge=None, striker_row: str = "front",
-                  target_row: str = "front", step_walls: int = 0, cat=None) -> None:
+                  target_row: str = "front", step_walls: int = 0, cat=None, *,
+                  rerolls_used=None) -> None:
     by, contrib = _compute_pools(gs, step, striking, target_side, round_no, ctx,
                                  restrict, skip_charge, striker_row, target_row, cat)
     _apply_pools(gs, step, by, contrib, striking, target_side, role, pursuit, round_no,
-                 ctx, roller, log, striker_row, target_row, step_walls)
+                 ctx, roller, log, striker_row, target_row, step_walls,
+                 rerolls_used=rerolls_used)
 
 
 def _route_unit(lord: LordState, unit: str, ctx: DecisionContext) -> None:
@@ -886,6 +901,35 @@ def _route_unit(lord: LordState, unit: str, ctx: DecisionContext) -> None:
         lord.themata_on_mat[int(source.split(":")[1])].routed += 1
     if unit == "turkic_horse":
         lord.flags["turkic_routed_battle"] = int(lord.flags.get("turkic_routed_battle", 0)) + 1
+
+
+def _select_target_unit(ctx, lord, hit_type, options, armor_high):
+    """The striker picks a unit once the receiving player has picked its Lord."""
+    if len(options) == 1:
+        return options[0]
+    striker = "roman" if lord.side == "seljuk" else "seljuk"
+    # Keep weakest-first as the unscripted default.
+    return ctx.decide("select_target_unit", sorted(options, key=armor_high),
+                      {"lord": lord.id, "hit_type": hit_type, "side": striker},
+                      allow_bare=False)
+
+
+def _roll_protection(gs, lord, unit, hit_type, protection, ctx, roller, rerolls_used):
+    lo, hi = protection
+    roll = roller.d6()
+    if lo <= roll <= hi:
+        return True
+    # R5 has one Missile and one Melee allowance per Lord per Round.
+    key = (lord.id, hit_type)
+    if (unit != "norman_knights" or key in rerolls_used
+            or not capabilities.lord_has(gs, lord.id, "Norman Heavy Cavalry")):
+        return False
+    if not ctx.decide("norman_reroll", [True, False],
+                      {"lord": lord.id, "hit_type": hit_type, "side": lord.side, "roll": roll},
+                      allow_bare=False):
+        return False
+    rerolls_used.add(key)
+    return lo <= roller.d6() <= hi
 
 
 def _apply_hits(gs: GameState, target_id: str, hits: int, hit_type: str,
@@ -905,20 +949,16 @@ def _apply_hits(gs: GameState, target_id: str, hits: int, hit_type: str,
         effective_vs_horse = (vs_horse if horse_attack is None else
                              horse_attack and round_no == int(lord.flags.get("steeled_resolve_round", 1)))
         if select_target:
-            unit = min(avail, key=lambda u: capabilities.protection_range(
-                gs, target_id, u, hit_type, vs_horse=effective_vs_horse)[1])
+            unit = _select_target_unit(ctx, lord, hit_type, avail,
+                                       lambda u: capabilities.protection_range(
+                                           gs, lord.id, u, hit_type, vs_horse=effective_vs_horse)[1])
         else:
             unit = ctx.decide("hit_absorption", avail, {"lord": target_id, "hit_type": hit_type, "side": lord.side})
         lo, hi = capabilities.protection_range(gs, target_id, unit, hit_type,
                                                storm=False, vs_horse=effective_vs_horse)
         if anti_armor and unit not in ("turkic_horse", "militia"):
             hi = max(lo, hi - 1)
-        ok = lo <= roller.d6() <= hi
-        if (not ok and unit == "norman_knights" and target_id not in rerolls_used
-                and capabilities.lord_has(gs, target_id, "Norman Heavy Cavalry")):
-            rerolls_used.add(target_id)
-            ok = lo <= roller.d6() <= hi
-        if not ok:
+        if not _roll_protection(gs, lord, unit, hit_type, (lo, hi), ctx, roller, rerolls_used):
             _route_unit(lord, unit, ctx)
             routed_units.append(unit)
     return routed_units
@@ -1447,6 +1487,8 @@ def _storm_reposition(gs: GameState, att: _Side, deff: _Side, size: int,
 
 
 def _storm_strike(gs, att, deff, garrison, garrison_routed, walls, siege, round_no, ctx, roller, log):
+    hit_options = {"roller": roller, "ctx": ctx, "log": log, "round_no": round_no,
+                   "rerolls_used": set()}
     # Defending side (Garrison + Lords) strikes first, then Attacker.
     # Missiles, then all Defending Melee, then all Attacking Melee.
     # 1) Defending Missiles, resolved as two separate batches because they roll
@@ -1460,24 +1502,31 @@ def _storm_strike(gs, att, deff, garrison, garrison_routed, walls, siege, round_
     gar_hits = min(total_missile, _round_up(d_missile_gar))
     lord_hits = total_missile - gar_hits
     if gar_hits:
-        _hit_attacker(gs, att, gar_hits, "missile", siege, anti_armor=True, roller=roller, ctx=ctx, log=log, step="def_missile_garrison", round_no=round_no, select_target=True)
+        _hit_attacker(gs, att, gar_hits, "missile", siege, anti_armor=True,
+                      step="def_missile_garrison", select_target=True, **hit_options)
     if lord_hits:
-        _hit_attacker(gs, att, lord_hits, "missile", siege, anti_armor=False, roller=roller, ctx=ctx, log=log, step="def_missile_lord", round_no=round_no)
+        _hit_attacker(gs, att, lord_hits, "missile", siege, anti_armor=False,
+                      step="def_missile_lord", **hit_options)
     # 2) Attacking Missiles -> garrison/defender Lord, Walls cancel
     a_missile = _lord_step_hits(gs, att, "missile", round_no)
     eff_walls = _effective_walls(gs, att, walls)
-    _hit_defender(gs, deff, garrison, garrison_routed, _round_up(a_missile), "missile", eff_walls, roller, ctx, log, "att_missile", round_no)
+    _hit_defender(gs, deff, garrison, garrison_routed, _round_up(a_missile), "missile",
+                  eff_walls, step="att_missile", **hit_options)
     # 3) Defending Horse Melee, then 3b) Defending Foot Melee -- separate steps,
     #    each rounded up (4.8.2). Garrison Horse joins the Horse step, Garrison
     #    Foot the Foot step.
     d_horse, d_foot = _lord_melee_split_storm(gs, deff, round_no)
-    _hit_attacker(gs, att, _round_up(_garrison_horse_melee(garrison) + d_horse), "melee", siege, anti_armor=False, roller=roller, ctx=ctx, log=log, step="def_horse_melee", round_no=round_no)
-    _hit_attacker(gs, att, _round_up(_garrison_foot_melee(garrison) + d_foot), "melee", siege, anti_armor=False, roller=roller, ctx=ctx, log=log, step="def_foot_melee", round_no=round_no)
+    _hit_attacker(gs, att, _round_up(_garrison_horse_melee(garrison) + d_horse), "melee",
+                  siege, anti_armor=False, step="def_horse_melee", **hit_options)
+    _hit_attacker(gs, att, _round_up(_garrison_foot_melee(garrison) + d_foot), "melee",
+                  siege, anti_armor=False, step="def_foot_melee", **hit_options)
     # 4) Attacking Horse Melee, then 4b) Attacking Foot Melee (no Garrison).
     a_horse, a_foot = _lord_melee_split_storm(gs, att, round_no)
     ew = _effective_walls(gs, att, walls)
-    _hit_defender(gs, deff, garrison, garrison_routed, _round_up(a_horse), "melee", ew, roller, ctx, log, "att_horse_melee", round_no)
-    _hit_defender(gs, deff, garrison, garrison_routed, _round_up(a_foot), "melee", ew, roller, ctx, log, "att_foot_melee", round_no)
+    _hit_defender(gs, deff, garrison, garrison_routed, _round_up(a_horse), "melee",
+                  ew, step="att_horse_melee", **hit_options)
+    _hit_defender(gs, deff, garrison, garrison_routed, _round_up(a_foot), "melee",
+                  ew, step="att_foot_melee", **hit_options)
 
 
 def _effective_walls(gs, att: _Side, walls: tuple) -> tuple:
@@ -1584,7 +1633,8 @@ def _lord_melee_capped(gs: GameState, side: _Side, round_no: int, storm: bool = 
     return total
 
 
-def _hit_attacker(gs, att: _Side, hits, hit_type, siege, anti_armor, roller, ctx, log, step, round_no, select_target=False):
+def _hit_attacker(gs, att: _Side, hits, hit_type, siege, anti_armor, roller, ctx, log,
+                  step, round_no, select_target=False, *, rerolls_used=None):
     """Hits onto the attacker: Siegeworks (Walls=Siege count) cancel, then assign
     Armored-first (4.9.1), Protection (no Evade)."""
     if hits <= 0:
@@ -1594,12 +1644,14 @@ def _hit_attacker(gs, att: _Side, hits, hit_type, siege, anti_armor, roller, ctx
         return
     target = gs.lords[front[0]]
     hits = _roll_walls(roller, hits, (1, siege)) if siege > 0 else hits
-    routed = _absorb_storm(gs, target, hits, anti_armor, armored_first=True, ctx=ctx, roller=roller, select_target=select_target,
-                           targets=[gs.lords[lid] for lid in front])
+    routed = _absorb_storm(gs, target, hits, hit_type, anti_armor, armored_first=True,
+                           ctx=ctx, roller=roller, select_target=select_target,
+                           targets=[gs.lords[lid] for lid in front], rerolls_used=rerolls_used)
     log.append({"round": round_no, "step": step, "target": target.id, "hits": hits, "routed": routed})
 
 
-def _hit_defender(gs, deff: _Side, garrison, garrison_routed, hits, hit_type, walls, roller, ctx, log, step, round_no):
+def _hit_defender(gs, deff: _Side, garrison, garrison_routed, hits, hit_type, walls, roller,
+                  ctx, log, step, round_no, *, rerolls_used=None):
     """Hits onto the defender: Walls cancel, then Garrison units first, then the
     Front defending Lord (4.9.1)."""
     if hits <= 0:
@@ -1616,8 +1668,9 @@ def _hit_defender(gs, deff: _Side, garrison, garrison_routed, hits, hit_type, wa
     front = deff.front_lords()
     if hits > 0 and front:
         target = gs.lords[front[0]]
-        _absorb_storm(gs, target, hits, anti_armor=False, armored_first=False, ctx=ctx, roller=roller,
-                      targets=[gs.lords[lid] for lid in front])
+        _absorb_storm(gs, target, hits, hit_type, anti_armor=False, armored_first=False,
+                      ctx=ctx, roller=roller, targets=[gs.lords[lid] for lid in front],
+                      rerolls_used=rerolls_used)
     log.append({"round": round_no, "step": step, "hits_remaining_after_garrison": max(0, hits)})
 
 
@@ -1631,40 +1684,41 @@ def _roll_walls(roller: DiceRoller, hits: int, wrange: tuple[int, int]) -> int:
     return max(0, remaining)
 
 
-def _absorb_storm(gs: GameState, lord: LordState, hits: int, anti_armor: bool, armored_first: bool,
-                  ctx: DecisionContext, roller: DiceRoller, select_target: bool = False,
-                  targets: list[LordState] | None = None) -> list[str]:
+def _absorb_storm(gs: GameState, lord: LordState, hits: int, hit_type: str, anti_armor: bool,
+                  armored_first: bool, ctx: DecisionContext, roller: DiceRoller,
+                  select_target: bool = False, targets: list[LordState] | None = None, *,
+                  rerolls_used=None) -> list[str]:
     routed = []
-    rerolls_used = set()
+    rerolls_used = set() if rerolls_used is None else rerolls_used
     targets = [lord] if targets is None else targets
-    htype = "missile" if anti_armor else "melee"
     for _ in range(hits):
-        eligible = [l for l in targets if not _is_routed(l)]
-        if not eligible:
+        protections = {}
+        for target in targets:
+            units = {unit: capabilities.protection_range(gs, target.id, unit, hit_type, storm=True)
+                     for unit in _unrouted_units(target)}
+            if units:
+                protections[target.id] = units
+        if not protections:
             break
-        armored_lords = [l for l in eligible if any(
-            u not in ("turkic_horse", "militia") for u in _unrouted_units(l))]
-        if armored_first and armored_lords:
-            eligible = armored_lords
-        lid = ctx.decide("storm_hit_lord", [l.id for l in eligible], {"side": eligible[0].side})
+        if armored_first:
+            # Storm has no Evade. A range above 1 is effective Armor before
+            # the penalty, including Lamellar or Syndosis while in force.
+            armored = {}
+            for lid, units in protections.items():
+                protected = {unit: bounds for unit, bounds in units.items() if bounds[1] > 1}
+                if protected:
+                    armored[lid] = protected
+            protections = armored or protections
+        lid = ctx.decide("storm_hit_lord", list(protections), {"side": lord.side})
         lord = gs.lords[lid]
-        avail = list(_unrouted_units(lord))
-        if armored_first and armored_lords:
-            avail = [u for u in avail if u not in ("turkic_horse", "militia")]
-        def eff_hi(u):
-            lo, hi = capabilities.protection_range(gs, lord.id, u, htype, storm=True)
-            return max(lo, hi - 1) if (anti_armor and u not in ("turkic_horse", "militia")) else hi
-        unit = (min(avail, key=eff_hi) if select_target else
-                ctx.decide("hit_absorption", avail, {"lord": lord.id, "side": lord.side}))
-        lo, hi = capabilities.protection_range(gs, lord.id, unit, htype, storm=True)
-        if anti_armor and unit not in ("turkic_horse", "militia"):
-            hi = max(lo, hi - 1)
-        ok = lo <= roller.d6() <= hi
-        if (not ok and unit == "norman_knights" and lord.id not in rerolls_used
-                and capabilities.lord_has(gs, lord.id, "Norman Heavy Cavalry")):
-            rerolls_used.add(lord.id)
-            ok = lo <= roller.d6() <= hi
-        if not ok:
+        ranges = protections[lid]
+        if anti_armor:
+            ranges = {u: (lo, max(lo, hi - 1)) for u, (lo, hi) in ranges.items()}
+        if select_target:
+            unit = _select_target_unit(ctx, lord, hit_type, list(ranges), lambda u: ranges[u][1])
+        else:
+            unit = ctx.decide("hit_absorption", list(ranges), {"lord": lord.id, "side": lord.side})
+        if not _roll_protection(gs, lord, unit, hit_type, ranges[unit], ctx, roller, rerolls_used):
             _route_unit(lord, unit, ctx)
             routed.append(unit)
     return routed

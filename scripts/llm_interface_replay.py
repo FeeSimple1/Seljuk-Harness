@@ -23,8 +23,22 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def records():
     man = json.loads((ROOT/'tests/fixtures/manzikert_selfplay_20261009.json').read_text())
-    man['actions'] = [action for step in man['steps']
-                      for action in [step['action'], *step.get('followup_actions', [])]]
+    # The recorded branch remains legal. Select its original unit types
+    # explicitly where Lamellar adds new eligible targets in the two Storms.
+    storm_choices = {
+        32: [['select_target_unit', 'ghulam_cavalry'], ['hit_absorption', 'ghulam_cavalry'],
+             ['select_target_unit', 'infantry']],
+        119: [['select_target_unit', 'infantry'], ['select_target_unit', 'infantry']],
+    }
+    man['actions'] = []
+    for index, step in enumerate(man['steps']):
+        action = step['action']
+        if index in storm_choices:
+            assert action['type'] == 'cmd_storm'
+            action = {**action, 'storm_decisions': [
+                *storm_choices[index], *action.get('storm_decisions', []),
+            ]}
+        man['actions'].extend([action, *step.get('followup_actions', [])])
     show = json.loads((ROOT/'tests/fixtures/interface_showdown_20261016.json').read_text())
     return {'manzikert': man, 'showdown': show}
 
@@ -47,10 +61,10 @@ def prepare(gs, action, actor):
     consumed = []
     original = battle.DecisionContext.decide
 
-    def trace(self, dtype, options, info=None):
+    def trace(self, dtype, options, info=None, **kwargs):
         head = deepcopy(self.scripted[:1])
         n = len(self.scripted)
-        answer = original(self, dtype, options, info)
+        answer = original(self, dtype, options, info, **kwargs)
         if len(self.scripted) < n:
             owner = (info or {}).get('side')
             if owner not in ('roman', 'seljuk'):
