@@ -230,6 +230,11 @@ _BATTLE_HOLDS = {"R2", "S2", "S3", "R24", "S6",  # Mountain Ambush, Betrayal, Ca
 _TURKIC_REMOVAL_HOLDS = {"R21", "S21"}
 
 
+def held_combat_events(gs: GameState, side: str, allow: Optional[set] = None) -> list[str]:
+    eligible = _BATTLE_HOLDS if allow is None else _BATTLE_HOLDS & allow
+    return sorted((set(gs.side_decks(side).held_events) & eligible) - set(gs.meta.asterisks_used))
+
+
 def _remove_turkic_at(gs: GameState, locale: str, count: int, include_themata: bool = False) -> int:
     from .events import _remove_turkic_at as remove
     return remove(gs, locale, count, include_themata=include_themata)
@@ -239,9 +244,10 @@ def _consume_battle_events(gs: GameState, events: Optional[dict],
                            locale: Optional[str] = None, allow: Optional[set] = None):
     """Validate/consume played Battle/Storm Hold Events. ``allow`` restricts the
     eligible card set (Storm honors only the Turkic-removal holds). Returns
-    (played, cc, charge): played[side] = simple cards (R2/S2/S3); cc = Roman
-    Lords under Command Confusion (S6); charge = Roman Lords with Cavalry Charge
-    (R24). R21/S21 apply their Turkic removal immediately at ``locale``."""
+    (played, cc, charge): played[side] holds simple card IDs and any S3
+    declaration, which stays Held until it takes effect after Reposition.
+    cc and charge are the Roman targets of S6 and R24. R21/S21 apply their
+    Turkic removal immediately at ``locale``."""
     played = {"seljuk": [], "roman": []}
     cc: set = set()
     charge: set = set()
@@ -249,15 +255,20 @@ def _consume_battle_events(gs: GameState, events: Optional[dict],
         return played, cc, charge
     from .events import _apply_turkic_removal, _disband_turkic_targets, _plan_turkic_removal
 
-    eligible = (_BATTLE_HOLDS & allow) if allow is not None else _BATTLE_HOLDS
     removals = []
     for side in ("seljuk", "roman"):
+        decks = gs.side_decks(side)
+        eligible = set(held_combat_events(gs, side, allow))
         for entry in events.get(side, []):
             cid = entry["card"] if isinstance(entry, dict) else entry
-            if cid not in eligible or cid not in gs.side_decks(side).held_events:
+            if cid not in eligible:
                 continue
-            gs.side_decks(side).held_events.remove(cid)
-            gs.side_decks(side).draw_deck.append(cid)
+            eligible.remove(cid)
+            if cid == "S3":
+                played[side].append(entry)
+                continue
+            decks.held_events.remove(cid)
+            decks.draw_deck.append(cid)
             if cid in _TURKIC_REMOVAL_HOLDS:
                 args = entry if isinstance(entry, dict) else {}
                 removals.append(_plan_turkic_removal(gs, locale, args, include_themata=(cid == "S21"), owner=side))
@@ -272,6 +283,34 @@ def _consume_battle_events(gs: GameState, events: Optional[dict],
         affected = _apply_turkic_removal(gs, locale, removals)
         _disband_turkic_targets(gs, affected)
     return played, cc, charge
+
+
+def _apply_betrayal(gs: GameState, att: _Side, deff: _Side, ctx: DecisionContext,
+                    played: dict, round_no: int) -> None:
+    """S3 may move a non-Commander from the Roman Front after Reposition."""
+    if "S3" not in gs.seljuk.held_events or "S3" in gs.meta.asterisks_used:
+        return
+    declaration = next((entry for entry in played.get("seljuk", [])
+                        if (entry.get("card") if isinstance(entry, dict) else entry) == "S3"), None)
+    if declaration is None:
+        return
+    roman = att if att.faction == "roman" else deff
+    if roman.faction != "roman" or len(roman.all_lords()) < 2:
+        return
+    from .actions import is_commander
+    options = [lid for lid in roman.front_lords() if not is_commander(gs, lid)]
+    if not options:
+        return
+    target = declaration.get("lord", options[0]) if isinstance(declaration, dict) else options[0]
+    if target not in options:
+        return
+    slot = next(slot for slot in SLOTS if roman.front[slot] == target)
+    roman.front[slot] = None
+    roman.reserve.append(target)
+    gs.seljuk.held_events.remove("S3")
+    gs.seljuk.draw_deck.append("S3")
+    gs.meta.asterisks_used.append("S3")
+    ctx.trace.append({"type": "betrayal_target", "choice": target, "options": options, "round": round_no})
 
 
 def _roller(gs: GameState) -> DiceRoller:
@@ -338,10 +377,6 @@ def resolve_battle(gs: GameState, attacker_ids: list[str], defender_ids: list[st
         amb = "R2" if sname == "roman" else "S2"
         if amb in played.get(sname, []) and gmap.adjacent_to_pass(locale):
             side_obj.mountain_ambush = True
-    betrayal_pending = "S3" in played.get("seljuk", [])
-    if betrayal_pending and "S3" not in gs.meta.asterisks_used:
-        gs.meta.asterisks_used.append("S3")
-
     rounds = []
     pursuit = {"attacker": False, "defender": False}
     conceder = None
@@ -363,17 +398,7 @@ def resolve_battle(gs: GameState, attacker_ids: list[str], defender_ids: list[st
         if round_no > 1:
             # Reposition
             _reposition(gs, att, deff, ctx)
-            if betrayal_pending:  # S3 Betrayal: move a non-commander Roman Front Lord to Reserve
-                for sd_obj in (att, deff):
-                    for slot in SLOTS:
-                        lid = sd_obj.front[slot]
-                        if lid and gs.lords[lid].side == "roman" and not sd.lord(lid).get("commander"):
-                            sd_obj.front[slot] = None
-                            sd_obj.reserve.append(lid)
-                            betrayal_pending = False
-                            break
-                    if not betrayal_pending:
-                        break
+            _apply_betrayal(gs, att, deff, ctx, played, round_no)
 
         _strike_phase(gs, att, deff, pursuit, round_no, ctx, roller, rounds, cc=cc, charge=charge,
                       sallying=sallying, siegeworks=siegeworks)
@@ -1749,10 +1774,6 @@ def resolve_sally(gs: GameState, sallying_ids: list[str], besieger_ids: list[str
         _amb = "R2" if _sn == "roman" else "S2"
         if _amb in played.get(_sn, []) and gmap.adjacent_to_pass(locale):
             _so.mountain_ambush = True
-    betrayal_pending = "S3" in played.get("seljuk", [])
-    if betrayal_pending and "S3" not in gs.meta.asterisks_used:
-        gs.meta.asterisks_used.append("S3")
-
     log: list = []
     pursuit = {"attacker": False, "defender": False}
     conceder = None
@@ -1773,17 +1794,7 @@ def resolve_sally(gs: GameState, sallying_ids: list[str], besieger_ids: list[str
             # 4.9.2 REPOSITION "mimics that in Storm": each side may advance one
             # Reserve Lord to Front, up to the Stronghold's Size.
             _storm_reposition(gs, att, deff, size, ctx, match_enemy=False)
-            if betrayal_pending:  # S3 Betrayal: a non-Commander Roman Front Lord to Reserve
-                for _sd_obj in (att, deff):
-                    for _slot in SLOTS:
-                        _blid = _sd_obj.front[_slot]
-                        if _blid and gs.lords[_blid].side == "roman" and not sd.lord(_blid).get("commander"):
-                            _sd_obj.front[_slot] = None
-                            _sd_obj.reserve.append(_blid)
-                            betrayal_pending = False
-                            break
-                    if not betrayal_pending:
-                        break
+            _apply_betrayal(gs, att, deff, ctx, played, round_no)
         _strike_phase(gs, att, deff, pursuit, round_no, ctx, roller, log,
                       cc=cc, charge=charge, sally_walls=siege)
         att_alive = any(not _is_routed(gs.lords[l]) for l in att.all_lords())

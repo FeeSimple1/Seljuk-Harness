@@ -74,7 +74,7 @@ def visible_move(gs, move, side):
                if kind == "respond_approach" else gs.lords[move["lord"]].side)
         own_role = "attacker" if side == att else "defender"
         allowed = {"R21", "S21"} if kind == "cmd_storm" else battle._BATTLE_HOLDS
-        own = sorted(set(gs.side_decks(side).held_events) & allowed)
+        own = battle.held_combat_events(gs, side, allowed)
         for key in ("_battle_holds_available", "_storm_events_available", "_r4_sultans_horse_available"):
             out.pop(key, None)
         out["_combat_inputs"] = {"your_role": own_role, "your_held_events": own,
@@ -114,10 +114,16 @@ def siege_formation_help(gs, move, side):
     }}
 
 
-def turkic_target_help(gs, move, side, held):
+def combat_event_help(gs, move, side, held):
+    out = {}
+    if "S3" in held:
+        out["betrayal"] = ('Use {"card":"S3","lord":"lord_id"} in your battle_events. '
+                           'After Reposition, at least two Roman Lords must remain in combat '
+                           'and the selected Lord must be a non-Commander in the Front. '
+                           'S3 stays Held until it moves the selected Lord to Reserve.')
     cards = sorted(set(held) & battle._TURKIC_REMOVAL_HOLDS)
     if not cards:
-        return {}
+        return out
     avoiding = set()
     if move["type"] == "respond_approach":
         pending = current_pending(gs)
@@ -136,13 +142,14 @@ def turkic_target_help(gs, move, side, held):
             for (lid, index, kind), available in events._turkic_sources(gs, locale, card == "S21").items()
             if lid not in screened and lid not in avoiding
         ]
-    return {"turkic_removal": {
+    out["turkic_removal"] = {
         "visible_targets": options,
         "screened_lords": sorted(screened),
         "input": "Use {card, targets: [{lord, index, kind, count}]}. Omit index for ordinary units, "
                  "omit lord for a defending Themata marker. Count defaults to 1. Select up to two. "
                  "You may nominate a screened Lord at this Locale.",
-    }}
+    }
+    return out
 
 
 def contract(gs, move, side):
@@ -239,7 +246,7 @@ def contract(gs, move, side):
                         "Supply any combat inputs with respond_approach."]
     if kind in ("respond_approach", "cmd_storm", "cmd_sally"):
         out["combat"] = {
-            "battle_events": "Each side supplies its own cards. Use {card, lord} for S6/R24 "
+            "battle_events": "Each side supplies its own cards. Use {card, lord} for S3/S6/R24 "
                              "and {card, targets} for R21/S21.",
             "rounds": "steeled_rounds / javelins_rounds: {your_lord: round}; existing default is 1.",
             "decisions": "battle_decisions / storm_decisions: your typed FIFO arrays, e.g. [[concede, true]], scoped to your decisions.",
@@ -248,7 +255,7 @@ def contract(gs, move, side):
             "resolution": "Engine combat is atomic. Preserve scripted choices; unscripted choices use its existing fallback.",
             "opponent_input": "An explicit input/decline handoff occurs before dice. No opponent hand is disclosed.",
             **siege_formation_help(gs, move, side),
-            **turkic_target_help(gs, move, side, move.get("_combat_inputs", {}).get("your_held_events", [])),
+            **combat_event_help(gs, move, side, move.get("_combat_inputs", {}).get("your_held_events", [])),
         }
     out["references"] = ["guide", "rules", "decisions", "errata"]
     return out

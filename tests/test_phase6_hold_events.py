@@ -1,9 +1,14 @@
 """Phase 6 (R4): Hold-Event play hooks."""
 import pytest
 
-from seljuk import scenarios as S, engine, battle
+from seljuk import actions, scenarios as S, engine, battle
 from seljuk.actions import reset_muster_segment, lordship_remaining
+from seljuk.llm import LLMSession
+from seljuk.llm.compact import CompactInterface
+from seljuk.rng import DiceRoller
 from seljuk.state import IllegalAction
+from tests.test_cross_game_combat import position
+from tests.test_decisions_d008_sally import _cmd, _muster_siege_lord
 
 
 def _muster(gs, side):
@@ -97,11 +102,106 @@ def test_battle_event_mountain_ambush_consumed():
     assert res["winner"] in ("attacker", "defender")
 
 
-def test_battle_event_betrayal_consumed_s3():
-    gs = S.load_scenario("emperor_and_the_lion", seed=4)
-    aa = gs.lords["alp_arslan"]; aa.cylinder = "melitene"; aa.forces = {"turkic_horse": 6}
-    ch = gs.lords["chatatourios"]; ch.cylinder = "melitene"; ch.forces = {"tagmata": 2, "infantry": 2}
-    gs.seljuk.held_events = ["S3"]
-    gs.meta.phase = "campaign"; gs.meta.active_lord = "alp_arslan"
-    battle.begin_battle(gs, ["alp_arslan"], ["chatatourios"], "melitene", events={"seljuk": ["S3"]})
-    assert "S3" not in gs.seljuk.held_events and "S3" in gs.meta.asterisks_used
+def _betrayal_position(seed):
+    gs = position()
+    gs.meta.rng_state = DiceRoller(seed).get_state()
+    _cmd(gs, "alp_arslan", "seljuk")
+    gs.seljuk.draw_deck.remove("S3")
+    gs.seljuk.held_events.append("S3")
+    return gs
+
+
+def _betrayal_sally(*besiegers):
+    gs = _betrayal_position(seed=1)
+    _muster_siege_lord(gs, "alp_arslan", inside=True)
+    for lid in besiegers:
+        _muster_siege_lord(gs, lid)
+    melitene = gs.locales["melitene"]
+    melitene.conquered_side = "seljuk"
+    melitene.conquered_count = battle._eff_value(gs, "melitene")
+    melitene.siege_markers = 2
+    return gs
+
+
+def test_sally_betrayal_keeps_card_and_strikes_against_a_single_enemy():
+    action = {"type": "cmd_sally", "lord": "alp_arslan",
+              "battle_decisions": {"seljuk": [["concede", False], ["concede", False], ["concede", True]]}}
+    control = engine.apply_action(_betrayal_sally("chatatourios"), action)["sally"]
+    gs = _betrayal_sally("chatatourios")
+    result = engine.apply_action(gs, {**action, "battle_events": {"seljuk": ["S3"]}})["sally"]
+
+    assert any(strike["round"] == 2 for strike in control["strikes"])
+    assert result == control
+    assert "S3" in gs.seljuk.held_events
+    assert "S3" not in gs.seljuk.draw_deck and "S3" not in gs.meta.asterisks_used
+
+
+@pytest.mark.parametrize("target", ["andronikos_doukas", "chatatourios"])
+def test_march_battle_betrayal_moves_the_named_lord(target):
+    gs = _betrayal_position(seed=2)
+    for lid in ("alp_arslan", "artuk_beg"):
+        _muster_siege_lord(gs, lid).cylinder = "laodikeia"
+    defenders = {"andronikos_doukas", "chatatourios"}
+    for lid in sorted(defenders):
+        _muster_siege_lord(gs, lid).cylinder = "antioch"
+    engine.apply_action(gs, {"type": "cmd_march", "lord": "alp_arslan", "to": "antioch", "group": ["artuk_beg"]})
+    result = engine.apply_action(gs, {
+        "type": "respond_approach", "choices": {lid: {"action": "stand"} for lid in defenders},
+        "battle_events": {"seljuk": [{"card": "S3", "lord": target}]},
+        "battle_decisions": {"seljuk": [["concede", False], ["concede", False], ["concede", True]]},
+    })["battle"]
+
+    move, = [decision for decision in result["decisions"] if decision["type"] == "betrayal_target"]
+    assert move["round"] == 2 and move["choice"] == target and set(move["options"]) == defenders
+    assert {strike["target"] for strike in result["strikes"]
+            if strike["round"] == 2 and strike["by"] == "attacker"} == defenders - {target}
+    assert "S3" not in gs.seljuk.held_events and gs.seljuk.draw_deck.count("S3") == 1
+    assert gs.meta.asterisks_used.count("S3") == 1
+
+
+@pytest.mark.parametrize("front, target, advance, used, applies", [
+    ("andronikos_doukas", "chatatourios", False, False, False),
+    ("romanos_diogenes", "chatatourios", True, False, True),
+    ("romanos_diogenes", "romanos_diogenes", True, False, False),
+    ("romanos_diogenes", "chatatourios", True, True, False),
+])
+def test_compact_sally_betrayal_respects_front_commander_and_once_per_game(front, target, advance, used, applies):
+    gs = _betrayal_sally(front, "chatatourios")
+    if used:
+        gs.meta.asterisks_used.append("S3")  # Older saves could hold a spent S3.
+    ui = CompactInterface(LLMSession(gs))
+    sally, = ui.actions(type="cmd_sally")["entries"]
+    assert ("betrayal" in ui.details(sally["id"])["help"]["combat"]) == (not used)
+    ui.apply(sally["id"], parameters={
+        "battle_events": {"seljuk": [{"card": "S3", "lord": target}]},
+        "battle_decisions": [["concede", False], ["concede", True]],
+    })
+    assert ui.viewer == "roman"
+    reply, = ui.actions(type="supply_inputs")["entries"]
+    assert "betrayal" not in ui.details(reply["id"])["help"]
+    ui.apply(reply["id"], parameters={"inputs": {"battle_decisions": [
+        ["initial_placement_defender", front],
+        ["reserve_advance", "chatatourios" if advance else None],
+    ]}})
+    gs = ui.gs
+    result = gs.history[-1]["result"]["sally"]
+
+    moves = [decision for decision in result["decisions"] if decision["type"] == "betrayal_target"]
+    if applies:
+        move, = moves
+        assert move["options"] == ["chatatourios"] and move["choice"] == target
+    else:
+        assert moves == []
+    assert ("S3" in gs.seljuk.held_events) == (not applies)
+    assert ("S3" in gs.meta.asterisks_used) == (used or applies)
+
+
+def test_redrawn_betrayal_after_use_is_no_event():
+    gs = _betrayal_position(seed=1)
+    gs.seljuk.held_events.remove("S3")
+    gs.meta.asterisks_used.append("S3")
+
+    actions._classify_drawn_event(gs, "seljuk", "S3")
+
+    assert "S3" not in gs.seljuk.held_events and gs.seljuk.draw_deck.count("S3") == 1
+    assert gs.meta.pending == []

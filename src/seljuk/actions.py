@@ -809,7 +809,9 @@ def _deploy_first_levy_capability(gs: GameState, side: str, card_id: str) -> Non
 def _classify_drawn_event(gs: GameState, side: str, card_id: str, roller: DiceRoller | None = None) -> None:
     tags = sd.card(card_id)["event"]["tags"]
     decks = gs.side_decks(side)
-    if "hold" in tags:
+    if card_id == "S3" and card_id in gs.meta.asterisks_used:
+        decks.draw_deck.append(card_id)  # Betrayal is No Event after its first use.
+    elif "hold" in tags:
         decks.held_events.append(card_id)
     elif "this_campaign" in tags:
         # File the card for end-of-Campaign discard (4.7.5) AND establish its

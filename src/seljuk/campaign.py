@@ -1387,8 +1387,8 @@ def legal_moves_campaign(gs: GameState) -> list[dict[str, Any]]:
     if ap is not None:
         from . import battle
         att_side = gs.lords[ap["attackers"][0]].side
-        holds = {"attacker": sorted(set(gs.side_decks(att_side).held_events) & battle._BATTLE_HOLDS),
-                 "defender": sorted(set(gs.side_decks(_enemy(att_side)).held_events) & battle._BATTLE_HOLDS)}
+        holds = {"attacker": battle.held_combat_events(gs, att_side),
+                 "defender": battle.held_combat_events(gs, _enemy(att_side))}
         salliers = _relief_sally_candidates(gs, ap["locale"], att_side)
         return [{"type": "respond_approach", "_defenders": ap["defenders"], "_locale": ap["locale"],
                  "_battle_holds_available": holds,
@@ -1670,8 +1670,8 @@ def command_menu(gs: GameState) -> list[dict[str, Any]]:
             _sset = set(_b._BATTLE_HOLDS)
             if not gmap.adjacent_to_pass(loc_id):
                 _sset -= {"R2", "S2"}
-            _sh = {"attacker": sorted(set(gs.side_decks(lord.side).held_events) & _sset),
-                   "defender": sorted(set(gs.side_decks(_enemy(lord.side)).held_events) & _sset)}
+            _sh = {"attacker": _b.held_combat_events(gs, lord.side, _sset),
+                   "defender": _b.held_combat_events(gs, _enemy(lord.side), _sset)}
             _mvSa = {"type": "cmd_sally", "lord": lid, "_desc": "Sally against the Besiegers (4.5.3)"}
             if _sh["attacker"] or _sh["defender"]:
                 _mvSa["_battle_holds_available"] = _sh

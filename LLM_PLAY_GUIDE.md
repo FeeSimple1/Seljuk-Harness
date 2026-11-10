@@ -127,6 +127,11 @@ parameters (hinted by `_`-prefixed keys):
   dicts naming the Roman Lord: `{"card":"R24","lord":...}`); Storm honors
   R21/S21 plus, for the Roman defender, `"play_sultans_horse": true`
   (R4: Rounds -1, disclosed only to the Roman player).
+- **S3 Betrayal.** Seljuk may declare `{"card":"S3","lord":"lord_id"}` in
+  `battle_events`. After Reposition, at least two Roman Lords must remain in
+  combat and the selected Lord must be a non-Commander in the Front. S3 is
+  used once per game when the Lord moves to Reserve. If the target never
+  qualifies, keep S3 Held. A bare `"S3"` selects the first eligible Front Lord.
 - **R21/S21 Turkic Horse removal.** In `battle_events`, name the exact
   targets, for example `{"card":"R21","targets":[{"lord":"alp_arslan","count":1}]}`.
   You may split up to two removals among eligible Lords at the combat Locale,

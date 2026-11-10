@@ -632,12 +632,12 @@ class CompactInterface:
             else:
                 approach_choices.update(self._avoid_spoils_input(action))
             input_fields.extend(k for k in approach_choices if k != "avoid_spoils_after_scouts")
-        held = (sorted(set(self.gs.side_decks(self.viewer).held_events) & allowed)
+        held = (battle.held_combat_events(self.gs, self.viewer, allowed)
                 if "battle_events" in recognized else [])
         return {"required": {"inputs": "Object with your optional combat inputs, or {} to decline"},
                 "your_held_events": held,
                 **contracts.siege_formation_help(self.gs, action, self.viewer),
-                **contracts.turkic_target_help(self.gs, action, self.viewer, held),
+                **contracts.combat_event_help(self.gs, action, self.viewer, held),
                 "parameters": input_fields,
                 "your_sultans_horse_held": self.viewer == "roman" and "R4" in self.gs.roman.held_events,
                 "your_local_scouts_held": scouts_held and not reviewing,
