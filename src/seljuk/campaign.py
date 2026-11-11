@@ -983,6 +983,14 @@ def _wastage(gs: GameState) -> None:
         _do_one_wastage(gs, enemy)
 
 
+def _themata_coin_payers(gs: GameState, lord: LordState) -> list[LordState]:
+    """Coin may be spent directly from Friendly mats at the same Locale (1.5.2)."""
+    payers = [payer for payer in gs.lords.values()
+              if payer.side == lord.side and payer.cylinder == lord.cylinder
+              and on_map(payer) and payer.assets.coin > 0]
+    return sorted(payers, key=lambda payer: payer.id != lord.id)
+
+
 def _begin_themata_retention(gs: GameState) -> bool:
     """Offer one-Coin-per-Thema retention, including R4's one free Thema."""
     gs.meta.notes["retained_themata"] = {}
@@ -992,7 +1000,7 @@ def _begin_themata_retention(gs: GameState) -> bool:
             continue
         homes = list(dict.fromkeys(m.home_thema for m in lord.themata_on_mat
                                    if m.home_thema and m.unit_count() > 0))
-        if lord.assets.coin > 0 or free:
+        if homes and (free or _themata_coin_payers(gs, lord)):
             for home in homes:
                 gs.meta.pending.append({"type": "retain_themata", "lord": lord.id,
                                         "thema": home, "_owed_by": "roman"})
@@ -1010,9 +1018,9 @@ def _retention_moves(gs: GameState) -> list[dict[str, Any]]:
         return []
     lord = gs.lords[pending["lord"]]
     base = {"type": "retain_themata", "lord": lord.id, "thema": pending["thema"]}
-    moves = []
-    if lord.assets.coin > 0:
-        moves.append({**base, "mode": "pay", "_desc": "Pay 1 Coin to retain this Thema's units (4.7.5)"})
+    moves = [{**base, "mode": "pay", "payer": payer.id,
+              "_desc": f"Spend 1 Coin from {sd.lord(payer.id)['name']} to retain this Thema (4.7.5)"}
+             for payer in _themata_coin_payers(gs, lord)]
     if (capabilities.side_has(gs, "roman", "Pressed Levy Service")
             and not gs.meta.notes.get("pressed_levy_used")):
         moves.append({**base, "mode": "pressed_levy", "_desc": "Retain this Thema free with Pressed Levy Service (R4)"})
@@ -1024,19 +1032,23 @@ def h_retain_themata(gs: GameState, action: dict[str, Any], roller: DiceRoller) 
     pending = next((p for p in gs.meta.pending if p["type"] == "retain_themata"), None)
     if pending is None or gs.meta.subphase != "campaign.reset":
         raise IllegalAction("wrong_step", "no Themata retention decision is owed (4.7.5)")
-    offered = _retention_moves(gs)
-    if not any(all(action.get(k) == move[k] for k in ("lord", "thema", "mode")) for move in offered):
+    choice = next((move for move in _retention_moves(gs)
+                   if all(action.get(k) == move[k] for k in ("lord", "thema", "mode"))
+                   and ("payer" not in action or action["payer"] == move.get("payer"))), None)
+    if choice is None:
         raise IllegalAction("bad_retention", "choose a currently offered Themata retention option (4.7.5)")
     lord = gs.lords[pending["lord"]]
     mode = action["mode"]
     if mode == "pay":
-        lord.assets.coin -= 1
+        gs.lords[choice["payer"]].assets.coin -= 1
     elif mode == "pressed_levy":
         gs.meta.notes["pressed_levy_used"] = True
     if mode != "return":
         gs.meta.notes["retained_themata"].setdefault(lord.id, []).append(pending["thema"])
     gs.meta.pending.remove(pending)
     result = {"ok": True, "lord": lord.id, "thema": pending["thema"], "mode": mode}
+    if mode == "pay" and ("payer" in action or choice["payer"] != lord.id):
+        result["payer"] = choice["payer"]
     if not any(p["type"] == "retain_themata" for p in gs.meta.pending):
         _finish_end_campaign(gs)
     return result
