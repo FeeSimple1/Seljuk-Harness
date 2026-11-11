@@ -17,6 +17,7 @@ Phase 4 and are not applied here.
 """
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any, Optional
 
 from . import scenarios, static_data as sd
@@ -566,8 +567,18 @@ def _target_of(striker_slot: str, enemy: _Side, ctx: DecisionContext,
 import math as _math
 
 
-def _lord_step_hits_caps(gs, lid, step, round_no, cat=None):
-    """(normal_hits, anti_armor_hits, select_hits) for one Lord in a Strike step,
+@dataclass
+class _StrikePool:
+    normal: float = 0.0
+    anti: float = 0.0
+    select: float = 0.0
+    # Portions of normal Hits whose origin matters before rounding/Protection.
+    foot_missiles: float = 0.0
+    pursuit_exempt: float = 0.0
+
+
+def _lord_strike_pool(gs, lid, step, round_no, cat=None) -> _StrikePool:
+    """Typed Hit contributions from one Lord in a Strike step,
     applying Capabilities (Javelins, Alakatia, Shock Tactics, Bardoukia). ``cat``
     optionally restricts a Missile step to "horse"- or "foot"-category units
     (used by Simultaneous Horse Combat, 6.3)."""
@@ -577,16 +588,19 @@ def _lord_step_hits_caps(gs, lid, step, round_no, cat=None):
     normal = 0.0
     anti = 0.0
     select = 0.0  # S16 Parthian Shot: striker-selected (Turkic Horse Missiles)
+    foot_missiles = 0.0
+    pursuit_exempt = 0.0
     if step == "missile":
         for u, n in units.items():
             if cat is not None and _category(u) != cat:
                 continue
             normal += _MISSILE.get(u, 0.0) * n
         if cat in (None, "foot"):
-            normal += units.get("militia", 0) * capabilities.militia_missile_rate(gs, lid)
+            foot_missiles = units.get("militia", 0) * capabilities.militia_missile_rate(gs, lid)
             if "Javelins" in names and round_no == int(lord.flags.get("javelins_round", 1)):
                 # S11: the owner's chosen Battle round only, renewed each Battle.
-                normal += units.get("infantry", 0) * 1.0
+                foot_missiles += units.get("infantry", 0) * 1.0
+            normal += foot_missiles
             if "Alakatia" in names and units.get("infantry", 0) >= 2:  # R23 (foot)
                 anti += 1.0
         if cat in (None, "horse") and "Parthian Shot" in names:  # S16 (Turkic Horse)
@@ -609,7 +623,15 @@ def _lord_step_hits_caps(gs, lid, step, round_no, cat=None):
         for u, n in units.items():
             if _category(u) == "foot":
                 normal += table.get(u, 0.0) * n
-    return max(0.0, normal), anti, max(0.0, select)
+        # Player-aid errata: Guard Strikes are never halved for Pursuit.
+        pursuit_exempt = table["varangian_guard"] * units.get("varangian_guard", 0)
+    return _StrikePool(max(0.0, normal), anti, max(0.0, select), foot_missiles, pursuit_exempt)
+
+
+def _lord_step_hits_caps(gs, lid, step, round_no, cat=None):
+    """Total normal, anti-Armor and selecting Hits for strike-profile callers."""
+    pool = _lord_strike_pool(gs, lid, step, round_no, cat=cat)
+    return pool.normal, pool.anti, pool.select
 
 
 def _front_set(side: _Side) -> set:
@@ -748,7 +770,7 @@ def _compute_pools(gs, step, striking: _Side, target_side: _Side, round_no, ctx,
     application lets Horse Strikes resolve simultaneously (6.3)."""
     skip_charge = skip_charge or set()
     srow = getattr(striking, striker_row)
-    by = {}        # target -> [normal, anti, select]
+    by = {}        # target -> _StrikePool, captured before simultaneous Strikes
     contrib = {}   # target -> {striker slots that hit it} (for Flank absorb, 4.8.2)
     for slot in SLOTS:
         lid = srow[slot]
@@ -761,11 +783,13 @@ def _compute_pools(gs, step, striking: _Side, target_side: _Side, round_no, ctx,
         target = _target_of(slot, target_side, ctx, row=target_row)
         if not target:
             continue
-        normal, anti, select = _lord_step_hits_caps(gs, lid, step, round_no, cat=cat)
-        cur = by.setdefault(target, [0.0, 0.0, 0.0])
-        cur[0] += normal
-        cur[1] += anti
-        cur[2] += select
+        pool = _lord_strike_pool(gs, lid, step, round_no, cat=cat)
+        cur = by.setdefault(target, _StrikePool())
+        cur.normal += pool.normal
+        cur.anti += pool.anti
+        cur.select += pool.select
+        cur.foot_missiles += pool.foot_missiles
+        cur.pursuit_exempt += pool.pursuit_exempt
         contrib.setdefault(target, set()).add(slot)
     return by, contrib
 
@@ -816,7 +840,7 @@ def _apply_pools(gs, step, by, contrib, striking: _Side, target_side: _Side, rol
         return ctx.decide("flank_absorb", [target_id] + cands,
                           {"target": target_id, "striker": z, "side": gs.lords[target_id].side})
 
-    def _emit(target, n_raw, a_raw, s_raw, walls):
+    def _emit(target, pool, walls):
         source_slots = contrib.get(target, set())
         def retarget():
             _purge_routed(target_side)
@@ -835,45 +859,63 @@ def _apply_pools(gs, step, by, contrib, striking: _Side, target_side: _Side, rol
             if target is None:
                 return
         target = _absorb_target(target)
+        n_raw, a_raw, s_raw = pool.normal, pool.anti, pool.select
+        foot_raw = pool.foot_missiles
         if pursuit.get(role):  # Pursuit halving (4.8.2)
-            n_raw /= 2.0
+            n_raw = (n_raw - pool.pursuit_exempt) / 2.0 + pool.pursuit_exempt
             a_raw /= 2.0
             s_raw /= 2.0
+            foot_raw /= 2.0
+        # R3/S11 clarification: account for Foot Missiles separately from
+        # Horse when Steeled Resolve can affect a receiving Lord. Keep the
+        # origin even if the first recipient Routs and remaining Hits retarget.
+        steeled = foot_raw > 0 and any(
+            lid and not _is_routed(gs.lords[lid])
+            and capabilities.lord_has(gs, lid, "Steeled Resolve")
+            and round_no == int(gs.lords[lid].flags.get("steeled_resolve_round", 1))
+            for lid in getattr(target_side, target_row).values())
+        normal_horse = step == "horse_melee" or (step == "missile" and n_raw > foot_raw)
         n_hits = int(n_raw + 0.999)
+        foot_hits = 0
+        if steeled:
+            # Preserve the rounded ordinary total (4.8.2). A Hit that
+            # contains part of a Foot Hit cannot gain the vs-Horse bonus.
+            foot_hits = int(foot_raw + 0.999)
+            n_hits -= foot_hits
         a_hits = int(a_raw + 0.999)
         s_hits = int(s_raw + 0.999)
         if step == "missile" and round_no == 1 and target_side.mountain_ambush:
             n_hits = _roll_walls(roller, n_hits, (1, 3))  # Mountain Ambush (R2/S2)
             a_hits = _roll_walls(roller, a_hits, (1, 3))
             s_hits = _roll_walls(roller, s_hits, (1, 3))
+            foot_hits = _roll_walls(roller, foot_hits, (1, 3))
         if walls > 0:  # Siegeworks vs Sallying strikes (Relief Sally, 4.8.1)
             n_hits = _roll_walls(roller, n_hits, (1, walls))
             a_hits = _roll_walls(roller, a_hits, (1, walls))
             s_hits = _roll_walls(roller, s_hits, (1, walls))
-        # R3 Steeled Resolve: Infantry Armor 1-3 vs Horse applies to BOTH Missile
-        # and Melee (card clarification); Seljuk Missile Strikes against a Roman
-        # Lord are Turkic Horse, so the Missile step counts as "vs Horse". The
-        # owner declares which Round to use the Capability ("any 1 Round (mark)",
-        # like S11 Javelins); the target Lord's declared Round defaults to 1.
-        _sr_round = int(gs.lords[target].flags.get("steeled_resolve_round", 1)) if target in gs.lords else 1
-        vs_horse = (step in ("horse_melee", "missile")) and round_no == _sr_round
+            foot_hits = _roll_walls(roller, foot_hits, (1, walls))
         applied = []
-        hit_options = {"retarget": retarget, "horse_attack": step in ("horse_melee", "missile"),
+        hit_options = {"retarget": retarget,
                        "round_no": round_no, "rerolls_used": rerolls_used}
         if s_hits:  # 4.8.2: the striker selects units for these Hits before ordinary Hits.
-            applied += _apply_hits(gs, target, s_hits, hit_type, ctx, roller, vs_horse=vs_horse,
+            applied += _apply_hits(gs, target, s_hits, hit_type, ctx, roller, horse_attack=True,
                                    select_target=True, **hit_options)
         if n_hits:
-            applied += _apply_hits(gs, target, n_hits, hit_type, ctx, roller, vs_horse=vs_horse, **hit_options)
+            applied += _apply_hits(gs, target, n_hits, hit_type, ctx, roller,
+                                   horse_attack=normal_horse, **hit_options)
+        if foot_hits:
+            applied += _apply_hits(gs, target, foot_hits, hit_type, ctx, roller,
+                                   horse_attack=False, **hit_options)
         if a_hits:
-            applied += _apply_hits(gs, target, a_hits, hit_type, ctx, roller, anti_armor=True, vs_horse=vs_horse, **hit_options)
-        if n_hits or a_hits or s_hits:
+            applied += _apply_hits(gs, target, a_hits, hit_type, ctx, roller, anti_armor=True,
+                                   horse_attack=step == "horse_melee", **hit_options)
+        if n_hits or a_hits or s_hits or foot_hits:
             log.append({"round": round_no, "step": step, "by": role, "target": target,
-                        "hits": n_hits + a_hits + s_hits, "routed_units": applied,
+                        "hits": n_hits + a_hits + s_hits + foot_hits, "routed_units": applied,
                         **({"sallying": True} if striker_row == "sally" else {})})
 
-    for target, (n, a, sel) in by.items():
-        _emit(target, n, a, sel, step_walls)
+    for target, pool in by.items():
+        _emit(target, pool, step_walls)
 
 
 def _resolve_step(gs, step, striking: _Side, target_side: _Side, role, pursuit, round_no,

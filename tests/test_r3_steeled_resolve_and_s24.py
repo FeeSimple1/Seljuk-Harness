@@ -1,4 +1,4 @@
-"""Bug fixes: R3 Steeled Resolve grants Infantry Armor 1-3 vs Horse for BOTH
+"""Bug fixes: R3 Steeled Resolve grants Infantry Armor 1-4 vs Horse for BOTH
 Missile and Melee (was Melee-only); S24 Bad Omens lets the Seljuk player keep the
 top-2 Roman Plan order or swap it (was a forced swap)."""
 import sys
@@ -28,11 +28,29 @@ def test_steeled_resolve_boosts_infantry_protection_vs_horse():
     assert capabilities.protection_range(gs, "chatatourios", "infantry", "missile", vs_horse=False) == (1, 3)
 
 
-def test_missile_step_counts_as_vs_horse_for_steeled_resolve():
-    # the battle Missile step now applies the 'vs Horse' scope (Round 1), so a
-    # Steeled-Resolve Infantry negates Turkic Horse Missile Hits at 1-4.
-    src = Path("src/seljuk/battle.py").read_text()
-    assert 'step in ("horse_melee", "missile")' in src   # scope includes Missiles
+def test_steeled_resolve_protects_against_selecting_horse_missiles_in_marked_round():
+    from tests.test_round8_combat import _capability, _dispatch, _place, _position
+
+    for marked_round, routed in [(1, []), (2, ["infantry"])]:
+        gs = _position(seed=9)
+        _place(gs, "alp_arslan", {"turkic_horse": 2}, "laodikeia")
+        _place(gs, "chatatourios", {"infantry": 4, "militia": 1}, "antioch")
+        _capability(gs, "seljuk", "S16", "alp_arslan")
+        _capability(gs, "roman", "R3", "chatatourios")
+        origin = gs.locales["laodikeia"]
+        origin.conquered_side, origin.conquered_count = "seljuk", 1
+        _dispatch(gs, {"type": "cmd_march", "lord": "alp_arslan", "to": "antioch"})
+        result = _dispatch(gs, {
+            "type": "respond_approach", "choices": {"chatatourios": {"action": "stand"}},
+            "battle_decisions": {"seljuk": [["concede", True],
+                                          ["select_target_unit", "infantry"]]},
+            "steeled_rounds": {"chatatourios": marked_round},
+        })["battle"]
+        first = result["strikes"][0]
+        assert first["step"] == "missile" and first["hits"] == 1
+        assert first["routed_units"] == routed  # First roll is 4 in both branches.
+        chosen = next(d for d in result["decisions"] if d["type"] == "select_target_unit")
+        assert chosen["choice"] == "infantry"
 
 
 def test_s24_swaps_by_default():

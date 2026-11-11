@@ -224,7 +224,7 @@ def test_05_battle_hits_continue_after_front_lord_routs(pool):
         place(gs, lid, {"militia": 1})
     att, deff = rows(gs, defenders=("chatatourios", "romanos_diogenes"))
     deff.reserve = ["robert_crepin"]
-    B._apply_pools(gs, "missile", {"chatatourios": pool},
+    B._apply_pools(gs, "missile", {"chatatourios": B._StrikePool(*pool)},
                   {"chatatourios": {"center"}}, att, deff, "attacker", {}, 1,
                   B.DecisionContext(), ConstantDice(), [], "front", "front", 0)
     assert B._is_routed(gs.lords["chatatourios"])
@@ -239,7 +239,7 @@ def test_05_battle_hits_do_not_cross_from_front_to_rearguard():
     place(gs, "romanos_diogenes", {"militia": 1})
     att, deff = rows(gs)
     deff.rearguard["center"] = "romanos_diogenes"
-    B._apply_pools(gs, "missile", {"chatatourios": (3.0, 0.0, 0.0)},
+    B._apply_pools(gs, "missile", {"chatatourios": B._StrikePool(normal=3.0)},
                   {"chatatourios": {"center"}}, att, deff, "attacker", {}, 1,
                   B.DecisionContext(), ConstantDice(), [], "front", "front", 0)
     assert B._is_routed(gs.lords["chatatourios"])
