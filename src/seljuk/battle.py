@@ -672,36 +672,44 @@ def _strike_phase(gs: GameState, att: _Side, deff: _Side, pursuit: dict, round_n
             return tuple(sorted(sides, key=lambda t: 0 if _faction(t[0]) == "seljuk" else 1))
         return sides
 
-    def _secondary(striking, target_side, role, step):
-        """Relief Sally rows (4.8.1) Strike in their normal sub-step. Sallying
+    def _secondary(striking, target_side, role, step, eligible, skip_charge=None):
+        """Resolve the eligible Relief Sally or Rearguard Lords. Sallying
         Attackers Strike the Rearguard row (or Flank the Front Defenders if no
         Rearguard remains); their Hits are reduced by Siegeworks. The Rearguard
         Strikes the Sallying row (Siegeworks do not protect Attackers)."""
         if role == "attacker" and striking.sally_lords():
             tr = "rearguard" if target_side.rearguard_lords() else "front"
             _resolve_step(gs, step, striking, target_side, role, pursuit, round_no,
-                          ctx, roller, log, striker_row="sally", target_row=tr,
+                          ctx, roller, log, restrict=eligible, skip_charge=skip_charge,
+                          striker_row="sally", target_row=tr,
                           step_walls=siegeworks, rerolls_used=rerolls_used)
         if role == "defender" and striking.rearguard_lords():
             _resolve_step(gs, step, striking, target_side, role, pursuit, round_no,
-                          ctx, roller, log, striker_row="rearguard", target_row="sally",
+                          ctx, roller, log, restrict=eligible, skip_charge=skip_charge,
+                          striker_row="rearguard", target_row="sally",
                           step_walls=0, rerolls_used=rerolls_used)
+
+    def _strike(striking, target_side, role, step, eligible, *,
+                skip_charge=None, front_cat=None):
+        # The same timing election applies to a Lord in either row.
+        _resolve_step(gs, step, striking, target_side, role, pursuit, round_no,
+                      ctx, roller, log, restrict=eligible, skip_charge=skip_charge,
+                      cat=front_cat, step_walls=_w(role), rerolls_used=rerolls_used)
+        _secondary(striking, target_side, role, step, eligible, skip_charge)
 
     # Cavalry Charge (R24): Round 1, charged Lords' Horse Melee strikes before
     # all Missiles; those Horse skip the normal Horse-Melee step this Round.
-    charged: set = set()
-    if round_no == 1 and charge:
+    charged = charge if round_no == 1 else set()
+    if charged:
         for striking, target_side, role in (sides[1], sides[0]):  # attacker then defender
-            ids = _front_set(striking) & charge
-            if ids:
-                _resolve_step(gs, "horse_melee", striking, target_side, role, pursuit, round_no,
-                              ctx, roller, log, restrict=ids, step_walls=_w(role),
-                              rerolls_used=rerolls_used)
-                charged |= ids
+            _strike(striking, target_side, role, "horse_melee", charged)
     cc_eff = cc - charge  # Cavalry Charge takes precedence over Command Confusion
+
+    def _normal_lords(striking):
+        return set(striking.all_lords()) - cc_eff
+
     msides = _missile_sides()
-    # Missiles: non-Command-Confusion Front Lords plus the Relief-Sally rows
-    # first, then the CC Lords (who strike second).
+    # Missiles: ordinary Strikes first, then Command Confusion Lords.
     if sim_missile:
         # 6.3: Horse-unit Missiles of BOTH sides resolve simultaneously -- compute
         # all pools from the pre-Strike state, then apply. Foot Missiles follow
@@ -716,23 +724,15 @@ def _strike_phase(gs: GameState, att: _Side, deff: _Side, pursuit: dict, round_n
                          round_no, ctx, roller, log, "front", "front", _w(role),
                          rerolls_used=rerolls_used)
         for striking, target_side, role in msides:
-            _resolve_step(gs, "missile", striking, target_side, role, pursuit, round_no, ctx, roller, log,
-                          restrict=_front_set(striking) - cc_eff, cat="foot", step_walls=_w(role),
-                          rerolls_used=rerolls_used)
-            _secondary(striking, target_side, role, "missile")
+            _strike(striking, target_side, role, "missile",
+                    _normal_lords(striking), front_cat="foot")
     else:
         for striking, target_side, role in msides:
-            _resolve_step(gs, "missile", striking, target_side, role, pursuit, round_no, ctx, roller, log,
-                          restrict=_front_set(striking) - cc_eff, step_walls=_w(role),
-                          rerolls_used=rerolls_used)
-            _secondary(striking, target_side, role, "missile")
-    for striking, target_side, role in msides:
-        ids = _front_set(striking) & cc_eff
-        if ids:
-            _resolve_step(gs, "missile", striking, target_side, role, pursuit, round_no, ctx, roller, log,
-                          restrict=ids, step_walls=_w(role), rerolls_used=rerolls_used)
-    # Melee (Horse then Foot, Defending then Attacking): non-CC Front Lords plus
-    # the Relief-Sally rows first.
+            _strike(striking, target_side, role, "missile", _normal_lords(striking))
+    if cc_eff:
+        for striking, target_side, role in msides:
+            _strike(striking, target_side, role, "missile", cc_eff)
+    # Melee (Horse then Foot, Defending then Attacking): ordinary Strikes first.
     for mstep in ("horse_melee", "foot_melee"):
         if mstep == "horse_melee" and sim_melee:
             # 6.3: both sides' Horse Melee resolves simultaneously.
@@ -746,21 +746,16 @@ def _strike_phase(gs: GameState, att: _Side, deff: _Side, pursuit: dict, round_n
                              round_no, ctx, roller, log, "front", "front", _w(role),
                              rerolls_used=rerolls_used)
             for striking, target_side, role in sides:
-                _secondary(striking, target_side, role, "horse_melee")
+                _secondary(striking, target_side, role, "horse_melee",
+                           _normal_lords(striking), charged)
         else:
             for striking, target_side, role in sides:
-                _resolve_step(gs, mstep, striking, target_side, role, pursuit, round_no, ctx, roller, log,
-                              restrict=_front_set(striking) - cc_eff, skip_charge=charged,
-                              step_walls=_w(role), rerolls_used=rerolls_used)
-                _secondary(striking, target_side, role, mstep)
-    # Then the CC Lords' Melee (strike second).
-    for mstep in ("horse_melee", "foot_melee"):
-        for striking, target_side, role in sides:
-            ids = _front_set(striking) & cc_eff
-            if ids:
-                _resolve_step(gs, mstep, striking, target_side, role, pursuit, round_no, ctx, roller, log,
-                              restrict=ids, skip_charge=charged, step_walls=_w(role),
-                              rerolls_used=rerolls_used)
+                _strike(striking, target_side, role, mstep,
+                        _normal_lords(striking), skip_charge=charged)
+    if cc_eff:
+        for mstep in ("horse_melee", "foot_melee"):
+            for striking, target_side, role in sides:
+                _strike(striking, target_side, role, mstep, cc_eff, skip_charge=charged)
 
 
 def _compute_pools(gs, step, striking: _Side, target_side: _Side, round_no, ctx,
