@@ -493,7 +493,7 @@ class CompactInterface:
             if final:
                 candidates = campaign._relief_sally_candidates(
                     gs, pending["locale"], gs.lords[attackers[0]].side)
-                relief = campaign._select_relief_salliers(candidates, action.get("sally_join", candidates))
+                relief = campaign._select_relief_salliers(gs, candidates, action.get("sally_join", candidates))
             return [*attackers, *standers, *relief]
         if kind in ("cmd_storm", "cmd_sally"):
             lord = gs.lords[action["lord"]]
@@ -562,9 +562,12 @@ class CompactInterface:
         candidates = campaign._relief_sally_candidates(self.gs, current_pending(self.gs)["locale"], attacker)
         if not candidates:
             return {}
+        pairs = [list(pair) for pair in self.gs.lieutenant_pairs(candidates)]
         return {"sally_join": {
             "eligible_lords": candidates,
-            "meaning": "Choose any subset if Battle occurs. [] keeps all inside; omission joins all.",
+            **({"lieutenant_pairs": pairs} if pairs else {}),
+            "meaning": "List the Lords who join if Battle occurs. [] keeps all inside. Omit to join all."
+                       + (" Choose both or neither member of each Lieutenant pair." if pairs else ""),
         }}
 
     def _avoid_spoils_input(self, action):
@@ -708,7 +711,7 @@ class CompactInterface:
             # Reject bad selections before a Local Scouts handoff commits
             # the approaching player's inputs.
             campaign._select_relief_salliers(
-                input_contract["sally_join"]["eligible_lords"], inputs["sally_join"],
+                self.gs, input_contract["sally_join"]["eligible_lords"], inputs["sally_join"],
             )
         scouts = inputs.pop("play_local_scouts", False)
         if scouts and (combined["type"] != "respond_approach" or self.owed != "roman"

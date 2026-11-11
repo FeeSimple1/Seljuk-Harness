@@ -152,13 +152,13 @@ parameters (hinted by `_`-prefixed keys):
   caller collects that response as `"local_scouts": {"lord": L, "action": "stand"}`.
   The compact helper separates the declaration and the enemy's selection.
 - **sally_join** (Relief Sally, 4.8.1). If an Approach leads to Battle, the
-  Approaching player may choose any subset of friendly Besieged Lords at the
-  Locale. Pass `"sally_join": []` to keep everyone inside, or list the Lords
-  who join. The compact helper lists eligible Lords in the Approaching
-  player's input window. When playing Local Scouts, the Approaching player
-  may wait for the defender's response before choosing. A trusted caller
-  supplies the field on `respond_approach`. Omission keeps the legacy
-  all-join default.
+  Approaching player chooses which friendly Besieged Lords at the Locale
+  join. A Lieutenant and Lower Lord join or stay together (4.1.3). Pass
+  `"sally_join": []` to keep everyone inside. The compact helper lists eligible
+  Lords and their pairs in the Approaching player's input window. When playing
+  Local Scouts, the Approaching player may wait for the defender's response
+  before choosing. A trusted caller supplies the field on `respond_approach`.
+  Omission keeps the legacy all-join default.
 - **besiege_bypass with surprise** (S1). The menu offers a
   `{"choice":"besiege","surprise":true}` variant when S1 is held and eligible;
   optionally add `storm_decisions` for the immediate Storm. If the Stronghold

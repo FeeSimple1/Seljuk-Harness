@@ -1402,11 +1402,13 @@ def legal_moves_campaign(gs: GameState) -> list[dict[str, Any]]:
         holds = {"attacker": battle.held_combat_events(gs, att_side),
                  "defender": battle.held_combat_events(gs, _enemy(att_side))}
         salliers = _relief_sally_candidates(gs, ap["locale"], att_side)
+        sally_pairs = gs.lieutenant_pairs(salliers)
         pairs = gs.lieutenant_pairs(ap["defenders"])
         return [{"type": "respond_approach", "_defenders": ap["defenders"], "_locale": ap["locale"],
                  "_battle_holds_available": holds,
                  **({"_lieutenant_pairs": pairs} if pairs else {}),
                  **({"_sally_join": salliers} if salliers else {}),
+                 **({"_sally_pairs": sally_pairs} if sally_pairs else {}),
                  "_javelins_rounds": "Optional {lord_id: round} for S11; default round 1",
                  "_desc": "Each defending Lord: Avoid Battle / Withdraw / Stand (4.3.4); "
                           "either side may pass in-Battle Held Events via battle_events"}]
@@ -2630,21 +2632,26 @@ def _relief_sally_candidates(gs: GameState, locale: str, side: str) -> list[str]
             and lord.cylinder == locale and lord.side == side]
 
 
-def _select_relief_salliers(candidates: list[str], chosen: Any) -> list[str]:
+def _select_relief_salliers(gs: GameState, candidates: list[str], chosen: Any) -> list[str]:
     if (not isinstance(chosen, list)
             or any(not isinstance(lid, str) or lid not in candidates for lid in chosen)
             or len(chosen) != len(set(chosen))):
         raise IllegalAction("bad_sally_join",
                             "Choose a list of distinct, eligible Besieged Lords for Relief Sally (4.8.1).")
-    return [lid for lid in candidates if lid in chosen]
+    selected = set(chosen)
+    for upper, lower in gs.lieutenant_pairs(candidates):
+        if (upper in selected) != (lower in selected):
+            raise IllegalAction("split_stack", f"{upper} and {lower} must Sally together (4.1.3)")
+    return [lid for lid in candidates if lid in selected]
 
 
 def h_respond_approach(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
     """4.3.4: each Inactive (defending) Lord chooses Avoid Battle, Withdraw, or
     Stand. ``choices`` maps lord_id -> {"action": "avoid"|"withdraw"|"stand",
     "to": <locale for avoid>}. Standers (if any) trigger a Battle. The
-    Approaching player may specify ``sally_join`` with any subset of eligible
-    Besieged Lords, including []. Omission uses the historical all-join default.
+    Approaching player may specify ``sally_join`` with eligible Besieged Lords.
+    Each Lieutenant pair joins or stays together. [] declines all and omission
+    uses the historical all-join default.
     ``avoid_keep_provender`` maps each Lord in a chosen co-Avoiding group to the
     food he retains with Shared Carts. Omit to use the usual own-Carts default.
     ``avoid_spoils_decisions`` allocates Avoid discards before Battle, using the
@@ -2657,7 +2664,7 @@ def h_respond_approach(gs: GameState, action: dict[str, Any], roller: DiceRoller
     side = gs.lords[pend["defenders"][0]].side
     att_side = gs.lords[pend["attackers"][0]].side
     candidates = _relief_sally_candidates(gs, to, att_side)
-    sallying = _select_relief_salliers(candidates, action.get("sally_join", candidates))
+    sallying = _select_relief_salliers(gs, candidates, action.get("sally_join", candidates))
     standers, avoided, withdrew = [], [], []
     approach_origin = pend.get("from")  # SMOKE-006: Locale the Attackers Approached from
     keep_provender = _approach_avoid_provender(gs, pend, choices, action.get("avoid_keep_provender"))

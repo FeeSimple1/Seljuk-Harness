@@ -6,10 +6,10 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 
-from seljuk import scenarios as S, engine
+from seljuk import battle, scenarios as S, engine
 from seljuk.llm import LLMSession
 from seljuk.llm.compact import CompactInterface, InterfaceError
-from seljuk.state import IllegalAction
+from seljuk.state import GameState, IllegalAction
 from strategic_agent import play_game as strategic_play  # noqa: E402
 from tests.test_cross_game_combat import place, position
 
@@ -68,6 +68,61 @@ def test_illegal_relief_sally_selection_rejects_without_mutating_state(bad_selec
         engine.apply_action(gs, {**action, "sally_join": bad_selection})
     assert error.value.code == "bad_sally_join"
     assert gs.to_json() == before
+
+
+@pytest.mark.parametrize("pair", [SALLIERS, SALLIERS[::-1]])
+def test_relief_sally_pair_joins_together_alongside_independent_lords(pair):
+    gs, action = relief_approach()
+    upper, lower = pair
+    # Stage an intact pair formed during Planning.
+    gs.lords[upper].lower_lord = lower
+    gs.lords[lower].lieutenant_of = upper
+    independent = place(gs, "manuel_komnenos", "antioch", provender=1)
+    independent.besieged = True
+    before = gs.to_json()
+    move = {**action, "battle_decisions": {"roman": [["concede", True]]}}
+    for selected in ([upper], [lower, independent.id]):
+        with pytest.raises(IllegalAction, match="split_stack"):
+            engine.apply_action(gs, {**move, "sally_join": selected})
+        assert gs.to_json() == before
+
+    for selected in ([], pair, [independent.id], [*pair, independent.id]):
+        restored = GameState.from_json(before)
+        result = engine.apply_action(restored, {**move, "sally_join": selected})
+        assert set(result["battle"]["relief_sally"]) == set(selected)
+        for lid in (*pair, independent.id):
+            assert restored.lords[lid].assets.provender == (0 if lid in selected else 1)
+
+    survivor = GameState.from_json(before)
+    battle._remove_by_combat(survivor, survivor.lords[lower])
+    assert survivor.lords[upper].lower_lord is None
+    result = engine.apply_action(survivor, {**move, "sally_join": [upper]})
+    assert result["battle"]["relief_sally"] == [upper]
+
+
+def test_compact_relief_sally_exposes_pair_and_rejects_split_after_reload(tmp_path):
+    gs, action = relief_approach()
+    upper, lower = SALLIERS
+    gs.lords[upper].lower_lord = lower
+    gs.lords[lower].lieutenant_of = upper
+    ui = CompactInterface(LLMSession(gs))
+    ui.apply(action, version=ui.version)
+    assert ui.owed == "roman"
+    saved = tmp_path / "relief-pair.json"
+    ui.save(saved)
+    ui = CompactInterface.load(saved)
+    version = ui.version
+    before = ui.gs.to_json()
+    row = ui.actions(type="supply_inputs")["entries"][0]
+    with pytest.raises(IllegalAction, match="split_stack"):
+        ui.apply(row["id"], parameters={"inputs": {"sally_join": [upper]}})
+    assert ui.version == version and ui.gs.to_json() == before and ui.owed == "roman"
+    help_ = ui.details(row["id"])["help"]["sally_join"]
+    assert help_["lieutenant_pairs"] == [SALLIERS]
+    result = ui.apply(row["id"], parameters={"inputs": {
+        "sally_join": SALLIERS, "battle_decisions": [["concede", True]],
+    }})
+    assert result["outcome"]["battle"]["relief_sally"] == SALLIERS
 
 
 def test_compact_relief_sally_only_approaching_player_chooses_and_can_resume(tmp_path):
