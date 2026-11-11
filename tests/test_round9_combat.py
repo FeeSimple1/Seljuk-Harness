@@ -58,6 +58,35 @@ def _attack(result, step):
                 if s["round"] == 1 and s["by"] == "attacker" and s["step"] == step)
 
 
+@pytest.mark.parametrize("parthian", [False, True])
+@pytest.mark.parametrize("turkic_horse,hits", [(1, 1), (2, 2)])
+def test_pursuit_rounds_mixed_missiles_once_and_favors_parthian_shot(parthian, turkic_horse, hits):
+    state = _position(seed=1)
+    _place(state, "alp_arslan", {"turkic_horse": turkic_horse, "ghulam_cavalry": 1}, "laodikeia")
+    _place(state, "chatatourios", {"infantry": 4, "militia": 1}, "antioch")
+    origin = state.locales["laodikeia"]
+    origin.conquered_side, origin.conquered_count = "seljuk", 1
+    if parthian:
+        _capability(state, "seljuk", "S16", "alp_arslan")
+    move = _stand(state, "alp_arslan", "chatatourios", True)
+    move["battle_decisions"] = {
+        "seljuk": [["concede", True], ["select_target_unit", "infantry"]],
+        "roman": [["hit_absorption", "militia"]],
+    }
+    result = _dispatch(state, move)["battle"]
+    assert _attack(result, "missile")["hits"] == hits
+    choices = [d for d in result["decisions"]
+               if d["type"] in ("select_target_unit", "hit_absorption")]
+    if parthian:
+        expected = [("select_target_unit", "infantry")]
+        if hits == 2:
+            expected.append(("hit_absorption", "militia"))
+        assert [(d["type"], d["choice"]) for d in choices[:hits]] == expected
+    else:
+        assert [d["type"] for d in choices[:hits]] == ["hit_absorption"] * hits
+        assert choices[0]["choice"] == "militia"
+
+
 @pytest.mark.parametrize("concede", [False, True])
 @pytest.mark.parametrize("infantry", [1, 2])
 def test_varangian_guard_hits_are_exempt_from_pursuit(concede, infantry):

@@ -875,15 +875,22 @@ def _apply_pools(gs, step, by, contrib, striking: _Side, target_side: _Side, rol
             and round_no == int(gs.lords[lid].flags.get("steeled_resolve_round", 1))
             for lid in getattr(target_side, target_row).values())
         normal_horse = step == "horse_melee" or (step == "missile" and n_raw > foot_raw)
-        n_hits = int(n_raw + 0.999)
-        foot_hits = 0
-        if steeled:
-            # Preserve the rounded ordinary total (4.8.2). A Hit that
-            # contains part of a Foot Hit cannot gain the vs-Horse bonus.
-            foot_hits = int(foot_raw + 0.999)
-            n_hits -= foot_hits
-        a_hits = int(a_raw + 0.999)
-        s_hits = int(s_raw + 0.999)
+        # 4.8.2: round the combined Strike once. Keep each whole Hit and
+        # allocate the rounded fractions to Select Target first, then the
+        # other distinct Protection groups before ordinary Hits. Foot
+        # fractions therefore keep their ordinary Armor when Steeled
+        # Resolve distinguishes them from Horse.
+        foot = foot_raw if steeled else 0.0
+        raw_groups = (s_raw, a_raw, foot, n_raw - foot)
+        whole_hits = [_math.floor(raw) for raw in raw_groups]
+        rounded_fractions = _math.ceil(sum(raw_groups)) - sum(whole_hits)
+        for index, raw in enumerate(raw_groups):
+            if rounded_fractions == 0:
+                break
+            if raw > whole_hits[index]:
+                whole_hits[index] += 1
+                rounded_fractions -= 1
+        s_hits, a_hits, foot_hits, n_hits = whole_hits
         if step == "missile" and round_no == 1 and target_side.mountain_ambush:
             n_hits = _roll_walls(roller, n_hits, (1, 3))  # Mountain Ambush (R2/S2)
             a_hits = _roll_walls(roller, a_hits, (1, 3))
