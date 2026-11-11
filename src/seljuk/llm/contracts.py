@@ -25,6 +25,15 @@ HIT_DECISION_HELP = {
                     'one Melee reroll per Lord per Round.',
 }
 
+FIELD_DECISION_HELP = {
+    "strike_order": 'Use ["strike_order", "target_lord_id"] to choose the next '
+                    'Lord or combined Flanking group within your Strike step.',
+    "reserve_advance": 'From Round 2, use ["reserve_advance", "lord_id"] to advance '
+                       'a Reserve Lord, then optionally ["reserve_advance_slot", "right"] '
+                       'to select an open Front slot. Use ["reserve_advance", null] '
+                       'to finish advancing for that Round. Center still fills from a wing.',
+}
+
 
 @lru_cache(maxsize=None)
 def parameter_names(fn, argument="action") -> list[str]:
@@ -272,5 +281,7 @@ def contract(gs, move, side):
             **siege_formation_help(gs, move, side),
             **combat_event_help(gs, move, side, move.get("_combat_inputs", {}).get("your_held_events", [])),
         }
+        if kind == "respond_approach":
+            out["combat"].update(FIELD_DECISION_HELP)
     out["references"] = ["guide", "rules", "decisions", "errata"]
     return out

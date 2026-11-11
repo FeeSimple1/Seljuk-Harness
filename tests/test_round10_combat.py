@@ -2,6 +2,9 @@
 
 import pytest
 
+from seljuk.llm import LLMSession
+from seljuk.llm.compact import CompactInterface
+from seljuk.state import GameState
 from tests.test_round8_combat import _dispatch, _place, _position
 
 
@@ -9,6 +12,74 @@ def _hold(state, side, card):
     deck = state.side_decks(side)
     deck.draw_deck.remove(card)
     deck.held_events.append(card)
+
+
+@pytest.mark.parametrize("advance", [False, True])
+def test_field_reserve_owner_can_decline_advancement(advance):
+    state = _position(seed=2)
+    _place(state, "alp_arslan", {"turkic_horse": 6, "ghulam_cavalry": 2, "infantry": 2}, "laodikeia")
+    _place(state, "romanos_diogenes", {"tagmata": 2, "infantry": 3}, "antioch")
+    _place(state, "chatatourios", {"infantry": 4}, "antioch")
+    state.locales["laodikeia"].conquered_side = "seljuk"
+    state.locales["laodikeia"].conquered_count = 1
+    _dispatch(state, {"type": "cmd_march", "lord": "alp_arslan", "to": "antioch"})
+    roman = [["initial_placement_defender", "romanos_diogenes"]]
+    if not advance:
+        roman.append(["reserve_advance", None])
+    result = _dispatch(state, {
+        "type": "respond_approach",
+        "choices": {lid: {"action": "stand"} for lid in ("romanos_diogenes", "chatatourios")},
+        "battle_decisions": {"roman": roman, "seljuk": [["concede", False], ["concede", True]]},
+    })["battle"]
+    choice, = [d for d in result["decisions"] if d["type"] == "reserve_advance"]
+    assert choice["options"] == ["chatatourios", None]
+    assert choice["choice"] == ("chatatourios" if advance else None)
+    hits = [row for row in result["strikes"] if row["target"] == "chatatourios"]
+    assert bool(hits) is advance
+    if not advance:
+        assert state.lords["chatatourios"].forces == {"infantry": 4}
+
+
+def test_field_striking_player_can_order_the_same_groups_differently():
+    state = _position(seed=3, active="romanos_diogenes")
+    for lid in ("romanos_diogenes", "joseph_tarchaneiotes", "nikephoros_bryennios"):
+        _place(state, lid, {"tagmata": 1}, "laodikeia")
+    defenders = ("alp_arslan", "sav_tekin", "emir_of_arran")
+    for lid in defenders:
+        _place(state, lid, {"infantry": 2}, "antioch")
+    state.locales["antioch"].conquered_side = "seljuk"
+    state.locales["antioch"].conquered_count = 1
+    _dispatch(state, {"type": "cmd_march", "lord": "romanos_diogenes", "to": "antioch",
+                      "group": ["joseph_tarchaneiotes", "nikephoros_bryennios"]})
+    checkpoint = state.to_json()
+
+    def resolve(orders):
+        ui = CompactInterface(LLMSession(GameState.from_json(checkpoint)))
+        ui.apply({"type": "respond_approach", "choices": {lid: {"action": "stand"} for lid in defenders},
+                  "battle_decisions": [["initial_placement_defender", "alp_arslan"],
+                                       ["initial_placement_defender", "sav_tekin"], ["concede", True]]},
+                 version=ui.version)
+        assert ui.viewer == "roman"
+        assert "strike_order" in ui._input_contract()
+        ui.apply({"type": "supply_inputs", "inputs": {"battle_decisions": [
+            ["initial_placement_attacker", "joseph_tarchaneiotes"],
+            *[["strike_order", target] for target in orders],
+        ]}}, version=ui.version)
+        result = ui.gs.history[-1]["result"]["battle"]
+        return result, ui.gs.to_json()
+
+    ordinary, _ = resolve([])
+    reverse, final = resolve(["emir_of_arran", "alp_arslan"])
+    assert (reverse, final) == resolve(["emir_of_arran", "alp_arslan"])
+    choices = [d for d in reverse["decisions"] if d["type"] == "strike_order"
+               and d["info"]["step"] == "missile"]
+    assert [(d["info"]["side"], d["choice"]) for d in choices] == [
+        ("roman", "emir_of_arran"), ("roman", "alp_arslan")]
+    for result, targets in ((ordinary, ["sav_tekin", "alp_arslan", "emir_of_arran"]),
+                            (reverse, ["emir_of_arran", "alp_arslan", "sav_tekin"])):
+        opening = [s for s in result["strikes"] if s["step"] == "missile" and s["by"] == "attacker"]
+        assert [s["target"] for s in opening] == targets
+        assert [s["routed_units"] for s in opening] == [[], ["infantry"], ["infantry"]]
 
 
 @pytest.mark.parametrize("seed, survives_siegeworks", [(2, False), (5, True)])

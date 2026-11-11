@@ -639,6 +639,7 @@ class CompactInterface:
                 **contracts.siege_formation_help(self.gs, action, self.viewer),
                 **contracts.combat_event_help(self.gs, action, self.viewer, held),
                 **contracts.HIT_DECISION_HELP,
+                **(contracts.FIELD_DECISION_HELP if kind == "respond_approach" else {}),
                 "parameters": input_fields,
                 "your_sultans_horse_held": self.viewer == "roman" and "R4" in self.gs.roman.held_events,
                 "your_local_scouts_held": scouts_held and not reviewing,

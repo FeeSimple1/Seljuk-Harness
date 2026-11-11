@@ -85,13 +85,15 @@ class DecisionContext:
         self.trace: list[dict] = []
 
     def decide(self, dtype: str, options: list, info: dict | None = None, *,
-               typed_only=False, consume_unmatched=True, allow_bare=True):
+               typed_only=False, consume_unmatched=True, allow_bare=True,
+               error_code="bad_retreat_provender"):
         """Resolve a choice. Scripted entries may be typed ``(dtype, choice)``
         (consumed only at a matching decision) or bare values (consumed in
         order). With nothing applicable scripted, fall back to the first
         option. A newly inserted choice can leave unrelated bare values queued
         with ``consume_unmatched=False``. Set ``allow_bare=False`` to leave
-        all bare entries for pre-existing choices."""
+        all bare entries for pre-existing choices. ``typed_only`` validates
+        matching typed entries strictly and records the choice's context."""
         if not options:
             return None
         if self.by_side is not None:
@@ -101,7 +103,7 @@ class DecisionContext:
                 raise IllegalAction("decision_owner_missing", f"no owner for {dtype}; cannot consume another player's script")
             chosen = self.by_side[side].decide(dtype, options, info, typed_only=typed_only,
                                                consume_unmatched=consume_unmatched,
-                                               allow_bare=allow_bare)
+                                               allow_bare=allow_bare, error_code=error_code)
             self.trace.append(self.by_side[side].trace[-1])
             return chosen
         # JSON arrays represent both typed entries and tuple-valued choices.
@@ -118,8 +120,8 @@ class DecisionContext:
             if isinstance(head, (tuple, list)) and len(head) == 2 and head[0] == dtype:
                 from .state import IllegalAction
                 choice = head[1]
-                if type(choice) is not int or choice not in options:
-                    raise IllegalAction("bad_retreat_provender", f"Choose retained Provender from {options}")
+                if not any(type(choice) is type(option) and choice == option for option in options):
+                    raise IllegalAction(error_code, f"Choose {dtype} from {options}")
                 self.scripted.pop(0)
             self.trace.append({"type": dtype, "choice": choice, "options": options, "info": info})
             return choice
@@ -524,14 +526,21 @@ def _reposition(gs: GameState, att: _Side, deff: _Side, ctx: DecisionContext) ->
     _purge_routed(att)
     _purge_routed(deff)
     _adjust_rows(att, deff)
-    # Advance Lords: Attacker then Defender slide Reserve into empty Front slots.
-    for side, dtype in ((att, "reserve_advance"), (deff, "reserve_advance")):
-        for slot in SLOTS:
-            if side.front[slot] is None and side.reserve:
-                opts = list(side.reserve)
-                choice = ctx.decide(dtype, opts, {"slot": slot, "role": side.role, "side": side.faction})
-                side.front[slot] = choice
-                side.reserve.remove(choice)
+    # 4.8.2: each owner may advance any number of Reserve Lords.
+    for side in (att, deff):
+        empty = [slot for slot in SLOTS if side.front[slot] is None]
+        owner = {"role": side.role, "side": side.faction}
+        while empty and side.reserve:
+            choice = ctx.decide("reserve_advance", [*side.reserve, None],
+                                {**owner, "slot": empty[0]})
+            if choice is None:
+                break
+            slot = empty[0] if len(empty) == 1 else ctx.decide(
+                "reserve_advance_slot", empty.copy(), {**owner, "lord": choice},
+                typed_only=True, error_code="bad_reserve_advance_slot")
+            side.front[slot] = choice
+            empty.remove(slot)
+            side.reserve.remove(choice)
     # Center fill: a Left/Right Front Lord must slide to an empty Center.
     for side in (att, deff):
         if side.front["center"] is None:
@@ -916,8 +925,23 @@ def _apply_pools(gs, step, by, contrib, striking: _Side, target_side: _Side, rol
                         "hits": n_hits + a_hits + s_hits + foot_hits, "routed_units": applied,
                         **({"sallying": True} if striker_row == "sally" else {})})
 
-    for target, pool in by.items():
-        _emit(target, pool, step_walls)
+    # Choose the order of combined Lord + Flanker groups before Protection.
+    active = [target for target, pool in by.items() if pool.normal + pool.anti + pool.select > 0]
+    remaining = active.copy()
+    ordered = []
+    while len(remaining) > 1:
+        target = ctx.decide("strike_order", remaining.copy(), {
+            "side": striking.faction, "role": role, "round": round_no, "step": step,
+            "striker_row": striker_row, "target_row": target_row,
+            "strikers": {lid: [srow[slot] for slot in SLOTS if slot in contrib[lid]]
+                         for lid in remaining},
+        }, typed_only=True, error_code="bad_strike_order")
+        ordered.append(target)
+        remaining.remove(target)
+    ordered_targets = iter(ordered + remaining)
+    for original in by:
+        target = next(ordered_targets) if original in active else original
+        _emit(target, by[target], step_walls)
 
 
 def _resolve_step(gs, step, striking: _Side, target_side: _Side, role, pursuit, round_no,
