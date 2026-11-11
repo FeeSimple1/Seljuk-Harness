@@ -600,10 +600,15 @@ class CompactInterface:
             return {"required": {"inputs": "{order: keep or swap}"},
                     "choices": ["keep", "swap"], "card_lookup": "S24"}
         if self._joint.get("scouts_requested"):
+            avoiding = [lid for lid, ch in action["choices"].items() if ch.get("action") == "avoid"]
+            notes = ("The opponent played R18. Select a Lord and choose Stand or Withdraw. "
+                     "Withdrawal restrictions and capacity still apply.")
+            if self.gs.lieutenant_pairs(avoiding):
+                notes += " Redirecting a member of a Lieutenant pair separates the pair."
             return {"required": {"inputs": "local_scouts: {lord: one of your Avoiding Lords, action: stand or withdraw}"},
-                    "avoiding_lords": [lid for lid, ch in action["choices"].items() if ch.get("action") == "avoid"],
+                    "avoiding_lords": avoiding,
                     "optional": {"avoid_keep_provender": "Replace retained-food assignments for the remaining Avoid groups."},
-                    "notes": "R18 was played by the opponent. YOU select the Lord and Stand/Withdraw (R18); withdrawal restrictions and capacity still apply."}
+                    "notes": notes}
         if kind in ("resolve_loyalty", "discard_imperial_coffers"):
             from .. import actions
             _, budget = actions.loyalty_coin_budgets(self.gs, self._joint["actor"], action["target"])

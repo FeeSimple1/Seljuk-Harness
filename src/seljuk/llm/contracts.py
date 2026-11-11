@@ -32,6 +32,9 @@ FIELD_DECISION_HELP = {
                        'a Reserve Lord, then optionally ["reserve_advance_slot", "right"] '
                        'to select an open Front slot. Use ["reserve_advance", null] '
                        'to finish advancing for that Round. Center still fills from a wing.',
+    "retreat": 'Use ["retreat", "withdraw"], ["retreat", ["retreat", "locale_id"]], '
+               'or ["retreat", "removed"] for the next losing Lord. A pair that '
+               'stays in play must Withdraw together or Retreat to the same Locale.',
 }
 
 
@@ -234,6 +237,8 @@ def contract(gs, move, side):
         pending = current_pending(gs)
         loc = pending["locale"]
         defenders = pending["defenders"]
+        pairs = gs.lieutenant_pairs(defenders)
+        paired = {lid for pair in pairs for lid in pair}
         inside = sum(l.mustered and l.cylinder == loc and l.besieged and l.side == side
                      for l in gs.lords.values())
         choices = {}
@@ -244,7 +249,8 @@ def contract(gs, move, side):
             except IllegalAction:
                 pass
             else:
-                if campaign._stronghold_size(gs, loc) > inside:
+                slots_needed = 2 if lid in paired else 1
+                if campaign._stronghold_size(gs, loc) - inside >= slots_needed:
                     options.append({"action": "withdraw"})
             for dest in gmap.neighbors(loc):
                 try:
@@ -258,6 +264,9 @@ def contract(gs, move, side):
                    notes=["Withdrawal capacity is shared, not a separate allowance per Lord.",
                           "Lords Avoiding to the same destination share Carts. Optionally use avoid_keep_provender to specify how much food each keeps on its own mat. Defaults use own Carts first. Loot and excess Provender become Spoils.",
                           "The opponent controls Local Scouts, Avoid Spoils, Relief Sally, and its own combat inputs."])
+        if pairs:
+            out["lieutenant_pairs"] = pairs
+            out["notes"].append("Each Lieutenant pair must choose the same response and Avoid destination.")
     elif kind == "cmd_march":
         out["notes"] = ["Optional group uses _co_marchers / _co_marcher_max; the engine recomputes group cost.",
                         "Discard variants remain distinct menu rows; no variant is silently selected.",

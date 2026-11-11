@@ -1402,8 +1402,10 @@ def legal_moves_campaign(gs: GameState) -> list[dict[str, Any]]:
         holds = {"attacker": battle.held_combat_events(gs, att_side),
                  "defender": battle.held_combat_events(gs, _enemy(att_side))}
         salliers = _relief_sally_candidates(gs, ap["locale"], att_side)
+        pairs = gs.lieutenant_pairs(ap["defenders"])
         return [{"type": "respond_approach", "_defenders": ap["defenders"], "_locale": ap["locale"],
                  "_battle_holds_available": holds,
+                 **({"_lieutenant_pairs": pairs} if pairs else {}),
                  **({"_sally_join": salliers} if salliers else {}),
                  "_javelins_rounds": "Optional {lord_id: round} for S11; default round 1",
                  "_desc": "Each defending Lord: Avoid Battle / Withdraw / Stand (4.3.4); "
@@ -2564,12 +2566,21 @@ def _award_avoid_spoils(gs: GameState, attacker_ids: list[str], pool: dict[str, 
 def _approach_choices(gs: GameState, pend: dict, action: dict) -> tuple[dict, bool]:
     """Resolve the effective responses without spending Local Scouts."""
     choices = dict(action.get("choices", {}))
+    for upper, lower in gs.lieutenant_pairs(pend["defenders"]):
+        first, second = choices.get(upper, {}), choices.get(lower, {})
+        kind = first.get("action", "stand")
+        if (kind != second.get("action", "stand")
+                or (kind == "avoid" and first.get("to") != second.get("to"))):
+            raise IllegalAction("split_stack", f"{upper} and {lower} must respond together (4.1.3)")
     att_side = gs.lords[pend["attackers"][0]].side
     scouts = action.get("local_scouts")
     if scouts and "R18" in gs.side_decks(att_side).held_events:
         lid = scouts.get("lord")
-        if choices.get(lid, {}).get("action") == "avoid":
-            choices[lid] = {"action": scouts.get("action", "stand")}
+        if lid in pend["defenders"] and choices.get(lid, {}).get("action") == "avoid":
+            response = scouts.get("action", "stand")
+            if response not in ("stand", "withdraw"):
+                raise IllegalAction("bad_scouts_response", "Local Scouts requires Stand or Withdraw (R18)")
+            choices[lid] = {"action": response}
             return choices, True
     return choices, False
 
@@ -2647,9 +2658,6 @@ def h_respond_approach(gs: GameState, action: dict[str, Any], roller: DiceRoller
     att_side = gs.lords[pend["attackers"][0]].side
     candidates = _relief_sally_candidates(gs, to, att_side)
     sallying = _select_relief_salliers(candidates, action.get("sally_join", candidates))
-    if scouts_played:
-        gs.side_decks(att_side).held_events.remove("R18")
-        gs.side_decks(att_side).draw_deck.append("R18")
     standers, avoided, withdrew = [], [], []
     approach_origin = pend.get("from")  # SMOKE-006: Locale the Attackers Approached from
     keep_provender = _approach_avoid_provender(gs, pend, choices, action.get("avoid_keep_provender"))
@@ -2662,6 +2670,12 @@ def h_respond_approach(gs: GameState, action: dict[str, Any], roller: DiceRoller
     if inside + n_withdraw > _stronghold_size(gs, to):
         raise IllegalAction("stronghold_full",
                             f"Stronghold Size {_stronghold_size(gs, to)} cannot hold {inside + n_withdraw} Lords (4.3.4)")
+    if scouts_played:
+        gs.side_decks(att_side).held_events.remove("R18")
+        gs.side_decks(att_side).draw_deck.append("R18")
+        # R18 redirects one Avoiding Lord and the others complete their Avoid.
+        # The Event separates the selected cylinder from any physical stack.
+        actions._unstack_lord(gs.lords[action["local_scouts"]["lord"]], gs)
     for did in pend["defenders"]:
         ch = choices.get(did, {"action": "stand"})
         kind = ch.get("action", "stand")

@@ -10,9 +10,9 @@ Determinism: dice come from a seeded RNG whose serialized state lives in
 """
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any, Optional, Self
 
-from pydantic import BaseModel, ConfigDict, Field, PrivateAttr
+from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, model_validator
 
 
 class IllegalAction(Exception):
@@ -203,6 +203,35 @@ class GameState(_Model):
     history: list[dict[str, Any]] = Field(default_factory=list)
 
     _revealed_combat_lords: frozenset[str] = PrivateAttr(default_factory=frozenset)
+
+    def lieutenant_pairs(self, lord_ids: list[str]) -> list[tuple[str, str]]:
+        """Return the reciprocal pairs among these Lords, upper first."""
+        eligible = set(lord_ids)
+        pairs = []
+        for lid in lord_ids:
+            lower = self.lords[lid].lower_lord
+            if (lower is not None and lower != lid and lower in eligible
+                    and self.lords[lower].lieutenant_of == lid):
+                pairs.append((lid, lower))
+        return pairs
+
+    @model_validator(mode="after")
+    def _restore_lieutenant_pairs(self) -> Self:
+        """Release invalid links in older saves while keeping the board position."""
+        pairs = set()
+        for lid, lower_id in self.lieutenant_pairs(list(self.lords)):
+            upper, lower = self.lords[lid], self.lords[lower_id]
+            if (upper.lieutenant_of is None and lower.lower_lord is None
+                    and upper.mustered and lower.mustered and upper.side == lower.side
+                    and upper.cylinder in self.locales and upper.cylinder == lower.cylinder
+                    and upper.besieged == lower.besieged):
+                pairs.add((lid, lower_id))
+        for lid, lord in self.lords.items():
+            if lord.lower_lord is not None and (lid, lord.lower_lord) not in pairs:
+                lord.lower_lord = None
+            if lord.lieutenant_of is not None and (lord.lieutenant_of, lid) not in pairs:
+                lord.lieutenant_of = None
+        return self
 
     def mat_hidden_from(self, lord: LordState, viewer: str | None) -> bool:
         return bool(viewer and lord.side != viewer and lord.mustered

@@ -24,7 +24,7 @@ from . import scenarios, static_data as sd
 from . import capabilities
 from . import map as gmap
 from .rng import DiceRoller
-from .state import GameState, LordState
+from .state import GameState, IllegalAction, LordState
 
 SLOTS = ["left", "center", "right"]
 
@@ -75,7 +75,6 @@ class DecisionContext:
         # The existing shared FIFO list remains unchanged for engine clients.
         self.by_side = None
         if isinstance(scripted, dict):
-            from .state import IllegalAction
             if set(scripted) - {"roman", "seljuk"} or any(not isinstance(v, list) for v in scripted.values()):
                 raise IllegalAction("bad_decision_script", "per-player scripts map roman/seljuk to FIFO lists")
             self.by_side = {side: DecisionContext(scripted.get(side, [])) for side in ("roman", "seljuk")}
@@ -86,24 +85,26 @@ class DecisionContext:
 
     def decide(self, dtype: str, options: list, info: dict | None = None, *,
                typed_only=False, consume_unmatched=True, allow_bare=True,
-               error_code="bad_retreat_provender"):
+               error_code="bad_retreat_provender", strict=False, require_choice=False):
         """Resolve a choice. Scripted entries may be typed ``(dtype, choice)``
         (consumed only at a matching decision) or bare values (consumed in
         order). With nothing applicable scripted, fall back to the first
         option. A newly inserted choice can leave unrelated bare values queued
         with ``consume_unmatched=False``. Set ``allow_bare=False`` to leave
         all bare entries for pre-existing choices. ``typed_only`` validates
-        matching typed entries strictly and records the choice's context."""
+        matching typed entries strictly and records the choice's context.
+        ``strict`` checks ordinary scripted choices against the offered options.
+        ``require_choice`` disallows the fallback for an ordinary choice."""
         if not options:
             return None
         if self.by_side is not None:
             side = (info or {}).get("side")
             if side not in self.by_side:
-                from .state import IllegalAction
                 raise IllegalAction("decision_owner_missing", f"no owner for {dtype}; cannot consume another player's script")
             chosen = self.by_side[side].decide(dtype, options, info, typed_only=typed_only,
                                                consume_unmatched=consume_unmatched,
-                                               allow_bare=allow_bare, error_code=error_code)
+                                               allow_bare=allow_bare, error_code=error_code,
+                                               strict=strict, require_choice=require_choice)
             self.trace.append(self.by_side[side].trace[-1])
             return chosen
         # JSON arrays represent both typed entries and tuple-valued choices.
@@ -118,13 +119,13 @@ class DecisionContext:
         if typed_only:
             head = self.scripted[0] if self.scripted else None
             if isinstance(head, (tuple, list)) and len(head) == 2 and head[0] == dtype:
-                from .state import IllegalAction
                 choice = head[1]
                 if not any(type(choice) is type(option) and choice == option for option in options):
                     raise IllegalAction(error_code, f"Choose {dtype} from {options}")
                 self.scripted.pop(0)
             self.trace.append({"type": dtype, "choice": choice, "options": options, "info": info})
             return choice
+        queued = len(self.scripted)
         if self.scripted:
             head = self.scripted[0]
             exact = (next((i for i, v in enumerate(options) if canonical(v) == canonical(head)), None)
@@ -140,8 +141,13 @@ class DecisionContext:
             elif allow_bare and consume_unmatched:
                 self.scripted.pop(0)
                 choice = head
+            if (strict or require_choice) and not any(canonical(v) == canonical(choice) for v in options):
+                raise IllegalAction(error_code, f"Choose {dtype} from {options}")
             choice = next((v for v in options if canonical(v) == canonical(choice)), options[0])
-        self.trace.append({"type": dtype, "choice": choice, "options": options})
+        if require_choice and len(self.scripted) == queued:
+            raise IllegalAction(error_code, f"Choose {dtype} explicitly from {options}")
+        self.trace.append({"type": dtype, "choice": choice, "options": options,
+                           **({"info": info} if strict else {})})
         return choice
 
 
@@ -1060,6 +1066,13 @@ def _end_battle(gs: GameState, att_ids: list[str], def_ids: list[str], loser: st
 
     sallying = sallying or set()
     withdraw_inside = withdraw_inside or set()
+    mobile_losers = [lid for lid in losing_ids
+                     if gs.lords[lid].unrouted_forces() or gs.lords[lid].routed_forces()]
+    partners = {}
+    for upper, lower in gs.lieutenant_pairs(mobile_losers):
+        partners[upper], partners[lower] = lower, upper
+    fates: dict[str, str | tuple[str, str]] = {}
+    reserved_withdrawals: set[str] = set()
     for lid in losing_ids:
         lord = gs.lords[lid]
         if lid in withdraw_inside:
@@ -1068,13 +1081,23 @@ def _end_battle(gs: GameState, att_ids: list[str], def_ids: list[str], loser: st
             lord.besieged = True
             lord.cylinder = locale
             events["retreat"].append({"lord": lid, "fate": "withdraw"})
+            fates[lid] = "withdraw"
             continue
         # A Marching Attacker (not a Relief-Sally Lord) must Retreat to the
         # Locale it Approached from (4.8.3).
         marcher_origin = approach_origin if (loser_role == "attacker" and lid not in sallying) else None
+        partner = partners.get(lid)
+        reserved_withdrawals.discard(lid)
         fate = _lord_fate(gs, lord, loser_role, locale, conceded, ctx,
                           approach_origin=approach_origin, marcher_origin=marcher_origin,
-                          sortie=sortie)
+                          sortie=sortie, partner=partner,
+                          partner_fate=fates.get(partner) if partner is not None else None,
+                          reserved_slots=len(reserved_withdrawals))
+        # Keep the partner's slot available even if another Lord chooses
+        # a fate between the two, preserving the existing script order.
+        if fate == "withdraw" and partner is not None and partner not in fates:
+            reserved_withdrawals.add(partner)
+        fates[lid] = ("retreat", lord.cylinder) if fate == "retreat" else fate
         events["retreat"].append({"lord": lid, "fate": fate})
         if fate == "retreat" and lord.service_box is not None:  # Service shift (4.8.3)
             roll = roller.d6()
@@ -1117,18 +1140,21 @@ def _retreat_blocked(gs: GameState, dst: str, lord_side: str) -> bool:
 def _lord_fate(gs: GameState, lord: LordState, loser_role: str, locale: str,
                conceded: bool, ctx: DecisionContext, approach_origin: str | None = None,
                marcher_origin: str | None = None, *,
-               sortie: bool = False) -> str:
+               sortie: bool = False, partner: str | None = None,
+               partner_fate: str | tuple[str, str] | None = None,
+               reserved_slots: int = 0) -> str:
     """Retreat / Withdraw / Removal for a losing Lord (4.8.3)."""
     # Defenders and losing Sortie attackers can Withdraw (4.8.3 / 4.3.6).
     from . import campaign
+    inside = sum(other.mustered and other.side == lord.side
+                 and other.cylinder == locale and other.besieged
+                 for other in gs.lords.values() if other.id != lord.id)
+    withdraw_slots = campaign._stronghold_size(gs, locale) - inside - reserved_slots
     can_withdraw = ((loser_role == "defender" or sortie)
                     and campaign._is_stronghold(gs, locale)
                     and campaign.actions.current_allegiance(gs, locale) == lord.side
                     and not campaign._fatimid_withdraw_blocked(lord.side, locale)
-                    and sum(other.mustered and other.side == lord.side
-                            and other.cylinder == locale and other.besieged
-                            for other in gs.lords.values() if other.id != lord.id)
-                    < campaign._stronghold_size(gs, locale))
+                    and withdraw_slots > 0)
     # Retreat targets: adjacent Locales free of enemy Lords / unbesieged-unbypassed
     # enemy Strongholds (4.8.3 A).
     from . import map as gmap
@@ -1148,14 +1174,30 @@ def _lord_fate(gs: GameState, lord: LordState, loser_role: str, locale: str,
     # if that Locale is not a legal target it cannot Retreat (-> Removal).
     if marcher_origin is not None:
         retreat_opts = [marcher_origin] if marcher_origin in retreat_opts else []
-    options = []
+    options: list[str | tuple[str, str]] = [("retreat", d) for d in retreat_opts]
     if can_withdraw:
-        options.append("withdraw")
-    options.extend([("retreat", d) for d in retreat_opts])
-    if not options:
+        if partner is not None and partner_fate is None and withdraw_slots == 1:
+            # Prefer a joint Retreat to spending the only slot and forcing
+            # the other Lord's removal. If there is no Retreat, leave the
+            # slot for the partner by default.
+            options.extend(["removed", "withdraw"])
+        else:
+            options.insert(0, "withdraw")
+    if partner_fate not in (None, "removed"):
+        options = [option for option in options if option == partner_fate]
+    if not options and partner is None:
         choice = "removed"
     else:
-        choice = ctx.decide("retreat", [*options, "removed"], {"lord": lord.id, "side": lord.side})
+        info = {"lord": lord.id, "side": lord.side}
+        if partner is not None:
+            info["partner"] = partner
+        # A one-slot Withdrawal by the first Lord requires an explicit
+        # Removal for the second, rather than a silent default sacrifice.
+        require_removal = partner_fate == "withdraw" and not options
+        if "removed" not in options:
+            options.append("removed")
+        choice = ctx.decide("retreat", options, info, strict=partner is not None,
+                            require_choice=require_removal, error_code="split_stack")
     if choice == "withdraw":
         lord.besieged = True
         lord.cylinder = locale
