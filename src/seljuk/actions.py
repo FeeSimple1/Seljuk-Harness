@@ -186,7 +186,7 @@ def _return_themata_home(gs: GameState, lord: LordState) -> None:
     lord.themata_on_mat = []
 
 
-def _strip_lord(lord: LordState, gs: GameState | None = None) -> None:
+def _unstack_lord(lord: LordState, gs: GameState | None) -> None:
     if gs is not None:
         if lord.lieutenant_of in gs.lords:
             leader = gs.lords[lord.lieutenant_of]
@@ -196,6 +196,18 @@ def _strip_lord(lord: LordState, gs: GameState | None = None) -> None:
             lower = gs.lords[lord.lower_lord]
             if lower.lieutenant_of == lord.id:
                 lower.lieutenant_of = None
+    lord.lieutenant_of = None
+    lord.lower_lord = None
+
+
+def _strip_lord(lord: LordState, gs: GameState | None = None) -> None:
+    _unstack_lord(lord, gs)
+    # 1.5.1 / 4.1.3: when Romanos leaves the map, Manuel becomes
+    # Commander and must leave either position in a Lieutenant stack.
+    if gs is not None and lord.id == "romanos_diogenes" and _on_map(lord):
+        manuel = gs.lords.get("manuel_komnenos")
+        if manuel is not None:
+            _unstack_lord(manuel, gs)
     lord.forces = {}
     lord.routed = {}
     from .state import Assets
@@ -205,8 +217,6 @@ def _strip_lord(lord: LordState, gs: GameState | None = None) -> None:
     lord.moved_fought = False
     lord.besieged = False
     lord.bypassed = False
-    lord.lieutenant_of = None
-    lord.lower_lord = None
 
 
 def resolve_disband(gs: GameState, side: str) -> list[dict[str, Any]]:

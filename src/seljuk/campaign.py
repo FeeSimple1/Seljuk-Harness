@@ -224,7 +224,7 @@ def _lieutenant_options(gs: GameState, side: str) -> list[dict[str, str]]:
     already stacked. Exposed as a build_plan hint; pass them via the optional
     "lieutenants" list."""
     cands = [(lid, l) for lid, l in gs.lords.items()
-             if l.side == side and on_map(l) and not sd.lord(lid).get("commander")
+             if l.side == side and on_map(l) and not actions.is_commander(gs, lid)
              and not l.lower_lord and not l.lieutenant_of]
     return [{"lieutenant": a, "lower_lord": b}
             for a, la in cands for b, lb in cands
@@ -239,7 +239,7 @@ def _designate_lieutenant(gs: GameState, side: str, lieut: str, lower: str) -> N
         raise IllegalAction("lieutenant_side", "Lieutenant and Lower Lord must be on the planning side")
     if not (on_map(li) and on_map(lo) and li.cylinder == lo.cylinder):
         raise IllegalAction("lieutenant_locale", "Lieutenant and Lower Lord must be at the same Locale (4.1.3)")
-    if sd.lord(lieut).get("commander") or sd.lord(lower).get("commander"):
+    if actions.is_commander(gs, lieut) or actions.is_commander(gs, lower):
         raise IllegalAction("commander_lieutenant", "a Commander may not be Lieutenant or Lower Lord (4.1.3)")
     if li.lieutenant_of or lo.lower_lord or lo.lieutenant_of or li.lower_lord:
         raise IllegalAction("already_stacked", "a Lord may have only one Lower Lord, and a Lower Lord may not lead (4.1.3)")
