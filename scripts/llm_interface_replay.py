@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from copy import deepcopy
+import hashlib
 import json
 from pathlib import Path
 from unittest.mock import patch
@@ -22,23 +23,11 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def records():
+    """Load the same canonical actions used by the engine checkpoint tests."""
     man = json.loads((ROOT/'tests/fixtures/manzikert_selfplay_20261009.json').read_text())
-    # The recorded branch remains legal. Select its original unit types
-    # explicitly where Lamellar adds new eligible targets in the two Storms.
-    storm_choices = {
-        32: [['select_target_unit', 'ghulam_cavalry'], ['hit_absorption', 'ghulam_cavalry'],
-             ['select_target_unit', 'infantry']],
-        119: [['select_target_unit', 'infantry'], ['select_target_unit', 'infantry']],
-    }
     man['actions'] = []
-    for index, step in enumerate(man['steps']):
-        action = step['action']
-        if index in storm_choices:
-            assert action['type'] == 'cmd_storm'
-            action = {**action, 'storm_decisions': [
-                *storm_choices[index], *action.get('storm_decisions', []),
-            ]}
-        man['actions'].extend([action, *step.get('followup_actions', [])])
+    for step in man['steps']:
+        man['actions'].extend([step['action'], *step.get('followup_actions', [])])
     show = json.loads((ROOT/'tests/fixtures/interface_showdown_20261016.json').read_text())
     return {'manzikert': man, 'showdown': show}
 
@@ -51,6 +40,12 @@ def position(gs):
     out = gs.model_dump(mode='json')
     out.pop('history')  # execution inputs now contain separately owned queues
     return out
+
+
+def position_digest(gs):
+    """Historical gameplay/RNG checksum, independent of private history format."""
+    raw = json.dumps(position(gs), sort_keys=True, separators=(',', ':'), ensure_ascii=False)
+    return hashlib.sha256(raw.encode()).hexdigest()
 
 
 def prepare(gs, action, actor):

@@ -1,9 +1,12 @@
 """Regressions from a deliberately chosen two-sided Manzikert game.
 
-The fixture preserves 132 original moves and their checkpoint indices. Ten
-explicit Wastage, three Grow and four keep-all Reset choices follow their triggering moves. Exact state hashes
-and serialized continuation cover every checkpoint. The player-interface
-replay independently executes all 149 actions.
+The fixture preserves 132 original moves and their checkpoint indices, with
+explicit original unit choices at the two Storms. Ten Wastage, three Grow,
+and four keep-all Reset choices follow their triggering moves. Exact state
+hashes and serialized continuation cover every checkpoint. Separate historical
+gameplay hashes retain the original board, decks, resources, and RNG; full hashes
+also verify current action history. The player-interface replay independently
+executes all 149 actions.
 """
 from __future__ import annotations
 
@@ -25,6 +28,12 @@ def _hash(gs):
     return hashlib.sha256(gs.to_json(indent=None).encode()).hexdigest()
 
 
+def _position_hash(gs):
+    position = gs.model_dump(mode="json", exclude={"history"})
+    raw = json.dumps(position, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    return hashlib.sha256(raw.encode()).hexdigest()
+
+
 def _concrete(moves):
     return [{k: v for k, v in m.items() if not k.startswith("_")} for m in moves]
 
@@ -43,6 +52,7 @@ def replayed_game():
             session.apply(followup)
             assert not check_invariants(session.gs), f"invariants after follow-up at {i}"
         assert not check_invariants(session.gs), f"invariants after action {i}"
+        assert _position_hash(session.gs) == entry["after_position_sha256"], f"position drift at {i}"
         assert _hash(session.gs) == entry["after_sha256"], f"replay mismatch at {i}"
         # Continue from the serialized state, not merely inspect its contents.
         session = LLMSession(GameState.from_json(session.gs.to_json()))

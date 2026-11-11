@@ -461,8 +461,14 @@ def test_menu_validation_runs_once_per_version_and_records_drops_once(monkeypatc
 def test_full_recorded_games_preserve_all_decisions_results_and_position(name, tmp_path):
     import sys
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]/'scripts'))
-    from llm_interface_replay import records, prepare, finish, canonical, position
+    from llm_interface_replay import records, prepare, finish, canonical, position, position_digest
     record = records()[name]
+    checkpoints = {}
+    if name == 'manzikert':
+        boundary = 0
+        for step in record['steps']:
+            boundary += 1 + len(step.get('followup_actions', []))
+            checkpoints[boundary] = step['after_position_sha256']
     interface = ui(record['scenario'], record['seed'])
     sides = set()
     count = 0
@@ -477,6 +483,8 @@ def test_full_recorded_games_preserve_all_decisions_results_and_position(name, t
         # receipts and identifiers are also restored repeatedly across phases.
         interface.session.gs = GameState.from_json(interface.gs.to_json())
         count += 1
+        if count in checkpoints:
+            assert position_digest(interface.gs) == checkpoints[count], (count, action)
         if count % 17 == 0:
             interface.save(tmp_path/'game.json')
             interface = CompactInterface.load(tmp_path/'game.json')
