@@ -1162,19 +1162,20 @@ def _bounty(gs: GameState) -> None:
         from collections import deque
         seen = {lord.cylinder}
         dq = deque([lord.cylinder])
-        reached = lord.cylinder in seats
+        reached = lord.cylinder in seats and _bounty_traversable(gs, lord.cylinder)
         while dq and not reached:
             cur = dq.popleft()
             for edge in gmap.ways_from(cur):
                 nxt = edge["to"]
                 if nxt in seen:
                     continue
+                seen.add(nxt)
+                if not _bounty_traversable(gs, nxt):
+                    continue
                 if nxt in seats:
                     reached = True
                     break
-                if _bounty_traversable(gs, nxt):
-                    seen.add(nxt)
-                    dq.append(nxt)
+                dq.append(nxt)
         if not reached:
             continue
         carts = lord.assets.carts + sum(

@@ -1,5 +1,9 @@
 """Phase 6: Winter Campaign / Winter March (R9/S18) pre-Bounty activation window."""
+import pytest
+
 from seljuk import scenarios as S, engine, campaign
+from seljuk.invariants import check_invariants
+from seljuk.state import GameState
 from tests.reset_helpers import keep_reset_cards
 
 
@@ -60,3 +64,55 @@ def test_no_winter_window_without_the_card():
     assert gs.meta.subphase != "winter.activation"
     _settle_winter_quarters(gs)
     assert gs.meta.phase in ("levy", "game_over")
+
+
+def _bounty_winter_position(blocked):
+    gs = S.load_scenario("showdown_in_anatolia", seed=7)
+    # Autumn 1070 after Reset, at the choice to play Winter Campaign (R9).
+    gs.meta.calendar_box = 9
+    gs.meta.phase, gs.meta.subphase = "winter", "winter.activation"
+    gs.meta.active_player = "roman"
+    gs.meta.notes["winter_holders"] = ["roman"]
+    gs.roman.draw_deck.remove("R9")
+    gs.roman.held_events.append("R9")
+    for lord in gs.lords.values():
+        if lord.mustered:
+            lord.service_box = max(10, lord.service_box or 10)
+    gs.lords["alp_arslan"].cylinder = "to_mosul_and_baghdad"
+    if blocked:
+        manuel = gs.lords["manuel_komnenos"]
+        manuel.cylinder, manuel.bypassed = "ani", True
+        gs.locales["ani"].bypass = True
+    return gs
+
+
+@pytest.mark.parametrize("origin", ["mempet", "ani"])
+@pytest.mark.parametrize("blocked,roman_vp", [(True, 12), (False, 11)])
+def test_winter_bounty_requires_an_open_seat(origin, blocked, roman_vp):
+    gs = _bounty_winter_position(blocked)
+    emir = gs.lords["emir_of_arran"]
+    emir.cylinder = origin
+    emir.assets.loot = 1
+    gs.meta.vp = S.score(gs)
+    assert not check_invariants(gs)
+    gs = GameState.from_json(gs.to_json())
+
+    engine.apply_action(gs, {"type": "winter_proceed"})
+
+    assert gs.meta.vp["roman"] == roman_vp
+    assert gs.holding_boxes.constantinople_roman_vp_markers == roman_vp - 3
+
+
+def test_winter_bounty_can_reach_another_seat_when_ani_is_blocked():
+    gs = _bounty_winter_position(blocked=True)
+    # Ararat neighbors blocked Ani and can reach Mosul and Baghdad via Vaspurakan.
+    alp = gs.lords["alp_arslan"]
+    alp.cylinder = "ararat"
+    alp.assets.loot = 1
+    gs.meta.vp = S.score(gs)
+    assert not check_invariants(gs)
+
+    engine.apply_action(gs, {"type": "winter_proceed"})
+
+    assert gs.meta.vp["roman"] == 11
+    assert gs.holding_boxes.constantinople_roman_vp_markers == 8
