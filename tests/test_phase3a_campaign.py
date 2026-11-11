@@ -3,7 +3,7 @@ import pytest
 
 from seljuk import scenarios as S, engine, campaign, static_data as sd
 from seljuk.rng import DiceRoller
-from seljuk.state import IllegalAction
+from seljuk.state import GameState, IllegalAction
 
 
 def test_plan_size_by_season_and_first_turn_override():
@@ -71,7 +71,52 @@ def test_no_command_card_auto_passes_423():
     assert gs.meta.active_lord == "manuel_komnenos"
 
 
-def test_lieutenant_designation_and_lower_lord_card_passes_413():
+@pytest.mark.parametrize("valid_pair_first", [False, True])
+def test_plan_rejects_self_pair_before_any_plan_or_link_changes(valid_pair_first):
+    gs = S.load_scenario("showdown_in_anatolia", seed=7)
+    upper, lower = "chatatourios", "roussel_de_bailleul"
+    gs.lords[lower].cylinder = gs.lords[upper].cylinder
+    campaign.start_campaign(gs)
+    engine.apply_action(gs, {"type": "build_plan", "side": "seljuk",
+                             "cards": ["no_command"] * 5 + ["alp_arslan"] * 2})
+    cards = [upper] * 2 + ["no_command"] * 5
+    valid_pair = {"lieutenant": upper, "lower_lord": lower}
+    lieutenants = ([valid_pair] if valid_pair_first else []) + [
+        {"lieutenant": upper, "lower_lord": upper},
+    ]
+    before = gs.to_json()
+
+    with pytest.raises(IllegalAction) as exc:
+        engine.apply_action(gs, {"type": "build_plan", "side": "roman",
+                                 "cards": cards, "lieutenants": lieutenants})
+    assert exc.value.code == "self_stack"
+    assert gs.to_json() == before
+
+    # Also check before the dispatcher's rollback can hide a partial assignment.
+    with pytest.raises(IllegalAction) as exc:
+        campaign.build_plan(gs, "roman", cards, lieutenants)
+    assert exc.value.code == "self_stack"
+    assert gs.to_json() == before
+
+    engine.apply_action(gs, {"type": "build_plan", "side": "roman",
+                             "cards": cards, "lieutenants": [valid_pair]})
+    loaded = GameState.from_json(gs.to_json())
+    for state in (gs, loaded):
+        assert state.lords[upper].lower_lord == lower
+        assert state.lords[lower].lieutenant_of == upper
+        assert state.meta.subphase == "campaign.fpd_pay"
+        for _ in range(2):
+            engine.apply_action(state, {"type": "fpd_done"})
+        assert state.meta.active_lord == upper and state.roman.plan_pointer == 1
+    assert gs.to_json() == loaded.to_json()
+    assert GameState.from_json(gs.to_json()).to_json() == gs.to_json()
+
+
+@pytest.mark.parametrize("upper,lower", [
+    ("chatatourios", "roussel_de_bailleul"),
+    ("roussel_de_bailleul", "chatatourios"),
+])
+def test_lieutenant_designation_and_lower_lord_card_passes_413(upper, lower):
     gs = S.load_scenario("showdown_in_anatolia", seed=1)
     # Put two non-Commander Roman lords at the same Locale to stack them.
     a, b = gs.lords["chatatourios"], gs.lords["roussel_de_bailleul"]
@@ -80,14 +125,13 @@ def test_lieutenant_designation_and_lower_lord_card_passes_413():
     # Seljuk plan
     engine.apply_action(gs, {"type": "build_plan", "side": "seljuk",
                              "cards": ["alp_arslan", "arisighi", "no_command", "no_command", "no_command", "no_command", "no_command"]})
-    # Roman plan with a Lieutenant stack (Chatatourios over Roussel)
+    # Roman Plan with a Lower Lord card followed by his Lieutenant's card.
     engine.apply_action(gs, {"type": "build_plan", "side": "roman",
-                             "cards": ["roussel_de_bailleul", "chatatourios", "no_command", "no_command", "no_command", "no_command", "no_command"],
-                             "lieutenants": [{"lieutenant": "chatatourios", "lower_lord": "roussel_de_bailleul"}]})
-    assert gs.lords["chatatourios"].lower_lord == "roussel_de_bailleul"
-    assert gs.lords["roussel_de_bailleul"].lieutenant_of == "chatatourios"
-    # Drive the whole Campaign; a Lower Lord's revealed card is a Pass (4.1.3),
-    # so Roussel never activates, while his Lieutenant Chatatourios does.
+                             "cards": [lower, upper] + ["no_command"] * 5,
+                             "lieutenants": [{"lieutenant": upper, "lower_lord": lower}]})
+    assert gs.lords[upper].lower_lord == lower
+    assert gs.lords[lower].lieutenant_of == upper
+    # A Lower Lord's revealed card is a Pass (4.1.3).
     activated = []
     guard = 0
     while gs.meta.subphase in ("campaign.command", "campaign.fpd_pay") and guard < 90:
@@ -98,8 +142,8 @@ def test_lieutenant_designation_and_lower_lord_card_passes_413():
         if gs.meta.active_lord is not None:
             activated.append(gs.meta.active_lord)
         engine.apply_action(gs, {"type": "end_activation"})
-    assert "roussel_de_bailleul" not in activated
-    assert "chatatourios" in activated
+    assert lower not in activated
+    assert upper in activated
 
 
 def test_feed_requirement_thresholds_461():

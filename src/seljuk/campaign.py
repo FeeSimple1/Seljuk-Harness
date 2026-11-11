@@ -203,12 +203,16 @@ def build_plan(gs: GameState, side: str, cards: list[str], lieutenants: list[dic
             raise IllegalAction("lord_not_on_side", f"{c} has no Command cards in the {side} deck")
         if n > constraints["lord_card_max"]:
             raise IllegalAction("too_many_lord_cards", f"at most 4 Command cards for {c} (1.9.2)")
+    pairs = [(stack["lieutenant"], stack["lower_lord"]) for stack in (lieutenants or [])]
+    if any(lieut == lower for lieut, lower in pairs):
+        raise IllegalAction("self_stack", "Choose two distinct Lords for a Lieutenant assignment (4.1.3)")
+
     decks = gs.side_decks(side)
     decks.command_plan = list(cards)
     decks.plan_pointer = 0
     # Lieutenants (4.1.3)
-    for stack in (lieutenants or []):
-        _designate_lieutenant(gs, side, stack["lieutenant"], stack["lower_lord"])
+    for lieut, lower in pairs:
+        _designate_lieutenant(gs, side, lieut, lower)
     gs.meta.plan_submitted[side] = True
     if all(gs.meta.plan_submitted.get(s) for s in SIDES):
         gs.meta.notes["first_plan_done"] = True
