@@ -80,23 +80,19 @@ def test_winter_example_alp_chooses_ani_or_mosul_box():
 
 
 def test_winter_example_fealty_to_basileus_stay_is_a_choice_r15():
-    gs = S.load_scenario("emperor_and_the_lion", seed=1)
-    rom = gs.lords["romanos_diogenes"]
-    rom.cylinder = "theodosiopolis"; rom.capabilities = ["R15"]   # Fealty To The Basileus
-    campaign._begin_winter_quarters(gs)
-    p = next(p for p in gs.meta.pending if p["type"] == "winter_quarters" and p["lord"] == "romanos_diogenes")
-    assert p["may_stay"]
-    engine.apply_action(gs, {"type": "winter_quarters", "lord": "romanos_diogenes", "stay": True})
-    assert rom.cylinder == "theodosiopolis"          # "chooses to stay in the field"
-    # ...but returning is equally legal (errata Clarification: to HIS Seat only).
-    gs2 = S.load_scenario("emperor_and_the_lion", seed=1)
-    r2 = gs2.lords["romanos_diogenes"]
-    r2.cylinder = "theodosiopolis"; r2.capabilities = ["R15"]
-    campaign._begin_winter_quarters(gs2)
-    p2 = next(p for p in gs2.meta.pending if p["type"] == "winter_quarters" and p["lord"] == "romanos_diogenes")
-    engine.apply_action(gs2, {"type": "winter_quarters", "lord": "romanos_diogenes",
-                              "dest": p2["dests"][0]})
-    assert r2.cylinder == p2["dests"][0]
+    for stay in (True, False):
+        gs = S.load_scenario("emperor_and_the_lion", seed=1)
+        rom = gs.lords["romanos_diogenes"]
+        rom.cylinder = "theodosiopolis"
+        rom.capabilities = ["R15"]
+        campaign._begin_winter_quarters(gs)
+        moves = engine.legal_moves(gs)
+        while moves[0]["lord"] != rom.id:
+            engine.apply_action(gs, moves[0])
+            moves = engine.legal_moves(gs)
+        choice = next(m for m in moves if bool(m.get("stay")) == stay)
+        engine.apply_action(gs, choice)
+        assert rom.cylinder == ("theodosiopolis" if stay else choice["dest"])
 
 
 # --- Winter: Aleppo Diplomacy die (a 3 keeps the marker; 1-2 removes) --------

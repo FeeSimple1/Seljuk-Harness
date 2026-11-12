@@ -1280,11 +1280,14 @@ def _begin_winter_quarters(gs: GameState) -> bool:
 
 def h_winter_quarters(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
     """Resolve one Lord's Winter Quarters choice (4.7.6; R15/S15 stay)."""
-    pend = next((p for p in gs.meta.pending if p["type"] == "winter_quarters"
-                 and action.get("lord") in (None, p["lord"])), None)
+    pend = next((p for p in gs.meta.pending if p["type"] == "winter_quarters"), None)
     if pend is None:
         raise IllegalAction("no_pending", "no Winter Quarters choice to resolve")
     lord = gs.lords[pend["lord"]]
+    if action.get("lord") not in (None, lord.id):
+        raise IllegalAction("wrong_lord", f"Winter Quarters is waiting on {lord.id} (4.7.6)")
+    if action.get("side") not in (None, lord.side):
+        raise IllegalAction("wrong_side", f"{lord.side} chooses Winter Quarters for {lord.id} (4.7.6)")
     if action.get("stay"):
         if not pend.get("may_stay"):
             raise IllegalAction("must_return", f"{lord.id} must return to a Seat (4.7.6)")
