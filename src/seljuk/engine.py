@@ -80,6 +80,7 @@ _CAMPAIGN_HANDLERS: dict[str, Callable[[GameState, dict, DiceRoller], dict]] = {
     "cmd_encamp": campaign.h_cmd_encamp,
     "cmd_sortie": campaign.h_cmd_sortie,
     "end_activation": campaign.h_end_activation,
+    "feed_resource_choice": campaign.h_feed_resource_choice,
     "pay": actions.h_pay,                 # 4.6.2 campaign Feed/Pay/Disband Pay
     "fpd_done": campaign.h_fpd_done,
     "cmd_tax": campaign.h_cmd_tax,
@@ -134,6 +135,8 @@ def _apply_action(gs: GameState, action: dict[str, Any]) -> dict[str, Any]:
     if atype not in table:
         raise IllegalAction("unknown_action",
                             f"no handler for action type {atype!r} in phase {gs.meta.phase}")
+    if gs.meta.subphase == "campaign.fpd_feed" and atype != "feed_resource_choice":
+        raise IllegalAction("pending_decision", "choose Feed resources before continuing (4.6.1)")
     # Opening assignments and Events are mandatory, even when callers submit
     # actions directly instead of choosing from the palette (3.1.2-.3).
     waste = campaign.wastage_moves(gs)
@@ -166,6 +169,10 @@ def _apply_action(gs: GameState, action: dict[str, Any]) -> dict[str, Any]:
                                    ("assign_themata_defenders", "assign_themata_defenders")):
         if any(p["type"] == pending_type for p in gs.meta.pending) and atype != required:
             raise IllegalAction("pending_decision", f"resolve {pending_type} before continuing (4.3.4/4.3.5)")
+    if action.get("interactive_feed") is True:
+        if gs.meta.subphase != "campaign.command" or gs.meta.active_card is None:
+            raise IllegalAction("wrong_step", "interactive_feed requires an active Campaign card")
+        gs.meta.notes["interactive_feed"] = True
     from .rng import action_roller
     with action_roller(gs) as roller:
         result = table[atype](gs, action, roller)
