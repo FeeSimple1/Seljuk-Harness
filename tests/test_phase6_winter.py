@@ -2,7 +2,10 @@
 import pytest
 
 from seljuk import scenarios as S, engine, campaign
+from seljuk.engine import IllegalAction
 from seljuk.invariants import check_invariants
+from seljuk.llm.compact import CompactInterface, InterfaceError
+from seljuk.llm.session import LLMSession
 from seljuk.state import GameState
 from tests.reset_helpers import keep_reset_cards
 
@@ -84,6 +87,60 @@ def _bounty_winter_position(blocked):
         manuel.cylinder, manuel.bypassed = "ani", True
         gs.locales["ani"].bypass = True
     return gs
+
+
+@pytest.mark.parametrize("stay", [True, False])
+def test_winter_quarters_elections_follow_the_current_lord_and_side(stay):
+    gs = _bounty_winter_position(blocked=False)
+    manuel = "manuel_komnenos"
+    gs.lords[manuel].cylinder = "sebasteia"
+    gs.roman.draw_deck.remove("R15")
+    gs.lords[manuel].capabilities.append("R15")
+    engine.apply_action(gs, {"type": "winter_proceed"})
+    assert gs.meta.subphase == "winter.quarters"
+    before = gs.to_json()
+
+    def resolve(state):
+        ui = CompactInterface(LLMSession(state))
+        version = ui.version
+        assert ui.owed == "seljuk"
+        alp_choices = ui.actions(type="winter_quarters")["entries"]
+        assert {row["action"]["dest"] for row in alp_choices} == {"ani", "to_mosul_and_baghdad"}
+        assert all(row["action"]["lord"] == "alp_arslan" for row in alp_choices)
+        for args, code in [
+            ({"lord": manuel, "dest": "to_constantinople"}, "wrong_lord"),
+            ({"lord": "emir_of_arran", "stay": True}, "wrong_lord"),
+            ({"lord": "alp_arslan", "dest": "ani", "side": "roman"}, "wrong_side"),
+        ]:
+            action = {"type": "winter_quarters", **args}
+            with pytest.raises(IllegalAction) as rejected:
+                engine.apply_action(state, action)
+            assert rejected.value.code == code
+            with pytest.raises(IllegalAction) as rejected:
+                ui.apply(action, version=version)
+            assert rejected.value.code == code
+            assert ui.gs.to_json() == before and ui.version == version
+
+        ui.apply(next(row["id"] for row in alp_choices if row["action"]["dest"] == "ani"))
+        with pytest.raises(InterfaceError) as stale:
+            ui.apply(alp_choices[0]["id"])
+        assert stale.value.code == "stale_selection"
+        assert ui.owed == "seljuk"
+        emir_choice = next(row for row in ui.actions(type="winter_quarters")["entries"]
+                           if row["action"].get("stay"))
+        assert emir_choice["action"]["lord"] == "emir_of_arran"
+        ui.apply(emir_choice["id"])
+        assert ui.owed == "roman"
+        rows = ui.actions(type="winter_quarters")["entries"]
+        assert {row["action"]["lord"] for row in rows} == {manuel}
+        assert {bool(row["action"].get("stay")) for row in rows} == {True, False}
+        ui.apply(next(row["id"] for row in rows if bool(row["action"].get("stay")) == stay))
+        assert ui.gs.lords[manuel].cylinder == ("sebasteia" if stay else "to_constantinople")
+        assert not any(p["type"] == "winter_quarters" for p in ui.gs.meta.pending)
+        assert not check_invariants(ui.gs)
+        return ui.gs.to_json()
+
+    assert resolve(gs) == resolve(GameState.from_json(before))
 
 
 @pytest.mark.parametrize("origin", ["mempet", "ani"])
