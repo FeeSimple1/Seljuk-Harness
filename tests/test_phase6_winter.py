@@ -116,3 +116,33 @@ def test_winter_bounty_can_reach_another_seat_when_ani_is_blocked():
 
     assert gs.meta.vp["roman"] == 11
     assert gs.holding_boxes.constantinople_roman_vp_markers == 8
+
+
+@pytest.mark.parametrize("lid, origin", [
+    ("emir_of_arran", "mempet"),
+    ("alp_arslan", "ani"),  # A Seat with another Seat reachable via Ararat.
+])
+def test_besieged_origin_blocks_winter_bounty(lid, origin):
+    gs = _bounty_winter_position(blocked=False)
+    lord = gs.lords[lid]
+    lord.cylinder = origin
+    lord.assets.loot = 1
+    # Manuel is outside the friendly Stronghold besieging the Seljuk Lords.
+    gs.lords["manuel_komnenos"].cylinder = origin
+    gs.locales[origin].siege_markers = 1
+    for friend in gs.lords.values():
+        if friend.mustered and friend.side == "seljuk" and friend.cylinder == origin:
+            friend.besieged = True
+    gs.meta.vp = S.score(gs)
+    assert not check_invariants(gs)
+    saved = GameState.from_json(gs.to_json())
+
+    action = {"type": "winter_proceed"}
+    result = engine.apply_action(gs, action)
+    assert engine.apply_action(saved, action) == result
+    assert saved.to_json() == gs.to_json()
+    assert gs.lords[lid].assets.loot == 1
+    assert gs.meta.vp == {"roman": 12, "seljuk": 3}
+    assert gs.holding_boxes.constantinople_roman_vp_markers == 9
+    assert not check_invariants(gs)
+    assert GameState.from_json(gs.to_json()).to_json() == gs.to_json()
