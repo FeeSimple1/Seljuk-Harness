@@ -37,7 +37,7 @@ def _rand_decisions(rng):
 def _rand_plan(s, move, rng):
     """Build a random-but-legal Plan of the required size."""
     side = move["side"]; need = move["_plan_size"]; avail = list(move["_available_lords"])
-    cards = []
+    cards = ["no_command"] * move.get("_no_command_required", 0)
     if move.get("_treachery_required"):
         cards.append("treachery")
     per = {}
@@ -71,7 +71,7 @@ def _rand_resolve_pending(s, rng, findings, tag):
     p = s.gs.meta.pending[0]
     t = p["type"]
     try:
-        if t in ("capability_discard", "grow", "reset_discard"):
+        if t in ("capability_discard", "feed_resource_choice", "grow", "reset_discard"):
             s.apply(rng.choice(engine.legal_moves(s.gs)))
         elif t == "approach_response":
             choices = {}
