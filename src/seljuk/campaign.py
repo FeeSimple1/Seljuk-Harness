@@ -357,18 +357,43 @@ def _after_card(gs: GameState) -> None:
     if gs.meta.phase == "winter":
         _winter_end_activation(gs)
         return
-    roller = _load_fpd_roller(gs)
-    _fpd_feed(gs)                       # 4.6.1 Feed (Seljuk then Roman)
-    _store_fpd_roller(gs, roller)
+    interactive_feed = gs.meta.notes.pop("interactive_feed", False)
+    if not interactive_feed:
+        roller = _load_fpd_roller(gs)
+        _fpd_feed(gs)
+        _store_fpd_roller(gs, roller)
     # The Command card is over once Feed/Pay/Disband begins.
     card_player = gs.meta.active_player
     gs.meta.active_card = None
     gs.meta.active_lord = None
     gs.meta.actions_remaining = 0
     gs.meta.notes.pop("card_full_actions", None)  # window marker is per-card
+    if interactive_feed:
+        gs.meta.notes["fpd_card_player"] = card_player
+        _advance_feed(gs)
+    else:
+        _begin_fpd_pay(gs, card_player)
+
+
+def _advance_feed(gs: GameState, start: int = 0) -> None:
+    """Feed Seljuks then Romans, pausing for each owner's resource choices."""
+    for side in SIDES[start:]:
+        options = _feed_loot_options(gs, side)
+        if options:
+            gs.meta.subphase = "campaign.fpd_feed"
+            gs.meta.active_player = side
+            gs.meta.pending.append({"type": "feed_resource_choice", "side": side,
+                                    "options": options})
+            return
+        _feed_side(gs, side, {"feed": []})
+    _begin_fpd_pay(gs, gs.meta.notes["fpd_card_player"])
+
+
+def _begin_fpd_pay(gs: GameState, card_player: str) -> None:
     # 5.2: a side may already have no Mustered Lords (e.g. all lost in the Battle
     # that ended this card) -> game ends immediately, before any Pay/Disband.
     if _campaign_5_2_over(gs):
+        gs.meta.notes.pop("fpd_card_player", None)
         return
     # 4.6.2: any Seljuk then Roman Lords may receive Pay BEFORE Disband. Pause for
     # it when a Pay is available, else go straight to Disband.
@@ -378,6 +403,30 @@ def _after_card(gs: GameState) -> None:
     if _fpd_advance(gs):
         return                          # pause: the active side may Pay (4.6.2)
     _after_card_finish(gs)
+
+
+def h_feed_resource_choice(gs: GameState, action: dict[str, Any],
+                           roller: DiceRoller) -> dict[str, Any]:
+    """Choose how much Loot each of your Lords spends on Feed and Sharing."""
+    if gs.meta.subphase != "campaign.fpd_feed":
+        raise IllegalAction("wrong_step", "no Feed resource choice is due (4.6.1)")
+    side = gs.meta.active_player
+    if action.get("side", side) != side:
+        raise IllegalAction("wrong_feed_side", "only the feeding side may choose (4.6.1)")
+    pending = next(p for p in gs.meta.pending if p["type"] == "feed_resource_choice")
+    options = pending["options"]
+    choice = action.get("feed_loot", {})
+    if not isinstance(choice, dict) or any(
+        lid not in options or type(amount) is not int
+        or not options[lid][0] <= amount <= options[lid][1]
+        for lid, amount in choice.items()
+    ):
+        raise IllegalAction("bad_feed_choice", "feed_loot must give legal amounts for your Lords")
+    gs.meta.pending.remove(pending)
+    result = {"feed": []}
+    _feed_side(gs, side, result, feed_loot=choice)
+    _advance_feed(gs, SIDES.index(side) + 1)
+    return {"ok": True, "side": side, "feed": result["feed"], "now": gs.meta.subphase}
 
 
 def _permanently_disbanded(gs: GameState, lid: str) -> bool:
@@ -499,7 +548,8 @@ def _unit_count(lord: LordState) -> int:
     return sum(lord.unrouted_forces().values())
 
 
-def _feed_side(gs: GameState, side: str, result: dict) -> None:
+def _feed_side(gs: GameState, side: str, result: dict, *,
+               feed_loot: dict[str, int] | None = None, preview: bool = False) -> None:
     # Each Lord Feeds his own Forces first (4.6.1); Sharing among co-located
     # Lords then covers shortfalls.
     movers = [l for l in gs.lords.values() if l.side == side and on_map(l) and l.moved_fought]
@@ -507,20 +557,21 @@ def _feed_side(gs: GameState, side: str, result: dict) -> None:
     # do co-located Lords Share to cover remaining shortfalls. Doing this in one
     # interleaved pass would let an early mover drain a later (not-yet-fed)
     # mover's Provender and penalise the wrong Lord.
+    loot_budget = dict(feed_loot or {})
     fed = []  # [lord, need, paid]
     for lord in movers:
         need = _feed_requirement(_unit_count(lord))
-        fed.append([lord, need, _consume_food(lord, need)])
+        fed.append([lord, need, _consume_food(lord, need, loot_budget)])
     # Share to cover shortfalls, smallest remaining shortfall FIRST -- this
     # maximises the number of fully-fed Lords (minimising Unfed Service shifts,
     # B.3.1), instead of letting one big-need Lord drain the shared Provender.
     for entry in sorted((e for e in fed if e[2] < e[1]), key=lambda e: e[1] - e[2]):
         lord, need, paid = entry
-        entry[2] = paid + _share_food(gs, lord, side, need - paid)
+        entry[2] = paid + _share_food(gs, lord, side, need - paid, loot_budget)
     for lord, need, paid in fed:
         if paid < need:
             # Unfed: shift Service Marker left one box (4.6.1)
-            if lord.service_box is not None:
+            if not preview and lord.service_box is not None:
                 lord.service_box = max(0, lord.service_box - 1)
                 from .state import shift_vassal_service
                 shift_vassal_service(gs, lord, -1)  # 6.2
@@ -529,27 +580,52 @@ def _feed_side(gs: GameState, side: str, result: dict) -> None:
             result["feed"].append({"lord": lord.id, "needed": need, "fed": paid, "unfed": False})
 
 
-def _consume_food(lord: LordState, need: int) -> int:
-    paid = 0
-    for asset in ("provender", "loot"):  # Loot Feeds anywhere (4.6.1)
-        while paid < need and getattr(lord.assets, asset) > 0:
-            setattr(lord.assets, asset, getattr(lord.assets, asset) - 1)
-            paid += 1
+def _consume_food(lord: LordState, need: int, loot_budget: dict[str, int]) -> int:
+    assets = lord.assets
+    paid = min(need, assets.provender + assets.loot)
+    preferred_loot = min(paid, assets.loot, loot_budget.get(lord.id, 0))
+    provender = min(assets.provender, paid - preferred_loot)
+    loot = paid - provender
+    assets.provender -= provender
+    assets.loot -= loot
+    if lord.id in loot_budget:
+        loot_budget[lord.id] -= loot
     return paid
 
 
-def _share_food(gs: GameState, hungry: LordState, side: str, need: int) -> int:
+def _share_food(gs: GameState, hungry: LordState, side: str, need: int,
+                loot_budget: dict[str, int]) -> int:
     """Co-located friendly Lords must Share Provender/Loot to cover a shortfall
     (4.6.1); a side may not withhold."""
     paid = 0
     for other in gs.lords.values():
+        if paid == need:
+            break
         if other is hungry or other.side != side or other.cylinder != hungry.cylinder or not on_map(other):
             continue
-        for asset in ("provender", "loot"):
-            while paid < need and getattr(other.assets, asset) > 0:
-                setattr(other.assets, asset, getattr(other.assets, asset) - 1)
-                paid += 1
+        paid += _consume_food(other, need - paid, loot_budget)
     return paid
+
+
+def _feed_loot_options(gs: GameState, side: str) -> dict[str, list[int]]:
+    """Legal total Loot spends for each payer, including shared Feed."""
+    lords = {lid: lord for lid, lord in gs.lords.items() if lord.side == side and on_map(lord)}
+    mixed = {lid: lord for lid, lord in lords.items() if lord.assets.provender and lord.assets.loot}
+    if not mixed or not any(lord.moved_fought for lord in lords.values()):
+        return {}
+    # The split does not change the mandatory food totals. Preview on copied mats.
+    mats = {lid: lord.model_copy(update={"assets": lord.assets.model_copy()})
+            for lid, lord in lords.items()}
+    probe = gs.model_copy(update={"lords": mats})
+    _feed_side(probe, side, {"feed": []}, preview=True)
+    options = {}
+    for lid, lord in mixed.items():
+        prov, loot = lord.assets.provender, lord.assets.loot
+        spent = prov + loot - mats[lid].assets.provender - mats[lid].assets.loot
+        minimum, maximum = max(0, spent - prov), min(spent, loot)
+        if minimum < maximum:
+            options[lid] = [minimum, maximum]
+    return options
 
 
 # --- End Campaign (4.7) and Winter (4.7.6) ----------------------------------
@@ -1476,6 +1552,16 @@ def legal_moves_campaign(gs: GameState) -> list[dict[str, Any]]:
                  "_desc": f"Build the {side} Campaign Plan: {need} ordered cards (4.1)"
                           + (" incl. one Treachery card" if treachery_required else "")
                           + ("; must include one No Command" if no_command_required(gs, side) else "")}]
+    if step == "campaign.fpd_feed":
+        pending = next(p for p in gs.meta.pending if p["type"] == "feed_resource_choice")
+        move = {"type": "feed_resource_choice", "side": pending["side"]}
+        moves = [{**move, "_feed_loot": pending["options"],
+                  "_desc": "Feed with Provender first; optionally set feed_loot by Lord (4.6.1)"}]
+        for lid, (minimum, maximum) in pending["options"].items():
+            moves.extend({**move, "feed_loot": {lid: amount},
+                          "_desc": f"Spend {amount} Loot from {lid} for Feed and Sharing"}
+                         for amount in range(minimum + 1, maximum + 1))
+        return moves
     if step == "campaign.fpd_pay":
         moves = actions.enumerate_pay(gs)  # 4.6.2: Pay as per Levy (3.2)
         moves.append({"type": "fpd_done", "_desc": "Finish Pay for this side, then Disband (4.6.2)"})
@@ -1485,6 +1571,10 @@ def legal_moves_campaign(gs: GameState) -> list[dict[str, Any]]:
         moves = events.held_event_menu(gs) + command_menu(gs)
         moves.append({"type": "cmd_pass", "_desc": "Pass: the active Lord does nothing (4.5.8)"})
         moves.append({"type": "end_activation", "_desc": "End this Lord's card"})
+        if any(lord.moved_fought and on_map(lord) for lord in gs.lords.values()):
+            moves.append({"type": "end_activation", "interactive_feed": True,
+                          "_desc": "End the card with Feed choices (4.6.1). Set "
+                                   "interactive_feed on a Command to choose after it ends the card."})
         return moves
     return []
 
