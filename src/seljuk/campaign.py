@@ -1158,15 +1158,18 @@ def _bounty(gs: GameState) -> None:
     for lid, lord in gs.lords.items():
         if lord.side != "seljuk" or not on_map(lord) or lord.assets.loot <= 0:
             continue
+        origin = lord.cylinder
+        if not _bounty_traversable(gs, origin):
+            continue
         seats = list(sd.lord(lid).get("seats", []))
         if lid == "artuk_beg" and capabilities.lord_has(gs, "artuk_beg", "Artukid Legacy"):
             seats += ["amid", "mayyafariqin"]  # S10: Mayyafariqin AND Amid (base Seat already included)
         seats += [s for s in gs.meta.notes.get("marwanid_seats", []) if s not in seats]  # Marwanid Alliance (S8) activated Seats
         # BFS over bounty-traversable Locales from the Lord to one of his Seats.
         from collections import deque
-        seen = {lord.cylinder}
-        dq = deque([lord.cylinder])
-        reached = lord.cylinder in seats and _bounty_traversable(gs, lord.cylinder)
+        seen = {origin}
+        dq = deque([origin])
+        reached = origin in seats
         while dq and not reached:
             cur = dq.popleft()
             for edge in gmap.ways_from(cur):
