@@ -467,51 +467,77 @@ def _ev_deserters(gs, args, roller):             # S7 (remove 1 Themata from a b
     return _remove_themata(gs, thema, args.get("unit"))
 
 
-def _ev_thematic_desert(gs, args, roller):       # S15 (Alp Arslan in a Thema removes 1 Themata there)
-    """Alp Arslan in a Thema removes 1 Levied or Unlevied Themata Service marker
-    there (card clarification: Unlevied in the Thema box -- even Besieged/
-    defending a Stronghold -- or Levied onto the Roman Commander's mat). Search
-    all three: the Unlevied box, defending markers at his Locale, and Levied
-    markers on Lord mats at his Locale."""
-    aa = gs.lords["alp_arslan"]
-    if not aa.mustered:
-        return {"no_op": True, "reason": "Alp Arslan not in a Thema"}
-    thema = sd.locale(aa.cylinder)["thema"]
+THEMATIC_DESERT_ARGS = ("source", "thema", "locale", "lord", "marker_index", "unit", "symbols")
+
+
+def thematic_desert_targets(gs: GameState) -> list[dict[str, Any]]:
+    """S15 counter references in Alp Arslan's Thema and at his Locale."""
+    from .actions import _on_map, is_commander
+
+    alp = gs.lords["alp_arslan"]
+    if not _on_map(alp):
+        return []
+    locale = alp.cylinder
+    thema = sd.locale(locale)["thema"]
     if thema is None:
-        return {"no_op": True, "reason": "Alp Arslan not in a Thema"}
-    unit = args.get("unit")
-    loc = aa.cylinder
-    src = args.get("source")  # optional: "unlevied" | "defending" | "levied"
+        return []
 
-    def _match(m):
-        return unit is None or m.unit == unit
+    piles = [
+        ("unlevied", gs.themata.get(thema, []), {}),
+        ("defending", gs.locales[locale].themata_defending, {"locale": locale}),
+    ]
+    piles.extend(
+        ("levied", lord.themata_on_mat, {"locale": locale, "lord": lid})
+        for lid, lord in gs.lords.items()
+        if lord.mustered and lord.cylinder == locale and lord.side == "roman"
+        and is_commander(gs, lid)
+    )
+    return [
+        {"source": source, "thema": thema, **location, "marker_index": index,
+         "unit": marker.unit, "symbols": marker.symbols}
+        for source, pile, location in piles
+        for index, marker in enumerate(pile)
+    ]
 
-    if src in (None, "unlevied"):
-        box = gs.themata.get(thema, [])
-        for i, m in enumerate(box):
-            if _match(m):
-                box.pop(i)
-                _record_removed_themata(gs, m, thema)
-                return {"removed": {"thema": thema, "unit": m.unit, "source": "unlevied"}}
-    if src in (None, "defending"):
-        deff = gs.locales[loc].themata_defending
-        for i, m in enumerate(deff):
-            if _match(m):
-                mk = deff.pop(i)
-                _record_removed_themata(gs, mk, thema)
-                return {"removed": {"thema": thema, "unit": mk.unit, "source": "defending", "locale": loc}}
-    if src in (None, "levied"):
-        for l in gs.lords.values():
-            if l.cylinder != loc:
-                continue
-            for i, m in enumerate(l.themata_on_mat):
-                if _match(m):
-                    mk = l.themata_on_mat.pop(i)
-                    _record_removed_themata(gs, mk, thema)
-                    return {"removed": {"thema": thema, "unit": mk.unit, "source": "levied", "lord": l.id}}
-    # No matching marker in the box, defending, or on co-located mats: no effect
-    # (do not raise -- an immediate Event that can never resolve stalls the Levy).
-    return {"no_op": True, "reason": f"no Levied/Unlevied Themata to remove in {thema} / at {loc}"}
+
+def _ev_thematic_desert(gs, args, roller):       # S15
+    from . import actions, campaign
+
+    selection = {field: value for field, value in args.items() if field != "_interactive_wastage"}
+    if selection.keys() - set(THEMATIC_DESERT_ARGS) or any(
+        type(selection[field]) is not int for field in ("marker_index", "symbols") if field in selection
+    ):
+        raise IllegalAction("bad_themata_selection", "S15 requires a valid Themata counter reference")
+    targets = thematic_desert_targets(gs)
+    if not targets and not selection:
+        return {"no_op": True, "reason": "no eligible Levied or Unlevied Themata (S15)"}
+    matches = [
+        target for target in targets
+        if all(field in target and target[field] == value for field, value in selection.items())
+    ]
+    if not matches:
+        raise IllegalAction("bad_themata_selection", "S15 selection matches no eligible Themata counter")
+    if len(matches) > 1:
+        raise IllegalAction("themata_selection_required", "S15 requires a choice of one eligible Themata counter")
+    target = matches[0]
+    source, thema, index = target["source"], target["thema"], target["marker_index"]
+    lord = None
+    if source == "unlevied":
+        pile = gs.themata[thema]
+    elif source == "defending":
+        pile = gs.locales[target["locale"]].themata_defending
+    else:
+        lord = gs.lords[target["lord"]]
+        pile = lord.themata_on_mat
+
+    _record_removed_themata(gs, pile.pop(index), thema)
+    result = {"removed": target}
+    if lord is not None:
+        disband = actions.disband_if_empty(gs, lord)
+        if disband is not None:
+            campaign._refresh_invest(gs, target["locale"])
+            result["disband"] = disband
+    return result
 
 
 def siege_of_bari_targets(gs: GameState) -> tuple[dict[tuple[str, int], ThemataMarker], int]:
@@ -572,16 +598,40 @@ def _ev_siege_of_bari(gs, args, roller):         # S5*
     return {"removed": removed}
 
 
-def _ev_merchant_financing(gs, args, roller):    # S8 (exchange Carts <-> Coin for one Seljuk Lord)
-    lord = gs.lords[args["lord"]]
-    n = int(args.get("amount", 0))
-    if args.get("to") == "coin":
-        n = min(n, lord.assets.carts)
-        lord.assets.carts -= n; lord.assets.coin = min(8, lord.assets.coin + n)
-    else:
-        n = min(n, lord.assets.coin)
-        lord.assets.coin -= n; lord.assets.carts = min(8, lord.assets.carts + n)
-    return {"exchanged": n, "to": args.get("to")}
+def merchant_financing_targets(gs: GameState) -> dict[str, dict[str, int]]:
+    """S8 eligible Lords and the maximum amount by destination Asset."""
+    from .actions import _on_map
+
+    return {
+        lid: {"coin": lord.assets.carts, "carts": lord.assets.coin}
+        for lid, lord in gs.lords.items() if lord.side == "seljuk" and _on_map(lord)
+    }
+
+
+def _ev_merchant_financing(gs, args, roller):    # S8
+    if not (args.keys() - {"_interactive_wastage"}):
+        return {"exchanged": 0}
+    lid = args.get("lord")
+    if not isinstance(lid, str) or lid not in gs.lords:
+        raise IllegalAction("bad_lord", f"no such Lord {lid!r}")
+    targets = merchant_financing_targets(gs)
+    if lid not in targets:
+        raise IllegalAction("bad_event_target", "S8 requires a Mustered Seljuk Lord on the map")
+
+    destination = args.get("to")
+    if destination not in ("coin", "carts"):
+        raise IllegalAction("bad_direction", "S8 exchanges to coin or carts")
+    amount = args.get("amount", 0)
+    maximum = targets[lid][destination]
+    if type(amount) is not int or not 0 <= amount <= maximum:
+        raise IllegalAction("bad_amount", f"S8 amount must be an integer from 0 to {maximum}")
+
+    assets = gs.lords[lid].assets
+    source = "carts" if destination == "coin" else "coin"
+    setattr(assets, source, getattr(assets, source) - amount)
+    # 1.7.3: any of the received Asset above eight is immediately lost.
+    setattr(assets, destination, min(8, getattr(assets, destination) + amount))
+    return {"exchanged": amount, "to": destination}
 
 
 def _ev_consolidates_power(gs, args, roller):    # S20 (lower THIS YEAR's Seljuk Unity threshold)
@@ -664,7 +714,7 @@ def resolvable() -> set[str]:
     return set(_RESOLVERS)
 
 
-def resolve_event(gs: GameState, card_id: str, args: dict, roller: DiceRoller) -> dict[str, Any]:
+def resolve_event(gs: GameState, card_id: str, args: dict | None, roller: DiceRoller) -> dict[str, Any]:
     pend = next((p for p in gs.meta.pending
                  if p["type"] == "event_pending_resolution" and p["card"] == card_id), None)
     if pend is None:
@@ -674,7 +724,8 @@ def resolve_event(gs: GameState, card_id: str, args: dict, roller: DiceRoller) -
         gs.meta.pending.remove(pend)
         return {"ok": True, "card": card_id, "no_op": True, "reason": "resolver not yet implemented (Phase 4 remainder)"}
     try:
-        result = _RESOLVERS[card_id](gs, {**(args or {}), "_interactive_wastage": True}, roller)
+        arguments = {} if args is None else args
+        result = _RESOLVERS[card_id](gs, {**arguments, "_interactive_wastage": True}, roller)
     except (KeyError, IndexError, TypeError) as e:
         raise IllegalAction("missing_or_bad_arg", f"Event {card_id} needs a valid argument ({e})")
     gs.meta.pending.remove(pend)

@@ -253,6 +253,12 @@ def contract(gs, move, side):
                            ])
                 out["notes"].append("Supply args.markers with exactly the required count of distinct "
                                     "{thema, marker_index} pairs. Unit and symbols identify each counter.")
+        elif kind == "resolve_event" and move["card"] == "S8":
+            targets = events.merchant_financing_targets(gs)
+            out.update(argument_names=["lord", "to", "amount"], eligible_lords=list(targets),
+                       max_amount_by_lord_and_destination=targets)
+            out["notes"].append("Choose one Lord and a destination Asset (coin or carts). "
+                                "Use amount 0 or {} to decline. Any received Asset above eight is lost.")
         elif kind == "resolve_event" and move["card"] == "R13":
             out.update(argument_names=["marker_index"],
                        eligible_markers=[
@@ -262,6 +268,12 @@ def contract(gs, move, side):
                        ])
             out["notes"].append("Choose one removed counter by args.marker_index. "
                                 "Supply {} if the removed pile is empty.")
+        elif kind == "resolve_event" and move["card"] == "S15":
+            targets = events.thematic_desert_targets(gs)
+            out.update(argument_names=list(events.THEMATIC_DESERT_ARGS),
+                       eligible_markers=targets, required_count=int(bool(targets)))
+            out["notes"].append("Copy one eligible marker reference into args. "
+                                "Use {} when there are no eligible markers or only one.")
         if move["card"] == "S24":
             out["notes"] += ["Select S24 without order to declare play and inspect privately, then choose keep/swap. Once inspected, no cancellation is permitted."]
     elif kind == "pay":
