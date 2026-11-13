@@ -223,6 +223,31 @@ def contract(gs, move, side):
                    card_lookup=move["card"],
                    notes=["Supply args explicitly ({} for no-choice/no-target effects).",
                           "lookup_card includes the complete curated clarification, not just the short data text."])
+        if kind == "resolve_event" and move["card"] == "S5":
+            if "S5" in gs.meta.asterisks_used:
+                out.update(argument_names=["lord"],
+                           eligible_lords=[lid for lid, lord in gs.lords.items()
+                                           if lord.side == "seljuk"])
+                out["notes"].append("Choose a Seljuk Lord to gain +1 Lordship this Muster.")
+            else:
+                targets, required = events.siege_of_bari_targets(gs)
+                out.update(argument_names=["markers"], required_count=required,
+                           eligible_markers=[
+                               {"thema": thema, "marker_index": index,
+                                "unit": marker.unit, "symbols": marker.symbols}
+                               for (thema, index), marker in targets.items()
+                           ])
+                out["notes"].append("Supply args.markers with exactly the required count of distinct "
+                                    "{thema, marker_index} pairs. Unit and symbols identify each counter.")
+        elif kind == "resolve_event" and move["card"] == "R13":
+            out.update(argument_names=["marker_index"],
+                       eligible_markers=[
+                           {"marker_index": index, "thema": marker.home_thema,
+                            "unit": marker.unit, "symbols": marker.symbols}
+                           for index, marker in enumerate(gs.meta.themata_removed)
+                       ])
+            out["notes"].append("Choose one removed counter by args.marker_index. "
+                                "Supply {} if the removed pile is empty.")
         if move["card"] == "S24":
             out["notes"] += ["Select S24 without order to declare play and inspect privately, then choose keep/swap. Once inspected, no cancellation is permitted."]
     elif kind == "assign_themata_defenders":

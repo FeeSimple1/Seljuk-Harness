@@ -91,6 +91,12 @@ defending Lord in an Approach, and explicit Themata marker indices (including
 all marker identities including double markers, and the relevant limits.
 Full card text and the engine remain the authority for combinations.
 
+For Siege of Bari (S5), `details(id)` lists the required count and each
+eligible Unlevied counter. Pass `args.markers` as an array of distinct
+`{thema, marker_index}` pairs. For Thrakion Reinforcements (R13), pass
+`args.marker_index` for the chosen counter in the removed pile. The details
+show each counter's home Thema, unit, and symbol count.
+
 ## Multi-player inputs, without shared private hands
 
 A Storm, Sally, Sortie, Approach response, Surprise, or Loyalty action can need

@@ -843,25 +843,22 @@ def _classify_drawn_event(gs: GameState, side: str, card_id: str, roller: DiceRo
 
 def h_discard_nomisma(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
     """R19 Nomisma Debased: discard during the Levy Pay step to shift ALL Roman
-    Service Markers 1 box RIGHT (later), capped at box 12. 'All' bypasses Pay's
-    eligibility plumbing (Coin co-location / Loot Locale rules) and ignores
-    location/Siege status. Under Vassal Service (6.2) Vassal Markers shift too.
+    Service Markers one box right, including off the Calendar (2.2.3).
+    The shift applies regardless of location or Siege and includes Vassals
+    when using optional Vassal Service (6.2).
     The permanent cost -- Non-Commander Roman Lords may not Tax -- is the
     nomisma_debased_used mark. Once per game (asterisk)."""
+    if gs.meta.subphase != "levy.pay" or gs.meta.active_player != "roman":
+        raise IllegalAction("wrong_step", "Nomisma Debased is a Roman Levy Pay action (R19)")
     if "R19" not in gs.roman.capabilities_in_play:
         raise IllegalAction("not_in_play", "Nomisma Debased is not in play")
     if gs.meta.notes.get("nomisma_debased_used"):
         raise IllegalAction("already_used", "Nomisma Debased has already been triggered (once per game)")
-    use_vassals = bool((gs.meta.options or {}).get("vassal_service"))
     shifted = []
     for l in gs.lords.values():
         if l.side != "roman" or l.service_box is None:
             continue
-        l.service_box = min(12, l.service_box + 1)               # shift right (later), cap box 12
-        if use_vassals:
-            for v in l.vassals:                                  # 6.2: Vassal Markers are Roman Service
-                if v.levied and v.service_box is not None:
-                    v.service_box = min(12, v.service_box + 1)
+        _shift_service_right(gs, l, 1)
         shifted.append(l.id)
     gs.meta.notes["nomisma_debased_used"] = True                 # permanent Tax prohibition + once-per-game
     gs.roman.capabilities_in_play.remove("R19")
