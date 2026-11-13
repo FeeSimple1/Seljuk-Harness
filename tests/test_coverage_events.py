@@ -251,11 +251,11 @@ def test_s20_consolidates_power_lowers_unity():
     assert gs.meta.seljuk_unity_targets["6"] <= 3
 
 
-def test_s5_siege_of_bari_removes_up_to_two_themata():
+def test_s5_siege_of_bari_removes_two_themata():
     gs = _gs()
     themas = [t for t, box in gs.themata.items() if box][:2]
     out = E._ev_siege_of_bari(gs, {"themata": themas}, _r())
-    assert len(out["removed"]) <= 2
+    assert len(out["removed"]) == 2
     assert "S5" in gs.meta.asterisks_used
 
 

@@ -15,8 +15,22 @@ import argparse
 import sys
 
 from seljuk.llm import LLMSession
-from seljuk import campaign, static_data as sd
+from seljuk import campaign, events, static_data as sd
 from seljuk.state import IllegalAction
+
+
+def _choose_event_args(gs, card):
+    """Select mandatory Themata targets for the test driver."""
+    if card == "S5":
+        if card in gs.meta.asterisks_used:
+            lord = next(lid for lid, lord in gs.lords.items() if lord.side == "seljuk")
+            return {"lord": lord}
+        targets, required = events.siege_of_bari_targets(gs)
+        return {"markers": [{"thema": thema, "marker_index": index}
+                            for thema, index in list(targets)[:required]]}
+    if card == "R13" and gs.meta.themata_removed:
+        return {"marker_index": 0}
+    return {}
 
 
 def _resolve_pending(s: LLMSession) -> bool:
@@ -43,7 +57,8 @@ def _resolve_pending(s: LLMSession) -> bool:
             s.apply({"type": "deploy_capability", "card": p["card"], "lord": p["eligible"][0]})
         elif t == "event_pending_resolution":
             try:
-                s.apply({"type": "resolve_event", "card": p["card"], "args": {}})
+                card = p["card"]
+                s.apply({"type": "resolve_event", "card": card, "args": _choose_event_args(s.gs, card)})
             except IllegalAction:
                 s.gs.meta.pending.remove(p)  # needs choices we won't make here -> discard (no effect)
         elif t == "approach_response":

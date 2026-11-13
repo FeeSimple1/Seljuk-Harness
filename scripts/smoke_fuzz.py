@@ -20,7 +20,7 @@ from seljuk.llm import LLMSession
 from seljuk import scenarios, engine, campaign
 from seljuk.state import GameState, IllegalAction
 from seljuk.invariants import check_invariants
-from self_play import _build_plan_action  # type: ignore
+from self_play import _build_plan_action, _choose_event_args  # type: ignore
 
 _TEMPLATE = {"build_plan", "resolve_event"}
 
@@ -100,7 +100,8 @@ def _rand_resolve_pending(s, rng, findings, tag):
             s.apply({"type": "resolve_ravage_defence", "defend_with": dw})
         elif t == "event_pending_resolution":
             try:
-                s.apply({"type": "resolve_event", "card": p["card"], "args": {}})
+                card = p["card"]
+                s.apply({"type": "resolve_event", "card": card, "args": _choose_event_args(s.gs, card)})
             except IllegalAction:
                 s.gs.meta.pending.remove(p)  # needs choices; discard (no effect)
         elif t == "retain_themata":

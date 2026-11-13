@@ -18,7 +18,7 @@ from typing import Any
 
 from . import scenarios, static_data as sd
 from .rng import DiceRoller
-from .state import GameState, IllegalAction
+from .state import GameState, IllegalAction, ThemataMarker
 
 
 def _shift_calendar(gs: GameState, lord_id: str, what: str, direction: str) -> dict:
@@ -44,7 +44,6 @@ def _shift_calendar(gs: GameState, lord_id: str, what: str, direction: str) -> d
 def _record_removed_themata(gs, marker, home_thema):
     """Add an eliminated Themata Service Marker to the removed-from-play pile so
     R13 Thrakion Reinforcements can later return it to its home Thema."""
-    from .state import ThemataMarker
     gs.meta.themata_removed.append(
         ThemataMarker(unit=marker.unit, symbols=marker.symbols,
                       home_thema=getattr(marker, "home_thema", None) or home_thema))
@@ -252,21 +251,28 @@ def _ev_afsin_murders(gs, args, roller):         # R10* Afsin Murders Seljuk Off
 
 
 def _ev_thrakion(gs, args, roller):              # R13 Thrakion Reinforcements
-    """Return a Themata Service Marker *previously removed from play* to its home
-    Thema box (card text). Draw from the removed-from-play pile; no-op when the
-    pile is empty -- the Event may not fabricate a marker. Optional thema/unit
-    args filter which removed marker to return."""
-    from .state import ThemataMarker
+    """Return one removed marker to its home Thema, using its current pile index."""
     pile = gs.meta.themata_removed
-    thema = args.get("thema"); unit = args.get("unit")
-    idx = next((i for i, m in enumerate(pile)
-                if (thema is None or m.home_thema == thema) and (unit is None or m.unit == unit)), None)
-    if idx is None:
-        return {"no_op": True, "reason": "no matching Themata previously removed from play to return (R13)"}
-    mk = pile.pop(idx)
-    home = mk.home_thema
-    gs.themata.setdefault(home, []).append(ThemataMarker(unit=mk.unit, symbols=mk.symbols, home_thema=home))
-    return {"returned": {"thema": home, "unit": mk.unit}}
+    if not pile and "marker_index" not in args:
+        return {"no_op": True, "reason": "no Themata previously removed from play to return (R13)"}
+    thema, unit, symbols = args.get("thema"), args.get("unit"), args.get("symbols")
+    matching = [
+        i for i, marker in enumerate(pile)
+        if (thema is None or marker.home_thema == thema)
+        and (unit is None or marker.unit == unit)
+        and (symbols is None or marker.symbols == symbols)
+    ]
+    index = args.get("marker_index", matching[0] if matching else None)
+    if type(index) is not int or index not in matching:
+        raise IllegalAction("bad_themata_index", "R13 requires a matching removed Themata marker")
+    marker = pile[index]
+    home = marker.home_thema
+    if home is None:
+        raise IllegalAction("no_home_thema", "The removed Themata marker has no home Thema")
+    pile.pop(index)
+    marker.reset_units()
+    gs.themata.setdefault(home, []).append(marker)
+    return {"returned": {"thema": home, "unit": marker.unit}, "symbols": marker.symbols}
 
 
 def _ev_aleppo_independence(gs, args, roller):   # R14
@@ -432,7 +438,15 @@ def _ev_thematic_desert(gs, args, roller):       # S15 (Alp Arslan in a Thema re
     return {"no_op": True, "reason": f"no Levied/Unlevied Themata to remove in {thema} / at {loc}"}
 
 
-def _ev_siege_of_bari(gs, args, roller):         # S5* (remove up to 2 Unlevied Themata)
+def siege_of_bari_targets(gs: GameState) -> tuple[dict[tuple[str, int], ThemataMarker], int]:
+    """Unlevied counters by Thema and box index, and the required removal count."""
+    targets = {(thema, index): marker for thema, box in gs.themata.items()
+               for index, marker in enumerate(box)}
+    return targets, min(2, len(targets))
+
+
+def _ev_siege_of_bari(gs, args, roller):         # S5*
+    """Remove two available Unlevied Themata, or all that remain if fewer."""
     if "S5" in gs.meta.asterisks_used:
         # Already marked: instead, 1 Seljuk Lord gains +1 Lordship this Muster.
         lid = args.get("lord")
@@ -442,14 +456,42 @@ def _ev_siege_of_bari(gs, args, roller):         # S5* (remove up to 2 Unlevied 
                     "reason": "need a Seljuk Lord for the +1 Lordship effect"}
         l.flags["lordship_persist"] = int(l.flags.get("lordship_persist", 0)) + 1
         return {"already_marked": True, "lordship_bonus": lid}
+    targets, required = siege_of_bari_targets(gs)
+    explicit = "markers" in args
+    if explicit and ("themata" in args or "unit" in args):
+        raise IllegalAction("bad_themata_selection", "Choose markers or the legacy themata/unit fields")
+    choices = args.get("markers", args.get("themata", []))
+    if not isinstance(choices, list) or len(choices) != required:
+        raise IllegalAction("bad_themata_count", f"S5 requires exactly {required} Unlevied Themata")
+
+    unit = args.get("unit")
+    selected = {}
+    for choice in choices:
+        if explicit:
+            if (not isinstance(choice, dict) or not isinstance(choice.get("thema"), str)
+                    or type(choice.get("marker_index")) is not int):
+                raise IllegalAction("bad_themata_selection", "Use {thema, marker_index} for each marker")
+            key = (choice["thema"], choice["marker_index"])
+            marker = targets.get(key)
+            if marker and any(choice.get(field, getattr(marker, field)) != getattr(marker, field)
+                              for field in ("unit", "symbols")):
+                raise IllegalAction("bad_themata_selection", "Selected marker does not match unit or symbols")
+        else:
+            key = next((ref for ref, marker in targets.items()
+                        if ref[0] == choice and ref not in selected
+                        and (unit is None or marker.unit == unit)), None)
+        if key is None or key not in targets or key in selected:
+            raise IllegalAction("bad_themata_selection", "Choose distinct Unlevied Themata markers")
+        selected[key] = targets[key]
+
+    # Box indices refer to the original position. Remove high indices first,
+    # then record the counters in the order the player selected them.
+    for thema, index in sorted(selected, key=lambda key: key[1], reverse=True):
+        gs.themata[thema].pop(index)
     removed = []
-    for thema in args.get("themata", []):
-        try:
-            removed.append(_remove_themata(gs, thema, args.get("unit"))["removed"])
-        except IllegalAction:
-            pass
-        if len(removed) >= 2:
-            break
+    for (thema, _), marker in selected.items():
+        _record_removed_themata(gs, marker, thema)
+        removed.append({"thema": thema, "unit": marker.unit, "symbols": marker.symbols})
     gs.meta.asterisks_used.append("S5")
     return {"removed": removed}
 
