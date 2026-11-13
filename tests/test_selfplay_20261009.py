@@ -1,12 +1,11 @@
 """Regressions from a deliberately chosen two-sided Manzikert game.
 
-The fixture preserves 132 original moves and their checkpoint indices, with
+The fixture preserves 132 original decisions and their checkpoint indices, with
 explicit original unit choices at the two Storms. Ten Wastage, three Grow,
-and four keep-all Reset choices follow their triggering moves. Exact state
-hashes and serialized continuation cover every checkpoint. Separate historical
-gameplay hashes retain the original board, decks, resources, and RNG; full hashes
-also verify current action history. The player-interface replay independently
-executes all 149 actions.
+and four keep-all Reset choices follow their triggering moves. Twelve fpd_done
+entries belong to empty Pay windows that no longer open. Position and full
+state hashes cover every checkpoint, and the player interface independently
+replays all 137 applicable actions.
 """
 from __future__ import annotations
 
@@ -47,7 +46,12 @@ def replayed_game():
     for i, entry in enumerate(record["steps"]):
         if i in (11, 16, 130):
             checkpoints[i] = session.gs.to_json()
-        session.apply(entry["action"])
+        if owner := entry.get("skip_empty_pay_window"):
+            assert entry["action"]["type"] == "fpd_done"
+            assert not (session.gs.meta.subphase == "campaign.fpd_pay"
+                        and session.gs.meta.active_player == owner)
+        else:
+            session.apply(entry["action"])
         for followup in entry.get("followup_actions", []):
             session.apply(followup)
             assert not check_invariants(session.gs), f"invariants after follow-up at {i}"
@@ -60,9 +64,10 @@ def replayed_game():
     return session, checkpoints, record
 
 
-def test_complete_game_replays_all_132_actions_and_save_loads(replayed_game):
+def test_complete_game_replays_all_132_checkpoints_and_save_loads(replayed_game):
     session, _, record = replayed_game
     assert len(record["steps"]) == 132
+    assert sum("skip_empty_pay_window" in step for step in record["steps"]) == 12
     followups = [action for step in record["steps"] for action in step.get("followup_actions", [])]
     assert sum(action["type"] == "wastage" for action in followups) == 10
     assert sum(action["type"] == "grow" for action in followups) == record["grow_followup_count"] == 3

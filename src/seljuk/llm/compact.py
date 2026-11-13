@@ -396,7 +396,7 @@ class CompactInterface:
         table = {**engine._HANDLERS, **engine._CAMPAIGN_HANDLERS}
         if action_type not in table:
             raise InterfaceError("bad_action_type", "Unknown engine action type.")
-        fn = table[action_type]
+        fn = engine._handlers_for_phase(self.gs.meta.phase).get(action_type, table[action_type])
         return {**self._envelope(), "handler": fn.__name__, "source": inspect.getsource(fn),
                 "note": "Implementation reference only; full rules/clarifications are in reference()."}
 

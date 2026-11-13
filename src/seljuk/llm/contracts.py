@@ -223,7 +223,21 @@ def contract(gs, move, side):
                    card_lookup=move["card"],
                    notes=["Supply args explicitly ({} for no-choice/no-target effects).",
                           "lookup_card includes the complete curated clarification, not just the short data text."])
-        if kind == "resolve_event" and move["card"] == "S5":
+        if kind == "resolve_event" and move["card"] in ("R5", "S12", "S23"):
+            out.update(eligible_markers=events.calendar_event_targets(gs, move["card"]),
+                       directions=["left", "right"])
+            out["notes"].append("Choose a Lord and one of its listed marker types. "
+                                "Supply {} if there is no eligible marker.")
+        elif kind == "resolve_event" and move["card"] == "R19":
+            targets = events.resilient_agriculture_targets(gs)
+            out.update(eligible_locales=targets, required_count=min(2, len(targets)))
+            out["notes"].append("Supply args.locales with exactly the required number of "
+                                "distinct eligible Locale IDs. Supply {} if none are eligible.")
+        elif kind == "resolve_event" and move["card"] == "R20":
+            out.update(argument_names=["locale"], eligible_locales=events.armenian_resistance_targets(gs))
+            out["notes"].append("Choose a Locale, or supply {} if none are eligible. "
+                                "If a Seljuk Lord is present, the Seljuk player chooses Siege or Bypass.")
+        elif kind == "resolve_event" and move["card"] == "S5":
             if "S5" in gs.meta.asterisks_used:
                 out.update(argument_names=["lord"],
                            eligible_lords=[lid for lid, lord in gs.lords.items()
@@ -250,6 +264,13 @@ def contract(gs, move, side):
                                 "Supply {} if the removed pile is empty.")
         if move["card"] == "S24":
             out["notes"] += ["Select S24 without order to declare play and inspect privately, then choose keep/swap. Once inspected, no cancellation is permitted."]
+    elif kind == "pay":
+        out.update(max_amount=move["_max"], parameters=["amount"] if move["_max"] > 1 else [],
+                   notes=["For bulk Pay, submit this action with the desired amount and current version. "
+                          "Each unit must advance the Lord's or an affected Vassal's Service."])
+    elif kind == "besiege_bypass" and gs.meta.phase == "levy":
+        out.update(parameters=[], all_action_fields=sorted(fixed),
+                   notes=["R20 places the selected marker at this Stronghold. Levy then resumes."])
     elif kind == "assign_themata_defenders":
         loc = current_pending(gs)["locale"]
         home = sd.locale(loc)["thema"]

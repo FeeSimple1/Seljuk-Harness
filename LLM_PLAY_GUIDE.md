@@ -173,11 +173,18 @@ parameters (hinted by `_`-prefixed keys):
   integers: strings, fractions, booleans, and negative values are rejected.
   Both payments are validated before any Coin or dice are consumed. Invalid
   Imperial Coffers payments also leave its card and pending decision intact.
-- **resolve_event** (an immediate Arts-of-War Event that needs a choice). Pass
-  `args` with the choice the card calls for, e.g.
-  `{"type":"resolve_event","card":"R5","args":{"lord":"alp_arslan","direction":"left"}}`.
-  Look the card up with `lookup_card` semantics (its text is in
-  `data/static/cards.json`). Events that need no choice resolve with `args:{}`.
+- **resolve_event** takes an `args` object. For R5, S12, and S23, choose
+  `lord`, `what` (`cylinder` or `service` as offered), and `direction`
+  (`left` or `right`). R19 uses `args.locales` to choose two distinct
+  eligible Ravaged Locales, or all eligible Locales if fewer than two.
+  R20 uses `args.locale` to choose the Stronghold. If a Seljuk Lord is
+  there, the Seljuk player then owes `besiege_bypass` before Levy resumes.
+  Use `details(id)` for eligible targets and `lookup_card` for the card text.
+  Events with no eligible targets or other choices use `args:{}`.
+- **pay** lists the maximum amount for each source and target in `_max`.
+  Each Coin or Loot must advance the target Lord's Service marker or an
+  affected Vassal's marker. Use a flat action with the current version to
+  set `amount` above 1.
 
 ## Pending sub-decisions
 

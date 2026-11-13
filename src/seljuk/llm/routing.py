@@ -10,7 +10,8 @@ from copy import deepcopy
 from ..state import GameState
 
 SIDES = ("seljuk", "roman")
-LEVY_PRIORITY = ("wastage", "wastage_target", "deploy_capability", "event_pending_resolution", "imperial_coffers")
+LEVY_PRIORITY = ("wastage", "wastage_target", "besiege_or_bypass", "deploy_capability",
+                 "event_pending_resolution", "imperial_coffers")
 CAMPAIGN_PRIORITY = (
     "wastage", "wastage_target",
     "capability_discard", "grow", "reset_discard",

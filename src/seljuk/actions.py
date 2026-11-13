@@ -13,7 +13,7 @@ from typing import Any
 from . import scenarios, static_data as sd
 from . import capabilities
 from .rng import DiceRoller
-from .state import GameState, IllegalAction, LordState, VassalSlot, shift_vassal_service
+from .state import GameState, IllegalAction, LordState, VassalSlot, calendar_vassals, shift_vassal_service
 
 OFF_RIGHT = 13  # Service Marker shifted right beyond box 12 sits off-board (2.2.3)
 
@@ -60,6 +60,16 @@ def _shift_service_right(gs: GameState, lord: LordState, amount: int) -> None:
 
 # --- Pay (3.2) --------------------------------------------------------------
 
+def _payable_service_steps(gs: GameState, lord: LordState) -> int | None:
+    """Rightward steps that move at least one marker, or None without Lord Service."""
+    if lord.service_box is None:
+        return None
+    # Each payment shifts the Lord and all of his Calendar Vassals together.
+    leftmost_vassal = min((box for _, _, box in calendar_vassals(gs, lord)),
+                        default=lord.service_box)
+    return OFF_RIGHT - min(lord.service_box, leftmost_vassal)
+
+
 def _pay_targets(gs: GameState, payer_id: str, payer: LordState, asset: str) -> list[str]:
     """Lords whose Service this payer may shift with one asset type (3.2.1-.2)."""
     side = payer.side
@@ -98,12 +108,12 @@ def enumerate_pay(gs: GameState) -> list[dict[str, Any]]:
             if asset == "loot" and not _payer_can_use_loot(gs, payer):
                 continue
             for tid in _pay_targets(gs, pid, payer, asset):
-                tgt = gs.lords[tid]
-                if tgt.service_box is None:
+                max_amount = min(have, _payable_service_steps(gs, gs.lords[tid]) or 0)
+                if max_amount <= 0:
                     continue
                 out.append({
                     "type": "pay", "payer": pid, "target": tid, "asset": asset,
-                    "amount": 1, "_max": have,
+                    "amount": 1, "_max": max_amount,
                     "_desc": f"{sd.lord(pid)['name']} pays {asset} to shift {sd.lord(tid)['name']}'s Service right (3.2)",
                 })
     return out
@@ -132,11 +142,15 @@ def h_pay(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str
     if tid not in _pay_targets(gs, pid, payer, asset):
         raise IllegalAction("bad_pay_target", f"{tid} is not a legal Pay target for {pid} (3.2)")
     tgt = gs.lords[tid]
-    if tgt.service_box is None:
+    payable = _payable_service_steps(gs, tgt)
+    if payable is None:
         raise IllegalAction("target_no_service", f"{tid} has no Service Marker")
-    setattr(payer.assets, asset, getattr(payer.assets, asset) - amount)
+    if amount > payable:
+        raise IllegalAction("pay_exceeds_service_limit",
+                            f"{tid} can receive at most {payable} units of Pay (3.2)")
     before = tgt.service_box
     _shift_service_right(gs, tgt, amount)
+    setattr(payer.assets, asset, getattr(payer.assets, asset) - amount)
     return {"ok": True, "payer": pid, "target": tid, "asset": asset, "amount": amount,
             "service_box": [before, tgt.service_box]}
 

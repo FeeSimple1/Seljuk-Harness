@@ -15,12 +15,24 @@ import argparse
 import sys
 
 from seljuk.llm import LLMSession
+from seljuk.llm.routing import current_pending
 from seljuk import campaign, events, static_data as sd
 from seljuk.state import IllegalAction
 
 
 def _choose_event_args(gs, card):
-    """Select mandatory Themata targets for the test driver."""
+    """Select mandatory Event targets for the test driver."""
+    if card in ("R5", "S12", "S23"):
+        targets = events.calendar_event_targets(gs, card)
+        if targets:
+            lord, markers = next(iter(targets.items()))
+            return {"lord": lord, "what": markers[0], "direction": "left"}
+    if card == "R19":
+        return {"locales": events.resilient_agriculture_targets(gs)[:2]}
+    if card == "R20":
+        targets = events.armenian_resistance_targets(gs)
+        if targets:
+            return {"locale": targets[0]}
     if card == "S5":
         if card in gs.meta.asterisks_used:
             lord = next(lid for lid, lord in gs.lords.items() if lord.side == "seljuk")
@@ -40,10 +52,9 @@ def _resolve_pending(s: LLMSession) -> bool:
     if waste is not None:
         s.apply({k: v for k, v in waste[0].items() if not k.startswith("_")})
         return True
-    pend = s.gs.meta.pending
-    if not pend:
+    p = current_pending(s.gs)
+    if p is None:
         return False
-    p = pend[0]
     t = p["type"]
     try:
         if t == "reset_discard":

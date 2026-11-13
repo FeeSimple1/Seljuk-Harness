@@ -467,7 +467,8 @@ def test_full_recorded_games_preserve_all_decisions_results_and_position(name, t
     if name == 'manzikert':
         boundary = 0
         for step in record['steps']:
-            boundary += 1 + len(step.get('followup_actions', []))
+            if not step.get('skip_empty_pay_window'):
+                boundary += 1 + len(step.get('followup_actions', []))
             checkpoints[boundary] = step['after_position_sha256']
     interface = ui(record['scenario'], record['seed'])
     sides = set()
@@ -492,7 +493,7 @@ def test_full_recorded_games_preserve_all_decisions_results_and_position(name, t
     assert interface.session.is_over()
     assert interface.session.winner() == record['expected_winner']
     assert scenarios.score(interface.gs) == record['expected_score']
-    assert count == {"manzikert": 149, "showdown": 389}[name]
+    assert count == {"manzikert": 137, "showdown": 368}[name]
 
 
 @pytest.mark.parametrize('order', ['keep', 'swap'])

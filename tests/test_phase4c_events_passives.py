@@ -39,8 +39,10 @@ def test_event_resilient_agriculture_removes_two_seljuk_ravaged_r19():
     for loc in ("larisa", "tephrike", "keltzene"):
         gs.locales[loc].ravaged_side = "seljuk"  # all in the Roman Empire
     _queue_event(gs, "R19", "roman")
-    r = engine.apply_action(gs, {"type": "resolve_event", "card": "R19", "args": {}})
+    r = engine.apply_action(gs, {"type": "resolve_event", "card": "R19",
+                                 "args": {"locales": ["larisa", "keltzene"]}})
     assert r["ravaged_removed"] == 2
+    assert gs.locales["tephrike"].ravaged_side == "seljuk"
 
 
 def test_event_armenian_resistance_conquers_r20():
