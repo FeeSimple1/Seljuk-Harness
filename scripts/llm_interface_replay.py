@@ -27,7 +27,8 @@ def records():
     man = json.loads((ROOT/'tests/fixtures/manzikert_selfplay_20261009.json').read_text())
     man['actions'] = []
     for step in man['steps']:
-        man['actions'].extend([step['action'], *step.get('followup_actions', [])])
+        if not step.get('skip_empty_pay_window'):
+            man['actions'].extend([step['action'], *step.get('followup_actions', [])])
     show = json.loads((ROOT/'tests/fixtures/interface_showdown_20261016.json').read_text())
     return {'manzikert': man, 'showdown': show}
 

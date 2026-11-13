@@ -10,6 +10,7 @@ Determinism: dice come from a seeded RNG whose serialized state lives in
 """
 from __future__ import annotations
 
+from collections.abc import Iterator
 from typing import Any, Optional, Self
 
 from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, model_validator
@@ -274,17 +275,24 @@ class GameState(_Model):
         return self.seljuk if side == "seljuk" else self.roman
 
 
+def calendar_vassals(gs: GameState, lord: LordState) -> Iterator[tuple[int, VassalSlot, int]]:
+    """Levied Vassals with a Service marker on or beside the Calendar (6.2)."""
+    if not (gs.meta.options or {}).get("vassal_service"):
+        return
+    for index, vassal in enumerate(lord.vassals):
+        if vassal.levied and vassal.service_box is not None:
+            yield index, vassal, vassal.service_box
+
+
 def public_vassal_service(gs: GameState, lord: LordState) -> list[dict[str, int | str]]:
     """The face-up Vassal Service markers on or beside the Calendar (6.2)."""
-    if not lord.mustered or not gs.meta.options.get("vassal_service"):
+    if not lord.mustered:
         return []
     markers = []
-    for index, vassal in enumerate(lord.vassals):
-        if not vassal.levied or vassal.service_box is None:
-            continue
+    for index, vassal, box in calendar_vassals(gs, lord):
         identity = ({"special_name": vassal.special_name} if vassal.special_name
                     else {"vassal_index": index})
-        markers.append({**identity, "service_box": vassal.service_box})
+        markers.append({**identity, "service_box": box})
     return markers
 
 
@@ -292,8 +300,5 @@ def shift_vassal_service(gs: "GameState", lord: "LordState", delta: int) -> None
     """6.2 Vassal Service: whenever a Lord's Service Marker shifts for any reason,
     shift each of his Mustered Vassals' Markers the same number of boxes (2.2.3
     off-Calendar clamping 0..13). No-op unless the optional rule is in effect."""
-    if not (gs.meta.options or {}).get("vassal_service"):
-        return
-    for v in lord.vassals:
-        if v.levied and v.service_box is not None:
-            v.service_box = max(0, min(13, v.service_box + delta))
+    for _, vassal, box in calendar_vassals(gs, lord):
+        vassal.service_box = max(0, min(13, box + delta))

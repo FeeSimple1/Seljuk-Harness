@@ -111,10 +111,11 @@ def test_so_allowed_on_controlled_seljuk_stronghold():
 
 # --- Fix R20: Armenian Resistance only if the Locale is Seljuk friendly -------
 
-def test_r20_no_op_when_not_seljuk_friendly():
+def test_r20_no_op_when_no_seljuk_friendly_target():
     gs = _gs()
-    gs.locales["khliat"].conquered_side = "roman"   # already Roman -> not Seljuk friendly
-    out = E._ev_armenian_resistance(gs, {"locale": "khliat"}, _r())
+    for locale in ("khliat", "manzikert", "arkesh"):
+        gs.locales[locale].conquered_side = "roman"
+    out = E._ev_armenian_resistance(gs, {}, _r())
     assert out.get("no_op") is True
 
 

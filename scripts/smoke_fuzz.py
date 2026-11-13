@@ -17,6 +17,7 @@ import random
 import traceback
 
 from seljuk.llm import LLMSession
+from seljuk.llm.routing import current_pending
 from seljuk import scenarios, engine, campaign
 from seljuk.state import GameState, IllegalAction
 from seljuk.invariants import check_invariants
@@ -68,7 +69,7 @@ def _rand_resolve_pending(s, rng, findings, tag):
     if waste is not None:
         s.apply({k: v for k, v in rng.choice(waste).items() if not k.startswith("_")})
         return True
-    p = s.gs.meta.pending[0]
+    p = current_pending(s.gs)
     t = p["type"]
     try:
         if t in ("capability_discard", "feed_resource_choice", "grow", "reset_discard"):

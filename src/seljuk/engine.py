@@ -60,6 +60,7 @@ _HANDLERS: dict[str, Callable[[GameState, dict, DiceRoller], dict]] = {
     "cta_empress": actions.h_cta_empress,
     "pass_step": actions.h_pass_step,
     "resolve_event": actions.h_resolve_event,
+    "besiege_bypass": events.h_armenian_resistance_invest,
     "discard_imperial_coffers": campaign.h_discard_imperial_coffers,
     "pass_imperial_coffers": campaign.h_pass_imperial_coffers,
     "discard_nomisma": actions.h_discard_nomisma,
@@ -148,7 +149,8 @@ def _apply_action(gs: GameState, action: dict[str, Any]) -> dict[str, Any]:
         raise IllegalAction("pending_decision", "finish Grow selections before continuing (4.7.2)")
     if any(p["type"] == "reset_discard" for p in gs.meta.pending) and atype not in {"reset_discard", "reset_done"}:
         raise IllegalAction("pending_decision", "finish voluntary Reset discards before continuing (4.7.5)")
-    if gs.meta.phase == "levy" and waste is None:
+    # R20's investment interrupts the remaining opening decisions.
+    if gs.meta.phase == "levy" and waste is None and atype != "besiege_bypass":
         for pending_type, required in (("deploy_capability", "deploy_capability"),
                                        ("event_pending_resolution", "resolve_event"),
                                        ("imperial_coffers", None)):
@@ -225,6 +227,11 @@ def legal_moves(gs: GameState) -> list[dict[str, Any]]:
         return campaign.legal_moves_campaign(gs)
     if gs.meta.phase != "levy":
         return []
+    invest = next((p for p in gs.meta.pending if p["type"] == "besiege_or_bypass"), None)
+    if invest is not None:
+        return [{"type": "besiege_bypass", "choice": choice, "side": "seljuk",
+                 "_locale": invest["locale"], "_desc": f"{choice.title()} {invest['locale']} (R20)"}
+                for choice in ("besiege", "bypass")]
     # SMOKE-008: surface owed Arts-of-War sub-decisions in the Levy menu, the way
     # legal_moves_campaign surfaces campaign pendings. Without this a menu-driven
     # agent at levy.pay sees only pay/pass_step and CANNOT resolve an owed

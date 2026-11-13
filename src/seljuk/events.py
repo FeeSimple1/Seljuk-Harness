@@ -18,7 +18,7 @@ from typing import Any
 
 from . import scenarios, static_data as sd
 from .rng import DiceRoller
-from .state import GameState, IllegalAction, ThemataMarker
+from .state import GameState, IllegalAction, LordState, ThemataMarker
 
 
 def _shift_calendar(gs: GameState, lord_id: str, what: str, direction: str) -> dict:
@@ -206,7 +206,7 @@ def _ev_peace_offering(gs, args, roller):         # S13
 
 
 def _ev_shift_seljuk(gs, args, roller):          # R5 Fatimid Conflict
-    return _shift_calendar(gs, args["lord"], args.get("what", "cylinder"), args.get("direction", "left"))
+    return _resolve_calendar_event(gs, "R5", args)
 
 
 def _shiftable(lord) -> bool:
@@ -227,7 +227,7 @@ def _ev_afsin_recalled(gs, args, roller):        # R12
 
 
 def _ev_doukai(gs, args, roller):                # S12 Doukai Court Intrigues
-    return _shift_calendar(gs, args["lord"], args.get("what", "cylinder"), args.get("direction", "left"))
+    return _resolve_calendar_event(gs, "S12", args)
 
 
 def _ev_manuel_ill(gs, args, roller):            # S14 Manuel Komnenos Falls Ill
@@ -238,7 +238,47 @@ def _ev_manuel_ill(gs, args, roller):            # S14 Manuel Komnenos Falls Ill
 
 
 def _ev_reinforcements_denied(gs, args, roller):  # S23
-    return _shift_calendar(gs, args["lord"], "service", args.get("direction", "left"))
+    return _resolve_calendar_event(gs, "S23", args)
+
+
+def _calendar_event_eligible(lord: LordState, card: str) -> bool:
+    if card == "R5":
+        return lord.side == "seljuk" and not lord.besieged
+    return lord.side == "roman"
+
+
+def calendar_event_targets(gs: GameState, card: str) -> dict[str, list[str]]:
+    """Current allegiance and marker choices for R5, S12 and S23."""
+    targets = {}
+    for lid, lord in gs.lords.items():
+        if not _calendar_event_eligible(lord, card):
+            continue
+        markers = []
+        if card != "S23" and lord.cylinder == "calendar" and lord.cylinder_calendar_box is not None:
+            markers.append("cylinder")
+        if lord.service_box is not None:
+            markers.append("service")
+        if markers:
+            targets[lid] = markers
+    return targets
+
+
+def _resolve_calendar_event(gs: GameState, card: str, args: dict) -> dict:
+    if "lord" not in args and not calendar_event_targets(gs, card):
+        return {"no_op": True, "reason": f"{card} has no eligible Calendar marker"}
+    lid = args["lord"]
+    if not isinstance(lid, str) or lid not in gs.lords:
+        raise IllegalAction("bad_lord", f"no such Lord {lid!r}")
+    if not _calendar_event_eligible(gs.lords[lid], card):
+        eligible = "an Unbesieged Seljuk Lord" if card == "R5" else "a Roman Lord"
+        raise IllegalAction("bad_event_target", f"{card} must target {eligible}")
+    what = args.get("what", "service" if card == "S23" else "cylinder")
+    if card == "S23" and what != "service":
+        raise IllegalAction("bad_what", "S23 shifts only Service")
+    direction = args.get("direction", "left")
+    if direction not in ("left", "right"):
+        raise IllegalAction("bad_direction", "choose left or right")
+    return _shift_calendar(gs, lid, what, direction)
 
 
 def _ev_afsin_murders(gs, args, roller):         # R10* Afsin Murders Seljuk Officer
@@ -327,25 +367,40 @@ def _ev_emir_spurns(gs, args, roller):           # R15* (Emir of Aleppo Spurns A
     return result
 
 
-def _ev_resilient_agriculture(gs, args, roller):  # R19 (remove up to 2 Seljuk Ravaged in the Roman Empire)
-    removed = 0
-    for lid, loc in gs.locales.items():
-        if removed >= 2:
-            break
-        if loc.ravaged_side == "seljuk" and sd.locale(lid)["allegiance"] == "roman":
-            loc.ravaged_side = None
-            removed += 1
+def resilient_agriculture_targets(gs: GameState) -> list[str]:
+    return [lid for lid, loc in gs.locales.items()
+            if loc.ravaged_side == "seljuk" and sd.locale(lid)["allegiance"] == "roman"]
+
+
+def _ev_resilient_agriculture(gs, args, roller):  # R19
+    eligible = resilient_agriculture_targets(gs)
+    count = min(2, len(eligible))
+    selected = args.get("locales", [])
+    if (not isinstance(selected, list) or len(selected) != count
+            or any(lid not in eligible for lid in selected) or len(set(selected)) != count):
+        raise IllegalAction("bad_ravaged_selection",
+                            f"R19 requires exactly {count} distinct eligible Locales")
+    for lid in selected:
+        gs.locales[lid].ravaged_side = None
     gs.meta.vp = scenarios.score(gs)
-    return {"ravaged_removed": removed}
+    return {"ravaged_removed": count, "cleared_locales": selected}
+
+
+def armenian_resistance_targets(gs: GameState) -> list[str]:
+    from . import actions
+    return [loc for loc in ("khliat", "manzikert", "arkesh")
+            if actions.current_allegiance(gs, loc) == "seljuk"]
 
 
 def _ev_armenian_resistance(gs, args, roller):   # R20
+    if {"invest", "choice"} & args.keys():
+        raise IllegalAction("opponent_input", "The Seljuk player chooses Siege or Bypass after R20")
+    eligible = armenian_resistance_targets(gs)
+    if not eligible and "locale" not in args:
+        return {"no_op": True, "reason": "no eligible Seljuk-friendly Locale (R20)"}
     loc = args["locale"]
-    if loc not in ("khliat", "manzikert", "arkesh"):
-        raise IllegalAction("bad_locale", "choose Khliat, Manzikert, or Arkesh (R20)")
-    from . import actions
-    if actions.current_allegiance(gs, loc) != "seljuk":
-        return {"no_op": True, "reason": f"{loc} is not Seljuk friendly (R20)"}
+    if loc not in eligible:
+        raise IllegalAction("bad_locale", f"R20 requires one of {eligible}")
     st = gs.locales[loc]
     st.conquered_side = "roman"
     st.conquered_count = {"fort": 1, "town": 2, "city": 3}[sd.locale(loc)["type"]]
@@ -357,22 +412,43 @@ def _ev_armenian_resistance(gs, args, roller):   # R20
         gs.holding_boxes.constantinople_strategic_objectives_available = min(
             3, gs.holding_boxes.constantinople_strategic_objectives_available + 1)
         result["strategic_objective_returned"] = True
-    # Clarification: if a Seljuk Lord is present, he immediately places a Siege or
-    # Bypass marker (Seljuk choice) so he is not left in the open at the now-Roman
-    # Stronghold (default Bypass).
-    seljuk_here = [l for l in gs.lords.values()
+    # The Seljuk player chooses the new posture at the now-Roman Stronghold.
+    seljuk_here = [l.id for l in gs.lords.values()
                    if l.mustered and l.cylinder == loc and l.side == "seljuk"]
     if seljuk_here:
-        if args.get("invest") == "siege":
-            st.siege_markers = max(1, st.siege_markers); st.bypass = False
-            result["invest"] = "siege"
-        else:
-            st.bypass = True
-            for l in seljuk_here:
-                l.bypassed = True
-            result["invest"] = "bypass"
+        gs.meta.pending.append({"type": "besiege_or_bypass", "locale": loc,
+                                "lords": seljuk_here, "_owed_by": "seljuk", "source": "R20"})
+        result["pending"] = "besiege_or_bypass"
+    else:
+        from .campaign import _refresh_invest
+        _refresh_invest(gs, loc)
     gs.meta.vp = scenarios.score(gs)
     return result
+
+
+def h_armenian_resistance_invest(gs: GameState, action: dict, roller: DiceRoller) -> dict:
+    """R20: the Seljuk player places a Siege or Bypass marker during Levy."""
+    pending = next((p for p in gs.meta.pending
+                    if p["type"] == "besiege_or_bypass" and p.get("source") == "R20"), None)
+    if pending is None:
+        raise IllegalAction("no_pending", "no Armenian Resistance Siege/Bypass to resolve")
+    if action.get("side") not in (None, "seljuk"):
+        raise IllegalAction("wrong_actor", "the Seljuk player chooses Siege or Bypass (R20)")
+    choice = action.get("choice")
+    if choice not in ("besiege", "bypass"):
+        raise IllegalAction("bad_choice", "choose 'besiege' or 'bypass' (R20)")
+    if {"surprise", "storm_decisions"} & action.keys():
+        raise IllegalAction("bad_choice", "R20 places one Siege or Bypass marker during Levy")
+    locale = pending["locale"]
+    st = gs.locales[locale]
+    st.siege_markers = int(choice == "besiege")
+    st.bypass = choice == "bypass"
+    for lord in gs.lords.values():
+        if lord.mustered and lord.cylinder == locale:
+            lord.bypassed = st.bypass and lord.side == "seljuk"
+            lord.besieged = choice == "besiege" and lord.side == "roman"
+    gs.meta.pending.remove(pending)
+    return {"ok": True, "action": choice, "locale": locale, "source": "R20"}
 
 
 _S7_BORDER_THEMATA = ("Iberia", "Mesopotamia", "Melitene", "Antiocheia")
