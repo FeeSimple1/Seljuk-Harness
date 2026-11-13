@@ -246,7 +246,29 @@ class GameState(_Model):
 
     @classmethod
     def from_json(cls, text: str) -> "GameState":
-        return cls.model_validate_json(text)
+        gs = cls.model_validate_json(text)
+        gs._restore_recent_ravage_attempt()
+        return gs
+
+    def _restore_recent_ravage_attempt(self) -> None:
+        """Recover a just-blocked Ravage in an older save with the card still open."""
+        if "ravage_attempts" in self.meta.notes or len(self.history) < 2:
+            return
+        lord = self.lords.get(self.meta.active_lord)
+        # Feed-Pay-Disband clears Moved/Fought before a later card can reveal
+        # the same Lord. The final two entries also rule out intervening travel.
+        if (lord is None or lord.side != "seljuk" or not lord.moved_fought
+                or self.meta.active_card != lord.id):
+            return
+        ravage, defence = self.history[-2:]
+        ravage_result, defence_result = ravage.get("result", {}), defence.get("result", {})
+        if (ravage_result.get("pending") == "ravage_defence"
+                and ravage_result.get("lord") == lord.id
+                and defence_result.get("action") == "resolve_ravage_defence"
+                and defence_result.get("success") is False):
+            target = ravage.get("action", {}).get("target", lord.cylinder)
+            if target in self.locales:
+                self.meta.notes["ravage_attempts"] = [target]
 
     def side_decks(self, side: str) -> SideDecks:
         return self.seljuk if side == "seljuk" else self.roman
