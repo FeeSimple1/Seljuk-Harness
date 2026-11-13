@@ -42,6 +42,10 @@ def _choose_event_args(gs, card):
                             for thema, index in list(targets)[:required]]}
     if card == "R13" and gs.meta.themata_removed:
         return {"marker_index": 0}
+    if card == "S15":
+        targets = events.thematic_desert_targets(gs)
+        if targets:
+            return targets[0]
     return {}
 
 

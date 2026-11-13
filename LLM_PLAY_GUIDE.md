@@ -179,6 +179,14 @@ parameters (hinted by `_`-prefixed keys):
   eligible Ravaged Locales, or all eligible Locales if fewer than two.
   R20 uses `args.locale` to choose the Stronghold. If a Seljuk Lord is
   there, the Seljuk player then owes `besiege_bypass` before Levy resumes.
+  S8 uses `lord`, `to` (`coin` or `carts`), and `amount`. The menu lists
+  how much each Mustered Seljuk Lord can exchange in each direction. Use
+  zero or `{}` to decline. Any received Asset above eight is lost.
+  For S15, copy one reference from `eligible_markers` into `args`. The
+  reference identifies the counter's source, zero-based pile index, unit,
+  printed symbols, and owning Lord or Locale where applicable. With Hidden
+  Mats, this choice reveals the printed identities of eligible Levied
+  counters. Use `{}` if the Event has zero or one eligible counter.
   Use `details(id)` for eligible targets and `lookup_card` for the card text.
   Events with no eligible targets or other choices use `args:{}`.
 - **pay** lists the maximum amount for each source and target in `_max`.
