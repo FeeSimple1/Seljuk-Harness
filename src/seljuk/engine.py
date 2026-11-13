@@ -161,6 +161,8 @@ def _apply_action(gs: GameState, action: dict[str, Any]) -> dict[str, Any]:
             break
     if any(p["type"] == "retain_themata" for p in gs.meta.pending) and atype != "retain_themata":
         raise IllegalAction("pending_decision", "resolve Themata retention before continuing (4.7.5)")
+    if atype != "resolve_ravage_defence" and any(p["type"] == "ravage_defence" for p in gs.meta.pending):
+        raise IllegalAction("pending_decision", "resolve Themata Protection before continuing (4.5.5)")
     # Approach is part of its March: finish the enemy response before another
     # Command or ending the card (4.3.4). Investment is likewise mandatory
     # before Battle recovery (4.3.5/4.8.6).

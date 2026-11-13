@@ -354,6 +354,7 @@ def _after_card(gs: GameState) -> None:
         gs.meta.pending.append({"type": "kleisourai", "reactor": "roman",
                                 "trigger": "reaction", "movers": crossers, "resume": "after_card"})
         return
+    gs.meta.notes.pop("ravage_attempts", None)
     if gs.meta.phase == "winter":
         _winter_end_activation(gs)
         return
@@ -1683,8 +1684,10 @@ def command_menu(gs: GameState) -> list[dict[str, Any]]:
                               and gs.meta.notes.get("nomisma_debased_used"))
             if (at_seat or empire_tax) and not nomisma_blocks and _full_card_available(gs):
                 out.append({"type": "cmd_tax", "lord": lid, "_desc": "Tax for a Coin — uses the whole card (4.5.6)"})
-        # Ravage (4.5.5): Enemy, not yet Ravaged, not Besieged.
-        if not lord.besieged and st.ravaged_side is None and actions.current_allegiance(gs, loc_id) == _enemy(lord.side):
+        # Ravage (4.5.5): unravaged enemy Locales, one Seljuk attempt per card.
+        attempted = gs.meta.notes.get("ravage_attempts", ())
+        if (not lord.besieged and loc_id not in attempted and st.ravaged_side is None
+                and actions.current_allegiance(gs, loc_id) == _enemy(lord.side)):
             if lord.side == "roman":
                 out.append({"type": "cmd_ravage", "lord": lid, "_desc": "Ravage (Roman, 1 action, auto) (4.5.5)"})
             else:
@@ -1697,7 +1700,8 @@ def command_menu(gs: GameState) -> list[dict[str, Any]]:
                 and capabilities.lord_has(gs, lid, "Steppe Raiders")):
             for _adj in gmap.neighbors(loc_id):
                 ast = gs.locales[_adj]
-                if (ast.ravaged_side is None and actions.current_allegiance(gs, _adj) == _enemy(lord.side)
+                if (_adj not in attempted and ast.ravaged_side is None
+                        and actions.current_allegiance(gs, _adj) == _enemy(lord.side)
                         and not any(o.mustered and o.cylinder == _adj and o.side != lord.side for o in gs.lords.values())):
                     if lord.side == "roman":
                         out.append({"type": "cmd_ravage", "lord": lid, "target": _adj,
@@ -2002,29 +2006,34 @@ def h_cmd_ravage(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> d
         raise IllegalAction("not_enemy", "Ravage targets an Enemy Locale (4.5.5)")
     if st.ravaged_side is not None:
         raise IllegalAction("already_ravaged", "Locale is already Ravaged (4.5.5)")
+    if loc_id in gs.meta.notes.get("ravage_attempts", ()):
+        raise IllegalAction("ravage_already_attempted", "one Seljuk Ravage attempt per Locale per Command card (4.5.5)")
+
+    cost = 1
+    if lord.side == "seljuk":
+        cost = int(action.get("actions", 2))
+        if cost not in (1, 2):
+            raise IllegalAction("bad_actions", "Seljuk Ravage uses 1 or 2 Command actions (4.5.5)")
+    if cost > gs.meta.actions_remaining:
+        raise IllegalAction("insufficient_actions", "not enough Command actions for this Ravage")
+
     lord.moved_fought = True  # the Ravaging Lord acted
     for _l in gs.lords.values():  # 4.5.5: mark all Lords of both sides at the Locale Moved/Fought
         if _l.mustered and _l.cylinder == loc_id:
             _l.moved_fought = True
-    if lord.side == "roman":
-        _ravage_succeeds_effects(gs, lord, loc_id)
-        spend_actions(gs, 1)
-        return {"ok": True, "action": "cmd_ravage", "lord": lord.id, "success": True, "cost": 1}
-    # Seljuk: 1 or 2 actions
-    n = int(action.get("actions", 2))
-    if n not in (1, 2):
-        raise IllegalAction("bad_actions", "Seljuk Ravage uses 1 or 2 Command actions (4.5.5)")
-    if n > gs.meta.actions_remaining:
-        raise IllegalAction("insufficient_actions", "not enough Command actions for this Ravage")
-    in_empire = sd.locale(loc_id)["allegiance"] == "roman"
-    thema = sd.locale(loc_id)["thema"]
-    can_defend = (n == 1 and in_empire and thema and bool(gs.themata.get(thema)))
+    if lord.side == "seljuk":
+        gs.meta.notes.setdefault("ravage_attempts", []).append(loc_id)
+
+    info = sd.locale(loc_id)
+    thema = info["thema"]
+    can_defend = (lord.side == "seljuk" and cost == 1
+                  and info["allegiance"] == "roman" and thema and gs.themata.get(thema))
     if not can_defend:
         _ravage_succeeds_effects(gs, lord, loc_id)
-        spend_actions(gs, n)
-        return {"ok": True, "action": "cmd_ravage", "lord": lord.id, "success": True, "cost": n}
+        spend_actions(gs, cost)
+        return {"ok": True, "action": "cmd_ravage", "lord": lord.id, "success": True, "cost": cost}
     # 1-action Seljuk Ravage in the Roman Empire: Roman MAY defend with a Themata.
-    gs.meta.actions_remaining -= n  # the action is spent now; resolution is owed by Roman
+    gs.meta.actions_remaining -= cost  # the action is spent now; resolution is owed by Roman
     gs.meta.pending.append({
         "type": "ravage_defence", "locale": loc_id, "thema": thema, "ravager": lord.id,
         "options": [{"index": i, "unit": m.unit} for i, m in enumerate(gs.themata[thema])],
@@ -2055,9 +2064,12 @@ def h_resolve_ravage_defence(gs: GameState, action: dict[str, Any], roller: Dice
         if protected:
             result = {"defended": True, "roll": roll, "unit": marker.unit, "success": False}  # Ravage fails
         else:
-            box.pop(defend_index)  # Themata eliminated from play
+            from .events import _record_removed_themata
+            _record_removed_themata(gs, box.pop(defend_index), thema)
             _ravage_succeeds_effects(gs, lord, loc_id)
             result = {"defended": True, "roll": roll, "unit": marker.unit, "themata_lost": True, "success": True}
+    # Older saves have the exact target in the pending response alone.
+    gs.meta.notes.setdefault("ravage_attempts", [loc_id])
     gs.meta.pending.remove(pend)
     if gs.meta.actions_remaining <= 0:
         _after_card(gs)

@@ -1231,8 +1231,8 @@
         "actions": 2
       },
       "reason": "Ravage Edessa for food and Loot, and increase the surrender threshold for Alp Arslan's next card.",
-      "after_sha256": "2864ce8245c9d46e462309ead5acda2af13fcdfb6a77797bca6b517f930cf897",
-      "after_position_sha256": "8eadeaec38933dce4d9e10a1dacd80912ab1c0d0044ea6b249c226522c934e2e"
+      "after_sha256": "888341b5b468865bf556e7f0b693cfb178026a0c72c4182e1bd209ee7f917fc7",
+      "after_position_sha256": "e0037424edcd05dbb1d8667260f8c091d3e3fe98a16efc019f4d606aa413a548"
     },
     {
       "action": {
