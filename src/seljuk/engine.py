@@ -285,7 +285,7 @@ def start_levy(gs: GameState) -> None:
     """Enter the Levy phase at its first step, resolving automatic steps."""
     gs.meta.phase = "levy"
     # Clear any persistent per-Lord Lordship deltas from a prior turn's immediate
-    # Events (R1 -1 / S5 +1); the current turn's Events will set them afresh.
+    # Events (R1/R10 -1, S5 +1), including saves from before the Muster reset.
     for lord in gs.lords.values():
         lord.flags.pop("lordship_persist", None)
     _enter_step(gs, LEVY_STEPS[0])
@@ -307,6 +307,9 @@ def _enter_step(gs: GameState, step: str) -> None:
         _advance_step(gs)
     elif step == "muster":
         actions.reset_muster_segment(gs)
+    elif step == "call_to_arms":
+        for lord in gs.lords.values():
+            lord.flags.pop("lordship_persist", None)
     elif step == "arts_of_war":
         roller = roller_for(gs)
         actions.resolve_arts_of_war(gs, roller)

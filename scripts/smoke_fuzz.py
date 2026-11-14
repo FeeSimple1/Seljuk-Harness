@@ -71,6 +71,10 @@ def _rand_resolve_pending(s, rng, findings, tag):
         return True
     p = current_pending(s.gs)
     t = p["type"]
+    if t == "event_pending_resolution" and p["card"] in ("R1", "R10", "R16"):
+        card = p["card"]
+        s.apply({"type": "resolve_event", "card": card, "args": _choose_event_args(s.gs, card)})
+        return True
     try:
         if t in ("capability_discard", "feed_resource_choice", "grow", "reset_discard"):
             s.apply(rng.choice(engine.legal_moves(s.gs)))

@@ -91,6 +91,8 @@ def check_invariants(gs: GameState) -> list[str]:
         # An off-map / removed Lord must not also be flagged Mustered-on-map.
         if l.cylinder in ("offboard", "removed") and l.mustered:
             bad.append(f"{lid} is {l.cylinder} but still mustered")
+        if l.forces.get("varangian_guard", 0) > 0 and not l.on_map():
+            bad.append(f"{lid} has a Varangian Guard without an in-play mat")
 
     # Per-Locale invariants.
     for locid, st in gs.locales.items():

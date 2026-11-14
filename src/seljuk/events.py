@@ -115,18 +115,38 @@ def _ev_norman_pay_revolt(gs, args, roller):      # S19
     return _set_treachery(gs, "seljuk")
 
 
+def muster_penalty_targets(gs: GameState) -> list[str]:
+    """R1/R10 repeat: choose a Lord able to Muster, or a Seljuk Lord still in play."""
+    from . import actions
+
+    seljuk_lords = sorted(lid for lid, lord in gs.lords.items()
+                          if lord.side == "seljuk" and lord.cylinder != "removed")
+    # Arts of War precedes the Muster reset. Last Levy's spending, Hold
+    # bonuses and arrival flags do not determine this Levy's eligibility.
+    able = [lid for lid in seljuk_lords if actions._at_muster_locale(gs, gs.lords[lid])
+            and actions._muster_lordship(gs, gs.lords[lid]) > 0]
+    return able or seljuk_lords
+
+
+def _choose_event_lord(gs: GameState, args: dict, targets: list[str]) -> LordState | None:
+    if "lord" not in args:
+        if not targets:
+            return None
+        raise IllegalAction("missing_or_bad_arg", "choose an eligible Lord for this Event")
+    lid = args["lord"]
+    if not isinstance(lid, str) or lid not in gs.lords:
+        raise IllegalAction("bad_lord", f"no such Lord {lid!r}")
+    if lid not in targets:
+        raise IllegalAction("bad_event_target", f"{lid} is ineligible for this Event")
+    return gs.lords[lid]
+
+
 def _seljuk_lord_minus1_lordship(gs, args):
-    """Already-marked branch shared by R1 and R10: 1 *Seljuk* Lord -1 Lordship
-    this Muster (Seljuk choice). The persistent flag survives the muster-segment
-    reset. No-op if no valid Seljuk target (the selected Lord should be one able
-    to Muster this turn, if possible)."""
-    lid = args.get("lord")
-    l = gs.lords.get(lid)
-    if l is None or l.side != "seljuk":
-        return {"already_marked": True, "no_op": True,
-                "reason": "need a Seljuk Lord for the -1 Lordship effect"}
-    l.flags["lordship_persist"] = int(l.flags.get("lordship_persist", 0)) - 1
-    return {"already_marked": True, "lordship_penalty": lid}
+    lord = _choose_event_lord(gs, args, muster_penalty_targets(gs))
+    if lord is None:
+        return {"already_marked": True, "no_op": True, "reason": "no Seljuk Lord in play"}
+    lord.flags["lordship_persist"] = int(lord.flags.get("lordship_persist", 0)) - 1
+    return {"already_marked": True, "lordship_penalty": lord.id}
 
 
 def _ev_flooded_river(gs, args, roller):          # R1*
@@ -149,14 +169,26 @@ def _ev_chrysoskoulos(gs, args, roller):          # R11
     return _discard_random_held(gs, "seljuk", roller)
 
 
+def anglo_saxon_targets(gs: GameState) -> list[str]:
+    """R16: eligible Roman Lord mats when the physical pool has a Guard."""
+    from . import actions
+
+    unit = "varangian_guard"
+    if actions._pool_remaining(gs, unit) <= 0:
+        return []
+    return sorted(lid for lid, lord in gs.lords.items()
+                  if lord.side == "roman" and lord.on_map()
+                  and lord.cylinder in gs.locales
+                  and lid not in ("robert_crepin", "roussel_de_bailleul")
+                  and not (lord.forces.get(unit, 0) or lord.routed.get(unit, 0)))
+
+
 def _ev_anglo_saxon(gs, args, roller):            # R16
-    lid = args["lord"]; l = gs.lords[lid]
-    if l.side != "roman" or lid in ("robert_crepin", "roussel_de_bailleul") or l.forces.get("varangian_guard", 0) > 0:
-        return {"no_op": True}
-    if sum(x.forces.get("varangian_guard", 0) for x in gs.lords.values()) >= 2:
-        return {"no_op": True, "reason": "no Varangian Guard available"}
-    l.forces["varangian_guard"] = l.forces.get("varangian_guard", 0) + 1
-    return {"added_varangian": lid}
+    lord = _choose_event_lord(gs, args, anglo_saxon_targets(gs))
+    if lord is None:
+        return {"no_op": True, "reason": "no Varangian Guard or eligible Roman Lord available"}
+    lord.forces["varangian_guard"] = 1
+    return {"added_varangian": lord.id}
 
 
 def _ev_assassination(gs, args, roller):          # R22

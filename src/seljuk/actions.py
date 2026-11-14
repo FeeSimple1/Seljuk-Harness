@@ -48,7 +48,7 @@ def is_friendly_locale(gs: GameState, locale_id: str, side: str) -> bool:
 
 
 def _on_map(lord: LordState) -> bool:
-    return lord.mustered and lord.cylinder not in ("calendar", "offboard", "removed")
+    return lord.on_map()
 
 
 def _shift_service_right(gs: GameState, lord: LordState, amount: int) -> None:
@@ -362,29 +362,35 @@ def reset_muster_segment(gs: GameState) -> None:
 
 
 def lordship_remaining(gs: GameState, lord: LordState) -> int:
-    # lordship_persist is a signed delta from immediate Events (R1 -1, S5 +1)
-    # that must survive reset_muster_segment; it is cleared when a new Levy
-    # phase begins (engine.start_levy).
-    rating = (capabilities.lordship_rating(gs, lord.id)
-              + int(lord.flags.get("lordship_bonus", 0))
-              + int(lord.flags.get("lordship_persist", 0)))
-    return rating - int(lord.flags.get("lordship_spent", 0))
+    return (_muster_lordship(gs, lord)
+            + int(lord.flags.get("lordship_bonus", 0))
+            - int(lord.flags.get("lordship_spent", 0)))
+
+
+def _muster_lordship(gs: GameState, lord: LordState) -> int:
+    # lordship_persist is a signed delta from immediate Events (R1/R10 -1, S5 +1)
+    # that survives reset_muster_segment and expires when Muster ends.
+    return capabilities.lordship_rating(gs, lord.id) + int(lord.flags.get("lordship_persist", 0))
 
 
 def _spend_lordship(lord: LordState, n: int = 1) -> None:
     lord.flags["lordship_spent"] = int(lord.flags.get("lordship_spent", 0)) + n
 
 
+def _at_muster_locale(gs: GameState, lord: LordState) -> bool:
+    """3.4: Muster requires a Friendly Locale free of Siege, including Holding Boxes."""
+    return (_on_map(lord) and lord.cylinder in gs.locales and not lord.besieged
+            and not gs.locales[lord.cylinder].siege_markers
+            and is_friendly_locale(gs, lord.cylinder, lord.side))
+
+
 def _can_act_in_muster(gs: GameState, lord: LordState) -> bool:
     """3.4: a Lord must have begun Muster at an Unbesieged Friendly Locale
     (incl. Holding Box), have Lordship left, and not be freshly Mustered."""
-    if not _on_map(lord) or lord.side != gs.meta.active_player:
-        return False
-    if lord.besieged or lord.flags.get("mustered_this_segment"):
-        return False
-    if lordship_remaining(gs, lord) <= 0:
-        return False
-    return is_friendly_locale(gs, lord.cylinder, lord.side)
+    return (lord.side == gs.meta.active_player
+            and not lord.flags.get("mustered_this_segment")
+            and lordship_remaining(gs, lord) > 0
+            and _at_muster_locale(gs, lord))
 
 
 def _seat_is_free(gs: GameState, side: str, seat: str) -> bool:
