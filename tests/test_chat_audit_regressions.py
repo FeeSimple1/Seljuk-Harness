@@ -426,7 +426,7 @@ def test_13_opening_r2_deploy_adds_oghuz_vassal():
     lord = gs.lords["romanos_diogenes"]
     index = next(i for i, v in enumerate(lord.vassals) if v.requires_capability == "R2")
     assert "R2" in lord.capabilities
-    assert A._vassal_levyable(gs, lord, index)
+    assert A._vassal_levy_blocker(gs, lord, index) is None
 
 
 def test_14_opening_duplicate_lamellar_seed_165_is_not_offered_or_accepted():

@@ -173,6 +173,8 @@ def test_explicit_plan_contract_and_all_constraints(side, requirement):
     gs.meta.active_player = side
     if requirement:
         gs.meta.notes[requirement] = side
+    if requirement == "weather_no_command_side":
+        gs.meta.calendar_box = 11  # A legacy Weather flag in Summer.
     help_ = interface.plan_help()
     assert help_["kind"] == "template"
     assert help_["help"]["constraints"] == campaign.plan_constraints(gs, side)
@@ -181,6 +183,9 @@ def test_explicit_plan_contract_and_all_constraints(side, requirement):
         interface.apply(help_["id"])
     assert snapshot(interface) == before
     c = help_["help"]["constraints"]
+    assert c["no_command_min"] == int(requirement in (
+        "treachery_no_command_side", "weather_no_command_side",
+    ))
     cards = (["treachery"] if c["treachery_count"] else [])
     if c["no_command_min"]:
         cards += ["no_command"]

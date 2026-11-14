@@ -154,15 +154,20 @@ def test_el02_recorded_compliant_plan_still_accepted():
 def test_el02_both_sides_obligation_matches_menu_and_validator(side, source):
     gs = scenarios.load_scenario("emperor_and_the_lion", seed=1)
     gs.meta.pending.clear()
+    if source == "weather":
+        gs.meta.calendar_box = 2
+        owner, card = ("roman", "R17") if side == "seljuk" else ("seljuk", "S17")
+        gs.side_decks(owner).draw_deck.remove(card)
+        actions._classify_drawn_event(gs, owner, card, engine.roller_for(gs))
+    elif source == "treachery":
+        gs.meta.notes["treachery_no_command_side"] = side
     campaign.start_campaign(gs)
     gs.meta.active_player = side
-    if source != "none":
-        gs.meta.notes[source + "_no_command_side"] = side
     menu = engine.legal_moves(gs)[0]
     assert menu["_no_command_required"] == (source != "none")
     lords = sd.command_decks()[side]["lords_with_cards"]
     n = campaign.plan_size(gs, side)
-    cards = [lords[0]] * 4 + [lords[1]] * (n-4)
+    cards = [lords[0]] * 4 + [lords[1]] * min(4, n - 4) + [lords[2]] * max(0, n - 8)
     action = {"type": "build_plan", "side": side, "cards": cards}
     if source == "none":
         assert engine.apply_action(gs, action)["ok"]
