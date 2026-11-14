@@ -112,6 +112,9 @@ class LordState(_Model):
     lower_lord: Optional[str] = None
     flags: dict[str, Any] = Field(default_factory=dict)  # ad-hoc per-Lord flags/marks (later phases)
 
+    def on_map(self) -> bool:
+        return self.mustered and self.cylinder not in ("calendar", "offboard", "removed")
+
     def unrouted_forces(self) -> dict[str, int]:
         """All fighting units on this mat, without losing Themata identity."""
         units = {u: n for u, n in self.forces.items() if n > 0}
@@ -249,6 +252,11 @@ class GameState(_Model):
     def from_json(cls, text: str) -> "GameState":
         gs = cls.model_validate_json(text)
         gs._restore_recent_ravage_attempt()
+        # Old R16 handling could put a Guard on an unMustered Lord.
+        # A Lord without a mat cannot retain that piece in play.
+        for lord in gs.lords.values():
+            if not lord.on_map():
+                lord.forces.pop("varangian_guard", None)
         return gs
 
     def _restore_recent_ravage_attempt(self) -> None:

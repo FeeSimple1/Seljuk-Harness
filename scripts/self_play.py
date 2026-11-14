@@ -22,6 +22,12 @@ from seljuk.state import IllegalAction
 
 def _choose_event_args(gs, card):
     """Select mandatory Event targets for the test driver."""
+    if card == "R16":
+        targets = events.anglo_saxon_targets(gs)
+        return {"lord": targets[0]} if targets else {}
+    if card in ("R1", "R10") and card in gs.meta.asterisks_used:
+        targets = events.muster_penalty_targets(gs)
+        return {"lord": targets[0]} if targets else {}
     if card in ("R5", "S12", "S23"):
         targets = events.calendar_event_targets(gs, card)
         if targets:
@@ -60,6 +66,10 @@ def _resolve_pending(s: LLMSession) -> bool:
     if p is None:
         return False
     t = p["type"]
+    if t == "event_pending_resolution" and p["card"] in ("R1", "R10", "R16"):
+        card = p["card"]
+        s.apply({"type": "resolve_event", "card": card, "args": _choose_event_args(s.gs, card)})
+        return True
     try:
         if t == "reset_discard":
             s.apply({"type": "reset_done", "side": p["side"]})

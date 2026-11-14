@@ -223,7 +223,22 @@ def contract(gs, move, side):
                    card_lookup=move["card"],
                    notes=["Supply args explicitly ({} for no-choice/no-target effects).",
                           "lookup_card includes the complete curated clarification, not just the short data text."])
-        if kind == "resolve_event" and move["card"] in ("R5", "S12", "S23"):
+        if kind == "resolve_event" and move["card"] == "R16":
+            targets = events.anglo_saxon_targets(gs)
+            out.update(argument_names=["lord"], eligible_lords=targets,
+                       required_count=int(bool(targets)))
+            out["notes"].append("Choose one listed Roman Lord to receive a Varangian Guard. "
+                                "Supply {} if the list is empty.")
+        elif kind == "resolve_event" and move["card"] in ("R1", "R10"):
+            if move["card"] in gs.meta.asterisks_used:
+                targets = events.muster_penalty_targets(gs)
+                out.update(argument_names=["lord"], eligible_lords=targets,
+                           required_count=int(bool(targets)))
+                out["notes"].append("Choose a listed Seljuk Lord to lose 1 Lordship this Muster. "
+                                    "Lords able to Muster take priority. Supply {} if the list is empty.")
+            else:
+                out.update(argument_names=[])
+        elif kind == "resolve_event" and move["card"] in ("R5", "S12", "S23"):
             out.update(eligible_markers=events.calendar_event_targets(gs, move["card"]),
                        directions=["left", "right"])
             out["notes"].append("Choose a Lord and one of its listed marker types. "

@@ -55,13 +55,15 @@ def test_r11_chrysoskoulos_no_op_when_arisighi_not_roman():
     assert E._ev_chrysoskoulos(gs, {}, _r()).get("no_op") is True
 
 
-def test_r16_anglo_saxon_no_op_paths():
+def test_r16_anglo_saxon_rejects_an_ineligible_lord_when_an_effect_exists():
     gs = _gs()
     # Robert is excluded
-    assert E._ev_anglo_saxon(gs, {"lord": "robert_crepin"}, _r()).get("no_op") is True
+    with pytest.raises(IllegalAction, match="bad_event_target"):
+        E._ev_anglo_saxon(gs, {"lord": "robert_crepin"}, _r())
     # A Roman lord who already has a Varangian
     ch = gs.lords["chatatourios"]; ch.side = "roman"; ch.forces["varangian_guard"] = 1
-    assert E._ev_anglo_saxon(gs, {"lord": "chatatourios"}, _r()).get("no_op") is True
+    with pytest.raises(IllegalAction, match="bad_event_target"):
+        E._ev_anglo_saxon(gs, {"lord": "chatatourios"}, _r())
 
 
 def test_r22_assassination_shift_vs_disband():

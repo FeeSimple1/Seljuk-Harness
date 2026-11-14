@@ -604,6 +604,7 @@ def test_helper_public_output_is_complete_json_not_duplicate_raw_return(capsys):
 def test_nested_event_argument_names_remain_discoverable():
     from seljuk.llm.contracts import contract
     gs = scenarios.load_scenario('emperor_and_the_lion')
+    gs.meta.asterisks_used.append('R1')
     move = {'type':'resolve_event','card':'R1','_unvalidated':True}
     detail = contract(gs, move, 'seljuk')
     assert 'lord' in detail['argument_names']

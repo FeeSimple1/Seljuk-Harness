@@ -5,10 +5,13 @@ missing entirely (it re-set Afsin's Fealty on every draw)."""
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from seljuk import scenarios as S, events as E
 from seljuk.rng import DiceRoller
+from seljuk.state import IllegalAction
 
 
 def _gs():
@@ -26,10 +29,10 @@ def test_r1_already_marked_seljuk_target_gets_penalty():
     assert gs.lords["alp_arslan"].flags.get("lordship_persist") == -1
 
 
-def test_r1_already_marked_roman_target_is_no_op():
+def test_r1_already_marked_roman_target_is_rejected():
     gs = _gs(); gs.meta.asterisks_used.append("R1")
-    r = E._ev_flooded_river(gs, {"lord": "romanos_diogenes"}, _r())
-    assert r.get("no_op") is True
+    with pytest.raises(IllegalAction, match="bad_event_target"):
+        E._ev_flooded_river(gs, {"lord": "romanos_diogenes"}, _r())
     assert gs.lords["romanos_diogenes"].flags.get("lordship_persist") in (None, 0)
 
 
@@ -43,12 +46,12 @@ def test_r10_first_draw_sets_fealty_2():
 
 def test_r10_already_marked_applies_seljuk_lordship_penalty():
     gs = _gs(); gs.meta.asterisks_used.append("R10")
-    r = E._ev_afsin_murders(gs, {"lord": "sav_tekin"}, _r())
-    assert r.get("lordship_penalty") == "sav_tekin"
-    assert gs.lords["sav_tekin"].flags.get("lordship_persist") == -1
+    r = E._ev_afsin_murders(gs, {"lord": "arisighi"}, _r())
+    assert r.get("lordship_penalty") == "arisighi"
+    assert gs.lords["arisighi"].flags.get("lordship_persist") == -1
 
 
-def test_r10_already_marked_roman_target_is_no_op():
+def test_r10_already_marked_roman_target_is_rejected():
     gs = _gs(); gs.meta.asterisks_used.append("R10")
-    r = E._ev_afsin_murders(gs, {"lord": "romanos_diogenes"}, _r())
-    assert r.get("no_op") is True
+    with pytest.raises(IllegalAction, match="bad_event_target"):
+        E._ev_afsin_murders(gs, {"lord": "romanos_diogenes"}, _r())
