@@ -54,7 +54,7 @@ class VassalSlot(_Model):
     requires_capability: Optional[str] = None
     levied: bool = False
     service_box: Optional[int] = None  # 6.2 Vassal Service: Calendar position when Mustered
-    unready: bool = False              # 6.2: Coat-of-Arms down (Disbanded this Levy) -> may not Muster
+    unready: bool = False              # 6.2: Coat-of-Arms down until after the owner's next Muster
 
 
 class ThemataMarker(_Model):

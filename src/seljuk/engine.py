@@ -329,6 +329,8 @@ def _advance_step(gs: GameState) -> None:
 def note_pass(gs: GameState) -> None:
     """Record that the active side has finished the current interactive step;
     pass to the other side, or advance the step when both have passed."""
+    if gs.meta.subphase == "levy.muster":
+        actions.finish_vassal_muster(gs, gs.meta.active_player)
     gs.meta.levy_step_passed[gs.meta.active_player] = True
     other = "roman" if gs.meta.active_player == "seljuk" else "seljuk"
     if gs.meta.levy_step_passed.get(other):

@@ -3,7 +3,7 @@ Off by default; when on, a Mustering Vassal's marker is placed by its Service
 Rating, shifts with its Lord's marker, Disbands at its Service limit (returning
 Forces to the pool), and is Unready until after the ensuing Muster."""
 import pytest
-from seljuk import scenarios as S, actions
+from seljuk import scenarios as S, actions, engine
 from seljuk.state import shift_vassal_service, IllegalAction
 from seljuk.rng import DiceRoller
 
@@ -56,12 +56,17 @@ def test_unready_vassal_may_not_muster():
         actions.h_levy_vassal(gs, {"lord": l.id, "vassal_index": i}, DiceRoller(1))
 
 
-def test_reset_muster_segment_flips_unready_up():
+def test_unready_markers_flip_when_their_owner_finishes_muster():
     gs = S.load_scenario("emperor_and_the_lion", options={"vassal_service": True})
-    l = _ready_lord(gs)
-    l.vassals[0].unready = True
+    seljuk = _ready_lord(gs).vassals[0]
+    roman = gs.lords["chatatourios"].vassals[0]
+    seljuk.unready = roman.unready = True
     actions.reset_muster_segment(gs)
-    assert l.vassals[0].unready is False
+    assert seljuk.unready and roman.unready
+    engine.apply_action(gs, {"type": "pass_step"})
+    assert not seljuk.unready and roman.unready
+    engine.apply_action(gs, {"type": "pass_step"})
+    assert not roman.unready
 
 
 def test_expired_vassal_disbands_and_returns_forces():

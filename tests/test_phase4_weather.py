@@ -39,7 +39,8 @@ def test_weather_summer_plan_nine_and_enemy_no_command():
     base = campaign.plan_size(gs)
     actions._classify_drawn_event(gs, "roman", "R17", DiceRoller(1))   # Roman plays -> Seljuk No Command
     assert gs.meta.notes.get("weather_plan9") is True
-    assert gs.meta.notes.get("weather_no_command_side") == "seljuk"
+    assert campaign.no_command_required(gs, "seljuk")
+    assert not campaign.no_command_required(gs, "roman")
     assert campaign.plan_size(gs) == 9 and base == 8
     # Seljuk plan must include >=1 No Command.
     campaign.start_campaign(gs)

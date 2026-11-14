@@ -350,15 +350,21 @@ def discard_lord_capability(gs: GameState, lord: LordState, card_id: str) -> Non
 
 def reset_muster_segment(gs: GameState) -> None:
     gs.meta.notes.pop("imperial_rivalry_attempted", None)  # S9: re-arm the obligation each Levy
-    vs_on = gs.meta.options.get("vassal_service")
     for lord in gs.lords.values():
         lord.flags.pop("lordship_spent", None)
         lord.flags.pop("mustered_this_segment", None)
         lord.flags.pop("lordship_bonus", None)
         lord.flags.pop("restored_this_muster", None)
-        if vs_on:  # 6.2: after Vassal Muster, flip Coat-of-Arms-down Markers up (Ready)
-            for v in lord.vassals:
-                v.unready = False
+
+
+def finish_vassal_muster(gs: GameState, side: str) -> None:
+    """6.2: flip that side's Unready markers after its Muster ends."""
+    if not gs.meta.options.get("vassal_service"):
+        return
+    for lord in gs.lords.values():
+        if lord.side == side:
+            for vassal in lord.vassals:
+                vassal.unready = False
 
 
 def lordship_remaining(gs: GameState, lord: LordState) -> int:
@@ -644,18 +650,20 @@ def _place_capability(gs: GameState, side: str, card_id: str, lord: LordState | 
     return "board_edge"
 
 
-def _vassal_levyable(gs: GameState, lord: LordState, idx: int) -> bool:
+def _vassal_levy_blocker(gs: GameState, lord: LordState, idx: int) -> str | None:
     if idx < 0 or idx >= len(lord.vassals):
-        return False
+        return "vassal_unavailable"
     v = lord.vassals[idx]
     if v.levied:
-        return False
+        return "vassal_unavailable"
     if v.requires_capability:  # Special Vassal: its Capability must be in play
         in_play = v.requires_capability in lord.capabilities or \
             v.requires_capability in gs.side_decks(lord.side).capabilities_in_play
         if not in_play:
-            return False
-    return True
+            return "vassal_unavailable"
+    if gs.meta.options.get("vassal_service") and v.unready:
+        return "vassal_unready"
+    return None
 
 
 def h_levy_vassal(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> dict[str, Any]:
@@ -666,11 +674,13 @@ def h_levy_vassal(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> 
     idx = action.get("vassal_index")
     if lord is None or not _can_act_in_muster(gs, lord):
         raise IllegalAction("cannot_levy", "Lord cannot take a Levy action now (3.4)")
-    if idx is None or not _vassal_levyable(gs, lord, int(idx)):
+    idx = -1 if idx is None else int(idx)
+    blocker = _vassal_levy_blocker(gs, lord, idx)
+    if blocker == "vassal_unready":
+        raise IllegalAction(blocker, "an Unready (Coat-of-Arms down) Vassal may not Muster (6.2)")
+    if blocker is not None:
         raise IllegalAction("vassal_unavailable", f"{lord.id} cannot Levy that Vassal (3.4.2)")
-    v = lord.vassals[int(idx)]
-    if gs.meta.options.get("vassal_service") and v.unready:
-        raise IllegalAction("vassal_unready", "an Unready (Coat-of-Arms down) Vassal may not Muster (6.2)")
+    v = lord.vassals[idx]
     _spend_lordship(lord, 1)
     v.levied = True
     added = _alloc_from_pool(gs, v.forces)  # 1.6 pool cap: unavailable pieces are not added
@@ -678,7 +688,7 @@ def h_levy_vassal(gs: GameState, action: dict[str, Any], roller: DiceRoller) -> 
         lord.forces[u] = lord.forces.get(u, 0) + n
     if gs.meta.options.get("vassal_service"):  # 6.2: place the Vassal's Service Marker like a Lord (3.4.1)
         v.service_box = min(gs.meta.calendar_box + int(v.service or 0), OFF_RIGHT)
-    return {"ok": True, "action": "levy_vassal", "lord": lord.id, "vassal_index": int(idx),
+    return {"ok": True, "action": "levy_vassal", "lord": lord.id, "vassal_index": idx,
             "forces_added": added, "vassal_service_box": v.service_box}
 
 
@@ -737,7 +747,7 @@ def enumerate_muster(gs: GameState) -> list[dict[str, Any]]:
                 out.append({"type": "levy_capability", "lord": lid, "card": cid,
                             "_desc": f"{sd.lord(lid)['name']} Levies Capability {cid} (3.4.4)"})
         for i in range(len(lord.vassals)):
-            if _vassal_levyable(gs, lord, i):
+            if _vassal_levy_blocker(gs, lord, i) is None:
                 out.append({"type": "levy_vassal", "lord": lid, "vassal_index": i,
                             "_desc": f"{sd.lord(lid)['name']} Levies Vassal #{i} (3.4.2)"})
         if lord.side == "roman" and is_commander(gs, lid):

@@ -47,14 +47,24 @@ def plan_size(gs: GameState, side: str | None = None) -> int:
     return base
 
 
+def _weather_no_command_required(gs: GameState, side: str) -> bool:
+    if season_index(gs.meta.calendar_box) != 1:
+        return False
+    enemy_card = "R17" if side == "seljuk" else "S17"
+    # Both Events remain in their own zone even in saves made when one
+    # obligation could overwrite the other.
+    return (enemy_card in gs.side_decks(_other(side)).this_campaign_events
+            or gs.meta.notes.get("weather_no_command_side") == side)
+
+
 def no_command_required(gs: GameState, side: str) -> bool:
     """A mandatory No Command from Treachery or Unpredictable Weather (4.1).
 
     Shared by the Plan hint and validator, so clients cannot miss an obligation
     that the direct action handler enforces.
     """
-    return any(gs.meta.notes.get(key) == side for key in
-               ("treachery_no_command_side", "weather_no_command_side"))
+    return (gs.meta.notes.get("treachery_no_command_side") == side
+            or _weather_no_command_required(gs, side))
 
 
 # --- predicates shared with actions.py via import there ---------------------
@@ -150,16 +160,17 @@ def plan_constraints(gs: GameState, side: str) -> dict[str, Any]:
     ``available_lords`` in the existing palette is the useful on-map subset,
     not a restriction that the interface may impose on the engine's choices.
     """
+    treachery_blank = gs.meta.notes.get("treachery_no_command_side") == side
+    weather_blank = _weather_no_command_required(gs, side)
     return {
         "size": plan_size(gs, side), "lord_card_max": 4,
         "command_lords": list(sd.command_decks()[side]["lords_with_cards"]),
-        "no_command_min": int(no_command_required(gs, side)),
-        "no_command_max": 5 + int(gs.meta.notes.get("treachery_no_command_side") == side),
+        "no_command_min": int(treachery_blank or weather_blank),
+        "no_command_max": 5 + int(treachery_blank),
         "treachery_count": int(gs.meta.notes.get("treachery_side") == side),
-        "no_command_reasons": [name for key, name in (
-            ("treachery_no_command_side", "Treachery"),
-            ("weather_no_command_side", "Unpredictable Weather"))
-            if gs.meta.notes.get(key) == side],
+        "no_command_reasons": [name for required, name in (
+            (treachery_blank, "Treachery"), (weather_blank, "Unpredictable Weather"))
+            if required],
     }
 
 
@@ -183,7 +194,7 @@ def build_plan(gs: GameState, side: str, cards: list[str], lieutenants: list[dic
     nc_cap = constraints["no_command_max"]
     if gs.meta.notes.get("treachery_side") == side and counts.get("treachery", 0) != 1:
         raise IllegalAction("treachery_required", f"{side} must include exactly one Treachery card (1.4)")
-    if no_command_required(gs, side) and counts.get("no_command", 0) < 1:
+    if counts.get("no_command", 0) < constraints["no_command_min"]:
         if gs.meta.notes.get("treachery_no_command_side") == side:
             raise IllegalAction("treachery_no_command",
                                 f"{side} must include 1 No Command added by Treachery (1.4, 4.1)")
@@ -1542,17 +1553,19 @@ def legal_moves_campaign(gs: GameState) -> list[dict[str, Any]]:
             return []
         avail = [lid for lid in sd.command_decks()[side]["lords_with_cards"]
                  if lid in gs.lords and gs.lords[lid].mustered and gs.lords[lid].side == side]
-        need = plan_size(gs, side)  # include any Treachery card owed by this side (4.1)
-        treachery_required = gs.meta.notes.get("treachery_side") == side
+        constraints = plan_constraints(gs, side)
+        need = constraints["size"]
+        treachery_required = bool(constraints["treachery_count"])
+        blank_required = bool(constraints["no_command_min"])
         return [{"type": "build_plan", "side": side, "_plan_size": need,
                  "_available_lords": avail, "_no_command": "no_command",
                  "_lieutenant_options": _lieutenant_options(gs, side),
                  "_treachery_required": treachery_required, "_treachery": "treachery",
-                 "_no_command_required": no_command_required(gs, side),
-                 "_constraints": plan_constraints(gs, side),
+                 "_no_command_required": blank_required,
+                 "_constraints": constraints,
                  "_desc": f"Build the {side} Campaign Plan: {need} ordered cards (4.1)"
                           + (" incl. one Treachery card" if treachery_required else "")
-                          + ("; must include one No Command" if no_command_required(gs, side) else "")}]
+                          + ("; must include one No Command" if blank_required else "")}]
     if step == "campaign.fpd_feed":
         pending = next(p for p in gs.meta.pending if p["type"] == "feed_resource_choice")
         move = {"type": "feed_resource_choice", "side": pending["side"]}

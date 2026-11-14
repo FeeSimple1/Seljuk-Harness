@@ -68,12 +68,11 @@ def _wastage_once(gs, lord) -> bool:
 
 
 def _discard_random_held(gs, side, roller):
-    held = gs.side_decks(side).held_events
-    if not held:
+    deck = gs.side_decks(side)
+    if not deck.held_events:
         return {"no_op": True, "reason": "no Held cards"}
-    idx = roller.d6() % len(held)
-    card = held.pop(idx)
-    gs.side_decks(side).draw_deck.append(card)
+    card = deck.held_events.pop(roller.randbelow(len(deck.held_events)))
+    deck.draw_deck.append(card)
     return {"discarded_held": card}
 
 
@@ -713,7 +712,6 @@ def _ev_unpredictable_weather(gs, playing_side: str) -> dict:
     if season == 1:
         enemy = "seljuk" if playing_side == "roman" else "roman"
         gs.meta.notes["weather_plan9"] = True
-        gs.meta.notes["weather_no_command_side"] = enemy
         return {"weather": "summer", "plan_stack": 9, "enemy_no_command": enemy}
     gs.meta.notes["weather_pass_block"] = True
     return {"weather": "spring_autumn", "passes_blocked": True}

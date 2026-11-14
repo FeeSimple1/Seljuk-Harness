@@ -33,6 +33,10 @@ class DiceRoller:
         """Roll ``n`` d6 and return the results in order."""
         return [self.d6() for _ in range(n)]
 
+    def randbelow(self, stop: int) -> int:
+        """Choose uniformly from 0 through stop - 1 using the same RNG."""
+        return self._rng.randrange(stop)
+
     def shuffle(self, seq: list) -> None:
         """Shuffle a list in place using the seeded RNG (deterministic)."""
         self._rng.shuffle(seq)
